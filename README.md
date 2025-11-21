@@ -23,14 +23,18 @@ Because most of these peripherals are imported from OpenTitan, in the first inst
 ## Developer guide
 
 ### Setup Python virtual environment
+#### Using uv on macOS and Linux
 
 ```sh
-# Initial setup of environment.
-python -m venv .venv
-# Enter the environment (do this every time).
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create the virtual environment.
+uv venv
+uv sync --all-extras 
+
+# Enter the environment (do it every time).
 source .venv/bin/activate
-# Install dependencies.
-pip install -r python-requirements.txt
 ```
 
 ### Simulation

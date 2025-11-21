@@ -5,85 +5,47 @@
 [project]
 name = "mocha"
 version = "0.0.0"
-description = "CHERI-Mocha is a secure enclvae reference design and part of the COSMIC project."
+description = "CHERI-Mocha is a secure enclave reference design and is part of the COSMIC project."
 requires-python = ">=3.10"
 
 dependencies = [
-  # Keep sorted
-  "beautifulsoup4 ~= 4.12",
-  "hjson==3.1.0",
-  "libclang==16.0.0",
-  "libcst ~= 1.1",
-  "lxml ~= 5.0",
-  "mako ~= 1.2",
-  "ninja ~= 1.11.1.1",
-  "pluralizer==1.2.0",
-  "pycryptodome ~= 3.19",
-  "pyelftools==0.29",
-  "pytest-timeout ~= 2.1",
-  "pytest ~= 7.2",
-  "pyyaml ~= 6.0",
-  "rich==12.6.0", # maximum version compatible with Python 3.6.8 (used on CentOS7 nightly regression machines)
-  "semantic_version==2.10.0",
-  "tabulate==0.8.10",
-  "typer==0.6.1",
-
-  # Dependencies: bitstreams cache
-  "jsonschema ~= 4.17",
-
-  # Dependencies: gen-flash-img.py
-  "pyfinite==1.9.1",
-
-  # Dependencies: dv_sim
-  "enlighten ~= 1.10",
-  "mistletoe==0.9.0",
-  # Premailer 3.9.0 broke the API by introducing an allow_loading_external_files
-  # argument that is now mandatory, but didn't exist in previous versions.
-  # To relax the constraint we either need to do a runtime detection, or switch all
-  # users to a newer version.
-  "premailer==3.8.0",
-
-  # Dependencies: check_dif_statuses.py
-  "pydriller ~= 2.7",
-  "termcolor==1.1.0",
-
-  # Linters
-  "flake8 ~= 7.1",
-  "isort ~= 5.10",
-  "mypy == 0.991",
-  "yapf==0.32.0",
-  "ruff>=0.9.6",
-
-  # Type stubs for mypy checking.
-  "types-pyyaml ~= 6.0",
-  "types-tabulate==0.8.11",
-
-  # Dependency of sw/host/vendor/google_verible_verilog_syntax_py
-  "anytree ~= 2.8",
-
-  # Dependency of third_party/tock
-  "tockloader==1.13",
-
-  # The hardware package manager and build system.
-  "fusesoc==2.4.3",
-
-  "peakrdl-systemrdl >= 1.0",
+    "anytree==2.8.0",
+    "hjson==3.1.0",
+    "wheel==0.41.2",
+    "pyserial==3.5",
+    "edalize@https://github.com/lowRISC/edalize/archive/refs/tags/v0.4.0.zip",
+    "fusesoc@https://github.com/lowRISC/fusesoc/archive/refs/tags/ot-0.5.dev0.zip",
+    "pydantic>=2.8.2,<3",
+    "jinja2>=3.1.6,<4",
+    "semantic-version>=2.10.0,<3",
+    "pycryptodome>=3.23.0,<4",
+    "tabulate>=0.9.0,<0.10",
+    "setuptools>=80.9.0",
+    "packaging>=25.0",
+    "mako>=1.2",
 ]
+[project.optional-dependencies]
+linting = [
+  "pyright>=1.1.403",
+  "ruff>=0.9.6",
+  "reuse>=5.0.2",
+]
+dev = [
+  "pytest>=8.4.1",
+  "twine>=6.1.0",
+]
+ci = ["mocha[linting,dev]"]
 
 [tool.setuptools]
-# This is actually not a python project, we just use pyproject.toml to manage dependencies.
 py-modules = []
 
 [tool.ruff]
 target-version = "py310"
-line-length = 100
-# Don't lint vendored files which must be fixed upstream.
-extend-exclude = [ "*vendor*" ]
+line-length = 79
+extend-exclude = [
+  "vendor/",
+  "util/vendor.py",
+]
 
 [tool.ruff.lint]
-preview = true
-explicit-preview-rules = true
-extend-select = ["E", "E303", "W391"]
-
-[tool.uv.workspace]
-members = ["util/testplantool", "util/testplantool/testplanlib"]
+select = ["E", "F", "I", "B", "SIM", "PTH", "C4", "A", "RUF", "PERF"]
