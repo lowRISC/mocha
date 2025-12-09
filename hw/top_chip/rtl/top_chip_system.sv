@@ -17,9 +17,9 @@ module top_chip_system #(
   localparam int unsigned SramMemSize   = 128 * 1024; // 128 KiB
   localparam int unsigned TlDataWidth   = top_pkg::TL_DW;
   localparam int unsigned TlIntgWidth   = 7;
-  localparam int unsigned TlAddrOffset  = $clog2(TlDataWidth / 8);
-  localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - TlAddrOffset;
-  localparam int unsigned AxiDataWidth  = 64;
+  localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
+  localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
+  localparam int unsigned AxiDataWidth  = top_pkg::AxiDataWidth;
 
   // Memory map
   localparam logic [AxiDataWidth-1:0] SRAMBase   = AxiDataWidth'(tl_peri_pkg::ADDR_SPACE_SRAM);
@@ -55,8 +55,8 @@ module top_chip_system #(
     AxiIdWidthSlvPorts: 32'd5,
     AxiIdUsedSlvPorts:  32'd1,
     UniqueIds:          1'b0,
-    AxiAddrWidth:       32'd32,
-    AxiDataWidth:       AxiDataWidth/8, // In bytes
+    AxiAddrWidth:       int'(top_pkg::AxiAddrWidth),
+    AxiDataWidth:       AxiDataWidth / 8, // In bytes
     NoAddrRules:        32'd2
   };
 
@@ -71,6 +71,13 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_uart_d2h;
 
   // 64-bit memory format signals
+  logic                                 sram_data_req;
+  logic                                 sram_data_we;
+  logic [SramAddrWidth-1:0]             sram_data_addr;
+  logic [top_pkg::AxiDataWidth-1:0]     sram_data_wmask;
+  logic [top_pkg::AxiDataWidth-1:0]     sram_data_wdata;
+  logic                                 sram_data_rvalid;
+  logic [top_pkg::AxiDataWidth-1:0]     sram_data_rdata;
   logic                                 mem64_sram_req;
   logic                                 mem64_sram_gnt;
   logic                                 mem64_sram_we;
@@ -89,22 +96,6 @@ module top_chip_system #(
   logic [top_pkg::AxiDataWidth-1:0]     mem64_uart_rdata;
 
   // 32-bit memory format signals
-  logic                       sram_data_req;
-  logic                       sram_data_we;
-  logic [SramAddrWidth-1:0]   sram_data_addr;
-  logic [TlDataWidth-1:0]     sram_data_wmask;
-  logic [TlDataWidth-1:0]     sram_data_wdata;
-  logic                       sram_data_rvalid;
-  logic [TlDataWidth-1:0]     sram_data_rdata;
-  logic                       mem32_sram_req;
-  logic                       mem32_sram_gnt;
-  logic                       mem32_sram_we;
-  logic [(TlDataWidth/8)-1:0] mem32_sram_be;
-  logic [top_pkg::TL_AW-1:0]  mem32_sram_addr;
-  logic [TlDataWidth-1:0]     mem32_sram_wdata;
-  logic [TlIntgWidth-1:0]     mem32_sram_wdata_intg;
-  logic                       mem32_sram_rvalid;
-  logic [TlDataWidth-1:0]     mem32_sram_rdata;
   logic                       mem32_uart_req;
   logic                       mem32_uart_gnt;
   logic                       mem32_uart_we;
@@ -116,8 +107,8 @@ module top_chip_system #(
   logic [TlDataWidth-1:0]     mem32_uart_rdata;
 
   // AXI signals
-  top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_master_req;
-  top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_master_resp;
+  top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
+  top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
   top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
@@ -143,8 +134,8 @@ module top_chip_system #(
     .rvfi_probes_o ( ),
     .cvxif_req_o   ( ),
     .cvxif_resp_i  ('0),
-    .noc_req_o     (xbar_master_req[0]),
-    .noc_resp_i    (xbar_master_resp[0])
+    .noc_req_o     (xbar_host_req[0]),
+    .noc_resp_i    (xbar_host_resp[0])
   );
 
   // Instantiate our UART block.
@@ -181,10 +172,10 @@ module top_chip_system #(
 
   // Our RAM
   prim_ram_1p #(
-    .Width           ( TlDataWidth          ),
-    .DataBitsPerMask ( 8                    ),
-    .Depth           ( 2 ** (SramAddrWidth) ),
-    .MemInitFile     ( SramInitFile         )
+    .Width           ( top_pkg::AxiDataWidth ),
+    .DataBitsPerMask ( 8                     ),
+    .Depth           ( 2 ** (SramAddrWidth)  ),
+    .MemInitFile     ( SramInitFile          )
   ) u_ram (
     .clk_i  (clk_i),
     .rst_ni (rst_ni),
@@ -232,8 +223,8 @@ module top_chip_system #(
     .clk_i                (clk_i),
     .rst_ni               (rst_ni),
     .test_i               (1'b0),
-    .slv_ports_req_i      (xbar_master_req),
-    .slv_ports_resp_o     (xbar_master_resp),
+    .slv_ports_req_i      (xbar_host_req),
+    .slv_ports_resp_o     (xbar_host_resp),
     .mst_ports_req_o      (xbar_device_req),
     .mst_ports_resp_i     (xbar_device_resp),
     .addr_map_i           (addr_map),
@@ -270,49 +261,19 @@ module top_chip_system #(
     .mem_rdata_i  (mem64_sram_rdata)
   );
 
-  // 64-bit mem to 32-bit mem for SRAM
-  mem_downsizer u_sram_mem_downsizer (
-    .clk_i(clk_i),
-    .rst_ni(rst_ni),
-
-    // 64-bit memory request in
-    .mem64_req_i   (mem64_sram_req),
-    .mem64_gnt_o   (mem64_sram_gnt),
-    .mem64_we_i    (mem64_sram_we),
-    .mem64_be_i    (mem64_sram_be),
-    .mem64_addr_i  (mem64_sram_addr),
-    .mem64_wdata_i (mem64_sram_wdata),
-    .mem64_rvalid_o(mem64_sram_rvalid),
-    .mem64_rdata_o (mem64_sram_rdata),
-
-    // 32-bit memory request out
-    .mem32_req_o   (mem32_sram_req),
-    .mem32_gnt_i   (mem32_sram_gnt),
-    .mem32_we_o    (mem32_sram_we),
-    .mem32_be_o    (mem32_sram_be),
-    .mem32_addr_o  (mem32_sram_addr),
-    .mem32_wdata_o (mem32_sram_wdata),
-    .mem32_rvalid_i(mem32_sram_rvalid),
-    .mem32_rdata_i (mem32_sram_rdata)
-  );
-
-  // 32-bit SRAM signal assignments
-  assign sram_data_req   = mem32_sram_req;
-  assign mem32_sram_gnt  = 1'b1;
-  assign sram_data_addr  = (mem32_sram_addr ^ 32'h00100000) >> 2; // Remove base offset and convert byte address to word address
-  assign sram_data_we    = mem32_sram_we;
-  assign sram_data_wdata = mem32_sram_wdata;
+  // 64-bit SRAM signal assignments
+  assign sram_data_req   = mem64_sram_req;
+  assign mem64_sram_gnt  = 1'b1;
+  assign sram_data_addr  = (mem64_sram_addr ^ 32'h00100000) >> 3; // Remove base offset and convert byte address to 64-bit word address
+  assign sram_data_we    = mem64_sram_we;
+  assign sram_data_wdata = mem64_sram_wdata;
   always_comb begin
-    if (!sram_data_we) begin
-      sram_data_wmask = '1;
-    end else begin
-      for (int i=0; i < (TlDataWidth/8); ++i) begin
-        sram_data_wmask[i*8 +: 8] = {8{mem32_sram_be[i]}};
-      end
+    for (int i=0; i < (top_pkg::AxiDataWidth / 8); ++i) begin
+      sram_data_wmask[i*8 +: 8] = {8{mem64_sram_be[i]}};
     end
   end
-  assign mem32_sram_rvalid = sram_data_rvalid;
-  assign mem32_sram_rdata  = sram_data_rdata;
+  assign mem64_sram_rvalid = sram_data_rvalid;
+  assign mem64_sram_rdata  = sram_data_rdata;
 
   // AXI to 64-bit mem for UART
   axi_to_mem #(

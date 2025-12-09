@@ -25,7 +25,7 @@ class MochaSim {
 };
 
 MochaSim::MochaSim(const char *ram_hier_path, int ram_size_words)
-    : _ram(ram_hier_path, ram_size_words, 4) {}
+    : _ram(ram_hier_path, ram_size_words, 8) {}
 
 int MochaSim::Main(int argc, char **argv) {
   bool exit_app;
@@ -82,7 +82,7 @@ bool MochaSim::Finish() {
 int main(int argc, char **argv) {
   MochaSim mocha_sim(
       "TOP.top_chip_verilator.u_top_chip_system.u_ram",
-      32 * 1024 // 32k words = 128 KiB
+      16 * 1024 // 16k 64-bit words = 128 KiB
   );
 
   return mocha_sim.Main(argc, argv);
