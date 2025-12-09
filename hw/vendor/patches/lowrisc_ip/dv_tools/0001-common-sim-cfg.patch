@@ -1,0 +1,13 @@
+diff --git a/dvsim/common_sim_cfg.hjson b/dvsim/common_sim_cfg.hjson
+index 3a83bc7694..75b57bb3f6 100644
+--- a/dvsim/common_sim_cfg.hjson
++++ b/dvsim/common_sim_cfg.hjson
+@@ -4,7 +4,7 @@
+ {
+   flow:             sim
+   // Where to find DV code
+-  dv_root:          "{proj_root}/hw/dv"
++  dv_root:          "{proj_root}/hw/vendor/lowrisc_ip/dv"
+   flow_makefile:    "{dv_root}/tools/dvsim/sim.mk"
+ 
+   import_cfgs:      ["{proj_root}/hw/data/common_project_cfg.hjson",

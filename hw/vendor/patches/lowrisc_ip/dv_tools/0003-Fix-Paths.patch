@@ -1,0 +1,39 @@
+diff --git a/dvsim/tests/stress_tests.hjson b/dvsim/tests/stress_tests.hjson
+index 2fe58c6..799831f 100644
+--- a/dvsim/tests/stress_tests.hjson
++++ b/dvsim/tests/stress_tests.hjson
+@@ -4,7 +4,7 @@
+ 
+ // this contains stress_all and stress_all_with_rand_reset
+ {
+-  import_cfgs: ["{proj_root}/hw/dv/tools/dvsim/tests/stress_all_test.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_all_test.hjson"]
+   tests: [
+     {
+       name: "{name}_stress_all_with_rand_reset"
+diff --git a/dvsim/testplans/tl_device_access_types_testplan.hjson b/dvsim/testplans/tl_device_access_types_testplan.hjson
+index f405656..e4ce794 100644
+--- a/dvsim/testplans/tl_device_access_types_testplan.hjson
++++ b/dvsim/testplans/tl_device_access_types_testplan.hjson
+@@ -2,7 +2,7 @@
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
+ {
+-  import_testplans: ["hw/dv/tools/dvsim/testplans/tl_device_access_types_wo_intg_testplan.hjson"]
++  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_wo_intg_testplan.hjson"]
+   testpoints: [
+     {
+       name: tl_intg_err
+diff --git a/ralgen/ralgen.py b/ralgen/ralgen.py
+index 4281666..a9760ea 100755
+--- a/ralgen/ralgen.py
++++ b/ralgen/ralgen.py
+@@ -20,7 +20,7 @@ except ImportError:
+ 
+ # Repo root is 4 levels up. Note that this will require an update if the path to
+ # this tool is changed.
+-REPO_ROOT = "../../../.."
++REPO_ROOT = "../../.."
+ 
+ 
+ def main():

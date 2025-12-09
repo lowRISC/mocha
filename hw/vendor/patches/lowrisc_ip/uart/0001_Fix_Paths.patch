@@ -1,0 +1,65 @@
+diff --git a/data/uart_testplan.hjson b/data/uart_testplan.hjson
+index 761fe4d..022ba4e 100644
+--- a/data/uart_testplan.hjson
++++ b/data/uart_testplan.hjson
+@@ -3,11 +3,11 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name: "uart"
+-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
++  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+                      "uart_sec_cm_testplan.hjson"]
+   testpoints: [
+     {
+diff --git a/dv/uart_sim_cfg.hjson b/dv/uart_sim_cfg.hjson
+index 6d13daf..812dc65 100644
+--- a/dv/uart_sim_cfg.hjson
++++ b/dv/uart_sim_cfg.hjson
+@@ -18,21 +18,21 @@
+   fusesoc_core: lowrisc:dv:uart_sim:0.1
+ 
+   // Testplan hjson file.
+-  testplan: "{proj_root}/hw/ip/uart/data/uart_testplan.hjson"
++  testplan: "{proj_root}/hw/vendor/lowrisc_ip/ip/uart/data/uart_testplan.hjson"
+ 
+   // RAL spec - used to generate the RAL model.
+-  ral_spec: "{proj_root}/hw/ip/uart/data/uart.hjson"
++  ral_spec: "{proj_root}/hw/vendor/lowrisc_ip/ip/uart/data/uart.hjson"
+ 
+   // Import additional common sim cfg files.
+   import_cfgs: [// Project wide common sim cfg file
+-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
+                 // Common CIP test lists
+-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/alert_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/intr_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/stress_tests.hjson"]
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/alert_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/intr_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_tests.hjson"]
+ 
+   // Add additional tops for simulation.
+   sim_tops: ["uart_bind", "sec_cm_prim_onehot_check_bind"]
+@@ -48,7 +48,7 @@
+   uvm_test_seq: uart_base_vseq
+ 
+   // Add UART specific exclusion files.
+-  vcs_cov_excl_files: ["{proj_root}/hw/ip/uart/dv/cov/uart_cov_excl.el"]
++  vcs_cov_excl_files: ["{proj_root}/hw/vendor/lowrisc_ip/ip/uart/dv/cov/uart_cov_excl.el"]
+ 
+   // List of test specifications.
+   tests: [

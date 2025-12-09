@@ -4,6 +4,7 @@
 
 # Build artefacts
 build
+scratch
 
 # Verilator sim outputs
 *.fst

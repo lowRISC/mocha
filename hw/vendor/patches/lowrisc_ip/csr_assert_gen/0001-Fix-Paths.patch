@@ -1,0 +1,13 @@
+diff --git a/csr_assert_gen.py b/csr_assert_gen.py
+index 693a79d..07003ce 100644
+--- a/csr_assert_gen.py
++++ b/csr_assert_gen.py
+@@ -18,7 +18,7 @@ except ImportError:
+ 
+ # Repo root is 4 levels up. Note that this will require an update if the path to
+ # this tool is changed.
+-REPO_ROOT = "../../../.."
++REPO_ROOT = "../../.."
+ 
+ 
+ def main():

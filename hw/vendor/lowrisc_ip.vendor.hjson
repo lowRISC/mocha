@@ -14,16 +14,21 @@
 
   mapping: [
     // Utilities.
-    {from: "util/reggen",     to: "util/reggen"}, // Dependency of crossbar generator.
-    {from: "util/regtool.py", to: "util/regtool.py", patch_dir: "util_regtool"},
-    {from: "util/tlgen.py",   to: "util/tlgen.py"}, // Crossbar generator.
-    {from: "util/tlgen",      to: "util/tlgen"},
+    {from: "util/basegen",         to: "util/basegen"},
+    {from: "util/design",          to: "util/design"},
+    {from: "util/raclgen",         to: "util/raclgen"},
+    {from: "util/reggen",          to: "util/reggen"}, // Dependency of crossbar generator.
+    {from: "util/regtool.py",      to: "util/regtool.py", patch_dir: "util_regtool"},
+    {from: "util/tlgen.py",        to: "util/tlgen.py"}, // Crossbar generator.
+    {from: "util/tlgen",           to: "util/tlgen"},
+    {from: "util/topgen",          to: "util/topgen"},
+    {from: "util/version_file.py", to: "util/version_file.py"},
 
     // Hardware IP blocks.
     {from: "hw/ip/lc_ctrl",  to: "ip/lc_ctrl"}, // Dependency of crossbar.
     {from: "hw/ip/rv_timer", to: "ip/rv_timer"}, // Timer.
     {from: "hw/ip/tlul",     to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
-    {from: "hw/ip/uart",     to: "ip/uart"}, // Serial input and output.
+    {from: "hw/ip/uart",     to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
 
     // Primitives.
     {from: "hw/ip/prim",         to: "ip/prim"},
@@ -37,5 +42,14 @@
     {from: "hw/dv/dpi/uartdpi", to: "dv/dpi/uartdpi"},
     {from: "hw/dv/sv",          to: "dv/sv"},
     {from: "hw/dv/verilator",   to: "dv/verilator", patch_dir: "dv_verilator"},
-  ]
+
+    // Verification.
+    {from: "hw/dv/tools", to: "dv/tools", patch_dir: "dv_tools"},
+    {from: "hw/formal/tools/csr_assert_gen", to: "formal/tools/csr_assert_gen", patch_dir: "csr_assert_gen"},
+  ],
+
+  exclude_from_upstream: [
+    "*/BUILD",
+    "hw/dv/tools/vcs",
+  ],
 }
