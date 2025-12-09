@@ -24,11 +24,13 @@ filesets:
       - rtl/rr_arb_tree.sv
       - rtl/shift_reg.sv
       - rtl/shift_reg_gated.sv
+      - rtl/spill_register.sv
       - rtl/stream_join_dynamic.sv
       - rtl/stream_join.sv
       - rtl/stream_fork_dynamic.sv
       - rtl/stream_fork.sv
       - rtl/stream_mux.sv
+      - rtl/addr_decode.sv
     file_type: systemVerilogSource
 
 targets:

@@ -43,24 +43,52 @@ module top_chip_system #(
     boot_cap.flags.int_mode = 1'b1;
   end
 
-  // Read/write signals.
-  logic                       cva6_req;
-  logic                       cva6_gnt;
-  logic                       cva6_we;
-  logic [(top_pkg::AxiDataWidth/8)-1:0] cva6_be;
-  logic [top_pkg::AxiAddrWidth-1:0] cva6_addr;
-  logic [top_pkg::AxiDataWidth-1:0] cva6_wdata;
-  logic                       cva6_rvalid;
-  logic [top_pkg::AxiDataWidth-1:0] cva6_rdata;
-  logic                       cva6_dw_req;
-  logic                       cva6_dw_gnt;
-  logic                       cva6_dw_we;
-  logic [(TlDataWidth/8)-1:0] cva6_dw_be;
-  logic [top_pkg::TL_AW-1:0]  cva6_dw_addr;
-  logic [TlDataWidth-1:0]     cva6_dw_wdata;
-  logic [TlIntgWidth-1:0]     cva6_dw_wdata_intg;
-  logic                       cva6_dw_rvalid;
-  logic [TlDataWidth-1:0]     cva6_dw_rdata;
+  // AXI crossbar configuration
+  localparam axi_pkg::xbar_cfg_t xbar_cfg = '{
+    NoSlvPorts:         32'd1,  // 1 master
+    NoMstPorts:         32'd2,  // 2 devices
+    MaxMstTrans:        32'd10,
+    MaxSlvTrans:        32'd6,
+    FallThrough:        1'b0,
+    LatencyMode:        axi_pkg::CUT_ALL_AX,
+    PipelineStages:     32'd1,
+    AxiIdWidthSlvPorts: 32'd5,
+    AxiIdUsedSlvPorts:  32'd1,
+    UniqueIds:          1'b0,
+    AxiAddrWidth:       32'd32,
+    AxiDataWidth:       AxiDataWidth/8, // In bytes
+    NoAddrRules:        32'd2
+  };
+
+  axi_pkg::xbar_rule_32_t [xbar_cfg.NoAddrRules-1:0] addr_map;
+  assign addr_map = '{
+    '{ idx: unsigned'(0), start_addr: 32'h00100000, end_addr: 32'h00100000 + 32'h20000 },
+    '{ idx: unsigned'(1), start_addr: 32'h80000000, end_addr: 32'h80000000 + 32'h1000  }
+  };
+
+  // TileLink signals.
+  tlul_pkg::tl_h2d_t tl_uart_h2d;
+  tlul_pkg::tl_d2h_t tl_uart_d2h;
+
+  // 64-bit memory format signals
+  logic                                 mem64_sram_req;
+  logic                                 mem64_sram_gnt;
+  logic                                 mem64_sram_we;
+  logic [(top_pkg::AxiDataWidth/8)-1:0] mem64_sram_be;
+  logic [top_pkg::AxiAddrWidth-1:0]     mem64_sram_addr;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_sram_wdata;
+  logic                                 mem64_sram_rvalid;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_sram_rdata;
+  logic                                 mem64_uart_req;
+  logic                                 mem64_uart_gnt;
+  logic                                 mem64_uart_we;
+  logic [(top_pkg::AxiDataWidth/8)-1:0] mem64_uart_be;
+  logic [top_pkg::AxiAddrWidth-1:0]     mem64_uart_addr;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_uart_wdata;
+  logic                                 mem64_uart_rvalid;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_uart_rdata;
+
+  // 32-bit memory format signals
   logic                       sram_data_req;
   logic                       sram_data_we;
   logic [SramAddrWidth-1:0]   sram_data_addr;
@@ -68,9 +96,30 @@ module top_chip_system #(
   logic [TlDataWidth-1:0]     sram_data_wdata;
   logic                       sram_data_rvalid;
   logic [TlDataWidth-1:0]     sram_data_rdata;
+  logic                       mem32_sram_req;
+  logic                       mem32_sram_gnt;
+  logic                       mem32_sram_we;
+  logic [(TlDataWidth/8)-1:0] mem32_sram_be;
+  logic [top_pkg::TL_AW-1:0]  mem32_sram_addr;
+  logic [TlDataWidth-1:0]     mem32_sram_wdata;
+  logic [TlIntgWidth-1:0]     mem32_sram_wdata_intg;
+  logic                       mem32_sram_rvalid;
+  logic [TlDataWidth-1:0]     mem32_sram_rdata;
+  logic                       mem32_uart_req;
+  logic                       mem32_uart_gnt;
+  logic                       mem32_uart_we;
+  logic [(TlDataWidth/8)-1:0] mem32_uart_be;
+  logic [top_pkg::TL_AW-1:0]  mem32_uart_addr;
+  logic [TlDataWidth-1:0]     mem32_uart_wdata;
+  logic [TlIntgWidth-1:0]     mem32_uart_wdata_intg;
+  logic                       mem32_uart_rvalid;
+  logic [TlDataWidth-1:0]     mem32_uart_rdata;
 
-  top_pkg::axi_req_t  cva6_axi_req;
-  top_pkg::axi_resp_t cva6_axi_resp;
+  // AXI signals
+  top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_master_req;
+  top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_master_resp;
+  top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
+  top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -94,8 +143,8 @@ module top_chip_system #(
     .rvfi_probes_o ( ),
     .cvxif_req_o   ( ),
     .cvxif_resp_i  ('0),
-    .noc_req_o     (cva6_axi_req),
-    .noc_resp_i    (cva6_axi_resp)
+    .noc_req_o     (xbar_master_req[0]),
+    .noc_resp_i    (xbar_master_resp[0])
   );
 
   // Instantiate our UART block.
@@ -154,40 +203,45 @@ module top_chip_system #(
   // Single-cycle read response.
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      sram_data_rvalid  <= '0;
+      sram_data_rvalid <= '0;
     end else begin
-      sram_data_rvalid <= sram_data_req & ~sram_data_we;
+      sram_data_rvalid <= sram_data_req; // Generate rvalid strobes even for writes
     end
   end
 
-  // TileLink signals.
-  tlul_pkg::tl_h2d_t tl_cva6_lsu_h2d;
-  tlul_pkg::tl_d2h_t tl_cva6_lsu_d2h;
-  tlul_pkg::tl_h2d_t tl_sram_h2d;
-  tlul_pkg::tl_d2h_t tl_sram_d2h;
-  tlul_pkg::tl_h2d_t tl_uart_h2d;
-  tlul_pkg::tl_d2h_t tl_uart_d2h;
-
-  // Our main peripheral bus.
-  xbar_peri xbar (
-    // Clock and reset.
-    .clk_i,
-    .rst_ni,
-
-    // Host interfaces.
-    .tl_ibex_lsu_i (tl_cva6_lsu_h2d),
-    .tl_ibex_lsu_o (tl_cva6_lsu_d2h),
-
-    // Device interfaces.
-    .tl_sram_o (tl_sram_h2d),
-    .tl_sram_i (tl_sram_d2h),
-    .tl_uart_o (tl_uart_h2d),
-    .tl_uart_i (tl_uart_d2h),
-
-    .scanmode_i (prim_mubi_pkg::MuBi4False)
+  // Primary AXI crossbar
+  axi_xbar #(
+    .Cfg          (xbar_cfg               ),
+    .ATOPs        (1'b0                   ),
+    .Connectivity ('1                     ),
+    .slv_aw_chan_t(top_pkg::axi_aw_chan_t ),
+    .mst_aw_chan_t(top_pkg::axi_aw_chan_t ),
+    .w_chan_t     (top_pkg::axi_w_chan_t  ),
+    .slv_b_chan_t (top_pkg::axi_b_chan_t  ),
+    .mst_b_chan_t (top_pkg::axi_b_chan_t  ),
+    .slv_ar_chan_t(top_pkg::axi_ar_chan_t ),
+    .mst_ar_chan_t(top_pkg::axi_ar_chan_t ),
+    .slv_r_chan_t (top_pkg::axi_r_chan_t  ),
+    .mst_r_chan_t (top_pkg::axi_r_chan_t  ),
+    .slv_req_t    (top_pkg::axi_req_t     ),
+    .slv_resp_t   (top_pkg::axi_resp_t    ),
+    .mst_req_t    (top_pkg::axi_req_t     ),
+    .mst_resp_t   (top_pkg::axi_resp_t    ),
+    .rule_t       (axi_pkg::xbar_rule_32_t)
+  ) u_axi_xbar (
+    .clk_i                (clk_i),
+    .rst_ni               (rst_ni),
+    .test_i               (1'b0),
+    .slv_ports_req_i      (xbar_master_req),
+    .slv_ports_resp_o     (xbar_master_resp),
+    .mst_ports_req_o      (xbar_device_req),
+    .mst_ports_resp_i     (xbar_device_resp),
+    .addr_map_i           (addr_map),
+    .en_default_mst_port_i('0),
+    .default_mst_port_i   ('0)
   );
 
-  // Convert AXI to memory signals.
+  // AXI to 64-bit mem for SRAM
   axi_to_mem #(
     .axi_req_t  ( top_pkg::axi_req_t    ),
     .axi_resp_t ( top_pkg::axi_resp_t   ),
@@ -195,193 +249,151 @@ module top_chip_system #(
     .DataWidth  ( top_pkg::AxiDataWidth ),
     .IdWidth    ( top_pkg::AxiIdWidth   ),
     .NumBanks   ( 1                     )
-  ) cva6_axi_to_mem (
+  ) u_sram_axi_to_mem (
     .clk_i  (clk_i),
     .rst_ni (rst_ni),
 
     // AXI interface.
     .busy_o     ( ),
-    .axi_req_i  (cva6_axi_req),
-    .axi_resp_o (cva6_axi_resp),
+    .axi_req_i  (xbar_device_req[0]),
+    .axi_resp_o (xbar_device_resp[0]),
 
     // Memory interface.
-    .mem_req_o    (cva6_req),
-    .mem_gnt_i    (cva6_gnt),
-    .mem_addr_o   (cva6_addr),
-    .mem_wdata_o  (cva6_wdata),
-    .mem_strb_o   (cva6_be),
+    .mem_req_o    (mem64_sram_req),
+    .mem_gnt_i    (mem64_sram_gnt),
+    .mem_addr_o   (mem64_sram_addr),
+    .mem_wdata_o  (mem64_sram_wdata),
+    .mem_strb_o   (mem64_sram_be),
     .mem_atop_o   ( ),
-    .mem_we_o     (cva6_we),
-    .mem_rvalid_i (cva6_rvalid),
-    .mem_rdata_i  (cva6_rdata)
+    .mem_we_o     (mem64_sram_we),
+    .mem_rvalid_i (mem64_sram_rvalid),
+    .mem_rdata_i  (mem64_sram_rdata)
   );
 
-  // Send side downsizer
-  logic                                 dw_valid;   // Has valid transaction
-  logic                                 dw_first_done;
-  logic     [top_pkg::AxiAddrWidth-1:0] dw_store_addr;
-  logic     [top_pkg::AxiDataWidth-1:0] dw_store_wdata;
-  logic                                 dw_store_we;
-  logic [(top_pkg::AxiDataWidth/8)-1:0] dw_store_be;
+  // 64-bit mem to 32-bit mem for SRAM
+  mem_downsizer u_sram_mem_downsizer (
+    .clk_i(clk_i),
+    .rst_ni(rst_ni),
 
-  assign cva6_gnt = dw_valid; // Grant when empty, otherwise process existing transaction
+    // 64-bit memory request in
+    .mem64_req_i   (mem64_sram_req),
+    .mem64_gnt_o   (mem64_sram_gnt),
+    .mem64_we_i    (mem64_sram_we),
+    .mem64_be_i    (mem64_sram_be),
+    .mem64_addr_i  (mem64_sram_addr),
+    .mem64_wdata_i (mem64_sram_wdata),
+    .mem64_rvalid_o(mem64_sram_rvalid),
+    .mem64_rdata_o (mem64_sram_rdata),
 
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      dw_valid <= 0;
-      dw_first_done <= 0;
-
-      cva6_dw_req <= 0; // No req when empty
-      cva6_dw_we  <= '0;
-      cva6_dw_be  <= '0;
-      cva6_dw_addr  <= '0;
-      cva6_dw_wdata <= '0;
-    end else if (!dw_valid && cva6_req) begin // New request
-      dw_valid <= 1;
-      dw_first_done <= 0; // have not done first 32 bits
-
-      // Store transaction information
-      dw_store_addr <= cva6_addr;
-      dw_store_wdata <= cva6_wdata;
-      dw_store_we <= cva6_we;
-      dw_store_be <= cva6_be;
-
-      cva6_dw_req <= 0;
-      cva6_dw_we  <= '0;
-      cva6_dw_be  <= '0;
-      cva6_dw_addr  <= '0;
-      cva6_dw_wdata <= '0;
-    end else if (dw_valid && !cva6_dw_req && !dw_first_done) begin // Valid transaction, no untaken output, but have not started first 32 bits
-      // Start first 32 bits
-      cva6_dw_req <= 1;
-      cva6_dw_addr <= dw_store_addr[31:0];
-      cva6_dw_wdata <= dw_store_wdata[31:0];
-      cva6_dw_we  <= dw_store_we;
-      cva6_dw_be <= dw_store_be[3:0];
-    end else if (dw_valid && cva6_dw_req && cva6_dw_gnt && !dw_first_done) begin // Valid transaction, first output just taken
-      dw_first_done <= 1; // First 32 bits is done
-      // Clear output
-      cva6_dw_req <= 0;
-      cva6_dw_we  <= '0;
-      cva6_dw_be  <= '0;
-      cva6_dw_addr  <= '0;
-      cva6_dw_wdata <= '0;
-    end else if (dw_valid && !cva6_dw_req && dw_first_done) begin // Valid transaction, no untaken output, first 32 bits already done
-      // Start next 32 bits
-      cva6_dw_req <= 1;
-      cva6_dw_addr <= dw_store_addr[31:0] + 4;
-      cva6_dw_wdata <= dw_store_wdata[63:32];
-      cva6_dw_we  <= dw_store_we;
-      cva6_dw_be <= dw_store_be[7:4];
-    end else if (dw_valid && cva6_dw_req && cva6_dw_gnt && dw_first_done) begin // Valid transaction, second output just taken
-      // transaction done
-      dw_valid <= 0;
-      dw_first_done <= 0;
-
-      // Clear output
-      cva6_dw_req <= 0;
-      cva6_dw_we  <= '0;
-      cva6_dw_be  <= '0;
-      cva6_dw_addr  <= '0;
-      cva6_dw_wdata <= '0;
-    end
-  end
-
-  // Receive side upsizer
-  logic        uw_valid;      // Has valid transaction
-  logic [31:0] uw_first32_rdata;
-
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      uw_valid <= 0;
-      // Clear rdata return
-      cva6_rvalid <= 0;
-      cva6_rdata <= '0;
-    end else if (cva6_rvalid) begin // Assert upsized output for only 1 cycle
-      cva6_rvalid <= 0;
-    end else if (!uw_valid && cva6_dw_rvalid) begin // First 32 bits arrive
-      // Store first 32 bits of rdata
-      uw_valid <= 1;
-      uw_first32_rdata <= cva6_dw_rdata;
-    end else if (uw_valid && cva6_dw_rvalid) begin // second 32 bits arrive
-      // Clear transaction
-      uw_valid <= 0;
-      // Set upsized output
-      cva6_rvalid <= 1;
-      cva6_rdata <= {cva6_dw_rdata, uw_first32_rdata};
-    end
-  end
-
-  // generate integrity to host adapter
-  logic [TlDataWidth-1:0] unused_cva6_dw_wdata;
-  prim_secded_inv_39_32_enc u_cva6_dw_intg_gen (
-    .data_i(cva6_dw_wdata),
-    .data_o({cva6_dw_wdata_intg, unused_cva6_dw_wdata})
+    // 32-bit memory request out
+    .mem32_req_o   (mem32_sram_req),
+    .mem32_gnt_i   (mem32_sram_gnt),
+    .mem32_we_o    (mem32_sram_we),
+    .mem32_be_o    (mem32_sram_be),
+    .mem32_addr_o  (mem32_sram_addr),
+    .mem32_wdata_o (mem32_sram_wdata),
+    .mem32_rvalid_i(mem32_sram_rvalid),
+    .mem32_rdata_i (mem32_sram_rdata)
   );
 
-  // TileLink host adapter to connect CVA6 to bus.
-  tlul_adapter_host #(
-    .EnableDataIntgGen      ( 1 ),
-    .EnableRspDataIntgCheck ( 1 )
-  ) cva6_tlul_host_adapter (
+  // 32-bit SRAM signal assignments
+  assign sram_data_req   = mem32_sram_req;
+  assign mem32_sram_gnt  = 1'b1;
+  assign sram_data_addr  = (mem32_sram_addr ^ 32'h00100000) >> 2; // Remove base offset and convert byte address to word address
+  assign sram_data_we    = mem32_sram_we;
+  assign sram_data_wdata = mem32_sram_wdata;
+  always_comb begin
+    if (!sram_data_we) begin
+      sram_data_wmask = '1;
+    end else begin
+      for (int i=0; i < (TlDataWidth/8); ++i) begin
+        sram_data_wmask[i*8 +: 8] = {8{mem32_sram_be[i]}};
+      end
+    end
+  end
+  assign mem32_sram_rvalid = sram_data_rvalid;
+  assign mem32_sram_rdata  = sram_data_rdata;
+
+  // AXI to 64-bit mem for UART
+  axi_to_mem #(
+    .axi_req_t  ( top_pkg::axi_req_t    ),
+    .axi_resp_t ( top_pkg::axi_resp_t   ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth ),
+    .DataWidth  ( top_pkg::AxiDataWidth ),
+    .IdWidth    ( top_pkg::AxiIdWidth   ),
+    .NumBanks   ( 1                     )
+  ) u_uart_axi_to_mem (
     .clk_i  (clk_i),
     .rst_ni (rst_ni),
 
-    .req_i        (cva6_dw_req),
-    .gnt_o        (cva6_dw_gnt),
-    .addr_i       (cva6_dw_addr),
-    .we_i         (cva6_dw_we),
-    .wdata_i      (cva6_dw_wdata),
-    .wdata_intg_i (cva6_dw_wdata_intg),
-    .be_i         (cva6_dw_be),
+    // AXI interface.
+    .busy_o     ( ),
+    .axi_req_i  (xbar_device_req[1]),
+    .axi_resp_o (xbar_device_resp[1]),
+
+    // Memory interface.
+    .mem_req_o    (mem64_uart_req),
+    .mem_gnt_i    (mem64_uart_gnt),
+    .mem_addr_o   (mem64_uart_addr),
+    .mem_wdata_o  (mem64_uart_wdata),
+    .mem_strb_o   (mem64_uart_be),
+    .mem_atop_o   ( ),
+    .mem_we_o     (mem64_uart_we),
+    .mem_rvalid_i (mem64_uart_rvalid),
+    .mem_rdata_i  (mem64_uart_rdata)
+  );
+
+  // 64-bit mem to 32-bit mem for UART
+  mem_downsizer u_uart_mem_downsizer (
+    .clk_i(clk_i),
+    .rst_ni(rst_ni),
+
+    // 64-bit memory request in
+    .mem64_req_i   (mem64_uart_req),
+    .mem64_gnt_o   (mem64_uart_gnt),
+    .mem64_we_i    (mem64_uart_we),
+    .mem64_be_i    (mem64_uart_be),
+    .mem64_addr_i  (mem64_uart_addr),
+    .mem64_wdata_i (mem64_uart_wdata),
+    .mem64_rvalid_o(mem64_uart_rvalid),
+    .mem64_rdata_o (mem64_uart_rdata),
+
+    // 32-bit memory request out
+    .mem32_req_o   (mem32_uart_req),
+    .mem32_gnt_i   (mem32_uart_gnt),
+    .mem32_we_o    (mem32_uart_we),
+    .mem32_be_o    (mem32_uart_be),
+    .mem32_addr_o  (mem32_uart_addr),
+    .mem32_wdata_o (mem32_uart_wdata),
+    .mem32_rvalid_i(mem32_uart_rvalid),
+    .mem32_rdata_i (mem32_uart_rdata)
+  );
+
+  // 32-bit mem to TLUL for UART
+  tlul_adapter_host #(
+    .EnableDataIntgGen      ( 1 ),
+    .EnableRspDataIntgCheck ( 1 )
+  ) u_uart_tlul_host_adapter (
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    .req_i        (mem32_uart_req),
+    .gnt_o        (mem32_uart_gnt),
+    .addr_i       (mem32_uart_addr),
+    .we_i         (mem32_uart_we),
+    .wdata_i      (mem32_uart_wdata),
+    .wdata_intg_i (mem32_uart_wdata_intg),
+    .be_i         (mem32_uart_be),
     .instr_type_i (prim_mubi_pkg::MuBi4False),
     .user_rsvd_i  ('0),
 
-    .valid_o      (cva6_dw_rvalid),
-    .rdata_o      (cva6_dw_rdata),
+    .valid_o      (mem32_uart_rvalid),
+    .rdata_o      (mem32_uart_rdata),
     .rdata_intg_o ( ),
     .err_o        ( ),
     .intg_err_o   ( ),
 
-    .tl_o         (tl_cva6_lsu_h2d),
-    .tl_i         (tl_cva6_lsu_d2h)
-  );
-
-  // TileLink device adapter to connect SRAM to bus.
-  tlul_adapter_sram #(
-    .SramAw            ( SramAddrWidth ),
-    .EnableRspIntgGen  ( 1             ),
-    .EnableDataIntgGen ( 1             )
-  ) sram_device_adapter (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
-
-    // TL-UL interface.
-    .tl_i        (tl_sram_h2d),
-    .tl_o        (tl_sram_d2h),
-
-    // Control interface.
-    .en_ifetch_i (prim_mubi_pkg::MuBi4True),
-
-    // SRAM interface.
-    .req_o        (sram_data_req),
-    .req_type_o   ( ),
-    .gnt_i        (sram_data_req),
-    .we_o         (sram_data_we),
-    .addr_o       (sram_data_addr),
-    .wdata_o      (sram_data_wdata),
-    .wmask_o      (sram_data_wmask),
-    .intg_error_o ( ),
-    .user_rsvd_o  ( ),
-    .rdata_i      (sram_data_rdata),
-    .rvalid_i     (sram_data_rvalid),
-    .rerror_i     (2'b00),
-
-    // Readback functionality not required.
-    .compound_txn_in_progress_o (),
-    .readback_en_i              (prim_mubi_pkg::MuBi4False),
-    .readback_error_o           (),
-    .wr_collision_i             (1'b0),
-    .write_pending_i            (1'b0)
+    .tl_o         (tl_uart_h2d),
+    .tl_i         (tl_uart_d2h)
   );
 endmodule
