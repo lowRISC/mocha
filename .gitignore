@@ -6,4 +6,5 @@ build
 # Simulator outputs.
 performance_counters.csv
 sim.fst
+trace_hart_0.dasm
 uart0.log
