@@ -5,6 +5,7 @@
 package top_pkg;
   import axi_pkg::*;
 
+  // TileLink parameters
   localparam int TL_AW  = 32;
   localparam int TL_DW  = 32; // = TL_DBW * 8; TL_DBW must be a power-of-two
   localparam int TL_AIW = 8; // a_source, d_source
@@ -14,12 +15,34 @@ package top_pkg;
   localparam int TL_DBW = (TL_DW>>3);
   localparam int TL_SZW = $clog2($clog2(TL_DBW)+1);
 
+  // AXI crossbar parameters
+  localparam int AxiXbarHosts   = 1;
+  localparam int AxiXbarDevices = 2;
+
+  // AXI crossbar devices
+  typedef enum int unsigned {
+    SRAM       = 0,
+    TlCrossbar = 1
+  } axi_devices_t;
+
+  typedef enum int unsigned {
+    SRAMBase       = 32'h00100000,
+    TlCrossbarBase = 32'h80000000
+  } axi_addr_start_t;
+
+  typedef enum int unsigned {
+    SRAMLength       = 32'h00020000,
+    TlCrossbarLength = 32'h00001000
+  } axi_addr_length_t;
+
+  // AXI parameters
   localparam AxiIdWidth   = cva6_config_pkg::CVA6ConfigAxiIdWidth;
   localparam AxiUserWidth = cva6_config_pkg::CVA6ConfigDataUserWidth;
   localparam AxiAddrWidth = cva6_config_pkg::CVA6ConfigAxiAddrWidth;
   localparam AxiDataWidth = cva6_config_pkg::CVA6ConfigAxiDataWidth;
   localparam AxiStrbWidth = AxiDataWidth / 8;
 
+  // AXI data types
   typedef logic [AxiIdWidth-1:0]   id_t;
   typedef logic [AxiAddrWidth-1:0] addr_t;
   typedef logic [AxiDataWidth-1:0] data_t;

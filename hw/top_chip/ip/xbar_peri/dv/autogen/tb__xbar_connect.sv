@@ -14,8 +14,7 @@ initial force dut.clk_i = clk_i;
 initial force dut.rst_ni = rst_n;
 
 // Host TileLink interface connections
-`CONNECT_TL_HOST_IF(ibex_lsu, dut, clk_i, rst_n)
+`CONNECT_TL_HOST_IF(axi_xbar, dut, clk_i, rst_n)
 
 // Device TileLink interface connections
-`CONNECT_TL_DEVICE_IF(sram, dut, clk_i, rst_n)
 `CONNECT_TL_DEVICE_IF(uart, dut, clk_i, rst_n)

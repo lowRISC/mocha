@@ -6,20 +6,14 @@
 module xbar_peri_bind;
 `ifndef GATE_LEVEL
   // Host interfaces
-  bind xbar_peri tlul_assert #(.EndpointType("Device")) tlul_assert_host_ibex_lsu (
+  bind xbar_peri tlul_assert #(.EndpointType("Device")) tlul_assert_host_axi_xbar (
     .clk_i  (clk_i),
     .rst_ni (rst_ni),
-    .h2d    (tl_ibex_lsu_i),
-    .d2h    (tl_ibex_lsu_o)
+    .h2d    (tl_axi_xbar_i),
+    .d2h    (tl_axi_xbar_o)
   );
 
   // Device interfaces
-  bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_sram (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
-    .h2d    (tl_sram_o),
-    .d2h    (tl_sram_i)
-  );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_uart (
     .clk_i  (clk_i),
     .rst_ni (rst_ni),

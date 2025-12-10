@@ -19,10 +19,6 @@ module top_chip_system #(
   localparam int unsigned TlIntgWidth   = 7;
   localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
-  localparam int unsigned AxiDataWidth  = top_pkg::AxiDataWidth;
-
-  // Memory map
-  localparam logic [AxiDataWidth-1:0] SRAMBase   = AxiDataWidth'(tl_peri_pkg::ADDR_SPACE_SRAM);
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
@@ -31,7 +27,7 @@ module top_chip_system #(
     cfg.CvxifEn = bit'(0);
     cfg.NrNonIdempotentRules = unsigned'(1);
     cfg.NonIdempotentAddrBase = 1024'({64'b0});
-    cfg.NonIdempotentLength = 1024'({SRAMBase});
+    cfg.NonIdempotentLength = 1024'({top_pkg::SRAMBase});
     return build_config_pkg::build_config(cfg);
   endfunction
 
@@ -39,14 +35,14 @@ module top_chip_system #(
   cva6_cheri_pkg::cap_pcc_t boot_cap;
   always_comb begin : gen_boot_cap
     boot_cap = cva6_cheri_pkg::PCC_ROOT_CAP;
-    boot_cap.addr = SRAMBase + 'h80;
+    boot_cap.addr = top_pkg::SRAMBase + 'h80;
     boot_cap.flags.int_mode = 1'b1;
   end
 
   // AXI crossbar configuration
   localparam axi_pkg::xbar_cfg_t xbar_cfg = '{
-    NoSlvPorts:         32'd1,  // 1 master
-    NoMstPorts:         32'd2,  // 2 devices
+    NoSlvPorts:         int'(top_pkg::AxiXbarHosts),
+    NoMstPorts:         int'(top_pkg::AxiXbarDevices),
     MaxMstTrans:        32'd10,
     MaxSlvTrans:        32'd6,
     FallThrough:        1'b0,
@@ -56,17 +52,20 @@ module top_chip_system #(
     AxiIdUsedSlvPorts:  32'd1,
     UniqueIds:          1'b0,
     AxiAddrWidth:       int'(top_pkg::AxiAddrWidth),
-    AxiDataWidth:       AxiDataWidth / 8, // In bytes
-    NoAddrRules:        32'd2
+    AxiDataWidth:       int'(top_pkg::AxiDataWidth / 8), // In bytes
+    NoAddrRules:        int'(top_pkg::AxiXbarDevices)
   };
 
+  // AXI crossbar address mapping
   axi_pkg::xbar_rule_32_t [xbar_cfg.NoAddrRules-1:0] addr_map;
   assign addr_map = '{
-    '{ idx: unsigned'(0), start_addr: 32'h00100000, end_addr: 32'h00100000 + 32'h20000 },
-    '{ idx: unsigned'(1), start_addr: 32'h80000000, end_addr: 32'h80000000 + 32'h1000  }
+    '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
+    '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength }
   };
 
   // TileLink signals.
+  tlul_pkg::tl_h2d_t tl_axi_xbar_h2d;
+  tlul_pkg::tl_d2h_t tl_axi_xbar_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
 
@@ -264,7 +263,8 @@ module top_chip_system #(
   // 64-bit SRAM signal assignments
   assign sram_data_req   = mem64_sram_req;
   assign mem64_sram_gnt  = 1'b1;
-  assign sram_data_addr  = (mem64_sram_addr ^ 32'h00100000) >> 3; // Remove base offset and convert byte address to 64-bit word address
+  // Remove base offset and convert byte address to 64-bit word address
+  assign sram_data_addr  = (mem64_sram_addr ^ top_pkg::SRAMBase) >> 3;
   assign sram_data_we    = mem64_sram_we;
   assign sram_data_wdata = mem64_sram_wdata;
   always_comb begin
@@ -354,7 +354,24 @@ module top_chip_system #(
     .err_o        ( ),
     .intg_err_o   ( ),
 
-    .tl_o         (tl_uart_h2d),
-    .tl_i         (tl_uart_d2h)
+    .tl_o         (tl_axi_xbar_h2d),
+    .tl_i         (tl_axi_xbar_d2h)
+  );
+
+  // TileLink peripheral crossbar
+  xbar_peri u_tl_xbar (
+    // Clock and reset.
+    .clk_i,
+    .rst_ni,
+
+    // Host interfaces.
+    .tl_axi_xbar_i(tl_axi_xbar_h2d),
+    .tl_axi_xbar_o(tl_axi_xbar_d2h),
+
+    // Device interfaces.
+    .tl_uart_o(tl_uart_h2d),
+    .tl_uart_i(tl_uart_d2h),
+
+    .scanmode_i (prim_mubi_pkg::MuBi4False)
   );
 endmodule

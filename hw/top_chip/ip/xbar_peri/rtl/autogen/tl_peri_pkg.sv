@@ -6,22 +6,19 @@
 
 package tl_peri_pkg;
 
-  localparam logic [31:0] ADDR_SPACE_SRAM = 32'h 00100000;
   localparam logic [31:0] ADDR_SPACE_UART = 32'h 80000000;
 
-  localparam logic [31:0] ADDR_MASK_SRAM = 32'h 0001ffff;
   localparam logic [31:0] ADDR_MASK_UART = 32'h 00000fff;
 
   localparam int N_HOST   = 1;
-  localparam int N_DEVICE = 2;
+  localparam int N_DEVICE = 1;
 
   typedef enum int {
-    TlSram = 0,
-    TlUart = 1
+    TlUart = 0
   } tl_device_e;
 
   typedef enum int {
-    TlIbexLsu = 0
+    TlAxiXbar = 0
   } tl_host_e;
 
 endpackage

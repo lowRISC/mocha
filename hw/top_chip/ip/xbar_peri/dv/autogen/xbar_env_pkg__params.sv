@@ -7,16 +7,12 @@
 
 // List of Xbar device memory map
 tl_device_t xbar_devices[$] = '{
-    '{"sram", '{
-        '{32'h00100000, 32'h0011ffff}
-    }},
     '{"uart", '{
         '{32'h80000000, 32'h80000fff}
 }}};
 
   // List of Xbar hosts
 tl_host_t xbar_hosts[$] = '{
-    '{"ibex_lsu", 0, '{
-        "sram",
+    '{"axi_xbar", 0, '{
         "uart"}}
 };

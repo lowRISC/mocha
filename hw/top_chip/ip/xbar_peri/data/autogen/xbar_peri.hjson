@@ -14,17 +14,11 @@
     // host
     { struct: "tl"
       type:   "req_rsp"
-      name:   "tl_ibex_lsu"
+      name:   "tl_axi_xbar"
       act:    "rsp"
       package: "tlul_pkg"
     }
     // device
-    { struct: "tl"
-      type:   "req_rsp"
-      name:   "tl_sram"
-      act:    "req"
-      package: "tlul_pkg"
-    }
     { struct: "tl"
       type:   "req_rsp"
       name:   "tl_uart"

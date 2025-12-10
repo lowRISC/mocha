@@ -6,9 +6,8 @@
 // all reset signals should be generated from one reset signal to not make any deadlock
 //
 // Interconnect
-// ibex_lsu
-//   -> s1n_3
-//     -> sram
+// axi_xbar
+//   -> s1n_2
 //     -> uart
 
 module xbar_peri (
@@ -16,12 +15,10 @@ module xbar_peri (
   input rst_ni,
 
   // Host interfaces
-  input  tlul_pkg::tl_h2d_t tl_ibex_lsu_i,
-  output tlul_pkg::tl_d2h_t tl_ibex_lsu_o,
+  input  tlul_pkg::tl_h2d_t tl_axi_xbar_i,
+  output tlul_pkg::tl_d2h_t tl_axi_xbar_o,
 
   // Device interfaces
-  output tlul_pkg::tl_h2d_t tl_sram_o,
-  input  tlul_pkg::tl_d2h_t tl_sram_i,
   output tlul_pkg::tl_h2d_t tl_uart_o,
   input  tlul_pkg::tl_d2h_t tl_uart_i,
 
@@ -36,37 +33,30 @@ module xbar_peri (
   logic unused_scanmode;
   assign unused_scanmode = ^scanmode_i;
 
-  tl_h2d_t tl_s1n_3_us_h2d ;
-  tl_d2h_t tl_s1n_3_us_d2h ;
+  tl_h2d_t tl_s1n_2_us_h2d ;
+  tl_d2h_t tl_s1n_2_us_d2h ;
 
 
-  tl_h2d_t tl_s1n_3_ds_h2d [2];
-  tl_d2h_t tl_s1n_3_ds_d2h [2];
+  tl_h2d_t tl_s1n_2_ds_h2d [1];
+  tl_d2h_t tl_s1n_2_ds_d2h [1];
 
   // Create steering signal
-  logic [1:0] dev_sel_s1n_3;
+  logic [0:0] dev_sel_s1n_2;
 
 
 
-  assign tl_sram_o = tl_s1n_3_ds_h2d[0];
-  assign tl_s1n_3_ds_d2h[0] = tl_sram_i;
+  assign tl_uart_o = tl_s1n_2_ds_h2d[0];
+  assign tl_s1n_2_ds_d2h[0] = tl_uart_i;
 
-  assign tl_uart_o = tl_s1n_3_ds_h2d[1];
-  assign tl_s1n_3_ds_d2h[1] = tl_uart_i;
-
-  assign tl_s1n_3_us_h2d = tl_ibex_lsu_i;
-  assign tl_ibex_lsu_o = tl_s1n_3_us_d2h;
+  assign tl_s1n_2_us_h2d = tl_axi_xbar_i;
+  assign tl_axi_xbar_o = tl_s1n_2_us_d2h;
 
   always_comb begin
     // default steering to generate error response if address is not within the range
-    dev_sel_s1n_3 = 2'd2;
-    if ((tl_s1n_3_us_h2d.a_address &
-         ~(ADDR_MASK_SRAM)) == ADDR_SPACE_SRAM) begin
-      dev_sel_s1n_3 = 2'd0;
-
-    end else if ((tl_s1n_3_us_h2d.a_address &
-                  ~(ADDR_MASK_UART)) == ADDR_SPACE_UART) begin
-      dev_sel_s1n_3 = 2'd1;
+    dev_sel_s1n_2 = 1'd1;
+    if ((tl_s1n_2_us_h2d.a_address &
+         ~(ADDR_MASK_UART)) == ADDR_SPACE_UART) begin
+      dev_sel_s1n_2 = 1'd0;
 end
   end
 
@@ -75,17 +65,17 @@ end
   tlul_socket_1n #(
     .HReqDepth (4'h0),
     .HRspDepth (4'h0),
-    .DReqDepth (8'h0),
-    .DRspDepth (8'h0),
-    .N         (2)
-  ) u_s1n_3 (
+    .DReqDepth (4'h0),
+    .DRspDepth (4'h0),
+    .N         (1)
+  ) u_s1n_2 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
-    .tl_h_i       (tl_s1n_3_us_h2d),
-    .tl_h_o       (tl_s1n_3_us_d2h),
-    .tl_d_o       (tl_s1n_3_ds_h2d),
-    .tl_d_i       (tl_s1n_3_ds_d2h),
-    .dev_select_i (dev_sel_s1n_3)
+    .tl_h_i       (tl_s1n_2_us_h2d),
+    .tl_h_o       (tl_s1n_2_us_d2h),
+    .tl_d_o       (tl_s1n_2_ds_h2d),
+    .tl_d_i       (tl_s1n_2_ds_d2h),
+    .dev_select_i (dev_sel_s1n_2)
   );
 
 endmodule
