@@ -4,7 +4,7 @@
 {
   description = "CHERI-Mocha is a secure enclave reference design and is part of the COSMIC project.";
   inputs = {
-    lowrisc-nix.url = "github:lowRISC/lowrisc-nix/pull/148/head";
+    lowrisc-nix.url = "github:lowRISC/lowrisc-nix";
 
     nixpkgs.follows = "lowrisc-nix/nixpkgs";
     flake-utils.follows = "lowrisc-nix/flake-utils";

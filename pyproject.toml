@@ -13,8 +13,6 @@ dependencies = [
     "hjson==3.1.0",
     "wheel==0.41.2",
     "pyserial==3.5",
-    "edalize@https://github.com/lowRISC/edalize/archive/refs/tags/v0.4.0.zip",
-    "fusesoc@https://github.com/lowRISC/fusesoc/archive/refs/tags/ot-0.5.dev0.zip",
     "pydantic>=2.8.2,<3",
     "jinja2>=3.1.6,<4",
     "semantic-version>=2.10.0,<3",
@@ -23,6 +21,7 @@ dependencies = [
     "setuptools>=80.9.0",
     "packaging>=25.0",
     "mako>=1.2",
+    "fusesoc==2.4.3",
 ]
 [project.optional-dependencies]
 linting = [
