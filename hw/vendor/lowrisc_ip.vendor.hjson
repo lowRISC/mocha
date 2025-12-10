@@ -35,6 +35,6 @@
     // Simulation.
     {from: "hw/dv/dpi/uartdpi", to: "dv/dpi/uartdpi"},
     {from: "hw/dv/sv",          to: "dv/sv"},
-    {from: "hw/dv/verilator",   to: "dv/verilator"},
+    {from: "hw/dv/verilator",   to: "dv/verilator", patch_dir: "dv_verilator"},
   ]
 }

@@ -1,0 +1,309 @@
+diff --git a/cpp/dpi_memutil.cc b/cpp/dpi_memutil.cc
+index 02e27fd..c11c482 100644
+--- a/cpp/dpi_memutil.cc
++++ b/cpp/dpi_memutil.cc
+@@ -72,8 +72,8 @@ class ElfFile {
+     return phnum;
+   }
+ 
+-  const Elf32_Phdr *GetPhdrs() {
+-    const Elf32_Phdr *phdrs = elf32_getphdr(ptr_);
++  const Elf64_Phdr *GetPhdrs() {
++    const Elf64_Phdr *phdrs = elf64_getphdr(ptr_);
+     if (!phdrs)
+       throw ElfError(path_, elf_errmsg(-1));
+     return phdrs;
+@@ -130,7 +130,7 @@ static std::vector<uint8_t> FlattenElfFile(const std::string &filepath) {
+   ElfFile elf(filepath);
+ 
+   size_t phnum = elf.GetPhdrNum();
+-  const Elf32_Phdr *phdrs = elf.GetPhdrs();
++  const Elf64_Phdr *phdrs = elf.GetPhdrs();
+ 
+   // To mimic what objcopy does (that is, the binary target of BFD), we need to
+   // iterate over all loadable program headers, find the lowest address, and
+@@ -138,9 +138,9 @@ static std::vector<uint8_t> FlattenElfFile(const std::string &filepath) {
+   // found base address.
+ 
+   bool any = false;
+-  Elf32_Addr low = 0, high = 0;
++  Elf64_Addr low = 0, high = 0;
+   for (size_t i = 0; i < phnum; i++) {
+-    const Elf32_Phdr &phdr = phdrs[i];
++    const Elf64_Phdr &phdr = phdrs[i];
+ 
+     if (phdr.p_type != PT_LOAD) {
+       std::cout << "Program header number " << i << " in `" << filepath
+@@ -156,7 +156,7 @@ static std::vector<uint8_t> FlattenElfFile(const std::string &filepath) {
+       low = phdr.p_paddr;
+     }
+ 
+-    Elf32_Addr seg_top = phdr.p_paddr + (phdr.p_filesz - 1);
++    Elf64_Addr seg_top = phdr.p_paddr + (phdr.p_filesz - 1);
+     if (seg_top < phdr.p_paddr) {
+       std::ostringstream oss;
+       oss << "phdr for segment " << i << " has start 0x" << std::hex
+@@ -188,7 +188,7 @@ static std::vector<uint8_t> FlattenElfFile(const std::string &filepath) {
+   StagedMem ret;
+ 
+   for (size_t i = 0; i < phnum; i++) {
+-    const Elf32_Phdr &phdr = phdrs[i];
++    const Elf64_Phdr &phdr = phdrs[i];
+ 
+     if (phdr.p_type != PT_LOAD) {
+       continue;
+@@ -206,7 +206,7 @@ static std::vector<uint8_t> FlattenElfFile(const std::string &filepath) {
+     if (phdr.p_filesz == 0)
+       continue;
+ 
+-    uint32_t off = phdr.p_paddr - low;
++    uint64_t off = phdr.p_paddr - low;
+     std::vector<uint8_t> seg(phdr.p_filesz, 0);
+     memcpy(&seg[0], file_data + phdr.p_offset, phdr.p_filesz);
+     ret.AddSegment(off, std::move(seg));
+@@ -218,9 +218,9 @@ static std::vector<uint8_t> FlattenElfFile(const std::string &filepath) {
+ // Merge seg0 and seg1, overwriting any overlapping data in seg0 with
+ // that from seg1. rng0/rng1 is the base and top address of seg0/seg1,
+ // respectively.
+-static std::vector<uint8_t> MergeSegments(const AddrRange<uint32_t> &rng0,
++static std::vector<uint8_t> MergeSegments(const AddrRange<uint64_t> &rng0,
+                                           std::vector<uint8_t> &&seg0,
+-                                          const AddrRange<uint32_t> &rng1,
++                                          const AddrRange<uint64_t> &rng1,
+                                           std::vector<uint8_t> &&seg1) {
+   // First, deal with the special case where seg1 completely contains
+   // seg0 (since there's no copying needed at all).
+@@ -228,8 +228,8 @@ static std::vector<uint8_t> MergeSegments(const AddrRange<uint32_t> &rng0,
+     return std::move(seg1);
+   }
+ 
+-  uint32_t new_bot = std::min(rng0.lo, rng1.lo);
+-  uint32_t new_top = std::max(rng0.hi, rng1.hi);
++  uint64_t new_bot = std::min(rng0.lo, rng1.lo);
++  uint64_t new_top = std::max(rng0.hi, rng1.hi);
+   assert(new_bot <= new_top);
+   size_t new_len = 1 + (size_t)(new_top - new_bot);
+   assert(seg0.size() <= new_len);
+@@ -257,7 +257,7 @@ static std::vector<uint8_t> MergeSegments(const AddrRange<uint32_t> &rng0,
+     // src_off is the index of the first byte that needs copying from
+     // seg0. Note that this is always at least 1 (because there is an
+     // actual overlap).
+-    uint32_t src_off = 1 + (rng1.hi - rng0.lo);
++    uint64_t src_off = 1 + (rng1.hi - rng0.lo);
+ 
+     assert(seg0.size() == src_off + (rng0.hi - rng1.hi));
+ 
+@@ -272,16 +272,16 @@ static std::vector<uint8_t> MergeSegments(const AddrRange<uint32_t> &rng0,
+   std::vector<uint8_t> ret = std::move(seg0);
+   ret.resize(new_len);
+ 
+-  uint32_t off = rng1.lo - rng0.lo;
++  uint64_t off = rng1.lo - rng0.lo;
+   memcpy(&ret[off], &seg1[0], seg1.size());
+   return ret;
+ }
+ 
+-void StagedMem::AddSegment(uint32_t offset, std::vector<uint8_t> &&seg) {
++void StagedMem::AddSegment(uint64_t offset, std::vector<uint8_t> &&seg) {
+   if (seg.empty())
+     return;
+ 
+-  uint32_t seg_top = offset + seg.size() - 1;
++  uint64_t seg_top = offset + seg.size() - 1;
+   assert(seg_top >= offset);
+ 
+   min_addr_ = std::min(min_addr_, offset);
+@@ -297,12 +297,12 @@ std::vector<uint8_t> StagedMem::GetFlat() const {
+   std::vector<uint8_t> ret(len, 0);
+ 
+   for (const auto &pr : segs_) {
+-    const AddrRange<uint32_t> &rng = pr.first;
++    const AddrRange<uint64_t> &rng = pr.first;
+     const std::vector<uint8_t> &seg = pr.second;
+     assert(seg.size() == 1 + (rng.hi - rng.lo));
+     assert(min_addr_ <= rng.lo);
+ 
+-    uint32_t off = rng.lo - min_addr_;
++    uint64_t off = rng.lo - min_addr_;
+     assert(off + seg.size() <= ret.size());
+ 
+     memcpy(&ret[off], &seg[0], seg.size());
+@@ -310,13 +310,13 @@ std::vector<uint8_t> StagedMem::GetFlat() const {
+   return ret;
+ }
+ 
+-void DpiMemUtil::RegisterMemoryArea(const std::string &name, uint32_t base,
++void DpiMemUtil::RegisterMemoryArea(const std::string &name, uint64_t base,
+                                     const MemArea *mem_area) {
+   assert(mem_area);
+ 
+   // Check that we don't overflow the address space.
+-  uint32_t size = mem_area->GetSizeBytes();
+-  uint32_t addr_top = base + (size - 1);
++  uint64_t size = mem_area->GetSizeBytes();
++  uint64_t addr_top = base + (size - 1);
+   if (addr_top < base) {
+     std::ostringstream oss;
+     oss << "Cannot register '" << name << "' at at 0x" << std::hex << base
+@@ -362,8 +362,8 @@ void DpiMemUtil::PrintMemRegions() const {
+   std::cout << "Registered memory regions:" << std::endl;
+   for (const auto &pr : name_to_mem_) {
+     const MemArea &mem = *mem_areas_[pr.second];
+-    uint32_t base = base_addrs_[pr.second];
+-    uint32_t top = base + mem.GetSizeBytes() - 1;
++    uint64_t base = base_addrs_[pr.second];
++    uint64_t top = base + mem.GetSizeBytes() - 1;
+ 
+     std::cout << "\t'" << pr.first << "' (" << mem.GetWidth()
+               << "bits) at location: '" << mem.GetScope() << "'"
+@@ -431,11 +431,11 @@ void DpiMemUtil::LoadElfToMemories(bool verbose, const std::string &filepath) {
+     const MemArea &mem_area = *mem_areas_[mem_area_it->second];
+ 
+     for (const auto &seg_pr : staged_mem.GetSegs()) {
+-      const AddrRange<uint32_t> &seg_rng = seg_pr.first;
++      const AddrRange<uint64_t> &seg_rng = seg_pr.first;
+       const std::vector<uint8_t> &seg_data = seg_pr.second;
+ 
+       assert(seg_rng.lo % mem_area.GetWidthByte() == 0);
+-      uint32_t lo_word = seg_rng.lo / mem_area.GetWidthByte();
++      uint64_t lo_word = seg_rng.lo / mem_area.GetWidthByte();
+ 
+       try {
+         mem_area.Write(lo_word, seg_data);
+@@ -465,10 +465,10 @@ void DpiMemUtil::StageElf(bool verbose, const std::string &path) {
+   assert(file_data);
+ 
+   size_t phnum = elf.GetPhdrNum();
+-  const Elf32_Phdr *phdrs = elf.GetPhdrs();
++  const Elf64_Phdr *phdrs = elf.GetPhdrs();
+ 
+   for (size_t i = 0; i < phnum; ++i) {
+-    const Elf32_Phdr &phdr = phdrs[i];
++    const Elf64_Phdr &phdr = phdrs[i];
+     if (phdr.p_type != PT_LOAD)
+       continue;
+ 
+@@ -479,11 +479,11 @@ void DpiMemUtil::StageElf(bool verbose, const std::string &path) {
+         GetRegionForSegment(path, i, phdr.p_paddr, phdr.p_filesz);
+ 
+     const MemArea &mem_area = *mem_areas_[mem_area_idx];
+-    uint32_t mem_area_base = base_addrs_[mem_area_idx];
++    uint64_t mem_area_base = base_addrs_[mem_area_idx];
+     const std::string &name = names_[mem_area_idx];
+ 
+     // Check that the segment is aligned correctly for the memory
+-    uint32_t local_base = phdr.p_paddr - mem_area_base;
++    uint64_t local_base = phdr.p_paddr - mem_area_base;
+     if (local_base % mem_area.GetWidthByte()) {
+       std::ostringstream oss;
+       oss << "Segment " << i << " has LMA 0x" << std::hex << phdr.p_paddr
+@@ -496,7 +496,7 @@ void DpiMemUtil::StageElf(bool verbose, const std::string &path) {
+ 
+     // Where does the segment finish in the file image? We don't need
+     // to worry about overflow here, because we're adding two
+-    // uint32_t's into a size_t. But we do need to check the segment
++    // uint64_t's into a size_t. But we do need to check the segment
+     // actually fits in the file
+     size_t off_end = (size_t)phdr.p_offset + phdr.p_filesz;
+     if (file_size < off_end) {
+@@ -530,7 +530,7 @@ const StagedMem &DpiMemUtil::GetMemoryData(const std::string &mem_name) const {
+ }
+ 
+ size_t DpiMemUtil::GetRegionForSegment(const std::string &path, int seg_idx,
+-                                       uint32_t lma, uint32_t mem_sz) const {
++                                       uint64_t lma, uint64_t mem_sz) const {
+   assert(mem_sz > 0);
+ 
+   auto mem_area_it = addr_to_mem_.find(lma);
+@@ -544,19 +544,19 @@ size_t DpiMemUtil::GetRegionForSegment(const std::string &path, int seg_idx,
+   size_t mem_area_idx = mem_area_it->second;
+ 
+   const MemArea &mem_area = *mem_areas_[mem_area_idx];
+-  uint32_t base_addr = base_addrs_[mem_area_idx];
++  uint64_t base_addr = base_addrs_[mem_area_idx];
+ 
+   assert(base_addr <= lma);
+ 
+-  uint32_t lma_top = lma + (mem_sz - 1);
++  uint64_t lma_top = lma + (mem_sz - 1);
+   if (lma_top < lma) {
+     std::ostringstream oss;
+     oss << "Integer overflow for top address of segment " << seg_idx << ".";
+     throw ElfError(path, oss.str());
+   }
+ 
+-  uint32_t local_base = lma - base_addr;
+-  uint32_t local_top = lma_top - base_addr;
++  uint64_t local_base = lma - base_addr;
++  uint64_t local_top = lma_top - base_addr;
+ 
+   if (mem_area.GetSizeBytes() <= local_top) {
+     std::ostringstream oss;
+diff --git a/cpp/dpi_memutil.h b/cpp/dpi_memutil.h
+index 4865679..6e028a0 100644
+--- a/cpp/dpi_memutil.h
++++ b/cpp/dpi_memutil.h
+@@ -31,24 +31,24 @@ enum MemImageType {
+ // max_addr_ is the smallest / largest byte offset with valid data.
+ class StagedMem {
+  public:
+-  StagedMem() : min_addr_(~(uint32_t)0), max_addr_(0) {}
++  StagedMem() : min_addr_(~(uint64_t)0), max_addr_(0) {}
+ 
+   // Add a segment to the tracked memory
+-  void AddSegment(uint32_t offset, std::vector<uint8_t> &&seg);
++  void AddSegment(uint64_t offset, std::vector<uint8_t> &&seg);
+ 
+   // Glob together the tracked segments, interspersing them with
+   // zeros, and return as a single flat array.
+   std::vector<uint8_t> GetFlat() const;
+ 
+-  typedef RangedMap<uint32_t, std::vector<uint8_t>> SegMap;
++  typedef RangedMap<uint64_t, std::vector<uint8_t>> SegMap;
+ 
+-  std::pair<uint32_t, uint32_t> GetBounds() const {
++  std::pair<uint64_t, uint64_t> GetBounds() const {
+     return std::make_pair(min_addr_, max_addr_);
+   }
+   const SegMap &GetSegs() const { return segs_; }
+ 
+  private:
+-  uint32_t min_addr_, max_addr_;
++  uint64_t min_addr_, max_addr_;
+   SegMap segs_;
+ };
+ 
+@@ -82,7 +82,7 @@ class DpiMemUtil {
+    * Memories must be registered before command arguments are parsed by
+    * ParseCommandArgs() in order for them to be known.
+    */
+-  void RegisterMemoryArea(const std::string &name, uint32_t base,
++  void RegisterMemoryArea(const std::string &name, uint64_t base,
+                           const MemArea *mem_area);
+ 
+   /**
+@@ -146,11 +146,11 @@ class DpiMemUtil {
+   // (which all have the same number of elements). Note that mem_areas_ does
+   // not own the objects that it points to.
+   std::vector<const MemArea *> mem_areas_;
+-  std::vector<uint32_t> base_addrs_;
++  std::vector<uint64_t> base_addrs_;
+   std::vector<std::string> names_;
+ 
+   std::map<std::string, size_t> name_to_mem_;
+-  RangedMap<uint32_t, size_t> addr_to_mem_;
++  RangedMap<uint64_t, size_t> addr_to_mem_;
+ 
+   // Staging area, loaded by StageElf. The map is keyed by names of memories
+   // stored in name_to_mem_. We also ensure that every segment in a StagedMem
+@@ -163,8 +163,8 @@ class DpiMemUtil {
+    * Find the index of a memory area containing the given segment's addresses.
+    * Raises a std::exception if none is found.
+    */
+-  size_t GetRegionForSegment(const std::string &path, int seg_idx, uint32_t lma,
+-                             uint32_t mem_sz) const;
++  size_t GetRegionForSegment(const std::string &path, int seg_idx, uint64_t lma,
++                             uint64_t mem_sz) const;
+ };
+ 
+ #endif  // OPENTITAN_HW_DV_VERILATOR_CPP_DPI_MEMUTIL_H_
