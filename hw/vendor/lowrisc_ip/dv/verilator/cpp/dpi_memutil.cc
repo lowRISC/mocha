@@ -421,12 +421,9 @@ void DpiMemUtil::LoadElfToMemories(bool verbose, const std::string &filepath) {
   // Load the contents of the ELF file into the staging area
   StageElf(verbose, filepath);
 
-  std::cout << "DPIMemUtil::LoadElfToMemories " << filepath << std::endl;
-
   for (const auto &pr : staging_area_) {
     const std::string &mem_name = pr.first;
     const StagedMem &staged_mem = pr.second;
-    std::cout << "DPIMemUtil::LoadElfToMemories " << mem_name << std::endl;
 
     auto mem_area_it = name_to_mem_.find(mem_name);
     assert(mem_area_it != name_to_mem_.end());
@@ -441,7 +438,6 @@ void DpiMemUtil::LoadElfToMemories(bool verbose, const std::string &filepath) {
       uint64_t lo_word = seg_rng.lo / mem_area.GetWidthByte();
 
       try {
-        std::cout << "DPIMemUtil::LoadElfToMemories " << lo_word << std::endl;
         mem_area.Write(lo_word, seg_data);
       } catch (const SVScoped::Error &err) {
         std::ostringstream oss;
