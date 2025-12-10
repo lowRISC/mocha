@@ -31,7 +31,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create the virtual environment.
 uv venv
-uv sync --all-extras 
+uv sync --all-extras
 
 # Enter the environment (do it every time).
 source .venv/bin/activate
