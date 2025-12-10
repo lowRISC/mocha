@@ -90,8 +90,8 @@
           nativeBuildInputs =
             commonPackages
             ++ (with pkgs; [
-              clang_17
-              llvmPackages_17.llvm
+              clang_18
+              llvmPackages_18.llvm
             ]);
           buildInputs = with pkgs; [libelf zlib];
         };
