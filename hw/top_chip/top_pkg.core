@@ -12,6 +12,7 @@ filesets:
   files_rtl:
     depend:
       - pulp-platform.org::axi
+      - cosmic::cva6cheri
     files:
       - rtl/top_pkg.sv
     file_type: systemVerilogSource
