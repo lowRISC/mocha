@@ -1,31 +1,41 @@
+# Copyright lowRISC Contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
 name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v5
-    
-    - name: Install Nix
-      uses: cachix/install-nix-action@v31
-      with:
-        extra_nix_config: |
-          substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
-          trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - uses: actions/checkout@v5
 
-    - name: Generate xbar
-      shell: 'nix develop .#legacy -c bash -e {0}'
-      run: |
-        hw/vendor/lowrisc_ip/util/tlgen.py -t hw/top_chip/ip/xbar_peri/data/xbar_peri.hjson -o hw/top_chip/ip/xbar_peri
+      - name: License check
+        uses: fsfe/reuse-action@v6
 
-    - name: Build verilator
-      shell: 'nix develop .#legacy -c bash -e {0}'
-      run: |
-        fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
+            trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+
+      - name: Prepare Nix environment
+        run: "nix develop .#legacy -c true"
+
+      - name: Generate xbar
+        shell: "nix develop .#legacy -c bash -e {0}"
+        run: |
+          hw/vendor/lowrisc_ip/util/tlgen.py -t hw/top_chip/ip/xbar_peri/data/xbar_peri.hjson -o hw/top_chip/ip/xbar_peri
+
+      - name: Build verilator
+        shell: "nix develop .#legacy -c bash -e {0}"
+        run: |
+          fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
