@@ -1,0 +1,13 @@
+diff --git a/src/axi_fifo_delay_dyn.sv b/src/axi_fifo_delay_dyn.sv
+index 2059403..c06db63 100644
+--- a/src/axi_fifo_delay_dyn.sv
++++ b/src/axi_fifo_delay_dyn.sv
+@@ -300,7 +300,7 @@ module stream_fifo_delay_dyn #(
+   logic fifo_dead_full, fifo_dead_empty, fifo_dead_push, fifo_dead_pop;
+   logic fifo_data_full, fifo_data_empty, fifo_data_push, fifo_data_pop;
+ 
+-  `FF(ready_count_q, ready_count_d, '0, clk_i, rst_ni);
++  `FF(ready_count_q, ready_count_d, '0, clk_i, rst_ni)
+ 
+   always_comb begin
+     ready_count_d = ready_count_q;
