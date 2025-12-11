@@ -405,6 +405,6 @@ module id_queue #(
     // Status interface
     assign full_o  = full;
     // The queue is empty if and only if all entries in the linked data structure are free.
-    assign empty_o = &linked_data_free;;
+    assign empty_o = &linked_data_free;
 
 endmodule
