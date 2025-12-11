@@ -19,6 +19,7 @@ module top_chip_system #(
   localparam int unsigned TlIntgWidth   = 7;
   localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
+  localparam int unsigned TagAw         = SramAddrWidth - 1;
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
@@ -110,6 +111,16 @@ module top_chip_system #(
   top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
   top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
+  // AXI response from SRAM before inserting cap valid bit
+  top_pkg::axi_resp_t                           tag_pre_insert_resp;
+
+  // Tag memory signals
+  logic             tag_mem_a_req_i;
+  logic [TagAw-1:0] tag_mem_a_addr_i;
+  logic [0:0]       tag_mem_a_wdata_i;
+  logic             tag_mem_b_req_i;
+  logic [TagAw-1:0] tag_mem_b_addr_i;
+  logic [0:0]       tag_mem_b_rdata_o;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -231,6 +242,56 @@ module top_chip_system #(
     .default_mst_port_i   ('0)
   );
 
+  // Capability valid bit insertion
+
+  // Assume AW data unchanged until W finished
+  assign tag_mem_a_req_i   = xbar_device_resp[0].w_ready && xbar_device_req[0].w_valid && xbar_device_req[0].w.last;
+  assign tag_mem_a_addr_i  = (xbar_device_req[0].aw.addr ^ top_pkg::SRAMBase) >> 4;
+  assign tag_mem_a_wdata_i = xbar_device_req[0].w.user;
+  assign tag_mem_b_req_i   = xbar_device_resp[0].ar_ready && xbar_device_req[0].ar_valid;
+  assign tag_mem_b_addr_i  = (xbar_device_req[0].ar.addr ^ top_pkg::SRAMBase) >> 4;
+
+  // Tag memory
+  prim_ram_2p #(
+    .Width(1),
+    .Depth(2 ** (TagAw)),
+    .DataBitsPerMask(1)
+  ) tag_mem_prim (
+    // Write port
+    .clk_a_i  (clk_i),
+    .a_req_i  (tag_mem_a_req_i),
+    .a_write_i(1'b1),
+    .a_addr_i (tag_mem_a_addr_i),
+    .a_wdata_i(tag_mem_a_wdata_i),
+    .a_wmask_i('1),
+    .a_rdata_o( ),
+
+    // Read port
+    .clk_b_i  (clk_i),
+    .b_req_i  (tag_mem_b_req_i),
+    .b_write_i(1'b0),
+    .b_addr_i (tag_mem_b_addr_i),
+    .b_wdata_i('0),
+    .b_wmask_i('1),
+    .b_rdata_o(tag_mem_b_rdata_o),
+
+    .cfg_i    ('0),
+    .cfg_rsp_o()
+  );
+
+  // Replace only user field with cap valid bit read from tag memory
+  assign xbar_device_resp[0].aw_ready = tag_pre_insert_resp.aw_ready;
+  assign xbar_device_resp[0].ar_ready = tag_pre_insert_resp.ar_ready;
+  assign xbar_device_resp[0].w_ready  = tag_pre_insert_resp.w_ready;
+  assign xbar_device_resp[0].b_valid  = tag_pre_insert_resp.b_valid;
+  assign xbar_device_resp[0].b        = tag_pre_insert_resp.b;
+  assign xbar_device_resp[0].r_valid  = tag_pre_insert_resp.r_valid;
+  assign xbar_device_resp[0].r.id     = tag_pre_insert_resp.r.id;
+  assign xbar_device_resp[0].r.data   = tag_pre_insert_resp.r.data;
+  assign xbar_device_resp[0].r.resp   = tag_pre_insert_resp.r.resp;
+  assign xbar_device_resp[0].r.last   = tag_pre_insert_resp.r.last;
+  assign xbar_device_resp[0].r.user   = tag_mem_b_rdata_o;
+
   // AXI to 64-bit mem for SRAM
   axi_to_mem #(
     .axi_req_t  ( top_pkg::axi_req_t    ),
@@ -246,7 +307,7 @@ module top_chip_system #(
     // AXI interface.
     .busy_o     ( ),
     .axi_req_i  (xbar_device_req[0]),
-    .axi_resp_o (xbar_device_resp[0]),
+    .axi_resp_o (tag_pre_insert_resp),
 
     // Memory interface.
     .mem_req_o    (mem64_sram_req),
