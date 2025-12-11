@@ -19,7 +19,11 @@ package top_pkg;
   localparam int AxiXbarHosts   = 1;
   localparam int AxiXbarDevices = 2;
 
-  // AXI crossbar devices
+  // AXI crossbar hosts and devices
+  typedef enum int unsigned {
+    CVA6 = 0
+  } axi_hosts_t;
+
   typedef enum int unsigned {
     SRAM       = 0,
     TlCrossbar = 1
@@ -34,6 +38,11 @@ package top_pkg;
     SRAMLength       = 32'h00020000,
     TlCrossbarLength = 32'h00001000
   } axi_addr_length_t;
+
+  typedef enum int unsigned {
+    SRAMMask       = SRAMLength - 1,
+    TlCrossbarMask = TlCrossbarLength - 1
+  } axi_addr_mask_t;
 
   // AXI parameters
   localparam AxiIdWidth   = cva6_config_pkg::CVA6ConfigAxiIdWidth;
