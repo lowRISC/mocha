@@ -8,6 +8,7 @@
 // this License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 // CONDITIONS OF ANY KIND, either express or implied. See the License for the
 // specific language governing permissions and limitations under the License.
+// SPDX-License-Identifier: SHL-0.51
 
 // Stream fork: Connects the input stream (ready-valid) handshake to *all* of `N_OUP` output stream
 // handshakes. For each input stream handshake, every output stream handshakes exactly once. The

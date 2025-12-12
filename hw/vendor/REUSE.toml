@@ -1,0 +1,31 @@
+# Licenses and Copyright for Vendored Projects
+
+version = 1
+
+[[annotations]]
+path = ["lowrisc_ibex/**", "lowrisc_ip/**"]
+SPDX-FileCopyrightText = "lowRISC Contributors."
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["pulp_axi/**"]
+SPDX-License-Identifier = "SHL-0.51"
+SPDX-FileCopyrightText = ["2014-2025 ETH Zurich and University of Bologna."]
+
+[[annotations]]
+path = ["cva6_cheri/**"]
+SPDX-License-Identifier = "SHL-0.51 OR Apache-2.0 OR BSD-3-Clause"
+SPDX-FileCopyrightText = [
+    "OpenHW contributors",
+    "2019 ETH Zurich and University of Bologna.",
+    "2021-2025 Thales DIS design services SAS",
+    "2023 Commissariat a l'Energie Atomique et aux Energies",
+    "2024 PlanV Technology",
+    "2025 Bruno Sá and Zero-Day Labs.",
+    "2025 Capabilities Limited."
+]
+
+[[annotations]]
+path = ["patches/**"]
+SPDX-FileCopyrightText = "lowRISC Contributors (COSMIC project)."
+SPDX-License-Identifier = "Apache-2.0"

@@ -1,4 +1,8 @@
 CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
 name: "lowrisc:mocha:top_chip_system"
 description: "System top-level for CHERI Mocha"
 filesets:
