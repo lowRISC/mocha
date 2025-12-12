@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+`include "prim_assert.sv"
+
 module top_chip_system #(
   SramInitFile = ""
 ) (
@@ -292,6 +294,33 @@ module top_chip_system #(
   assign xbar_device_resp[top_pkg::SRAM].r.resp   = tag_pre_insert_resp.r.resp;
   assign xbar_device_resp[top_pkg::SRAM].r.last   = tag_pre_insert_resp.r.last;
   assign xbar_device_resp[top_pkg::SRAM].r.user   = tag_mem_b_rdata_o;
+
+  // Partial read of capability not currently supported
+  // Not using assert macro since prim_assert.sv selects dummy macros in verilator, and
+  // trying to override this causes macro redefinition errors
+
+  // SRAM R channel response starts 1 cycle after AR channel request (assumed by NoPartialCapRead assertion)
+  SRAMLatency1Cycle: assert property (
+    @(posedge clk_i) disable iff (rst_ni === '0) (
+      $rose(xbar_device_resp[top_pkg::SRAM].r_valid)
+      |-> $past(xbar_device_resp[top_pkg::SRAM].ar_ready && xbar_device_req[top_pkg::SRAM].ar_valid)
+    )
+  ) else begin
+    `ASSERT_ERROR(SRAMLatency1Cycle)
+  end
+
+  // All reads that return valid capability tag must not be partial reads
+  NoPartialCapRead: assert property (
+    @(posedge clk_i) disable iff (rst_ni === '0) (
+      xbar_device_resp[top_pkg::SRAM].ar_ready &&
+      xbar_device_req[top_pkg::SRAM].ar_valid &&
+      xbar_device_req[top_pkg::SRAM].ar.len < 1
+      |=> xbar_device_resp[top_pkg::SRAM].r_valid && xbar_device_resp[top_pkg::SRAM].r.user == '0
+    )
+  ) else begin
+    $display("ERROR: Partial capability read not supported!");
+    `ASSERT_ERROR(NoPartialCapRead)
+  end
 
   // AXI to 64-bit mem for SRAM
   axi_to_mem #(

@@ -58,6 +58,7 @@ targets:
           - '--trace-max-array 1024'
           - '-CFLAGS "-Wall -DVM_TRACE_FMT_FST -DTOPLEVEL_NAME=top_chip_verilator"'
           - '-LDFLAGS "-pthread -lutil -lelf"'
+          - '--assert'
           - "-Wno-WIDTHEXPAND"
           - "-Wno-WIDTHTRUNC"
           - "-Wno-UNOPTFLAT"
