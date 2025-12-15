@@ -55,6 +55,7 @@ def writeout_parameter_table(fileout, parameters, module):
 
     with open(fileout, "w") as fout:
         fout.write("..\n")
+        # REUSE-IgnoreStart
         fout.write("   Copyright 2024 Thales DIS France SAS\n")
         fout.write(
             '   Licensed under the Solderpad Hardware License, Version 2.1 (the "License");\n'
@@ -67,6 +68,7 @@ def writeout_parameter_table(fileout, parameters, module):
             "   You may obtain a copy of the License at https://solderpad.org/licenses/\n\n"
         )
         fout.write("   Original Author: Jean-Roch COULON - Thales\n\n")
+        # REUSE-IgnoreEnd
         fout.write(f".. _{module}_PARAMETERS:\n\n")
         fout.write(f".. list-table:: {module} parameter configuration\n")
         fout.write("   :header-rows: 1\n")
@@ -84,6 +86,7 @@ def writeout_parameter_table_adoc(fileout, parameters, module):
 
     with open(fileout, "w") as fout:
         fout.write("////\n")
+        # REUSE-IgnoreStart
         fout.write("   Copyright 2024 Thales DIS France SAS\n")
         fout.write(
             '   Licensed under the Solderpad Hardware License, Version 2.1 (the "License");\n'
@@ -96,6 +99,7 @@ def writeout_parameter_table_adoc(fileout, parameters, module):
             "   You may obtain a copy of the License at https://solderpad.org/licenses/\n\n"
         )
         fout.write("   Original Author: Jean-Roch COULON - Thales\n")
+        # REUSE-IgnoreEnd
         fout.write("////\n\n")
 
         fout.write(f"[[{module}_PARAMETERS]]\n\n")

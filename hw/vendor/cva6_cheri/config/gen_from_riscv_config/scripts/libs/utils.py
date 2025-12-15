@@ -357,10 +357,12 @@ class RstAddressBlock(AddressBlockClass):
         r.directive(
             "..",
             content=[
+                # REUSE-IgnoreStart
                 "Copyright (c) 2024 OpenHW Group",
                 "Copyright (c) 2024 Thales",
                 "SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1",
                 "Author: Abdessamii Oukalrazqou",
+                # REUSE-IgnoreEnd
             ],
         )
         r.title(self.name)  # Use the name of the addressBlock as title
@@ -487,10 +489,12 @@ class InstrstBlock(InstructionBlockClass):
         r.directive(
             "..",
             content=[
+                # REUSE-IgnoreStart
                 "Copyright (c) 2024 OpenHW Group",
                 "Copyright (c) 2024 Thales",
                 "SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1",
                 "Author: Abdessamii Oukalrazqou",
+                # REUSE-IgnoreEnd
             ],
         )
         r.title(self.name)  # Use the name of the addressBlock as title
@@ -567,12 +571,14 @@ class AdocAddressBlock(AddressBlockClass):
         regRV32List = [reg.RV32 for reg in registerlist]
         regRV64List = [reg.RV64 for reg in registerlist]
 
+        # REUSE-IgnoreStart
         r += "////\n"
         r += "  Copyright (c) 2024 OpenHW Group\n"
         r += "  Copyright (c) 2024 Thales\n"
         r += "  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1\n"
         r += "  Author: Abdessamii Oukalrazqou\n"
         r += "////\n\n"
+        # REUSE-IgnoreEnd
 
         r += "=== %s\n\n"%self.name
         r += "==== Conventions\n\n"
@@ -681,12 +687,14 @@ class InstadocBlock(InstructionBlockClass):
         InstrDescrList = [reg.descr for reg in self.Instructionlist]
         InstrExtList = [reg.Extension_Name for reg in self.Instructionlist]
 
+        # REUSE-IgnoreStart
         r += "////\n"
         r += "  Copyright (c) 2024 OpenHW Group\n"
         r += "  Copyright (c) 2024 Thales\n"
         r += "  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1\n"
         r += "  Author: Abdessamii Oukalrazqou\n"
         r += "////\n\n"
+        # REUSE-IgnoreEnd
 
         r += "=== %s\n\n"%self.name
         r += "==== Instructions\n\n"
@@ -738,11 +746,13 @@ class InstmdBlock(InstructionBlockClass):
         InstrDescrList = [reg.descr for reg in self.Instructionlist]
         InstrExtList = [reg.Extension_Name for reg in self.Instructionlist]
         licence = [
+            # REUSE-IgnoreStart
             "<!--Copyright (c) 2024 OpenHW Group",
             "Copyright (c) 2024 Thales",
             "SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1 ",
             "Author: Abdessamii Oukalrazqou",
             "-->",
+            # REUSE-IgnoreEnd
         ]
         for l in licence:
             self.mdFile.write(l + "\n")
@@ -847,11 +857,13 @@ class MdAddressBlock(AddressBlockClass):
         ]
         regPrivModeList = [reg.access for reg in registerlist if reg.RV32 | reg.RV64]
         licence = [
+            # REUSE-IgnoreStart
             "<!--Copyright (c) 2024 OpenHW Group",
             "Copyright (c) 2024 Thales",
             "SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1 ",
             "Author: Abdessamii Oukalrazqou",
             "-->",
+            # REUSE-IgnoreEnd
         ]
         for l in licence:
             self.mdFile.write(l + "\n")
