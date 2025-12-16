@@ -20,6 +20,24 @@ Because most of these peripherals are imported from OpenTitan, in the first inst
 
 ![Mocha block diagram](doc/img/mocha.svg)
 
+### Memory map
+
+This is the current memory map for Mocha, where the base and top addresses are inclusive, and reserved is the amount of memory reserved for this function:
+
+| Base address  | Top address   | Reserved | Function     |
+|---------------|---------------|----------|--------------|
+| `0x0000_8000` | `0x0008_FFFF` |  128 KiB | ROM          |
+| `0x1000_0000` | `0x1001_FFFF` |  256 MiB | SRAM         |
+| `0x2000_0000` | `0x2000_0FFF` |   64 KiB | Debug module |
+| `0x4000_0000` | `0x4000_0047` |   64 KiB | GPIO         |
+| `0x4001_0000` | `0x4001_0043` |   64 KiB | Mailbox      |
+| `0x4100_0000` | `0x4100_0033` |   16 MiB | UARTs        |
+| `0x4200_0000` | `0x4200_001F` |   16 MiB | I2C hosts    |
+| `0x4300_0000` | `0x4300_1FBF` |   16 MiB | SPI devices  |
+| `0x4400_0000` | `0x4400_FFFF` |   16 MiB | Timer        |
+| `0x4800_0000` | `0x4BFF_FFFF` |   64 MiB | PLIC         |
+| `0x8000_0000` | `0xBFFF_FFFF` |    2 GiB | DRAM         |
+
 ## Developer guide
 
 ### Setup Python virtual environment
