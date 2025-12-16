@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#define UART_BASE (0x80000000)
+#define UART_BASE (0x41000000)
 
 #define UART_CTRL_REG (0x10)
 #define UART_STATUS_REG (0x14)

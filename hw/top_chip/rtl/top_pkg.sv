@@ -30,13 +30,13 @@ package top_pkg;
   } axi_devices_t;
 
   typedef enum int unsigned {
-    SRAMBase       = 32'h00100000,
-    TlCrossbarBase = 32'h80000000
+    SRAMBase       = 32'h1000_0000,
+    TlCrossbarBase = 32'h4000_0000
   } axi_addr_start_t;
 
   typedef enum int unsigned {
-    SRAMLength       = 32'h00020000,
-    TlCrossbarLength = 32'h00001000
+    SRAMLength       = 32'h0002_0000,
+    TlCrossbarLength = 32'h1000_0000
   } axi_addr_length_t;
 
   typedef enum int unsigned {

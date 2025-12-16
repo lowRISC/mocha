@@ -6,7 +6,7 @@
 
 package tl_peri_pkg;
 
-  localparam logic [31:0] ADDR_SPACE_UART = 32'h 80000000;
+  localparam logic [31:0] ADDR_SPACE_UART = 32'h 41000000;
 
   localparam logic [31:0] ADDR_MASK_UART = 32'h 00000fff;
 

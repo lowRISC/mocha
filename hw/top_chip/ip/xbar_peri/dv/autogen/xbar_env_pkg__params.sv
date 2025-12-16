@@ -8,7 +8,7 @@
 // List of Xbar device memory map
 tl_device_t xbar_devices[$] = '{
     '{"uart", '{
-        '{32'h80000000, 32'h80000fff}
+        '{32'h41000000, 32'h41000fff}
 }}};
 
   // List of Xbar hosts
