@@ -1,0 +1,51 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:mocha:chip_mocha_genesys2"
+description: "CHERI Mocha toplevel for the Digilent Genesys 2 board"
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:mocha:top_chip_system
+      - lowrisc:prim_xilinx:all
+    files:
+      - rtl/clkgen_xil7series.sv
+      - rtl/chip_mocha_genesys2.sv
+    file_type: systemVerilogSource
+
+  files_constraints:
+    files:
+      - data/clocks_genesys2.xdc
+      - data/pins_genesys2.xdc
+    file_type: xdc
+
+parameters:
+  # XXX: This parameter needs to be absolute, or relative to the *.runs/synth_1
+  # directory. It's best to pass it as absolute path when invoking fusesoc, e.g.
+  # --BootRomInitFile=$PWD/sw/device/examples/hello_world/hello_world.vmem
+  # XXX: The VMEM file should be added to the sources of the Vivado project to
+  # make the Vivado dependency tracking work. However this requires changes to
+  # fusesoc first.
+  BootRomInitFile:
+    datatype: str
+    description: Boot ROM initialization file in 64 bit vmem hex format
+    default: ""
+    paramtype: vlogparam
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+
+  synth:
+    <<: *default_target
+    default_tool: vivado
+    filesets_append:
+      - files_constraints
+    toplevel: chip_mocha_genesys2
+    parameters:
+      - BootRomInitFile
+    tools:
+      vivado:
+        part: "xc7k325tffg900-2" # Genesys 2 with K325T
