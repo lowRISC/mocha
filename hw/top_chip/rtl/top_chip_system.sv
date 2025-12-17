@@ -2,8 +2,6 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-`include "prim_assert.sv"
-
 module top_chip_system #(
   SramInitFile = ""
 ) (
@@ -21,8 +19,6 @@ module top_chip_system #(
   localparam int unsigned TlIntgWidth   = 7;
   localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
-  localparam int unsigned TagAw         = SramAddrWidth - 1;
-  localparam int unsigned CapSizeBits   = 128; // Size of capability excluding valid bit
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
@@ -74,21 +70,6 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_uart_d2h;
 
   // 64-bit memory format signals
-  logic                                 sram_data_req;
-  logic                                 sram_data_we;
-  logic [SramAddrWidth-1:0]             sram_data_addr;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_data_wmask;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_data_wdata;
-  logic                                 sram_data_rvalid;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_data_rdata;
-  logic                                 mem64_sram_req;
-  logic                                 mem64_sram_gnt;
-  logic                                 mem64_sram_we;
-  logic [(top_pkg::AxiDataWidth/8)-1:0] mem64_sram_be;
-  logic [top_pkg::AxiAddrWidth-1:0]     mem64_sram_addr;
-  logic [top_pkg::AxiDataWidth-1:0]     mem64_sram_wdata;
-  logic                                 mem64_sram_rvalid;
-  logic [top_pkg::AxiDataWidth-1:0]     mem64_sram_rdata;
   logic                                 mem64_tl_xbar_req;
   logic                                 mem64_tl_xbar_gnt;
   logic                                 mem64_tl_xbar_we;
@@ -114,16 +95,6 @@ module top_chip_system #(
   top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
   top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
-  // AXI response from SRAM before inserting cap valid bit
-  top_pkg::axi_resp_t                           tag_pre_insert_resp;
-
-  // Tag memory signals
-  logic             tag_mem_a_req_i;
-  logic [TagAw-1:0] tag_mem_a_addr_i;
-  top_pkg::user_t   tag_mem_a_wdata_i;
-  logic             tag_mem_b_req_i;
-  logic [TagAw-1:0] tag_mem_b_addr_i;
-  top_pkg::user_t   tag_mem_b_rdata_o;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -183,35 +154,19 @@ module top_chip_system #(
     .intr_rx_parity_err_o ( )
   );
 
-  // Our RAM
-  prim_ram_1p #(
-    .Width           ( top_pkg::AxiDataWidth ),
-    .DataBitsPerMask ( 8                     ),
-    .Depth           ( 2 ** (SramAddrWidth)  ),
-    .MemInitFile     ( SramInitFile          )
-  ) u_ram (
+  // AXI SRAM
+  axi_sram #(
+    .Width       ( top_pkg::AxiDataWidth ),
+    .AddrWidth   ( SramAddrWidth         ),
+    .MemInitFile ( SramInitFile          )
+  ) u_axi_sram (
     .clk_i  (clk_i),
     .rst_ni (rst_ni),
 
-    .req_i   (sram_data_req),
-    .write_i (sram_data_we),
-    .addr_i  (sram_data_addr),
-    .wdata_i (sram_data_wdata),
-    .wmask_i (sram_data_wmask),
-    .rdata_o (sram_data_rdata),
-
-    .cfg_i     ('0),
-    .cfg_rsp_o ( )
+    // Capability AXI interface
+    .axi_req_i  (xbar_device_req[top_pkg::SRAM]),
+    .axi_resp_o (xbar_device_resp[top_pkg::SRAM])
   );
-
-  // Single-cycle read response.
-  always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) begin
-      sram_data_rvalid <= '0;
-    end else begin
-      sram_data_rvalid <= sram_data_req; // Generate rvalid strobes even for writes
-    end
-  end
 
   // Primary AXI crossbar
   axi_xbar #(
@@ -244,127 +199,6 @@ module top_chip_system #(
     .en_default_mst_port_i('0),
     .default_mst_port_i   ('0)
   );
-
-  // Capability valid bit insertion
-
-  // Assume AW data unchanged until W finished
-  assign tag_mem_a_req_i   = xbar_device_resp[top_pkg::SRAM].w_ready && xbar_device_req[top_pkg::SRAM].w_valid && xbar_device_req[top_pkg::SRAM].w.last;
-  assign tag_mem_a_addr_i  = (xbar_device_req[top_pkg::SRAM].aw.addr & top_pkg::SRAMMask) >> $clog2(CapSizeBits / 8);
-  assign tag_mem_a_wdata_i = xbar_device_req[top_pkg::SRAM].w.user;
-  assign tag_mem_b_req_i   = xbar_device_resp[top_pkg::SRAM].ar_ready && xbar_device_req[top_pkg::SRAM].ar_valid;
-  assign tag_mem_b_addr_i  = (xbar_device_req[top_pkg::SRAM].ar.addr & top_pkg::SRAMMask) >> $clog2(CapSizeBits / 8);
-
-  // Tag memory
-  prim_ram_2p #(
-    .Width(1),
-    .Depth(2 ** TagAw),
-    .DataBitsPerMask(1)
-  ) tag_mem_prim (
-    // Write port
-    .clk_a_i  (clk_i),
-    .a_req_i  (tag_mem_a_req_i),
-    .a_write_i(1'b1),
-    .a_addr_i (tag_mem_a_addr_i),
-    .a_wdata_i(tag_mem_a_wdata_i),
-    .a_wmask_i('1),
-    .a_rdata_o( ),
-
-    // Read port
-    .clk_b_i  (clk_i),
-    .b_req_i  (tag_mem_b_req_i),
-    .b_write_i(1'b0),
-    .b_addr_i (tag_mem_b_addr_i),
-    .b_wdata_i('0),
-    .b_wmask_i('1),
-    .b_rdata_o(tag_mem_b_rdata_o),
-
-    .cfg_i    ('0),
-    .cfg_rsp_o()
-  );
-
-  // Replace only user field with cap valid bit read from tag memory
-  assign xbar_device_resp[top_pkg::SRAM].aw_ready = tag_pre_insert_resp.aw_ready;
-  assign xbar_device_resp[top_pkg::SRAM].ar_ready = tag_pre_insert_resp.ar_ready;
-  assign xbar_device_resp[top_pkg::SRAM].w_ready  = tag_pre_insert_resp.w_ready;
-  assign xbar_device_resp[top_pkg::SRAM].b_valid  = tag_pre_insert_resp.b_valid;
-  assign xbar_device_resp[top_pkg::SRAM].b        = tag_pre_insert_resp.b;
-  assign xbar_device_resp[top_pkg::SRAM].r_valid  = tag_pre_insert_resp.r_valid;
-  assign xbar_device_resp[top_pkg::SRAM].r.id     = tag_pre_insert_resp.r.id;
-  assign xbar_device_resp[top_pkg::SRAM].r.data   = tag_pre_insert_resp.r.data;
-  assign xbar_device_resp[top_pkg::SRAM].r.resp   = tag_pre_insert_resp.r.resp;
-  assign xbar_device_resp[top_pkg::SRAM].r.last   = tag_pre_insert_resp.r.last;
-  assign xbar_device_resp[top_pkg::SRAM].r.user   = tag_mem_b_rdata_o;
-
-  // Partial read of capability not currently supported
-  // Not using assert macro since prim_assert.sv selects dummy macros in verilator, and
-  // trying to override this causes macro redefinition errors
-
-  // SRAM R channel response starts 1 cycle after AR channel request (assumed by NoPartialCapRead assertion)
-  SRAMLatency1Cycle: assert property (
-    @(posedge clk_i) disable iff (rst_ni === '0) (
-      $rose(xbar_device_resp[top_pkg::SRAM].r_valid)
-      |-> $past(xbar_device_resp[top_pkg::SRAM].ar_ready && xbar_device_req[top_pkg::SRAM].ar_valid)
-    )
-  ) else begin
-    `ASSERT_ERROR(SRAMLatency1Cycle)
-  end
-
-  // All reads that return valid capability tag must not be partial reads
-  NoPartialCapRead: assert property (
-    @(posedge clk_i) disable iff (rst_ni === '0) (
-      xbar_device_resp[top_pkg::SRAM].ar_ready &&
-      xbar_device_req[top_pkg::SRAM].ar_valid &&
-      xbar_device_req[top_pkg::SRAM].ar.len < 1
-      |=> xbar_device_resp[top_pkg::SRAM].r_valid && xbar_device_resp[top_pkg::SRAM].r.user == '0
-    )
-  ) else begin
-    $display("ERROR: Partial capability read not supported!");
-    `ASSERT_ERROR(NoPartialCapRead)
-  end
-
-  // AXI to 64-bit mem for SRAM
-  axi_to_mem #(
-    .axi_req_t  ( top_pkg::axi_req_t    ),
-    .axi_resp_t ( top_pkg::axi_resp_t   ),
-    .AddrWidth  ( top_pkg::AxiAddrWidth ),
-    .DataWidth  ( top_pkg::AxiDataWidth ),
-    .IdWidth    ( top_pkg::AxiIdWidth   ),
-    .NumBanks   ( 1                     )
-  ) u_sram_axi_to_mem (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
-
-    // AXI interface.
-    .busy_o     ( ),
-    .axi_req_i  (xbar_device_req[top_pkg::SRAM]),
-    .axi_resp_o (tag_pre_insert_resp),
-
-    // Memory interface.
-    .mem_req_o    (mem64_sram_req),
-    .mem_gnt_i    (mem64_sram_gnt),
-    .mem_addr_o   (mem64_sram_addr),
-    .mem_wdata_o  (mem64_sram_wdata),
-    .mem_strb_o   (mem64_sram_be),
-    .mem_atop_o   ( ),
-    .mem_we_o     (mem64_sram_we),
-    .mem_rvalid_i (mem64_sram_rvalid),
-    .mem_rdata_i  (mem64_sram_rdata)
-  );
-
-  // 64-bit SRAM signal assignments
-  assign sram_data_req   = mem64_sram_req;
-  assign mem64_sram_gnt  = 1'b1;
-  // Remove base offset and convert byte address to 64-bit word address
-  assign sram_data_addr  = (mem64_sram_addr & top_pkg::SRAMMask) >> $clog2(top_pkg::AxiDataWidth / 8);
-  assign sram_data_we    = mem64_sram_we;
-  assign sram_data_wdata = mem64_sram_wdata;
-  always_comb begin
-    for (int i=0; i < (top_pkg::AxiDataWidth / 8); ++i) begin
-      sram_data_wmask[i*8 +: 8] = {8{mem64_sram_be[i]}};
-    end
-  end
-  assign mem64_sram_rvalid = sram_data_rvalid;
-  assign mem64_sram_rdata  = sram_data_rdata;
 
   // AXI to 64-bit mem for TLUL crossbar
   axi_to_mem #(

@@ -19,6 +19,7 @@ filesets:
       - lowrisc:common_cells:all
     files:
       - rtl/mem_downsizer.sv
+      - rtl/axi_sram.sv
       - rtl/top_chip_system.sv
     file_type: systemVerilogSource
 

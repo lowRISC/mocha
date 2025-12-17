@@ -84,7 +84,7 @@ bool MochaSim::Finish() {
 
 int main(int argc, char **argv) {
   MochaSim mocha_sim(
-      "TOP.top_chip_verilator.u_top_chip_system.u_ram",
+      "TOP.top_chip_verilator.u_top_chip_system.u_axi_sram.u_ram",
       16 * 1024 // 16k 64-bit words = 128 KiB
   );
 
