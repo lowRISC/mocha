@@ -71,6 +71,7 @@
         uv
         pythonEnv
         verilator
+        srecord
       ];
     in {
       formatter = pkgs.alejandra;

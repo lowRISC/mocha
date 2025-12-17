@@ -77,6 +77,21 @@ build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E bu
 ```
 
 
+### Build FPGA bitstream
+Make sure vivado is on your path, then run:
+```sh
+# Generate vmem file to preload into SRAM
+llvm-objcopy -O binary build/sw/device/examples/hello_world/hello_world build/sw/device/examples/hello_world/hello_world.bin
+srec_cat build/sw/device/examples/hello_world/hello_world.bin -binary -byte-swap 8 -o build/sw/device/examples/hello_world/hello_world.vmem -vmem 64
+
+# Build bitstream
+fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --BootRomInitFile=$PWD/build/sw/device/examples/hello_world/hello_world.vmem
+```
+
+### Test on Genesys 2
+1. Open a UART terminal with baud rate 921600
+2. Load the bitstream onto Genesys 2
+
 ## License
 
 This project is licensed under the Apache License, Version 2.0.
