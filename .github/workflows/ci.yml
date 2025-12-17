@@ -39,3 +39,8 @@ jobs:
         shell: "nix develop .#legacy -c bash -e {0}"
         run: |
           fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
+
+      - name: Build software
+        shell: "nix develop -c bash -e {0}"
+        run: |
+          cmake -B build/sw/ -S ./sw && cmake --build build/sw -j $(nproc)
