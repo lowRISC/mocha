@@ -61,22 +61,21 @@ source .venv/bin/activate
 nix develop
 ```
 
+### Software build
+
+```sh
+cmake -B build/sw/ -S ./sw && cmake --build build/sw -j $(nproc)
+```
+
 ### Simulation
 
 ```sh
 # Build simulator.
 fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
 # Run simulator.
-build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E sw/device/examples/hello_world/hello_world.elf
+build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
 ```
 
-### Temporary software flow
-
-```sh
-pushd sw/device/examples/hello_world
-./build.sh
-popd
-```
 
 ## License
 
