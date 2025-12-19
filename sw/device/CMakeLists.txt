@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 add_subdirectory(lib)
+add_subdirectory(tests)
 add_subdirectory(examples/hello_world)
 add_subdirectory(examples/tag_check)
 

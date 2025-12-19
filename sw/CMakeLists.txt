@@ -10,6 +10,9 @@ endif()
 
 project(mocha_sw LANGUAGES C CXX ASM)
 
+# Enable CTest
+enable_testing()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(device)
