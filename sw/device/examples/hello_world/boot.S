@@ -4,10 +4,8 @@
 
 .section .text
 
-default_exc_handler:
-  j default_exc_handler
-
-reset_handler:
+_start:
+  .global _start
   /* set all registers to zero */
   mv  x1, x0
   mv  x2, x1
@@ -42,10 +40,7 @@ reset_handler:
   mv x31, x1
 
   /* stack initilization */
-  la   x2, _stack_start
-
-_start:
-  .global _start
+  la   x2, _stack_top
 
   /* clear BSS */
   la x26, _bss_start
@@ -65,24 +60,7 @@ main_entry:
   addi x10, x0, 0
   addi x11, x0, 0
   jal x1, main
-
   /* If execution ends up here just put the core to sleep */
 sleep_loop:
   wfi
   j sleep_loop
-
-/* =================================================== [ exceptions ] === */
-/* This section has to be down here, since we have to disable rvc for it  */
-
-  .section .vectors, "ax"
-  .option norvc;
-
-  // All unimplemented interrupts/exceptions go to the default_exc_handler.
-  .org 0x00
-  .rept 32
-  jal x0, default_exc_handler
-  .endr
-
-  // reset vector
-  .org 0x80
-  jal x0, reset_handler

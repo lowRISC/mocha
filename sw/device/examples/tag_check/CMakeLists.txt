@@ -3,6 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(NAME tag_check)
-add_executable(${NAME} tag_check.S)
+add_executable(${NAME} tag_check.S ${COMMON_OBJS})
 target_compile_options(${NAME} PUBLIC ${CHERI_FLAGS})
 install(TARGETS ${NAME})
