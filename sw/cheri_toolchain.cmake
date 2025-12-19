@@ -8,15 +8,15 @@ set(NON_CHERI_FLAGS -march=rv64imc -mabi=lp64 -mcmodel=medlow)
 set(CMAKE_SYSTEM_NAME Generic)
 
 if (DEFINED ENV{CHERI_LLVM_BIN})
-  set(CMAKE_CXX_COMPILER "$ENV{CHERI_LLVM_BIN}/clang++")
-  set(CMAKE_C_COMPILER   "$ENV{CHERI_LLVM_BIN}/clang")
-  set(CMAKE_ASM_COMPILER "$ENV{CHERI_LLVM_BIN}/clang")
-  set(CMAKE_OBJCOPY      "$ENV{CHERI_LLVM_BIN}/llvm-objcopy")
+    set(CMAKE_CXX_COMPILER "$ENV{CHERI_LLVM_BIN}/clang++")
+    set(CMAKE_C_COMPILER   "$ENV{CHERI_LLVM_BIN}/clang")
+    set(CMAKE_ASM_COMPILER "$ENV{CHERI_LLVM_BIN}/clang")
+    set(CMAKE_OBJCOPY      "$ENV{CHERI_LLVM_BIN}/llvm-objcopy")
 else()
-  set(CMAKE_CXX_COMPILER clang++)
-  set(CMAKE_C_COMPILER   clang)
-  set(CMAKE_ASM_COMPILER clang)
-  set(CMAKE_OBJCOPY      llvm-objcopy)
+    set(CMAKE_CXX_COMPILER clang++)
+    set(CMAKE_C_COMPILER   clang)
+    set(CMAKE_ASM_COMPILER clang)
+    set(CMAKE_OBJCOPY      llvm-objcopy)
 endif()
 
 set(CMAKE_ASM_COMPILER_TARGET riscv64-unknown-elf)
@@ -34,12 +34,16 @@ set(COMMON_OBJS "${CMAKE_SOURCE_DIR}/device/boot/init_vectors.S")
 
 string(CONCAT CMAKE_CXX_FLAGS_INIT
   "-std=c++20 -O0 -g"
-  " -fno-builtin -fno-exceptions -fno-c++-static-destructors -fno-rtti -Wall -Wextra"
+  " -ffreestanding -static"
+  " -fno-builtin -fno-exceptions -fno-c++-static-destructors -fno-rtti"
+  " -Wall -Wextra"
 )
 
 string(CONCAT CMAKE_C_FLAGS_INIT
   "-std=c99 -O0 -g"
-  " -fno-builtin -fno-exceptions -fno-c++-static-destructors -fno-rtti -Wall -Wextra"
+  " -ffreestanding -static"
+  " -fno-builtin"
+  " -Wall -Wextra"
 )
 
 set(CMAKE_ASM_FLAGS_INIT "")
