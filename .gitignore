@@ -5,12 +5,9 @@
 # Build artefacts
 build
 
-# Object files
-sw/**/*.o
-sw/**/out
-
 # Verilator sim outputs
 *.fst
+*.fst.hier
 *.log
 *.dasm
 *.csv
