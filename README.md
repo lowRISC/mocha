@@ -41,6 +41,7 @@ This is the current memory map for Mocha, where the base and top addresses are i
 ## Developer guide
 
 ### Setup Python virtual environment
+
 #### Using uv on macOS and Linux
 
 ```sh
@@ -69,6 +70,7 @@ cmake -B build/sw/ -S ./sw && cmake --build build/sw -j $(nproc)
 
 ### Simulation
 
+We use Verilator to simulate our hardware design and use FuseSoC as a build system:
 ```sh
 # Build simulator.
 fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
@@ -76,8 +78,11 @@ fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc
 build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
 ```
 
+One specific feature of our simulator is that you can exit the simulation by using the following magic string:
+`Safe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7`
 
 ### Build FPGA bitstream
+
 Make sure vivado is on your path, then run:
 ```sh
 # Generate vmem file to preload into SRAM
@@ -89,6 +94,7 @@ fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_moc
 ```
 
 ### Test on Genesys 2
+
 1. Open a UART terminal with baud rate 921600
 2. Load the bitstream onto Genesys 2
 
