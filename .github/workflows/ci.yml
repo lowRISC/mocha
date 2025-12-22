@@ -39,6 +39,14 @@ jobs:
         run: |
           cmake -B build/sw -S sw
 
+      - name: Lint - Clang Format
+        run: |
+          util/clang_format.py -i --dry-run -Werror
+
+      - name: Lint - Clang Tidy
+        run: |
+          util/clang_tidy.py
+
       - name: Build software
         run: |
           cmake --build build/sw -j $(nproc)
