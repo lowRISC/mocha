@@ -12,7 +12,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ["self-hosted", "nixos", "X64"]
 
     defaults:
       run:
@@ -21,19 +21,13 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: License check
-        uses: fsfe/reuse-action@v6
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-        with:
-          extra_nix_config: |
-            substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
-            trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-
       - name: Prepare Nix environment
         run: |
           true
+
+      - name: License check
+        run: |
+          reuse lint
 
       - name: Check auto-generated artefacts
         run: |
