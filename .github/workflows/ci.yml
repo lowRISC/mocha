@@ -14,6 +14,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        shell: "nix develop -c bash -e {0}"
+
     steps:
       - uses: actions/checkout@v5
 
@@ -28,25 +32,22 @@ jobs:
             trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
       - name: Prepare Nix environment
-        run: "nix develop .#legacy -c true"
+        run: |
+          true
 
       - name: Generate xbar
-        shell: "nix develop .#legacy -c bash -e {0}"
         run: |
           hw/vendor/lowrisc_ip/util/tlgen.py -t hw/top_chip/ip/xbar_peri/data/xbar_peri.hjson -o hw/top_chip/ip/xbar_peri
 
       - name: Build verilator
-        shell: "nix develop .#legacy -c bash -e {0}"
         run: |
           fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
 
       - name: Build software
-        shell: "nix develop -c bash -e {0}"
         run: |
           cmake -B build/sw/ -S ./sw && cmake --build build/sw -j $(nproc)
 
       # Run the UART smoke test including simulation exit on the Verilator simulator.
       - name: Run smoke test
-        shell: "nix develop -c bash -e {0}"
         run: |
           build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
