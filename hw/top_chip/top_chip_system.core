@@ -9,6 +9,7 @@ filesets:
   files_rtl:
     depend:
       - lowrisc:ip:uart
+      - lowrisc:ip:rv_timer
       - lowrisc:ip:xbar_peri
       - lowrisc:prim:onehot
       - lowrisc:tlul:adapter_host

@@ -9,10 +9,14 @@
 tl_device_t xbar_devices[$] = '{
     '{"uart", '{
         '{32'h41000000, 32'h41000fff}
+    }},
+    '{"timer", '{
+        '{32'h44000000, 32'h4400ffff}
 }}};
 
   // List of Xbar hosts
 tl_host_t xbar_hosts[$] = '{
     '{"axi_xbar", 0, '{
-        "uart"}}
+        "uart",
+        "timer"}}
 };

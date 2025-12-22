@@ -68,6 +68,8 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_axi_xbar_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
+  tlul_pkg::tl_h2d_t tl_timer_h2d;
+  tlul_pkg::tl_d2h_t tl_timer_d2h;
 
   // 64-bit memory format signals
   logic                                 mem64_tl_xbar_req;
@@ -96,6 +98,9 @@ module top_chip_system #(
   top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
+  // Interrupts
+  logic intr_timer;
+
   // Instantiate CVA6-CHERI.
   cva6 #(
     .CVA6Cfg       ( CVA6Cfg                ),
@@ -113,45 +118,13 @@ module top_chip_system #(
     .hart_id_i     ('0),
     .irq_i         (2'b0),
     .ipi_i         (1'b0),
-    .time_irq_i    (1'b0),
+    .time_irq_i    (intr_timer),
     .debug_req_i   (1'b0),
     .rvfi_probes_o ( ),
     .cvxif_req_o   ( ),
     .cvxif_resp_i  ('0),
     .noc_req_o     (xbar_host_req[top_pkg::CVA6]),
     .noc_resp_i    (xbar_host_resp[top_pkg::CVA6])
-  );
-
-  // Instantiate our UART block.
-  uart u_uart (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
-
-    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
-    .alert_tx_o ( ),
-
-    .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
-    .racl_error_o    ( ),
-    .lsio_trigger_o  ( ),
-
-    .cio_rx_i    (uart_rx_i),
-    .cio_tx_o    (uart_tx_o),
-    .cio_tx_en_o ( ),
-
-    // Inter-module signals.
-    .tl_i (tl_uart_h2d),
-    .tl_o (tl_uart_d2h),
-
-    // Interrupts.
-    .intr_tx_watermark_o  ( ),
-    .intr_tx_empty_o      ( ),
-    .intr_rx_watermark_o  ( ),
-    .intr_tx_done_o       ( ),
-    .intr_rx_overflow_o   ( ),
-    .intr_rx_frame_err_o  ( ),
-    .intr_rx_break_err_o  ( ),
-    .intr_rx_timeout_o    ( ),
-    .intr_rx_parity_err_o ( )
   );
 
   // AXI SRAM
@@ -294,9 +267,62 @@ module top_chip_system #(
     .tl_axi_xbar_o(tl_axi_xbar_d2h),
 
     // Device interfaces.
-    .tl_uart_o(tl_uart_h2d),
-    .tl_uart_i(tl_uart_d2h),
+    .tl_uart_o  (tl_uart_h2d),
+    .tl_uart_i  (tl_uart_d2h),
+    .tl_timer_o (tl_timer_h2d),
+    .tl_timer_i (tl_timer_d2h),
 
     .scanmode_i (prim_mubi_pkg::MuBi4False)
+  );
+
+  // Instantiate our UART block.
+  uart u_uart (
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
+    .alert_tx_o ( ),
+
+    .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o    ( ),
+    .lsio_trigger_o  ( ),
+
+    .cio_rx_i    (uart_rx_i),
+    .cio_tx_o    (uart_tx_o),
+    .cio_tx_en_o ( ),
+
+    // Inter-module signals.
+    .tl_i (tl_uart_h2d),
+    .tl_o (tl_uart_d2h),
+
+    // Interrupts.
+    .intr_tx_watermark_o  ( ),
+    .intr_tx_empty_o      ( ),
+    .intr_rx_watermark_o  ( ),
+    .intr_tx_done_o       ( ),
+    .intr_rx_overflow_o   ( ),
+    .intr_rx_frame_err_o  ( ),
+    .intr_rx_break_err_o  ( ),
+    .intr_rx_timeout_o    ( ),
+    .intr_rx_parity_err_o ( )
+  );
+
+  // Instantiate timer
+  rv_timer u_timer (
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
+    .alert_tx_o ( ),
+
+    .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o    ( ),
+
+    // Signals to xbar
+    .tl_i (tl_timer_h2d),
+    .tl_o (tl_timer_d2h),
+
+    // Interrupt
+    .intr_timer_expired_hart0_timer0_o (intr_timer)
   );
 endmodule

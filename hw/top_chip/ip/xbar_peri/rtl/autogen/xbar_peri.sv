@@ -7,8 +7,9 @@
 //
 // Interconnect
 // axi_xbar
-//   -> s1n_2
+//   -> s1n_3
 //     -> uart
+//     -> timer
 
 module xbar_peri (
   input clk_i,
@@ -21,6 +22,8 @@ module xbar_peri (
   // Device interfaces
   output tlul_pkg::tl_h2d_t tl_uart_o,
   input  tlul_pkg::tl_d2h_t tl_uart_i,
+  output tlul_pkg::tl_h2d_t tl_timer_o,
+  input  tlul_pkg::tl_d2h_t tl_timer_i,
 
   input prim_mubi_pkg::mubi4_t scanmode_i
 );
@@ -33,30 +36,37 @@ module xbar_peri (
   logic unused_scanmode;
   assign unused_scanmode = ^scanmode_i;
 
-  tl_h2d_t tl_s1n_2_us_h2d ;
-  tl_d2h_t tl_s1n_2_us_d2h ;
+  tl_h2d_t tl_s1n_3_us_h2d ;
+  tl_d2h_t tl_s1n_3_us_d2h ;
 
 
-  tl_h2d_t tl_s1n_2_ds_h2d [1];
-  tl_d2h_t tl_s1n_2_ds_d2h [1];
+  tl_h2d_t tl_s1n_3_ds_h2d [2];
+  tl_d2h_t tl_s1n_3_ds_d2h [2];
 
   // Create steering signal
-  logic [0:0] dev_sel_s1n_2;
+  logic [1:0] dev_sel_s1n_3;
 
 
 
-  assign tl_uart_o = tl_s1n_2_ds_h2d[0];
-  assign tl_s1n_2_ds_d2h[0] = tl_uart_i;
+  assign tl_uart_o = tl_s1n_3_ds_h2d[0];
+  assign tl_s1n_3_ds_d2h[0] = tl_uart_i;
 
-  assign tl_s1n_2_us_h2d = tl_axi_xbar_i;
-  assign tl_axi_xbar_o = tl_s1n_2_us_d2h;
+  assign tl_timer_o = tl_s1n_3_ds_h2d[1];
+  assign tl_s1n_3_ds_d2h[1] = tl_timer_i;
+
+  assign tl_s1n_3_us_h2d = tl_axi_xbar_i;
+  assign tl_axi_xbar_o = tl_s1n_3_us_d2h;
 
   always_comb begin
     // default steering to generate error response if address is not within the range
-    dev_sel_s1n_2 = 1'd1;
-    if ((tl_s1n_2_us_h2d.a_address &
+    dev_sel_s1n_3 = 2'd2;
+    if ((tl_s1n_3_us_h2d.a_address &
          ~(ADDR_MASK_UART)) == ADDR_SPACE_UART) begin
-      dev_sel_s1n_2 = 1'd0;
+      dev_sel_s1n_3 = 2'd0;
+
+    end else if ((tl_s1n_3_us_h2d.a_address &
+                  ~(ADDR_MASK_TIMER)) == ADDR_SPACE_TIMER) begin
+      dev_sel_s1n_3 = 2'd1;
 end
   end
 
@@ -65,17 +75,17 @@ end
   tlul_socket_1n #(
     .HReqDepth (4'h0),
     .HRspDepth (4'h0),
-    .DReqDepth (4'h0),
-    .DRspDepth (4'h0),
-    .N         (1)
-  ) u_s1n_2 (
+    .DReqDepth (8'h0),
+    .DRspDepth (8'h0),
+    .N         (2)
+  ) u_s1n_3 (
     .clk_i        (clk_i),
     .rst_ni       (rst_ni),
-    .tl_h_i       (tl_s1n_2_us_h2d),
-    .tl_h_o       (tl_s1n_2_us_d2h),
-    .tl_d_o       (tl_s1n_2_ds_h2d),
-    .tl_d_i       (tl_s1n_2_ds_d2h),
-    .dev_select_i (dev_sel_s1n_2)
+    .tl_h_i       (tl_s1n_3_us_h2d),
+    .tl_h_o       (tl_s1n_3_us_d2h),
+    .tl_d_o       (tl_s1n_3_ds_h2d),
+    .tl_d_i       (tl_s1n_3_ds_d2h),
+    .dev_select_i (dev_sel_s1n_3)
   );
 
 endmodule
