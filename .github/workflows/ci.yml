@@ -63,3 +63,7 @@ jobs:
       - name: Run smoke test
         run: |
           build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
+
+      - name: Check vendor
+        run: |
+          util/vendor_check.sh
