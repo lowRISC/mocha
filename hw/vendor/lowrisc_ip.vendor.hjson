@@ -20,9 +20,10 @@
     {from: "util/tlgen",      to: "util/tlgen"},
 
     // Hardware IP blocks.
-    {from: "hw/ip/lc_ctrl", to: "ip/lc_ctrl"}, // Dependency of crossbar.
-    {from: "hw/ip/tlul",    to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
-    {from: "hw/ip/uart",    to: "ip/uart"}, // Serial input and output.
+    {from: "hw/ip/lc_ctrl",  to: "ip/lc_ctrl"}, // Dependency of crossbar.
+    {from: "hw/ip/rv_timer", to: "ip/rv_timer"}, // Timer.
+    {from: "hw/ip/tlul",     to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
+    {from: "hw/ip/uart",     to: "ip/uart"}, // Serial input and output.
 
     // Primitives.
     {from: "hw/ip/prim",         to: "ip/prim"},
