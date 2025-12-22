@@ -44,3 +44,9 @@ jobs:
         shell: "nix develop -c bash -e {0}"
         run: |
           cmake -B build/sw/ -S ./sw && cmake --build build/sw -j $(nproc)
+
+      # Run the UART smoke test including simulation exit on the Verilator simulator.
+      - name: Run smoke test
+        shell: "nix develop -c bash -e {0}"
+        run: |
+          build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
