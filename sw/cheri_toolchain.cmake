@@ -27,10 +27,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 # linkerscript to use
-set(LDS "${CMAKE_SOURCE_DIR}/device/boot/mocha.ld")
+set(LDS "${CMAKE_SOURCE_DIR}/device/lib/boot/mocha.ld")
 
 # common objects to include in most executables
-set(COMMON_OBJS "${CMAKE_SOURCE_DIR}/device/boot/init_vectors.S")
+set(COMMON_OBJS "${CMAKE_SOURCE_DIR}/device/lib/boot/init_vectors.S")
 
 string(CONCAT CMAKE_CXX_FLAGS_INIT
   "-std=c++20 -O0 -g"
