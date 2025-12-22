@@ -71,6 +71,10 @@ int main(void) {
 
   puts("Hello CHERI Mocha!\n");
 
+  // Trying out simulation exit.
+  puts("Safe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7");
+  puts("This should not be printed in simulation.\r\n");
+
   while(1) {
   }
 
