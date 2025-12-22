@@ -62,10 +62,29 @@ source .venv/bin/activate
 nix develop
 ```
 
-### Software build
+### Software
+
+#### Build
+
+Software binaries are built using CMake.
 
 ```sh
-cmake -B build/sw/ -S ./sw && cmake --build build/sw -j $(nproc)
+# Setup the buildsystem.
+cmake -B build/sw -S sw
+# Build the software.
+cmake --build build/sw -j $(nproc)
+```
+
+#### Code Quality
+
+For software written in C, `clang-format` and `clang-tidy` are used format and lint the code. Wrapper scripts to run these on all C files in the project are provided for convenience.
+
+To format and lint, run:
+```sh
+# Format all C files.
+util/clang_format.py
+# Lint all C files.
+util/clang_tidy.py
 ```
 
 ### Simulation
