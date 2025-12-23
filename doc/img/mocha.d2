@@ -4,25 +4,25 @@ vars: {
     layout-engine: elk
     theme-id: 7
   }
-  d2-legend: {
-    Cached {
-      style.stroke-width: 0
-    }
-    Uncached {
-      style.stroke-width: 0
-      style.fill: hotpink
-    }
-    Tag aware {
-      style.fill: transparent
-      style.stroke-width: 5
-    }
-    Tag oblivious {
-      style.fill: transparent
-      style.stroke-width: 5
-      style.stroke-dash: 3
-      style.stroke: black
-    }
-  }
+  # d2-legend: {
+  #   Cached {
+  #     style.stroke-width: 0
+  #   }
+  #   Uncached {
+  #     style.stroke-width: 0
+  #     style.fill: hotpink
+  #   }
+  #   Tag aware {
+  #     style.fill: transparent
+  #     style.stroke-width: 5
+  #   }
+  #   Tag oblivious {
+  #     style.fill: transparent
+  #     style.stroke-width: 5
+  #     style.stroke-dash: 3
+  #     style.stroke: black
+  #   }
+  # }
 }
 
 dram: |md
@@ -159,6 +159,24 @@ UART.style.stroke-dash: 3
 Mocha.Peripherals.GPIO <-> GPIO
 GPIO.style.stroke-dash: 3
 
+# Legend
+Legend {
+Cached
+Uncached
+Tag aware
+Tag oblivious
+Uncached.style.fill: hotpink
+Tag aware.style.fill: transparent
+Tag oblivious.style.fill: transparent
+Tag oblivious.style.stroke-dash: 3
+}
+Legend <-> Mocha {
+    style: {
+        stroke: transparent
+    }
+}
+Legend.style.fill: transparent
+
 # Set global font size
 *.style.font-size: 50
 *.*.style.font-size: 50
@@ -174,4 +192,8 @@ GPIO.style.stroke-dash: 3
 *.*.style.stroke: black
 *.*.*.style.stroke: black
 
+# Global overrides
 Mocha.style.stroke: transparent
+Legend.style.stroke: transparent
+Legend.Cached.style.stroke-width: 0
+Legend.Uncached.style.stroke-width: 0
