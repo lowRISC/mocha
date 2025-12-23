@@ -35,6 +35,14 @@ jobs:
         run: |
           true
 
+      - name: Lint - Check Crossbar
+        run: |
+          util/xbar_check.sh
+
+      - name: Lint - Check Vendor
+        run: |
+          util/vendor_check.sh
+
       - name: Generate software buildsystem
         run: |
           cmake -B build/sw -S sw
@@ -51,10 +59,6 @@ jobs:
         run: |
           cmake --build build/sw -j $(nproc)
 
-      - name: Generate xbar
-        run: |
-          hw/vendor/lowrisc_ip/util/tlgen.py -t hw/top_chip/ip/xbar_peri/data/xbar_peri.hjson -o hw/top_chip/ip/xbar_peri
-
       - name: Build verilator
         run: |
           fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
@@ -62,7 +66,3 @@ jobs:
       - name: Run verilator software tests
         run: |
           ctest --test-dir build/sw -R sim_verilator
-
-      - name: Check vendor
-        run: |
-          util/vendor_check.sh
