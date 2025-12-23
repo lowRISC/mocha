@@ -646,7 +646,9 @@ dependencies = [
     { name = "packaging" },
     { name = "pycryptodome" },
     { name = "pydantic" },
+    { name = "pyright" },
     { name = "pyserial" },
+    { name = "ruff" },
     { name = "semantic-version" },
     { name = "setuptools" },
     { name = "tabulate" },
@@ -655,10 +657,8 @@ dependencies = [
 
 [package.optional-dependencies]
 ci = [
-    { name = "pyright" },
     { name = "pytest" },
     { name = "reuse" },
-    { name = "ruff" },
     { name = "twine" },
 ]
 dev = [
@@ -666,9 +666,7 @@ dev = [
     { name = "twine" },
 ]
 linting = [
-    { name = "pyright" },
     { name = "reuse" },
-    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -682,11 +680,11 @@ requires-dist = [
     { name = "packaging", specifier = ">=25.0" },
     { name = "pycryptodome", specifier = ">=3.23.0,<4" },
     { name = "pydantic", specifier = ">=2.8.2,<3" },
-    { name = "pyright", marker = "extra == 'linting'", specifier = ">=1.1.403" },
+    { name = "pyright", specifier = ">=1.1.403" },
     { name = "pyserial", specifier = "==3.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
     { name = "reuse", marker = "extra == 'linting'", specifier = ">=5.0.2" },
-    { name = "ruff", marker = "extra == 'linting'", specifier = ">=0.9.6" },
+    { name = "ruff", specifier = ">=0.9.6" },
     { name = "semantic-version", specifier = ">=2.10.0,<3" },
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "tabulate", specifier = ">=0.9.0,<0.10" },

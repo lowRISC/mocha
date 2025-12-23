@@ -22,11 +22,11 @@ dependencies = [
     "packaging>=25.0",
     "mako>=1.2",
     "fusesoc==2.4.3",
+    "pyright>=1.1.403",
+    "ruff>=0.9.6",
 ]
 [project.optional-dependencies]
 linting = [
-  "pyright>=1.1.403",
-  "ruff>=0.9.6",
   "reuse>=5.0.2",
 ]
 dev = [
@@ -42,7 +42,7 @@ py-modules = []
 target-version = "py310"
 line-length = 79
 extend-exclude = [
-  "vendor/",
+  "hw/vendor",
   "util/vendor.py",
 ]
 
