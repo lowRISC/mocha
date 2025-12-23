@@ -4,21 +4,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Wrapper around clang-tidy which provides the default build directory and
-# enumerates the C files to be linted. Passes through any additional arguments.
+# enumerates the C/C++ files to be linted. Passes through any additional
+# arguments.
 
 import os
 import sys
+from pathlib import Path
 
 DEFAULT_BUILD_DIR = "build/sw"
 
 
 def main():
     c_files = []
+    tidy_extensions = [".c", ".cc"]
     for directory, _, files in os.walk("sw"):
         c_files.extend(
-            os.path.join(directory, file)
+            Path(directory) / Path(file)
             for file in files
-            if file.endswith(".c")
+            if (Path(file).suffix in tidy_extensions)
         )
 
     cmd = "clang-tidy"
