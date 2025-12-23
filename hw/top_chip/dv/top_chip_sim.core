@@ -1,0 +1,56 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:top_chip_sim:0.1"
+description: "Chip-level simulation of Mocha chip"
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:mocha:top_chip_system
+
+  files_dv:
+    depend:
+      - lowrisc:mocha_dv:sim_sram_axi:0.1
+      - lowrisc:dv:sw_test_status
+      - lowrisc:dv:sw_logger_if
+      - lowrisc:mocha_dv:top_chip_dv_test
+      - lowrisc:dv:mem_bkdr_util
+      - lowrisc:dv:pins_if
+      - lowrisc:dv:common_ifs
+      - lowrisc:dv:dv_macros
+      - lowrisc:prim:prim_legacy_pkg
+      - lowrisc:prim_generic:ram_2p
+      - lowrisc:dv:xbar_macros
+      - lowrisc:dv_dpi_c:uartdpi:0.1
+      - lowrisc:dv_dpi_sv:uartdpi:0.1
+    files:
+      - tb/tb.sv
+      - tb/chip_hier_macros.svh: {is_include_file: true}
+    file_type: systemVerilogSource
+
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+
+  sim:
+    <<: *default_target
+    parameters:
+      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
+      - INST_SIM_SRAM=false
+    filesets:
+      - files_dv
+    toplevel: tb
+    # This is required as DVSim always expects a scr file, but in practice we are only running
+    # fusesoc up to the point it generates the filelist file.
+    default_tool: vcs
+
+parameters:
+  PRIM_DEFAULT_IMPL:
+    datatype: str
+    paramtype: vlogdefine
+    description: Primitives implementation to use, e.g. "prim_pkg::ImplGeneric".
+    default: prim_pkg::ImplGeneric

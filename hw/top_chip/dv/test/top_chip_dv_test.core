@@ -1,0 +1,22 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:top_chip_dv_test"
+description: "Test for Mocha chip simulation"
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:mocha_dv:top_chip_dv_env
+      - lowrisc:dv:common_ifs
+      - lowrisc:dv:dv_utils
+    files:
+      - top_chip_dv_test_pkg.sv
+      - top_chip_dv_base_test.sv: {is_include_file: true}
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv
