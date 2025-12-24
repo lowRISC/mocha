@@ -21,3 +21,11 @@ target_compile_options(${NAME} PUBLIC ${NON_CHERI_FLAGS})
 target_link_libraries(${NAME} hal startup)
 add_exe_artefacts(${NAME})
 add_verilator_test(${NAME})
+
+
+set(NAME timer_smoketest)
+add_executable(${NAME} timer/smoketest.c)
+target_compile_options(${NAME} PUBLIC ${NON_CHERI_FLAGS})
+target_link_libraries(${NAME} hal startup)
+add_exe_artefacts(${NAME})
+add_verilator_test(${NAME})
