@@ -35,21 +35,13 @@ jobs:
         run: |
           true
 
+      - name: Check auto-generated artefacts
+        run: |
+          util/check_artefacts.py
+
       - name: Lint - Ruff
         run: |
           ruff check
-
-      - name: Lint - Check Lockfiles
-        run: |
-          util/lockfiles_check.sh
-
-      - name: Lint - Check Crossbar
-        run: |
-          util/xbar_check.sh
-
-      - name: Lint - Check Vendor
-        run: |
-          util/vendor_check.sh
 
       - name: Generate software buildsystem
         run: |
