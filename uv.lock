@@ -648,25 +648,14 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyright" },
     { name = "pyserial" },
+    { name = "pytest" },
+    { name = "reuse" },
     { name = "ruff" },
     { name = "semantic-version" },
     { name = "setuptools" },
     { name = "tabulate" },
+    { name = "twine" },
     { name = "wheel" },
-]
-
-[package.optional-dependencies]
-ci = [
-    { name = "pytest" },
-    { name = "reuse" },
-    { name = "twine" },
-]
-dev = [
-    { name = "pytest" },
-    { name = "twine" },
-]
-linting = [
-    { name = "reuse" },
 ]
 
 [package.metadata]
@@ -676,22 +665,20 @@ requires-dist = [
     { name = "hjson", specifier = "==3.1.0" },
     { name = "jinja2", specifier = ">=3.1.6,<4" },
     { name = "mako", specifier = ">=1.2" },
-    { name = "mocha", extras = ["linting", "dev"], marker = "extra == 'ci'" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pycryptodome", specifier = ">=3.23.0,<4" },
     { name = "pydantic", specifier = ">=2.8.2,<3" },
     { name = "pyright", specifier = ">=1.1.403" },
     { name = "pyserial", specifier = "==3.5" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.1" },
-    { name = "reuse", marker = "extra == 'linting'", specifier = ">=5.0.2" },
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "reuse", specifier = ">=5.0.2" },
     { name = "ruff", specifier = ">=0.9.6" },
     { name = "semantic-version", specifier = ">=2.10.0,<3" },
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "tabulate", specifier = ">=0.9.0,<0.10" },
-    { name = "twine", marker = "extra == 'dev'", specifier = ">=6.1.0" },
+    { name = "twine", specifier = ">=6.1.0" },
     { name = "wheel", specifier = "==0.41.2" },
 ]
-provides-extras = ["linting", "dev", "ci"]
 
 [[package]]
 name = "more-itertools"

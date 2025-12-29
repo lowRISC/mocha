@@ -24,16 +24,10 @@ dependencies = [
     "fusesoc==2.4.3",
     "pyright>=1.1.403",
     "ruff>=0.9.6",
+    "reuse>=5.0.2",
+    "pytest>=8.4.1",
+    "twine>=6.1.0",
 ]
-[project.optional-dependencies]
-linting = [
-  "reuse>=5.0.2",
-]
-dev = [
-  "pytest>=8.4.1",
-  "twine>=6.1.0",
-]
-ci = ["mocha[linting,dev]"]
 
 [tool.setuptools]
 py-modules = []
