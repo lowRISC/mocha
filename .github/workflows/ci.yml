@@ -39,6 +39,10 @@ jobs:
         run: |
           ruff check
 
+      - name: Lint - Check Lockfiles
+        run: |
+          util/lockfiles_check.sh
+
       - name: Lint - Check Crossbar
         run: |
           util/xbar_check.sh
