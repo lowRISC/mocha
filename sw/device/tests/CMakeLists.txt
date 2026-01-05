@@ -11,6 +11,7 @@ endmacro()
 set(NAME test_framework_test)
 add_executable(${NAME})
 target_link_libraries(${NAME} hal startup)
+add_exe_artefacts(${NAME})
 add_verilator_test(${NAME})
 
 
@@ -18,4 +19,5 @@ set(NAME uart_smoketest)
 add_executable(${NAME} uart/smoketest.c)
 target_compile_options(${NAME} PUBLIC ${NON_CHERI_FLAGS})
 target_link_libraries(${NAME} hal startup)
+add_exe_artefacts(${NAME})
 add_verilator_test(${NAME})

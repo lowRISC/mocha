@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 4.1)
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-  set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cheri_toolchain.cmake")
+    set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cheri_toolchain.cmake")
 endif()
 
 project(mocha_sw LANGUAGES C CXX ASM)
