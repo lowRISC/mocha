@@ -85,6 +85,12 @@
               llvm_cheri
             ]);
           buildInputs = with pkgs; [libelf zlib];
+          env = {
+            # Prevent uv from managing Python downloads
+            UV_PYTHON_DOWNLOADS = "never";
+            # Force uv to use nixpkgs Python interpreter
+            UV_PYTHON = pythonSet.python.interpreter;
+          };
         };
         legacy = pkgs.mkShell {
           name = "mocha-legacy";
