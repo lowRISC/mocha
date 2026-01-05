@@ -7,6 +7,8 @@
 .option norvc
 .zero 128
     /* On the CVA-6, RAM+0x80 is the reset vector */
+.global _init_vector
+_init_vector:
     j _start
 .zero 60
     /* On the CVA-6, RAM+0xC0 is the reset value of mtvec */

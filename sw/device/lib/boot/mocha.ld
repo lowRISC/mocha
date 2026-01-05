@@ -13,7 +13,8 @@ MEMORY {
 _stack_len = LENGTH(stack);
 _stack_top = ORIGIN(stack) + LENGTH(stack);
 
-ENTRY(_start)
+/* Provided in init_vectors.S, immediately jumps into _start. */
+ENTRY(_init_vector)
 
 SECTIONS {
     .init_vectors ORIGIN(ram) : {
