@@ -9,22 +9,19 @@ module chip_mocha_genesys2 #(
   input  logic sysclk_200m_ni,
   input  logic sysclk_200m_pi,
 
+  // External reset
+  input  logic ext_rst_ni,
+
   // UART
   input  logic uart_rx_i,
   output logic uart_tx_o
 );
-  // Local parameters
-  localparam int ResetCycles = 3;
-
   // Internal clock and reset signals
   logic clk_50m;
   logic rst_n;
 
   // PLL lock signal
   logic pll_locked;
-
-  // Reset generation shift register
-  logic [ResetCycles-1:0] rst_n_shreg;
 
   // Clock generation
   clkgen_xil7series clk_gen(
@@ -34,16 +31,8 @@ module chip_mocha_genesys2 #(
     .clk_50m_o   (clk_50m)
   );
 
-  // Reset pulse generation
-  always_ff @(posedge clk_50m or negedge pll_locked) begin
-    if (!pll_locked) begin
-      rst_n_shreg <= '0;
-    end else begin
-      rst_n_shreg <= {1'b1, rst_n_shreg[ResetCycles-1:1]};
-    end
-  end
-
-  assign rst_n = rst_n_shreg[0];
+  // Internal reset generation
+  assign rst_n = pll_locked & ext_rst_ni;
 
   // CHERI Mocha top
   top_chip_system #(
