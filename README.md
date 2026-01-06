@@ -119,11 +119,6 @@ ctest --test-dir build/sw -R sim_verilator
 
 Make sure vivado is on your path, then run:
 ```sh
-# Generate vmem file to preload into SRAM
-llvm-objcopy -O binary build/sw/device/examples/hello_world/hello_world build/sw/device/examples/hello_world/hello_world.bin
-srec_cat build/sw/device/examples/hello_world/hello_world.bin -binary -byte-swap 8 -o build/sw/device/examples/hello_world/hello_world.vmem -vmem 64
-
-# Build bitstream
 fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --BootRomInitFile=$PWD/build/sw/device/examples/hello_world/hello_world.vmem
 ```
 
