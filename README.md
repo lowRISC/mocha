@@ -62,6 +62,15 @@ source .venv/bin/activate
 nix develop
 ```
 
+Alternatively if you are using `direnv` then this can be automated by enabling `direnv`.
+
+```sh
+direnv allow .
+```
+
+When entering the directory from then on you will automatically enter the dev shell.
+Changing directory outside the repository root will deactivate the dev shell for you.
+
 ### Software
 
 #### Build
