@@ -27,6 +27,7 @@ dependencies = [
     "reuse>=5.0.2",
     "pytest>=8.4.1",
     "twine>=6.1.0",
+    "dvsim>=1.7.0",
 ]
 
 [tool.setuptools]
