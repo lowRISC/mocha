@@ -1,0 +1,26 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  // This is a cfg hjson group for DV simulations. It includes ALL individual DV simulation
+  // cfgs of the IPs and the full chip used in top_chip. This enables the common
+  // regression sets to be run in one shot.
+  name: top_chip_batch_sim
+
+  import_cfgs: [
+    // Project wide common cfg file
+    "{proj_root}/hw/data/common_project_cfg.hjson"
+  ]
+
+  flow: sim
+
+  rel_path: "hw/top_chip/dv/summary"
+
+  // Maintain alphabetical order below.
+  use_cfgs: [
+    // IPs.
+    "{proj_root}/hw/vendor/lowrisc_ip/ip/uart/dv/uart_sim_cfg.hjson",
+    // Top-level IPs.
+    // Top level.
+  ]
+}

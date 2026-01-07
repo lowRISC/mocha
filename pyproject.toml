@@ -33,7 +33,7 @@ dependencies = [
     "pytest>=8.4.1",
     "twine>=6.1.0",
     # Design verification runner.
-    "dvsim>=1.7.0",
+    "dvsim>=1.7.1",
 ]
 
 [tool.setuptools]
