@@ -7,6 +7,11 @@
     beqz \tmp, failure
 .endm
 
+.macro expect_cap_equal tmp creg1 creg2
+    sceq \tmp, \creg1, \creg2
+    beqz \tmp, failure
+.endm
+
 .macro expect_tag_unset tmp creg
     gctag \tmp, \creg
     bnez \tmp, failure
@@ -36,13 +41,13 @@ _start:
     csc ct0, 16(ct0)
     csc ct0, 32(ct0)
 
-    // Check that tags are all set.
+    // Check that capability read is same as written.
     clc ct1, 0(ct0)
-    expect_tag_set t2, ct1
+    expect_cap_equal t2, ct0, ct1
     clc ct1, 16(ct0)
-    expect_tag_set t2, ct1
+    expect_cap_equal t2, ct0, ct1
     clc ct1, 32(ct0)
-    expect_tag_set t2, ct1
+    expect_cap_equal t2, ct0, ct1
 
     // Invalidate the second capability with write to least significant word.
     csw zero,16(ct0)
