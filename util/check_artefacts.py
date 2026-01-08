@@ -27,6 +27,8 @@ COMMANDS: list[list[str]] = [
         "-o",
         "hw/top_chip/ip/xbar_peri",
     ],
+    # generate PLIC
+    ["util/generate_plic.sh"],
     # vendored hardware dependencies
     ["util/vendor.py", "hw/vendor/cva6_cheri.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/lowrisc_ip.vendor.hjson"],

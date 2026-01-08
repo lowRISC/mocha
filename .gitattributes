@@ -5,3 +5,4 @@
 *.lock lingust-generated=true
 doc/img/mocha.svg linguist-generated=true
 hw/top_chip/ip/xbar_peri/*/autogen/* linguist-generated=true
+hw/top_chip/ip_autogen/* linguist-generated=true

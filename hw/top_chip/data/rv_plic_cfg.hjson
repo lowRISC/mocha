@@ -1,0 +1,13 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  param_values: {
+    "topname": "mocha",
+    "src": 32,
+    "target": 2,
+    "prio": 3
+  },
+
+  "instance_name": "mocha_rv_plic"
+}
