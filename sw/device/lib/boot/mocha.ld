@@ -33,8 +33,15 @@ SECTIONS {
         /* Small rodata before large rodata */
         *(.srodata)
         *(.srodata.*)
-        *(.rodata);
+        *(.rodata)
         *(.rodata.*)
+        . = ALIGN(8);
+    } > ram
+
+    /* capability relocation entries */
+    /* __start___cap_relocs and __stop___cap_relocs are provided by the toolchain */
+    __cap_relocs : {
+        *(__cap_relocs)
         . = ALIGN(8);
     } > ram
 
@@ -43,7 +50,7 @@ SECTIONS {
         /* Small data before large data */
         *(.sdata)
         *(.sdata.*)
-        *(.data);
+        *(.data)
         *(.data.*)
         . = ALIGN(8);
     } > ram
