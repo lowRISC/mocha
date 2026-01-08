@@ -10,8 +10,9 @@ MEMORY {
 }
 
 /* Stack */
+_stack_bottom = ORIGIN(stack);
 _stack_len = LENGTH(stack);
-_stack_top = ORIGIN(stack) + LENGTH(stack);
+_stack_top = _stack_bottom + _stack_len;
 
 /* Provided in init_vectors.S, immediately jumps into _start. */
 ENTRY(_init_vector)
