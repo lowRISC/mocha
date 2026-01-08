@@ -5,9 +5,11 @@
 add_library(startup OBJECT boot.S init_vectors.S)
 target_compile_options(startup PUBLIC ${NON_CHERI_FLAGS})
 
+add_library(startup_cheri OBJECT boot.S init_vectors.S)
+target_compile_options(startup_cheri PUBLIC ${CHERI_FLAGS})
+
 add_library(init_vectors OBJECT init_vectors.S)
 target_compile_options(init_vectors PUBLIC ${NON_CHERI_FLAGS})
 
 add_library(init_vectors_cheri OBJECT init_vectors.S)
 target_compile_options(init_vectors_cheri PUBLIC ${CHERI_FLAGS})
-
