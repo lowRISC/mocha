@@ -1,0 +1,43 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "ip/udp.rdl"
+`include "ip/uart.rdl"
+`include "ip/rv_timer.rdl"
+`include "ip/plic.rdl"
+`include "ip/spi_device.rdl"
+
+addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;};
+
+addrmap top_mocha {
+  external mem {
+    mementries = 0x20000; memwidth=8; // 128KiB
+  } ROM @ 0x0008_0000;
+
+  external mem {
+    mementries = 0x20000; memwidth=8; // 128KiB
+  } SRAM @ 0x1000_0000;
+
+  reserved DEBUG_MODULE @ 0x2000_0000;
+
+  reserved GPIO @ 0x4000_0000;
+
+  reserved Mailbox @ 0x4001_0000;
+
+  uart UART[1] @ 0x4100_0000 += 0x10000;
+
+  reserved I2C @ 0x4200_0000;
+
+  spi_device SPI_DEVICE[1] @ 0x4300_0000 += 0x10000;
+
+  rv_timer TIMER[1] @ 0x4400_0000 += 0x10000;
+
+  rv_plic PLIC @ 0x4800_0000;
+
+  external mem {
+    mementries = 0x80000000; memwidth=8; // 2GiB
+  } DRAM @ 0x8000_0000;
+};
+  

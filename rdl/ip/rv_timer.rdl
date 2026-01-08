@@ -1,0 +1,178 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap rv_timer #(
+    longint N_HARTS = 1,
+    longint N_TIMERS = 1,
+    longint NumAlerts = 1
+){
+    bus_interface_cfg = BusInterfaceCfg'{
+        racl_support : true,
+        direction : BusDirection::Device,
+        protocol : BusProtocol::TlUl,
+        hier_path : "u_reg"
+    };
+    signal {
+        desc = "Incoming RACL policy vector from a racl_ctrl instance.The policy selection vector (parameter) selects the policy for each register.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "racl_policy_vec";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_POLICIES;
+
+    signal {
+        desc = "RACL error log information of this module.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "racl_error_log";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_ERROR;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } TL;
+
+    signal {
+        desc = "raised if hart0's timer0 expired (mtimecmp >= mtime)";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } TIMER_EXPIRED_HART0_TIMER0;
+
+    signal {
+        desc = "This fatal alert is triggered when a fatal TL-UL bus integrity fault is detected inside the RV_TIMER unit.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_FAULT;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    external reg {
+        desc = "Alert Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_FAULT[0:0];
+    } ALERT_TEST @ 0x0;
+
+    reg {
+        desc = "Configuration for Hart 0";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Prescaler to generate tick";
+        } PRESCALE[11:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "Incremental value for each tick";
+        } STEP[23:16];
+    } CFG0 @ 0x10C;
+
+    reg {
+        desc = "Timer value Lower";
+        field {
+            sw = rw;
+            hw = rw;
+            reset = 0x0;
+            desc = "Timer value [31:0]";
+        } V[31:0];
+    } TIMER_V_LOWER0 @ 0x110;
+
+    reg {
+        desc = "Timer value Upper";
+        field {
+            sw = rw;
+            hw = rw;
+            reset = 0x0;
+            desc = "Timer value [63:32]";
+        } V[31:0];
+    } TIMER_V_UPPER0 @ 0x114;
+
+    reg {
+        desc = "Timer value Lower";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0xffffffff;
+            swmod = true;
+            desc = "Timer compare value [31:0]";
+        } V[31:0];
+    } COMPARE_LOWER0_0 @ 0x118;
+
+    reg {
+        desc = "Timer value Upper";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0xffffffff;
+            swmod = true;
+            desc = "Timer compare value [63:32]";
+        } V[31:0];
+    } COMPARE_UPPER0_0 @ 0x11C;
+
+    reg {
+        compacted = true;
+        desc = "Control register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, timer operates";
+        } ACTIVE[0:0];
+    } CTRL[1] @ 0x4;
+
+    reg {
+        compacted = true;
+        desc = "Interrupt Enable";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Interrupt Enable for timer";
+        } IE[0:0];
+    } INTR_ENABLE0[1] @ 0x100;
+
+    reg {
+        compacted = true;
+        desc = "Interrupt Status";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Interrupt status for timer";
+        } IS[0:0];
+    } INTR_STATE0[1] @ 0x104;
+
+    external reg {
+        compacted = true;
+        desc = "Interrupt test register";
+        field {
+            sw = w;
+            hw = r;
+            swmod = true;
+            desc = "Interrupt test for timer";
+        } T[0:0];
+    } INTR_TEST0[1] @ 0x108;
+
+};

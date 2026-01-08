@@ -1,0 +1,1275 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap spi_device #(
+    longint SramDepth = 1024,
+    longint SramEgressDepth = 848,
+    longint SramIngressDepth = 112,
+    longint SramReadBufferOffset = 0,
+    longint SramReadBufferDepth = 512,
+    longint SramMailboxOffset = 512,
+    longint SramMailboxDepth = 256,
+    longint SramSfdpOffset = 768,
+    longint SramSfdpDepth = 64,
+    longint SramTpmRdFifoOffset = 832,
+    longint SramTpmRdFifoDepth = 16,
+    longint SramPayloadOffset = 0,
+    longint SramPayloadDepth = 64,
+    longint SramCmdFifoOffset = 64,
+    longint SramCmdFifoDepth = 16,
+    longint SramAddrFifoOffset = 80,
+    longint SramAddrFifoDepth = 16,
+    longint SramTpmWrFifoOffset = 96,
+    longint SramTpmWrFifoDepth = 16,
+    longint NumCmdInfo = 24,
+    longint NumLocality = 5,
+    longint TpmRdFifoPtrW = 5,
+    longint TpmRdFifoWidth = 32,
+    longint NumAlerts = 1
+){
+    bus_interface_cfg = BusInterfaceCfg'{
+        racl_support : true,
+        direction : BusDirection::Device,
+        protocol : BusProtocol::TlUl,
+        hier_path : "u_reg"
+    };
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "ram_2p_cfg";
+        inter_mod_package = "prim_ram_2p_pkg";
+    } RAM_CFG_SYS2SPI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "ram_2p_cfg_rsp";
+        inter_mod_package = "prim_ram_2p_pkg";
+    } RAM_CFG_RSP_SYS2SPI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "ram_2p_cfg";
+        inter_mod_package = "prim_ram_2p_pkg";
+    } RAM_CFG_SPI2SYS;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "ram_2p_cfg_rsp";
+        inter_mod_package = "prim_ram_2p_pkg";
+    } RAM_CFG_RSP_SPI2SYS;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "passthrough";
+        inter_mod_package = "spi_device_pkg";
+    } PASSTHROUGH;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "logic";
+    } MBIST_EN;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "logic";
+    } SCK_MONITOR;
+
+    signal {
+        desc = "Incoming RACL policy vector from a racl_ctrl instance.The policy selection vector (parameter) selects the policy for each register.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "racl_policy_vec";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_POLICIES;
+
+    signal {
+        desc = "RACL error log information of this module.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "racl_error_log";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_ERROR;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } TL;
+
+    signal {
+        desc = "Upload Command FIFO is not empty";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } UPLOAD_CMDFIFO_NOT_EMPTY;
+
+    signal {
+        desc = "Upload payload is not empty.The event occurs after SPI transaction completed";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } UPLOAD_PAYLOAD_NOT_EMPTY;
+
+    signal {
+        desc = "Upload payload overflow event.When a SPI Host system issues a command with payload more than 256B,this event is reported. When it happens, SW should read the lastwritten payload index CSR to figure out the starting address of thelast 256B.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } UPLOAD_PAYLOAD_OVERFLOW;
+
+    signal {
+        desc = "Read Buffer Threshold event.The host system accesses greater than or equal to the threshold of abuffer.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } READBUF_WATERMARK;
+
+    signal {
+        desc = "Read buffer flipped event.The host system accesses other side of buffer.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } READBUF_FLIP;
+
+    signal {
+        desc = "TPM Header(Command/Address) buffer available";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } TPM_HEADER_NOT_EMPTY;
+
+    signal {
+        desc = "TPM RdFIFO command ended.The TPM Read command targeting the RdFIFO ended.Check TPM_STATUS.rdfifo_aborted to see if the transaction completed.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } TPM_RDFIFO_CMD_END;
+
+    signal {
+        desc = "TPM RdFIFO data dropped.Data was dropped from the RdFIFO.Data was written while a read command was not active, and it was not accepted.This can occur when the host aborts a read command.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } TPM_RDFIFO_DROP;
+
+    signal {
+        desc = "This fatal alert is triggered when a fatal TL-UL bus integrity fault is detected.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_FAULT;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } SCAN_CLK_I;
+
+    signal {
+        desc = "SPI IO, IO2/IO3 has multi-purpose (/WP, /HOLD)";
+        signalwidth = 0x4;
+        sigtype = SigType::InOut;
+    } SD;
+
+    signal {
+        desc = "SPI Clock";
+        signalwidth = 0x1;
+        sigtype = SigType::Input;
+    } SCK;
+
+    signal {
+        desc = "Chip Select#";
+        signalwidth = 0x1;
+        sigtype = SigType::Input;
+    } CSB;
+
+    signal {
+        desc = "TPM Chip Select#";
+        signalwidth = 0x1;
+        sigtype = SigType::Input;
+    } TPM_CSB;
+
+    reg {
+        desc = "Interrupt State Register";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Upload Command FIFO is not empty";
+        } UPLOAD_CMDFIFO_NOT_EMPTY[0:0];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Upload payload is not empty.The event occurs after SPI transaction completed";
+        } UPLOAD_PAYLOAD_NOT_EMPTY[1:1];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Upload payload overflow event.When a SPI Host system issues a command with payload more than 256B,this event is reported. When it happens, SW should read the lastwritten payload index CSR to figure out the starting address of thelast 256B.";
+        } UPLOAD_PAYLOAD_OVERFLOW[2:2];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Read Buffer Threshold event.The host system accesses greater than or equal to the threshold of abuffer.";
+        } READBUF_WATERMARK[3:3];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Read buffer flipped event.The host system accesses other side of buffer.";
+        } READBUF_FLIP[4:4];
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+            desc = "TPM Header(Command/Address) buffer available";
+        } TPM_HEADER_NOT_EMPTY[5:5];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "TPM RdFIFO command ended.The TPM Read command targeting the RdFIFO ended.Check TPM_STATUS.rdfifo_aborted to see if the transaction completed.";
+        } TPM_RDFIFO_CMD_END[6:6];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "TPM RdFIFO data dropped.Data was dropped from the RdFIFO.Data was written while a read command was not active, and it was not accepted.This can occur when the host aborts a read command.";
+        } TPM_RDFIFO_DROP[7:7];
+    } INTR_STATE @ 0x0;
+
+    reg {
+        desc = "Interrupt Enable Register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.upload_cmdfifo_not_empty is set.";
+        } UPLOAD_CMDFIFO_NOT_EMPTY[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.upload_payload_not_empty is set.";
+        } UPLOAD_PAYLOAD_NOT_EMPTY[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.upload_payload_overflow is set.";
+        } UPLOAD_PAYLOAD_OVERFLOW[2:2];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.readbuf_watermark is set.";
+        } READBUF_WATERMARK[3:3];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.readbuf_flip is set.";
+        } READBUF_FLIP[4:4];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.tpm_header_not_empty is set.";
+        } TPM_HEADER_NOT_EMPTY[5:5];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.tpm_rdfifo_cmd_end is set.";
+        } TPM_RDFIFO_CMD_END[6:6];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.tpm_rdfifo_drop is set.";
+        } TPM_RDFIFO_DROP[7:7];
+    } INTR_ENABLE @ 0x4;
+
+    external reg {
+        desc = "Interrupt Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.upload_cmdfifo_not_empty to 1.";
+        } UPLOAD_CMDFIFO_NOT_EMPTY[0:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.upload_payload_not_empty to 1.";
+        } UPLOAD_PAYLOAD_NOT_EMPTY[1:1];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.upload_payload_overflow to 1.";
+        } UPLOAD_PAYLOAD_OVERFLOW[2:2];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.readbuf_watermark to 1.";
+        } READBUF_WATERMARK[3:3];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.readbuf_flip to 1.";
+        } READBUF_FLIP[4:4];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.tpm_header_not_empty to 1.";
+        } TPM_HEADER_NOT_EMPTY[5:5];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.tpm_rdfifo_cmd_end to 1.";
+        } TPM_RDFIFO_CMD_END[6:6];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.tpm_rdfifo_drop to 1.";
+        } TPM_RDFIFO_DROP[7:7];
+    } INTR_TEST @ 0x8;
+
+    external reg {
+        desc = "Alert Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_FAULT[0:0];
+    } ALERT_TEST @ 0xC;
+
+    reg {
+        desc = "Control register";
+        field {
+            sw = rw;
+            onwrite = woset;
+            hw = rw;
+            reset = false;
+            desc = "Set to clear the flash status FIFO.When set to 1, resets the flash status FIFO used for synchronizing changes from firmware.The reset should only be used when the upstream SPI host is known to be inactive.This function is intended to allow restoring initial values when the upstream SPI host is reset.This CSR automatically resets to 0.";
+        } FLASH_STATUS_FIFO_CLR[0:0];
+        field {
+            sw = rw;
+            onwrite = woset;
+            hw = rw;
+            reset = false;
+            desc = "Set to clear the read buffer state.When set to 1, resets the flash read buffer state that tracks the host read address.The reset should only be used when the upstream SPI host is known to be inactive.This function is intended to allow restoring initial values when the upstream SPI host is reset.This CSR automatically resets to 0.";
+        } FLASH_READ_BUFFER_CLR[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = true;
+            desc = "SPI Device flash operation mode.";
+        } MODE[5:4];
+    } CONTROL @ 0x10;
+
+    reg {
+        desc = "Configuration Register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "TX bit order on SDO. 0 for MSB to LSB, 1 for LSB to MSB";
+        } TX_ORDER[2:2];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "RX bit order on SDI. Module stores bitstream from MSB to LSB if value is 0.";
+        } RX_ORDER[3:3];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Mailbox enable.If 1, in the flash and passthrough mode, the IP checks the incomingaddress and return from the internal Mailbox buffer if the addressfalls into the MAILBOX range(MAILBOX_ADDR:MAILBOX_ADDR+MAILBOX_SIZE)}.";
+        } MAILBOX_EN[24:24];
+    } CFG @ 0x14;
+
+    external reg {
+        desc = "SPI Device status register";
+        field {
+            sw = r;
+            hw = w;
+            reset = true;
+            desc = "Direct input of CSb signal";
+        } CSB[5:5];
+        field {
+            sw = r;
+            hw = w;
+            reset = true;
+            desc = "Direct input of TPM CSb";
+        } TPM_CSB[6:6];
+    } STATUS @ 0x18;
+
+    reg {
+        desc = "Intercept Passthrough datapath.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If set, Read Status is processed internally.";
+        } STATUS[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If set, Read JEDEC ID is processed internally.";
+        } JEDEC[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If set, Read SFDP is processed internally.";
+        } SFDP[2:2];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If set, Read Command to Mailbox region is processed internally.";
+        } MBX[3:3];
+    } INTERCEPT_EN @ 0x1C;
+
+    external reg {
+        desc = "Flash address mode configurationThis register shows the current address mode and pending changes.It is updated by the HW when the command phase completes.";
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "4B Address Mode enable.This field configures the internal module to receive 32 bits of the SPI commands.The affected commands are the SPI read commands except QPI, and program commands.It is expected for SW to configure this field at the configuration stage and release control to HW until the next reset.Even though Read SFDP command has address fields, the SFDP command is not affected by this field.The command always parse 24 bits on the SPI line 0 following the SPI command as the address field.This field has noteworthy read behavior.If a software-initiated change is still pending the sync to the SPI domain, this bit will reflect the value to be sent.Otherwise, this field will reflect the current value observed in the SPI domain.";
+        } ADDR_4B_EN[0:0];
+        field {
+            sw = r;
+            hw = w;
+            desc = "SW-originated change is pending.This bit is 1 whenever the current value of addr_4b_en has yet to sync with the SPI domain.If an EN4B or EX4B command arrives next, the current value in addr_4b_en will be ignored,and the SPI flash command will take priority, with an update to addr_4b_en to match the command's result.";
+        } PENDING[31:31];
+    } ADDR_MODE @ 0x20;
+
+    external reg {
+        desc = "Last Read AddressThis register shows the last address accessed by the host system.It is updated by the HW when CSb is de-asserted.";
+        field {
+            sw = r;
+            hw = w;
+            desc = "Last address";
+        } ADDR[31:0];
+    } LAST_READ_ADDR @ 0x24;
+
+    external reg {
+        desc = "SPI Flash Status register.This register emulates the SPI Flash Status 3, 2, 1 registers.bit [7:0] is for Status register, bit [15:8] is for Status-2 register,and bit [23:16] is for Status-3 register. It is SW responsibility tomaintain this register value up to date.When software writes a value here, it is delivered to a staging async FIFO, where it waits for the SPI side to commit it.Any updates require at least 8 SPI clocks before they commit on the SPI side, which is the source-of-truth.After committing on the SPI side, the CSRs will eventually update with the latest value.";
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = rw;
+            swmod = true;
+            desc = "The BUSY signal. SW should read back the register to confirm the value is cleared.Bit 0 (BUSY) is a SW modifiable and HW modifiable field.HW updates the BUSY field for matching uploaded commands in the CMD_INFO table, when the upload and busy bits are set in the table entry.Note that the observable state of the BUSY bit updates every 8 SPI clocks.This enables continuous polling of the BUSY bit.However, the passthrough gate (for passthrough mode) only updates when CSB is de-asserted, not on SPI clocks.";
+        } BUSY[0:0];
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = rw;
+            swmod = true;
+            desc = "The Write Enable Latch signal.SW should read back the register to confirm the value is cleared.Bit 1 (WEL) is a SW modifiable and HW modifiable field.HW updates the WEL field when WRDI or WREN command is received.";
+        } WEL[1:1];
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "Rest of the status register.Fields other than the bit 0 (BUSY) and bit 1 (WEL) fields areSW-maintained fields. HW just reads and returns to the host system.- [ 2]: BP0- [ 3]: BP1- [ 4]: BP2- [ 5]: TB- [ 6]: SEC- [ 7]: SRP0- [ 8]: SRP1- [ 9]: QE- [11]: LB1- [12]: LB2- [13]: LB3- [14]: CMP- [15]: SUS- [18]: WPS- [21]: DRV0- [22]: DRV1- [23]: HOLD /RST";
+        } STATUS[23:2];
+    } FLASH_STATUS @ 0x28;
+
+    reg {
+        desc = "JEDEC Continuation Code configuration register.Read JEDEC ID must return the continuation code if the manufacturer IDis not shown in the first page of JEDEC table. This register controlsthe Continuation Code.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x7f;
+            desc = "Continuation Code byte";
+        } CC[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "The number that Continuation Code repeats";
+        } NUM_CC[15:8];
+    } JEDEC_CC @ 0x2C;
+
+    reg {
+        desc = "JEDEC ID register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Device ID";
+        } ID[15:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Manufacturer ID";
+        } MF[23:16];
+    } JEDEC_ID @ 0x30;
+
+    reg {
+        desc = "Read Buffer threshold register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 0, disable the watermark. If non-zero, when the hostaccess above or equal to the threshold, it reports an interrupt.The value is byte-granularity not SRAM index.";
+        } THRESHOLD[9:0];
+    } READ_THRESHOLD @ 0x34;
+
+    reg {
+        desc = "Mailbox Base address register.The mailbox size is fixed. In this version of IP, the size is 1kB.Lower 10 bits of the Mailbox address is tied to 0.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Mailbox Address. Lower 10 bits are ignored";
+        } ADDR[31:0];
+    } MAILBOX_ADDR @ 0x38;
+
+    reg {
+        desc = "Upload module status register.";
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Command FIFO Entry";
+        } CMDFIFO_DEPTH[4:0];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Upload Command FIFO Not Empty";
+        } CMDFIFO_NOTEMPTY[7:7];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Address FIFO Entry";
+        } ADDRFIFO_DEPTH[12:8];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Upload Address FIFO Not Empty";
+        } ADDRFIFO_NOTEMPTY[15:15];
+    } UPLOAD_STATUS @ 0x3C;
+
+    reg {
+        desc = "Upload module status 2 register.This register contains payload related status. payload_depth indicatesthe payload size (from 0 to 256 bytes).payload_start_idx indicates the start of the 256B. This stays 0usually. However, when the SPI host system issues more than 256B ofpayload in a command, this field may not be 0. For example, if thesystem issues 258B payload, the payload_depth is 256 (as the IP onlyholds 256B of payload), the payload_start_idx is 2. SW should read from2 to 255 then 0 and 1.";
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Payload buffer depth";
+        } PAYLOAD_DEPTH[8:0];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Payload Start Index";
+        } PAYLOAD_START_IDX[23:16];
+    } UPLOAD_STATUS2 @ 0x40;
+
+    external reg {
+        hwre = true;
+        desc = "Command Fifo Read Port.";
+        field {
+            sw = r;
+            hw = rw;
+            desc = "command opcode";
+        } DATA[7:0];
+        field {
+            sw = r;
+            hw = rw;
+            desc = "State of BUSY bit at command time";
+        } BUSY[13:13];
+        field {
+            sw = r;
+            hw = rw;
+            desc = "State of WEL bit at command time";
+        } WEL[14:14];
+        field {
+            sw = r;
+            hw = rw;
+            desc = "1 if address mode at command time is 4 Bytes, else 3 Bytes";
+        } ADDR4B_MODE[15:15];
+    } UPLOAD_CMDFIFO @ 0x44;
+
+    external reg {
+        hwre = true;
+        desc = "Address Fifo Read Port.";
+        field {
+            sw = r;
+            hw = rw;
+            desc = "read data";
+        } DATA[31:0];
+    } UPLOAD_ADDRFIFO @ 0x48;
+
+    reg {
+        desc = "Address Swap Mask register.This register is used in the SPI passthrough mode. If any of bits inthis register is set, the corresponding address bit in the SPI Readcommands is replaced with the data from !!ADDR_SWAP_DATA.If 3B address mode is active, upper 8bit [31:24] is ignored.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "When a bit is 1, the SPI read address to the downstream SPIFlash device is swapped to !!ADDR_SWAP_DATA.";
+        } MASK[31:0];
+    } ADDR_SWAP_MASK @ 0x6C;
+
+    reg {
+        desc = "The address value for the address swap feature.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "Desired value to be swapped for the SPI read commands.";
+        } DATA[31:0];
+    } ADDR_SWAP_DATA @ 0x70;
+
+    reg {
+        desc = "Write Data Swap in the passthrough mode.PAYLOAD_SWAP_MASK CSR provides the SW to change certain bits in thefirst 4 bytes of the write payload in the passthrough mode.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "byte mask";
+        } MASK[31:0];
+    } PAYLOAD_SWAP_MASK @ 0x74;
+
+    reg {
+        desc = "Write Data Swap in the passthrough mode.PAYLOAD_SWAP_DATA combined with PAYLOAD_SWAP_MASK provides the SW tochange certain bits in the first 4 bytes of the write payload in thepassthrough mode.The register should be written in Little-Endian order. [7:0] bits areprocessed in the first received payload byte. [31:24] bits for the 4thbyte.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "replaced data";
+        } DATA[31:0];
+    } PAYLOAD_SWAP_DATA @ 0x78;
+
+    reg {
+        desc = "Opcode for EN4B.If the register is active, it affects in flash / passthrough modes.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "EN4B opcode";
+        } OPCODE[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, Opcode affects";
+        } VALID[31:31];
+    } CMD_INFO_EN4B @ 0xDC;
+
+    reg {
+        desc = "Opcode for EX4B";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "EX4B opcode";
+        } OPCODE[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, Opcode affects";
+        } VALID[31:31];
+    } CMD_INFO_EX4B @ 0xE0;
+
+    reg {
+        desc = "Opcode for Write Enable (WREN)";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "WREN opcode";
+        } OPCODE[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, opcode affects";
+        } VALID[31:31];
+    } CMD_INFO_WREN @ 0xE4;
+
+    reg {
+        desc = "Opcode for Write Disable (WRDI)";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "WRDI opcode";
+        } OPCODE[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, opcode affects";
+        } VALID[31:31];
+    } CMD_INFO_WRDI @ 0xE8;
+
+    reg {
+        desc = "TPM HWIP Capability register.This register shows the features the current TPM HWIP supports.";
+        field {
+            sw = r;
+            hw = w;
+            reset = false;
+            desc = "Revision of the TPM submodule";
+        } REV[7:0];
+        field {
+            sw = r;
+            hw = w;
+            reset = true;
+            desc = "If 1, the TPM submodule supports 5 Locality.If 0, only one Locality is provided";
+        } LOCALITY[8:8];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x6;
+            desc = "The maximum write size in bytes the TPM submodule supports.The value is the exponent of the 2.- 3'b 010: Support up to 4B- 3'b 011: Support up to 8B- 3'b 100: Support up to 16B- 3'b 101: Support up to 32B- 3'b 110: Support up to 64BAll other values are reserved.It is not recommended for SW to advertise TPM supporting more than max_wr_size to the South Bridge.";
+        } MAX_WR_SIZE[18:16];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x6;
+            desc = "The maximum read size in bytes the TPM submodule supports.The value is the exponent of the 2.- 3'b 010: Support up to 4B- 3'b 011: Support up to 8B- 3'b 100: Support up to 16B- 3'b 101: Support up to 32B- 3'b 110: Support up to 64BAll other values are reserved.It is not recommended for SW to advertise TPM supporting more than max_rd_size to the South Bridge.";
+        } MAX_RD_SIZE[22:20];
+    } TPM_CAP @ 0x800;
+
+    reg {
+        desc = "TPM Configuration register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, TPM submodule accepts the transactions over SPI";
+        } EN[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Configure the TPM mode. 1 for CRB, 0 for FIFO.If the SW set this field to 1, the HW logic always pushes thecommand/addr and write data to buffers. The logic does not comparethe incoming address to the list of managed-by-HW registeraddresses.The invalid locality check still runs based on the invalid_localityconfiguration.";
+        } TPM_MODE[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 0, TPM submodule directly returns the return-by-HW registers for the read requests.If 1, TPM submodule uploads the TPM command regardless of the address, and the SW may return the value through the read FIFO.";
+        } HW_REG_DIS[2:2];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, the logic does not compare the upper 8 bit of thereceived address with the TpmAddr constant, D4h.If this field is 0, the HW uploads the command, address, and writepayload to the buffers in case of address that is not 0xD4_XXXX.";
+        } TPM_REG_CHK_DIS[3:3];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, TPM submodule returns the invalid data (0xFF) for theout of the max Locality request.If it is a write request, HW still uploads the command and address.SW needs to process the incoming invalid command.If 0, TPM submodule uploads the TPM command and address. The SW maywrite 0xFF to the read FIFO.Note: The TPM submodule uploads the TPM commands that do not fallinto the FIFO registers (0xD4_XXXX) regardless ofinvalid_locality bit.";
+        } INVALID_LOCALITY[4:4];
+    } TPM_CFG @ 0x804;
+
+    external reg {
+        desc = "TPM submodule state register.The TPM_STATUS CSR provides the current TPM status, mostly the buffer and FIFO status.";
+        field {
+            sw = r;
+            hw = w;
+            swmod = true;
+            desc = "If 1, the TPM_CMD_ADDR has a valid data. This status is reported via the interrupt also.";
+        } CMDADDR_NOTEMPTY[0:0];
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = rw;
+            swmod = true;
+            desc = "If 1, the Write FIFO is reserved for software processing.This bit becomes 1 when a complete write command is received.While it remains 1, subsequent write commands will block at the wait state until it is cleared.Write 0 to release the Write FIFO back to the TPM module.";
+        } WRFIFO_PENDING[1:1];
+        field {
+            sw = r;
+            hw = w;
+            swmod = true;
+            desc = "If 1, the last Read FIFO command was aborted.This bit becomes 1 when a Read FIFO command became active, but the transaction did not complete.An aborted transaction occurs when the host de-asserts CSB without clocking all the requested data.This bit remains 1 until reset, or it will clear automatically after the next valid command is read from TPM_CMD_ADDR.";
+        } RDFIFO_ABORTED[2:2];
+    } TPM_STATUS @ 0x808;
+
+    reg {
+        desc = "TPM_STS_x register.The register is mirrored to all Localities.The value is returned to the host system only when the activeLocalityin the TPM_ACCESS_x is matched to the current received Locality.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_STS_x";
+        } STS[31:0];
+    } TPM_STS @ 0x814;
+
+    reg {
+        desc = "TPM_INTF_CAPABILITY";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_INTF_CAPABILITY";
+        } INTF_CAPABILITY[31:0];
+    } TPM_INTF_CAPABILITY @ 0x818;
+
+    reg {
+        desc = "TPM_INT_ENABLE";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_INT_ENABLE";
+        } INT_ENABLE[31:0];
+    } TPM_INT_ENABLE @ 0x81C;
+
+    reg {
+        desc = "TPM_INT_VECTOR";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_INT_VECTOR";
+        } INT_VECTOR[7:0];
+    } TPM_INT_VECTOR @ 0x820;
+
+    reg {
+        desc = "TPM_INT_STATUS";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_INT_STATUS";
+        } INT_STATUS[31:0];
+    } TPM_INT_STATUS @ 0x824;
+
+    reg {
+        desc = "TPM_DID/ TPM_VID register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_VID";
+        } VID[15:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_DID";
+        } DID[31:16];
+    } TPM_DID_VID @ 0x828;
+
+    reg {
+        desc = "TPM_RID";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_RID";
+        } RID[7:0];
+    } TPM_RID @ 0x82C;
+
+    external reg {
+        hwre = true;
+        desc = "TPM Command and Address bufferThe SW may get the received TPM command and address by reading this CSR.";
+        field {
+            sw = r;
+            hw = rw;
+            swmod = true;
+            desc = "received address";
+        } ADDR[23:0];
+        field {
+            sw = r;
+            hw = rw;
+            swmod = true;
+            desc = "received command";
+        } CMD[31:24];
+    } TPM_CMD_ADDR @ 0x830;
+
+    external reg {
+        desc = "TPM Read command return data FIFO.The write port of the read command FIFO.";
+        field {
+            sw = w;
+            hw = r;
+            swmod = true;
+            desc = "write port of the read FIFO";
+        } VALUE[31:0];
+    } TPM_READ_FIFO @ 0x834;
+
+    reg {
+        compacted = true;
+        desc = "Command FilterIf a bit in this CSR is 1, then corresponding SPI command w.r.t thebit position among 256 bit is dropped in SPI Passthrough mode.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_0[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_1[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_2[2:2];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_3[3:3];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_4[4:4];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_5[5:5];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_6[6:6];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_7[7:7];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_8[8:8];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_9[9:9];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_10[10:10];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_11[11:11];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_12[12:12];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_13[13:13];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_14[14:14];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_15[15:15];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_16[16:16];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_17[17:17];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_18[18:18];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_19[19:19];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_20[20:20];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_21[21:21];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_22[22:22];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_23[23:23];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_24[24:24];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_25[25:25];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_26[26:26];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_27[27:27];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_28[28:28];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_29[29:29];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_30[30:30];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If 1, command will be filtered";
+        } FILTER_31[31:31];
+    } CMD_FILTER[8] @ 0x4C;
+
+    reg {
+        desc = "Command Info register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "Command Opcode";
+        } OPCODE[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "Command address modeA command can have four modes:- 0: Command does not have an address field- 1: CFG.addr_4b_en decides the address size (3B/4B)- 2: Address size is always 3B regardless of CFG.addr_4b_en- 3: Address size is always 4B regardless of CFG.addr_4b_en";
+        } ADDR_MODE[9:8];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "This field is used in the passthrough logic.If this field is set to 1, the address in the passthrough commandis replaced to the preconfigured value.";
+        } ADDR_SWAP_EN[10:10];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "If 1, the command has a MByte field following theaddress field. This is set to 1 for DualIO, QuadIO commands.";
+        } MBYTE_EN[11:11];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x7;
+            desc = "The number of dummy cycles -1 for the command";
+        } DUMMY_SIZE[14:12];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Set to 1 if the command has a dummy cycle following the address field.";
+        } DUMMY_EN[15:15];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Payload Enable per SPI lane.Set to non-zero if the command has payload at the end of theprotocol. This field has four bits. Each bit represents the SPIline. If a command is a Single IO command and returns data to thehost system, the data is returned on the MISO line (IO[1]). Inthis case, SW sets payload_en to 4'b 0010.";
+        } PAYLOAD_EN[19:16];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Set to 1 if the command returns data. If 0, the payloadsends to the downstream Flash device.";
+        } PAYLOAD_DIR[20:20];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Swap the first byte of the write payload.If payload_swap_en is set, the passthrough logic swaps the first byte of the write payload with DATA_SWAP CSR.payload_swap_en only works with write data and SingleIO mode. payload_en must be 4'b 0001 and paylod_dir to be PayloadIn.";
+        } PAYLOAD_SWAP_EN[21:21];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Add 2-stage pipeline to read payload.If read_pipeline_mode is not set to zero_stages, the read logic adds a 2-stage pipeline to the read data for this command.This read pipeline enables higher throughput for certain read commands in passthrough mode.payload_dir must be set to PayloadOut: payload_pipeline_en only works with read data.It may be used with any IO mode, but general host compatibility is likely limited to Quad Read.If this pipeline is used for passthrough, the internal SFDP should report 2 additional dummy cycles compared to the downstream flash.SFDP read commands should be processed internally, and dummy_size should still reflect the downstream device's dummy cycle count.";
+        } READ_PIPELINE_MODE[23:22];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Set to 1 to upload the command.If upload field in the command info entry is set, the cmdparseactivates the upload submodule when the opcode is received.addr_en, addr_4B_affected, and addr_4b_forced (TBD) affectthe upload functionality. The three address related configsdefines the command address field size.The logic assumes the following SPI input stream as payload,which max size is 256B. If the command exceeds the maximumpayload size 256B, the logic wraps the payload and overwrites.";
+        } UPLOAD[24:24];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Set to 1 to set the BUSY bit in the FLASH_STATUS when thecommand is received.  This bit is active only when upload bit isset.";
+        } BUSY[25:25];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Set to 1 if the config in the register is valid";
+        } VALID[31:31];
+    } CMD_INFO[24] @ 0x7C;
+
+    reg {
+        desc = "TPM_ACCESS_x register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_ACCESS";
+        } ACCESS_0[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_ACCESS";
+        } ACCESS_1[15:8];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_ACCESS";
+        } ACCESS_2[23:16];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "TPM_ACCESS";
+        } ACCESS_3[31:24];
+    } TPM_ACCESS_0 @ 0x80C;
+
+    reg {
+        desc = "TPM_ACCESS_x register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "For TPM1";
+        } ACCESS_4[7:0];
+    } TPM_ACCESS_1 @ 0x810;
+
+    external mem {
+        memwidth = 0x20;
+        mementries = 0x350;
+        sw = w;
+    } EGRESS_BUFFER @ 0x1000;
+
+    external mem {
+        memwidth = 0x20;
+        mementries = 0x70;
+        sw = r;
+    } INGRESS_BUFFER @ 0x1E00;
+
+};
