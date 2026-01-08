@@ -35,6 +35,7 @@ dependencies = [
     "twine>=6.1.0",
     # Design verification runner.
     "dvsim>=1.7.3",
+    "svgwrite>=1.4.3",
 ]
 
 [tool.setuptools]
