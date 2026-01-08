@@ -29,7 +29,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 # linkerscript to use
-set(LDS "${CMAKE_SOURCE_DIR}/device/lib/boot/mocha.ld")
+set(LDS_DIR "${CMAKE_SOURCE_DIR}/device/lib/boot")
+set(LDS "${LDS_DIR}/mocha.ld")
 
 string(CONCAT CMAKE_CXX_FLAGS_INIT
   "-std=c++20 -O0 -g"
@@ -48,5 +49,5 @@ string(CONCAT CMAKE_C_FLAGS_INIT
 set(CMAKE_ASM_FLAGS_INIT "")
 
 set(CMAKE_EXE_LINKER_FLAGS_INIT
-    "-nodefaultlibs -T ${LDS} -L ${CMAKE_CURRENT_LIST_DIR}"
+    "-nodefaultlibs -T ${LDS} -L ${LDS_DIR}"
 )

@@ -4,14 +4,17 @@
 
 OUTPUT_ARCH(riscv)
 
+INCLUDE memory.ld
+
+_stack_len = 0x1000; /* 4 KiB */
+
 MEMORY {
-    ram   (RWX) : ORIGIN = 0x10000000, LENGTH = 0x1F000 /* 124 KiB */
-    stack (ARW) : ORIGIN = 0x1001F000, LENGTH = 0x01000 /* 4 KiB */
+    ram   (RWX) : ORIGIN = ORIGIN(SRAM), LENGTH = (LENGTH(SRAM) - _stack_len)
+    stack (ARW) : ORIGIN = ORIGIN(ram) + LENGTH(ram), LENGTH = _stack_len 
 }
 
 /* Stack */
 _stack_bottom = ORIGIN(stack);
-_stack_len = LENGTH(stack);
 _stack_top = _stack_bottom + _stack_len;
 
 /* Provided in init_vectors.S, immediately jumps into _start. */

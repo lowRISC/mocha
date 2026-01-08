@@ -25,6 +25,7 @@ dependencies = [
     # Needed for block-level DV.
     "mistletoe==0.9.0",
     "peakrdl-systemrdl >= 1.0",
+    "rdl2ot>=0.4",
     # Build system.
     "fusesoc==2.4.3",
     "pyright>=1.1.403",
