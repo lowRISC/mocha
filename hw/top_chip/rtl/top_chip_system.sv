@@ -19,6 +19,7 @@ module top_chip_system #(
   localparam int unsigned TlIntgWidth   = 7;
   localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
+  localparam int unsigned UartIrqs      = 9;
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
@@ -70,6 +71,8 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_uart_d2h;
   tlul_pkg::tl_h2d_t tl_timer_h2d;
   tlul_pkg::tl_d2h_t tl_timer_d2h;
+  tlul_pkg::tl_h2d_t tl_plic_h2d;
+  tlul_pkg::tl_d2h_t tl_plic_d2h;
 
   // 64-bit memory format signals
   logic                                 mem64_tl_xbar_req;
@@ -98,8 +101,29 @@ module top_chip_system #(
   top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
-  // Interrupts
-  logic intr_timer;
+  // IP block raised interrupts
+  logic [UartIrqs-1:0] uart_interrupts;
+
+  // Interrupt lines to PLIC
+  // Each IP block has a single interrupt line to the PLIC and software shall consult the intr_state
+  // register within the block itself to identify the interrupt source(s).
+  logic uart_irq;
+
+  always_comb begin
+    // Single interrupt line per UART.
+    uart_irq = |uart_interrupts;
+  end
+
+  // Interrupt vector
+  logic [31:0] intr_vector;
+
+  assign intr_vector[31 : 9] = '0;      // Reserved for future use.
+  assign intr_vector[ 8    ] = uart_irq;
+  assign intr_vector[ 7 : 0] = '0;      // Reserved for future use.
+
+  // Interrupts to the CVA6
+  logic       intr_timer;
+  logic [1:0] intr;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -116,7 +140,7 @@ module top_chip_system #(
     .rst_ni        (rst_ni),
     .boot_addr_i   (boot_cap),
     .hart_id_i     ('0),
-    .irq_i         (2'b0),
+    .irq_i         (intr),
     .ipi_i         (1'b0),
     .time_irq_i    (intr_timer),
     .debug_req_i   (1'b0),
@@ -271,6 +295,8 @@ module top_chip_system #(
     .tl_uart_i  (tl_uart_d2h),
     .tl_timer_o (tl_timer_h2d),
     .tl_timer_i (tl_timer_d2h),
+    .tl_plic_o  (tl_plic_h2d),
+    .tl_plic_i  (tl_plic_d2h),
 
     .scanmode_i (prim_mubi_pkg::MuBi4False)
   );
@@ -296,15 +322,17 @@ module top_chip_system #(
     .tl_o (tl_uart_d2h),
 
     // Interrupts.
-    .intr_tx_watermark_o  ( ),
-    .intr_tx_empty_o      ( ),
-    .intr_rx_watermark_o  ( ),
-    .intr_tx_done_o       ( ),
-    .intr_rx_overflow_o   ( ),
-    .intr_rx_frame_err_o  ( ),
-    .intr_rx_break_err_o  ( ),
-    .intr_rx_timeout_o    ( ),
-    .intr_rx_parity_err_o ( )
+    // Note: the indexes here match the bits in the `intr_` registers,
+    // but we also keep the port ordering the same as the module.
+    .intr_tx_watermark_o  (uart_interrupts[0]),
+    .intr_tx_empty_o      (uart_interrupts[8]),
+    .intr_rx_watermark_o  (uart_interrupts[1]),
+    .intr_tx_done_o       (uart_interrupts[2]),
+    .intr_rx_overflow_o   (uart_interrupts[3]),
+    .intr_rx_frame_err_o  (uart_interrupts[4]),
+    .intr_rx_break_err_o  (uart_interrupts[5]),
+    .intr_rx_timeout_o    (uart_interrupts[6]),
+    .intr_rx_parity_err_o (uart_interrupts[7])
   );
 
   // Instantiate timer
@@ -324,5 +352,27 @@ module top_chip_system #(
 
     // Interrupt
     .intr_timer_expired_hart0_timer0_o (intr_timer)
+  );
+
+  // Instantiate PLIC
+  rv_plic u_rv_plic (
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    // Signals to xbar
+    .tl_i (tl_plic_h2d),
+    .tl_o (tl_plic_d2h),
+
+    // Interrupt sources
+    .intr_src_i(intr_vector),
+
+    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
+    .alert_tx_o ( ),
+
+    // Interrupt to targets
+    .irq_o    (intr),
+    .irq_id_o ( ),
+
+    .msip_o ( )
   );
 endmodule

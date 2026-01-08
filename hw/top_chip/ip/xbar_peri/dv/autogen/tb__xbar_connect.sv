@@ -19,3 +19,4 @@ initial force dut.rst_ni = rst_n;
 // Device TileLink interface connections
 `CONNECT_TL_DEVICE_IF(uart, dut, clk_i, rst_n)
 `CONNECT_TL_DEVICE_IF(timer, dut, clk_i, rst_n)
+`CONNECT_TL_DEVICE_IF(plic, dut, clk_i, rst_n)

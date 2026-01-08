@@ -10,6 +10,7 @@ filesets:
     depend:
       - lowrisc:ip:uart
       - lowrisc:ip:rv_timer
+      - lowrisc:mocha_ip:rv_plic
       - lowrisc:ip:xbar_peri
       - lowrisc:prim:onehot
       - lowrisc:tlul:adapter_host
