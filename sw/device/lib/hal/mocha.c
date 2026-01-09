@@ -13,6 +13,7 @@
 
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
+static const uintptr_t plic_base = 0x48000000ul;
 
 #if defined(__riscv_zcherihybrid)
 /* initialised by boot.S */
@@ -49,5 +50,14 @@ timer_t mocha_system_timer(void)
     return (timer_t)create_mmio_capability(timer_base, 0x120u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (timer_t)timer_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+plic_t mocha_system_plic(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (plic_t)create_mmio_capability(plic_base, 0x4004004u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (plic_t)plic_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }

@@ -9,6 +9,41 @@
 
 #define BAUD_RATE (921600)
 
+void uart_interrupt_disable_all(uart_t uart)
+{
+    DEV_WRITE(uart + UART_INTR_ENABLE_REG, 0);
+}
+
+void uart_interrupt_enable(uart_t uart, uint8_t intr_id)
+{
+    if (intr_id <= UART_MAX_INTR) {
+        DEV_WRITE(uart + UART_INTR_ENABLE_REG,
+                  DEV_READ(uart + UART_INTR_ENABLE_REG) | (1 << intr_id));
+    }
+}
+
+void uart_interrupt_disable(uart_t uart, uint8_t intr_id)
+{
+    if (intr_id <= UART_MAX_INTR) {
+        DEV_WRITE(uart + UART_INTR_ENABLE_REG,
+                  DEV_READ(uart + UART_INTR_ENABLE_REG) & ~(1 << intr_id));
+    }
+}
+
+void uart_interrupt_trigger(uart_t uart, uint8_t intr_id)
+{
+    if (intr_id <= UART_MAX_INTR) {
+        DEV_WRITE(uart + UART_INTR_TEST_REG, 1 << intr_id);
+    }
+}
+
+void uart_interrupt_clear(uart_t uart, uint8_t intr_id)
+{
+    if (intr_id <= UART_MAX_INTR) {
+        DEV_WRITE(uart + UART_INTR_STATE_REG, 1 << intr_id);
+    }
+}
+
 int uart_init(uart_t uart)
 {
     // NCO = 2^20 * baud rate / cpu frequency
