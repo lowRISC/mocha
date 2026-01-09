@@ -149,6 +149,13 @@ Then load the bitstream onto Genesys 2:
 openFPGALoader -b genesys2 build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
 ```
 
+### Verification
+
+To run block-level verification you can use the following command:
+```sh
+dvsim hw/vendor/lowrisc_ip/ip/uart/dv/uart_sim_cfg.hjson -i uart_smoke -r 1 --tool xcelium
+```
+
 ## License
 
 This project is licensed under the Apache License, Version 2.0.
