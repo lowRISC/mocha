@@ -127,6 +127,13 @@ fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_moc
 1. Open a UART terminal with baud rate 921600
 2. Load the bitstream onto Genesys 2
 
+### Verification
+
+To run block-level verification you can use the following command:
+```sh
+dvsim hw/vendor/lowrisc_ip/ip/uart/dv/uart_sim_cfg.hjson -i uart_smoke -r 1 --tool xcelium
+```
+
 ## License
 
 This project is licensed under the Apache License, Version 2.0.
