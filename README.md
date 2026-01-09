@@ -124,8 +124,16 @@ fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_moc
 
 ### Test on Genesys 2
 
-1. Open a UART terminal with baud rate 921600
-2. Load the bitstream onto Genesys 2
+Open a UART terminal with 921600 baud rate:
+```sh
+screen /dev/ttyUSB0 921600
+```
+You may have to change the ttyUSB number.
+
+Then load the bitstream onto Genesys 2:
+```sh
+openFPGALoader -b genesys2 build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+```
 
 ## License
 
