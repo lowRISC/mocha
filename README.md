@@ -115,14 +115,28 @@ To run the verilator tests, first build the software, then run:
 ctest --test-dir build/sw -R sim_verilator
 ```
 
-### Build FPGA bitstream
+### FPGA
 
-Make sure vivado is on your path, then run:
+#### OpenFPGALoader
+
+One way to program your FPGA is to use openFPGALoader.
+In Linux you must allow openFPGALoader to access your USB device.
+First copy the example rules file in this repository and execute some commands for the rules to take effect:
+```sh
+cp util/99-openfpgaloader.rules /etc/udev/rules.d/99-openfpgaloader.rules
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+sudo usermod -a $USER -G plugdev
+```
+
+#### Build bitstream
+
+Make sure that Vivado is on your path, then run:
 ```sh
 fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --BootRomInitFile=$PWD/build/sw/device/examples/hello_world/hello_world.vmem
 ```
 
-### Test on Genesys 2
+#### Test on Genesys2
 
 Open a UART terminal with 921600 baud rate:
 ```sh
