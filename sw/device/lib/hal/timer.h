@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
-#include "mocha_regs.h"
+
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define TIMER_ALERT_TEST_REG (0x0)

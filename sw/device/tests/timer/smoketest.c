@@ -2,9 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "hal/mocha_regs.h"
+#include "hal/mocha.h"
 #include "hal/timer.h"
-#include "hal/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -87,7 +86,7 @@ bool timer_irq_test(timer_t timer)
 
 bool test_main()
 {
-    timer_t timer = (timer_t)TIMER_BASE;
+    timer_t timer = mocha_system_timer();
 
     return accuracy_test(timer) && timer_irq_test(timer);
 }

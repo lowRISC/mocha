@@ -1,0 +1,53 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Mocha System parameters and Peripheral layout.
+
+#include "hal/mocha.h"
+#include <stddef.h>
+#include <stdint.h>
+#if defined(__riscv_zcherihybrid)
+#include <cheriintrin.h>
+#endif /* defined(__riscv_zcherihybrid) */
+
+static const uintptr_t uart_base = 0x41000000ul;
+static const uintptr_t timer_base = 0x44000000ul;
+
+#if defined(__riscv_zcherihybrid)
+/* initialised by boot.S */
+extern void *_infinite_cap;
+
+static void *get_infinite_capability(void)
+{
+    return _infinite_cap;
+}
+
+/* Create a capability with a given address and length for MMIO access (RW). */
+static void *create_mmio_capability(uintptr_t address, size_t length)
+{
+    void *cap = get_infinite_capability();
+    cap = cheri_address_set(cap, address);
+    cap = cheri_bounds_set(cap, length);
+    cap = cheri_perms_and(cap, CHERI_PERM_READ | CHERI_PERM_WRITE);
+    return cap;
+}
+#endif /* defined(__riscv_zcherihybrid) */
+
+uart_t mocha_system_uart(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (uart_t)create_mmio_capability(uart_base, 0x20u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (uart_t)uart_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+timer_t mocha_system_timer(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (timer_t)create_mmio_capability(timer_base, 0x120u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (timer_t)timer_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}

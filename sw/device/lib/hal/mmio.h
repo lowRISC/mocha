@@ -2,12 +2,11 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+// MMIO macros.
+
 #pragma once
 
-#define SYSCLK_FREQ (50000000)
+#include <stdint.h>
 
 #define DEV_WRITE(addr, val) (*((volatile uint32_t *)(addr)) = val)
 #define DEV_READ(addr)       (*((volatile uint32_t *)(addr)))
-
-#define UART_BASE  (0x41000000)
-#define TIMER_BASE (0x44000000)

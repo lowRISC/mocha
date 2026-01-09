@@ -2,9 +2,9 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "uart.h"
-#include "mocha_regs.h"
-#include <stdbool.h>
+#include "hal/uart.h"
+#include "hal/mmio.h"
+#include "hal/mocha.h"
 #include <stdint.h>
 
 #define BAUD_RATE (921600)

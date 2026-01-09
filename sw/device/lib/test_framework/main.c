@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "hal/mocha_regs.h"
+#include "hal/mocha.h"
 #include "hal/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -15,7 +15,7 @@ __attribute__((weak)) bool test_main(uart_t console)
 
 int main(void)
 {
-    uart_t console = (uart_t)UART_BASE;
+    uart_t console = mocha_system_uart();
     uart_init(console);
 
     bool result = test_main(console);

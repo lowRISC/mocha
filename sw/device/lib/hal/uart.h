@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
+
 #include <stdbool.h>
 
 #define UART_CTRL_REG   (0x10)

@@ -2,9 +2,10 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "timer.h"
-#include "mocha_regs.h"
+#include "hal/timer.h"
+#include "hal/mmio.h"
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 void timer_disable(timer_t timer)

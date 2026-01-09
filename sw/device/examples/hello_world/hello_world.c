@@ -2,15 +2,15 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-#include "hal/mocha_regs.h"
+#include "hal/mocha.h"
 #include "hal/timer.h"
 #include "hal/uart.h"
 #include <stdint.h>
 
 int main(void)
 {
-    uart_t uart = (uart_t)UART_BASE;
-    timer_t timer = (timer_t)TIMER_BASE;
+    uart_t uart = mocha_system_uart();
+    timer_t timer = mocha_system_timer();
     uart_init(uart);
     timer_init(timer);
     timer_set_prescale_step(timer, (SYSCLK_FREQ / 1000000) - 1, 1); // 1 tick/us
