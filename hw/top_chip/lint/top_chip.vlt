@@ -35,3 +35,6 @@ lint_off -rule LATCH -file "*/cva6_cheri/core/cva6_mmu/cva6_ptw.sv"
 lint_off -rule LATCH -file "*/cva6_cheri/core/cva6_mmu/cva6_tlb.sv"
 lint_off -rule LATCH -file "*/cva6_cheri/core/load_unit.sv" -match "*result_cap*"
 lint_off -rule LATCH -file "*/cva6_cheri/core/scoreboard.sv" -match "*new_sbe*"
+
+// Mute RTL style warning
+lint_off -rule ALWCOMBORDER -file "*/rtl/prim_leading_one_ppc.sv"

@@ -11,7 +11,15 @@ module top_chip_system #(
 
   // UART receive and transmit.
   input  logic uart_rx_i,
-  output logic uart_tx_o
+  output logic uart_tx_o,
+
+  // SPI device receive and transmit.
+  input  logic       spi_device_sck_i,
+  input  logic       spi_device_csb_i,
+  output logic [3:0] spi_device_sd_o,
+  output logic [3:0] spi_device_sd_en_o,
+  input  logic [3:0] spi_device_sd_i,
+  input  logic       spi_device_tpm_csb_i
 );
   // Local parameters.
   localparam int unsigned SramMemSize   = 128 * 1024; // 128 KiB
@@ -20,6 +28,7 @@ module top_chip_system #(
   localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
   localparam int unsigned UartIrqs      = 9;
+  localparam int unsigned SPIDeviceIrqs = 8;
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
@@ -73,6 +82,8 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_timer_d2h;
   tlul_pkg::tl_h2d_t tl_plic_h2d;
   tlul_pkg::tl_d2h_t tl_plic_d2h;
+  tlul_pkg::tl_h2d_t tl_spi_device_h2d;
+  tlul_pkg::tl_d2h_t tl_spi_device_d2h;
 
   // 64-bit memory format signals
   logic                                 mem64_tl_xbar_req;
@@ -102,16 +113,19 @@ module top_chip_system #(
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
   // IP block raised interrupts
-  logic [UartIrqs-1:0] uart_interrupts;
+  logic [UartIrqs-1:0]      uart_interrupts;
+  logic [SPIDeviceIrqs-1:0] spi_device_interrupts;
 
   // Interrupt lines to PLIC
   // Each IP block has a single interrupt line to the PLIC and software shall consult the intr_state
   // register within the block itself to identify the interrupt source(s).
   logic uart_irq;
+  logic spi_device_irq;
 
   always_comb begin
-    // Single interrupt line per UART.
+    // Single interrupt line per IP block.
     uart_irq = |uart_interrupts;
+    spi_device_irq = |spi_device_interrupts;
   end
 
   // Interrupt vector
@@ -119,7 +133,8 @@ module top_chip_system #(
 
   assign intr_vector[31 : 9] = '0;      // Reserved for future use.
   assign intr_vector[ 8    ] = uart_irq;
-  assign intr_vector[ 7 : 0] = '0;      // Reserved for future use.
+  assign intr_vector[ 7    ] = spi_device_irq;
+  assign intr_vector[ 6 : 0] = '0;      // Reserved for future use.
 
   // Interrupts to the CVA6
   logic       intr_timer;
@@ -291,12 +306,14 @@ module top_chip_system #(
     .tl_axi_xbar_o(tl_axi_xbar_d2h),
 
     // Device interfaces.
-    .tl_uart_o  (tl_uart_h2d),
-    .tl_uart_i  (tl_uart_d2h),
-    .tl_timer_o (tl_timer_h2d),
-    .tl_timer_i (tl_timer_d2h),
-    .tl_plic_o  (tl_plic_h2d),
-    .tl_plic_i  (tl_plic_d2h),
+    .tl_uart_o       (tl_uart_h2d),
+    .tl_uart_i       (tl_uart_d2h),
+    .tl_spi_device_o (tl_spi_device_h2d),
+    .tl_spi_device_i (tl_spi_device_d2h),
+    .tl_timer_o      (tl_timer_h2d),
+    .tl_timer_i      (tl_timer_d2h),
+    .tl_plic_o       (tl_plic_h2d),
+    .tl_plic_i       (tl_plic_d2h),
 
     .scanmode_i (prim_mubi_pkg::MuBi4False)
   );
@@ -374,5 +391,54 @@ module top_chip_system #(
     .irq_id_o ( ),
 
     .msip_o ( )
+  );
+
+  // Instantiate SPI device
+  spi_device u_spi_device (
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    // Signals to xbar
+    .tl_i (tl_spi_device_h2d),
+    .tl_o (tl_spi_device_d2h),
+
+    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
+    .alert_tx_o ( ),
+
+    .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o    ( ),
+
+    // SPI interface
+    .cio_sck_i     (spi_device_sck_i),
+    .cio_csb_i     (spi_device_csb_i),
+    .cio_sd_o      (spi_device_sd_o),
+    .cio_sd_en_o   (spi_device_sd_en_o),
+    .cio_sd_i      (spi_device_sd_i),
+    .cio_tpm_csb_i (spi_device_tpm_csb_i),
+
+    .passthrough_o ( ),
+    .passthrough_i (spi_device_pkg::PASSTHROUGH_RSP_DEFAULT),
+
+    // Interrupts
+    .intr_upload_cmdfifo_not_empty_o (spi_device_interrupts[0]),
+    .intr_upload_payload_not_empty_o (spi_device_interrupts[1]),
+    .intr_upload_payload_overflow_o  (spi_device_interrupts[2]),
+    .intr_readbuf_watermark_o        (spi_device_interrupts[3]),
+    .intr_readbuf_flip_o             (spi_device_interrupts[4]),
+    .intr_tpm_header_not_empty_o     (spi_device_interrupts[5]),
+    .intr_tpm_rdfifo_cmd_end_o       (spi_device_interrupts[6]),
+    .intr_tpm_rdfifo_drop_o          (spi_device_interrupts[7]),
+
+    .ram_cfg_sys2spi_i     (prim_ram_2p_pkg::RAM_2P_CFG_DEFAULT),
+    .ram_cfg_rsp_sys2spi_o ( ),
+    .ram_cfg_spi2sys_i     (prim_ram_2p_pkg::RAM_2P_CFG_DEFAULT),
+    .ram_cfg_rsp_spi2sys_o ( ),
+
+    .sck_monitor_o ( ),
+
+    .mbist_en_i  ('0),
+    .scan_clk_i  ('0),
+    .scan_rst_ni ('1),
+    .scanmode_i  (prim_mubi_pkg::MuBi4False)
   );
 endmodule

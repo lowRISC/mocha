@@ -10,6 +10,9 @@ tl_device_t xbar_devices[$] = '{
     '{"uart", '{
         '{32'h41000000, 32'h41000fff}
     }},
+    '{"spi_device", '{
+        '{32'h43000000, 32'h43001fff}
+    }},
     '{"timer", '{
         '{32'h44000000, 32'h4400ffff}
     }},
@@ -21,6 +24,7 @@ tl_device_t xbar_devices[$] = '{
 tl_host_t xbar_hosts[$] = '{
     '{"axi_xbar", 0, '{
         "uart",
+        "spi_device",
         "timer",
         "plic"}}
 };

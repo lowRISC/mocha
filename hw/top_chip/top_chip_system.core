@@ -11,6 +11,7 @@ filesets:
       - lowrisc:ip:uart
       - lowrisc:ip:rv_timer
       - lowrisc:mocha_ip:rv_plic
+      - lowrisc:ip:spi_device
       - lowrisc:ip:xbar_peri
       - lowrisc:prim:onehot
       - lowrisc:tlul:adapter_host
@@ -31,6 +32,8 @@ filesets:
       - lowrisc:dv_verilator:simutil_verilator
       - lowrisc:dv_dpi_c:uartdpi:0.1
       - lowrisc:dv_dpi_sv:uartdpi:0.1
+      - lowrisc:dv_dpi_c:spidpi:0.1
+      - lowrisc:dv_dpi_sv:spidpi:0.1
       - lowrisc:prim_generic:all
     files:
       - dv/verilator/top_chip_verilator.sv: { file_type: systemVerilogSource }
