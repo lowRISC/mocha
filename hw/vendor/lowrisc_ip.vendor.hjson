@@ -27,10 +27,11 @@
     {from: "util/version_file.py", to: "util/version_file.py"}, // Dependency of top generator.
 
     // Hardware IP blocks.
-    {from: "hw/ip/lc_ctrl",  to: "ip/lc_ctrl"}, // Dependency of crossbar.
-    {from: "hw/ip/rv_timer", to: "ip/rv_timer"}, // Timer.
-    {from: "hw/ip/tlul",     to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
-    {from: "hw/ip/uart",     to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
+    {from: "hw/ip/lc_ctrl",    to: "ip/lc_ctrl"}, // Dependency of crossbar.
+    {from: "hw/ip/rv_timer",   to: "ip/rv_timer"}, // Timer.
+    {from: "hw/ip/spi_device", to: "ip/spi_device"}, // SPI device.
+    {from: "hw/ip/tlul",       to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
+    {from: "hw/ip/uart",       to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
 
     // Hardware IP templates.
     {from: "hw/ip_templates/rv_plic", to: "ip_templates/rv_plic"},
@@ -44,6 +45,7 @@
     {from: "hw/lint", to: "lint", patch_dir: "lint"},
 
     // Simulation.
+    {from: "hw/dv/dpi/spidpi",  to: "dv/dpi/spidpi"},
     {from: "hw/dv/dpi/uartdpi", to: "dv/dpi/uartdpi"},
     {from: "hw/dv/sv",          to: "dv/sv"},
     {from: "hw/dv/verilator",   to: "dv/verilator", patch_dir: "dv_verilator"},
