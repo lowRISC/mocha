@@ -31,7 +31,7 @@ jobs:
 
       - name: Check auto-generated artefacts
         run: |
-          util/check_artefacts.py
+          util/artefacts.py
 
       - name: Lint - Ruff
         run: |
