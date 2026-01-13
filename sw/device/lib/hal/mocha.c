@@ -12,6 +12,7 @@
 #endif /* defined(__riscv_zcherihybrid) */
 
 static const uintptr_t uart_base = 0x41000000ul;
+static const uintptr_t spi_device_base = 0x43000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
 static const uintptr_t plic_base = 0x48000000ul;
 
@@ -59,5 +60,14 @@ plic_t mocha_system_plic(void)
     return (plic_t)create_mmio_capability(plic_base, 0x4004004u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (plic_t)plic_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+spi_device_t mocha_system_spi_device(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (spi_device_t)create_mmio_capability(spi_device_base, 0x1FC0u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (spi_device_t)spi_device_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
