@@ -3,14 +3,14 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-# This script is used to verify that any auto-generated or vendored
-# files committed to the repository are not stale and match the generated
-# output of the programs used to create them.
-# This consists of lockfiles, generated hardware components (e.g. crossbars),
-# and hardware components vendored and patched with `vendor.py`.
-# This script runs each generator or vendoring program and checks whether the
-# file tree changes by using `git status`.
+# This script is used auto-generated and vendor files to the repository.
+# If the check flag is provided it will verify that all auto-generated and vendored files committed
+# to the repository are not stale and match the generated output of the programs used to create
+# them.
+# This consists of lockfiles, generated hardware components (e.g. crossbars), and hardware
+# components vendored and patched with `vendor.py`.
 
+import argparse
 import subprocess
 import sys
 
@@ -54,12 +54,19 @@ def run_subprocess(cmdline: list[str]):
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Artefacts generator utility")
+    parser.add_argument("--check", action="store_true", help="Perform a validation check.")
+    args = parser.parse_args()
+
     fail = False
     for cmdline in COMMANDS:
         # run each generator command. these should all succeed
         joined_cmdline = " ".join(cmdline)
         print(f"running '{joined_cmdline}'...")
         run_subprocess(cmdline)
+
+        if not args.check:
+            continue
 
         # check if anything is different by running `git status` and
         # checking if there is any output. we let all the steps run before
@@ -79,9 +86,9 @@ def main():
             print(f"failed to run 'git status': {e.strerror}")
             sys.exit(1)
 
-    if fail:
+    if args.check and fail:
         print("committed auto-generated files do not match!")
-    sys.exit(1 if fail else 0)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
