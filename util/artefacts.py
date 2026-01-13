@@ -33,6 +33,17 @@ COMMANDS: list[list[str]] = [
     ["util/vendor.py", "hw/vendor/cva6_cheri.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/lowrisc_ip.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_axi.vendor.hjson"],
+
+    # rdl code gen.
+    ["mkdir", "-p", "build/rdl"],
+    ["rdl2ot", "export-rtl", "--soc", "rdl/mocha.rdl", "build/rdl"],
+    [
+        "util/rdlgenerator.py",
+        "gen-linker-script",
+        "build/rdl/rdl.json",
+        "sw/device/lib/boot/memory.ld",
+    ],
+    ["util/rdlgenerator.py", "gen-memory-map", "build/rdl/rdl.json", "doc/img/memmap.svg"],
 ]
 
 
