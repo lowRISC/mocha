@@ -19,9 +19,7 @@ def main():
     tidy_extensions = [".c", ".cc"]
     for directory, _, files in os.walk("sw"):
         c_files.extend(
-            Path(directory) / Path(file)
-            for file in files
-            if (Path(file).suffix in tidy_extensions)
+            Path(directory) / Path(file) for file in files if (Path(file).suffix in tidy_extensions)
         )
 
     cmd = "clang-tidy"

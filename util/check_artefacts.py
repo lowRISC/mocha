@@ -41,10 +41,7 @@ def run_subprocess(cmdline: list[str]):
         proc = subprocess.run(cmdline, capture_output=True, check=False)
         if proc.returncode != 0:
             joined_cmdline = " ".join(cmdline)
-            print(
-                f"command {joined_cmdline} exited with non-zero exit code "
-                f"{proc.returncode}"
-            )
+            print(f"command {joined_cmdline} exited with non-zero exit code {proc.returncode}")
         if proc.stdout:
             print(proc.stdout.decode(), end="")
         if proc.stderr:
