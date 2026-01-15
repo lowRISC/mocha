@@ -14,7 +14,13 @@ module chip_mocha_genesys2 #(
 
   // UART
   input  logic uart_rx_i,
-  output logic uart_tx_o
+  output logic uart_tx_o,
+
+  // SPI
+  input  logic spi_device_sck_i,
+  input  logic spi_device_csb_i,
+  input  logic spi_device_sd_i,
+  output logic spi_device_sd_o
 );
   // Internal clock and reset signals
   logic clk_50m;
@@ -22,6 +28,10 @@ module chip_mocha_genesys2 #(
 
   // PLL lock signal
   logic pll_locked;
+
+  // QSPI signals
+  logic [3:0] qspi_device_sdo;
+  logic [3:0] qspi_device_sdo_en;
 
   // Clock generation
   clkgen_xil7series clk_gen(
@@ -43,7 +53,21 @@ module chip_mocha_genesys2 #(
     .rst_ni   (rst_n),
     // UART
     .uart_rx_i,
-    .uart_tx_o
+    .uart_tx_o,
+
+    .spi_device_sck_i     (spi_device_sck_i),
+    .spi_device_csb_i     (spi_device_csb_i),
+    .spi_device_sd_o      (qspi_device_sdo),
+    .spi_device_sd_en_o   (qspi_device_sdo_en),
+    .spi_device_sd_i      ({3'h0, spi_device_sd_i}), // SPI MOSI = QSPI DQ0
+    .spi_device_tpm_csb_i ('0)
+  );
+
+  // SPI tri-state output driver
+  OBUFT spi_obuft (
+    .I(qspi_device_sdo[1]),     // SPI MISO = QSPI DQ1
+    .T(~qspi_device_sdo_en[1]), // SPI MISO = QSPI DQ1
+    .O(spi_device_sd_o)
   );
 
 endmodule
