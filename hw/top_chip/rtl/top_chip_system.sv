@@ -57,7 +57,7 @@ module top_chip_system #(
     FallThrough:        1'b0,
     LatencyMode:        axi_pkg::CUT_ALL_AX,
     PipelineStages:     32'd1,
-    AxiIdWidthSlvPorts: 32'd5,
+    AxiIdWidthSlvPorts: 32'd4,
     AxiIdUsedSlvPorts:  32'd1,
     UniqueIds:          1'b0,
     AxiAddrWidth:       int'(top_pkg::AxiAddrWidth),
