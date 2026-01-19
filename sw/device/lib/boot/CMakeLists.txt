@@ -2,14 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-add_library(startup OBJECT boot.S init_vectors.S)
-target_compile_options(startup PUBLIC ${NON_CHERI_FLAGS})
+set(SRCS boot.S init_vectors.S)
 
-add_library(startup_cheri OBJECT boot.S init_vectors.S)
-target_compile_options(startup_cheri PUBLIC ${CHERI_FLAGS})
-
-add_library(init_vectors OBJECT init_vectors.S)
-target_compile_options(init_vectors PUBLIC ${NON_CHERI_FLAGS})
-
-add_library(init_vectors_cheri OBJECT init_vectors.S)
-target_compile_options(init_vectors_cheri PUBLIC ${CHERI_FLAGS})
+mocha_add_library(NAME startup SOURCES ${SRCS} LIBRARIES)
+mocha_add_library(NAME init_vectors SOURCES init_vectors.S LIBRARIES)
