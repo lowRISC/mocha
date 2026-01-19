@@ -69,9 +69,9 @@ SECTIONS {
         *(.bss)
         *(.bss.*)
         *(COMMON)
-        _bss_end = .;
-        _ebss = .; /* Rust */
         . = ALIGN(8);
+        _ebss = .; /* Rust */
+        _bss_end = .;
     } > ram
 
     .got : {
