@@ -181,7 +181,6 @@ module top_chip_system #(
   axi_xbar #(
     .Cfg          (xbar_cfg               ),
     .ATOPs        (1'b0                   ),
-    .Connectivity ('1                     ),
     .slv_aw_chan_t(top_pkg::axi_aw_chan_t ),
     .mst_aw_chan_t(top_pkg::axi_aw_chan_t ),
     .w_chan_t     (top_pkg::axi_w_chan_t  ),
