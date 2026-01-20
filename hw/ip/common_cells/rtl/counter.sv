@@ -19,7 +19,8 @@ module counter #(
     output logic             overflow_o
 );
   prim_count #(
-    .Width ( WIDTH )
+    .Width                  ( WIDTH ),
+    .EnableAlertTriggerSVA  ( 0     )   // TODO issue #270, enable later when alerts are supported
   ) u_prim_count (
     .clk_i              (clk_i),
     .rst_ni             (rst_ni),
