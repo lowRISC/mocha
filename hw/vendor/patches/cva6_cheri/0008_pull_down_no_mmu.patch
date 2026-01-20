@@ -1,0 +1,19 @@
+diff --git a/core/load_store_unit.sv b/core/load_store_unit.sv
+index e0e606e..5083a00 100644
+--- a/core/load_store_unit.sv
++++ b/core/load_store_unit.sv
+@@ -382,12 +382,14 @@ module load_store_unit
+     assign dcache_req_ports_o[0].address_index = '0;
+     assign dcache_req_ports_o[0].address_tag   = '0;
+     assign dcache_req_ports_o[0].data_wdata    = '0;
++    assign dcache_req_ports_o[0].data_wuser    = '0;
+     assign dcache_req_ports_o[0].data_req      = 1'b0;
+     assign dcache_req_ports_o[0].data_be       = '1;
+     assign dcache_req_ports_o[0].data_size     = 2'b11;
+     assign dcache_req_ports_o[0].data_we       = 1'b0;
+     assign dcache_req_ports_o[0].kill_req      = '0;
+     assign dcache_req_ports_o[0].tag_valid     = 1'b0;
++    assign dcache_req_ports_o[0].strip_tag     = 1'b0;
+
+     assign itlb_miss_o                         = 1'b0;
+     assign dtlb_miss_o                         = 1'b0;
