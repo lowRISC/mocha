@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 {
   flow:             formal
-  formal_root:      "{proj_root}/hw/formal"
+  formal_root:      "{proj_root}/hw/vendor/lowrisc_ip/formal"
   flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
 
   import_cfgs:      [// common server configuration for results upload
@@ -24,7 +24,7 @@
   fusesoc_target:    formal
   sv_flist_gen_opts: ["--cores-root {proj_root}/hw",
                       "run",
-                       "{sv_flist_gen_flags}",
+                      "{sv_flist_gen_flags}",
                       "--tool=icarus",
                       "--target={fusesoc_target}",
                       "--work-root={build_dir}/fusesoc-work",
