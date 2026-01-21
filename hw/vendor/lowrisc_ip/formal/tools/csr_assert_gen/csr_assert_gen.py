@@ -18,7 +18,7 @@ except ImportError:
 
 # Repo root is 4 levels up. Note that this will require an update if the path to
 # this tool is changed.
-REPO_ROOT = "../../.."
+REPO_ROOT = "../../../.."
 
 
 def main():
