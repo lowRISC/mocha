@@ -19,6 +19,26 @@ static const char magic[] = "\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7";
     return false;
 }
 
+/* the test's interrupt handler. returns whether the interrupt was handled successfully.
+ * the test is aborted if this function returns false. */
+[[gnu::weak]] bool test_interrupt_handler(size_t irq)
+{
+    (void)irq;
+    /* by default, all interrupts are unhandled */
+    return false;
+}
+
+/* the test's exception handler. returns whether the exception was handled successfully.
+ * the test is aborted if this function returns false. */
+[[gnu::weak]] bool
+test_exception_handler(struct trap_registers *registers, struct trap_context *context)
+{
+    (void)registers;
+    (void)context;
+    /* by default, all exceptions are unhandled */
+    return false;
+}
+
 /* exit the test with a pass or fail */
 [[noreturn]] void test_exit(bool success)
 {
@@ -48,8 +68,55 @@ static const char magic[] = "\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7";
     test_exit(result);
 }
 
-void _trap_handler(struct trap_registers *registers, struct trap_context *context)
+/* internal interrupt handler, calls the test-defined test_interrupt_handler to handle
+ * the interrupt. if the handler does not succeed, the test is aborted */
+void _interrupt_handler(struct trap_registers *registers, struct trap_context *context)
 {
     (void)registers;
-    (void)context;
+    /* call the test's provided interrupt handler */
+    bool handled = test_interrupt_handler(context->cause);
+    if (!handled) {
+        uart_t console = mocha_system_uart();
+        uart_puts(console, "unhandled interrupt!\n");
+        test_exit(false);
+    }
+}
+
+/* whether we are already in an exception handler or not */
+static bool in_exception = false;
+
+/* internal exception handler, calls the test-defined test_exception_handler to handle.
+ * the exception. if the handler does not succeed, the test is aborted */
+void _exception_handler(struct trap_registers *registers, struct trap_context *context)
+{
+    /* fail if we get an exception in the exception handler */
+    if (in_exception) {
+        uart_t console = mocha_system_uart();
+        uart_puts(console, "exception in exception handler!\n");
+        test_exit(false);
+    }
+    in_exception = true;
+    /* call the test's provided exception handler */
+    bool handled = test_exception_handler(registers, context);
+    if (!handled) {
+        uart_t console = mocha_system_uart();
+        uart_puts(console, "unhandled exception!\n");
+        test_exit(false);
+    }
+    in_exception = false;
+}
+
+/* internal trap handler, called from trap_vector.S.
+ * dispatches to the internal interrupt or exception handler appropriately */
+void _trap_handler(struct trap_registers *registers, struct trap_context *context)
+{
+    if (context->cause & (1ul << 63)) {
+        /* trap cause is interrupt */
+        /* clear interrupt bit as it is implied by interrupt handler function */
+        context->cause &= ~(1ul << 63);
+        _interrupt_handler(registers, context);
+    } else {
+        /* trap cause is exception */
+        _exception_handler(registers, context);
+    }
 }
