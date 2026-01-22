@@ -1,16 +1,3 @@
-diff --git a/hw/vendor/lowrisc_ip.vendor.hjson b/hw/vendor/lowrisc_ip.vendor.hjson
-index 66215b7..a48ca0e 100644
---- a/hw/vendor/lowrisc_ip.vendor.hjson
-+++ b/hw/vendor/lowrisc_ip.vendor.hjson
-@@ -49,7 +49,7 @@
-     {from: "hw/dv/verilator",   to: "dv/verilator", patch_dir: "dv_verilator"},
- 
-     // Verification.
--    {from: "hw/dv/tools", to: "dv/tools", patch_dir: "dv_tools"},
-+    {from: "hw/dv/tools",     to: "dv/tools", patch_dir: "dv_tools"},
-     {from: "hw/formal/tools", to: "formal/tools"},
-   ],
- 
 diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
 index 52a54b9..56b14f3 100644
 --- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
@@ -22,7 +9,7 @@ index 52a54b9..56b14f3 100644
 -  import_cfgs: ["{proj_root}/hw/formal/tools/dvsim/common_formal_cfg.hjson"]
 +  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson"]
    dut:         "{name}"
- 
+
    // Vars that need to exported to the env
 diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
 index afff2bb..fa355ed 100644
@@ -35,7 +22,7 @@ index afff2bb..fa355ed 100644
 -  formal_root:      "{proj_root}/hw/formal"
 +  formal_root:      "{proj_root}/hw/vendor/lowrisc_ip/formal"
    flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
- 
+
    import_cfgs:      [// common server configuration for results upload
 @@ -24,7 +24,7 @@
    fusesoc_target:    formal
@@ -70,7 +57,7 @@ index 52a54b9..56b14f3 100644
 -  import_cfgs: ["{proj_root}/hw/formal/tools/dvsim/common_formal_cfg.hjson"]
 +  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson"]
    dut:         "{name}"
- 
+
    // Vars that need to exported to the env
 diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
 index afff2bb..fa355ed 100644
@@ -83,7 +70,7 @@ index afff2bb..fa355ed 100644
 -  formal_root:      "{proj_root}/hw/formal"
 +  formal_root:      "{proj_root}/hw/vendor/lowrisc_ip/formal"
    flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
- 
+
    import_cfgs:      [// common server configuration for results upload
 @@ -24,7 +24,7 @@
    fusesoc_target:    formal

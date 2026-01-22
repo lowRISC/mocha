@@ -49,8 +49,8 @@
     {from: "hw/dv/verilator",   to: "dv/verilator", patch_dir: "dv_verilator"},
 
     // Verification.
-    {from: "hw/dv/tools",     to: "dv/tools", patch_dir: "dv_tools"},
-    {from: "hw/formal/tools", to: "formal/tools"},
+    {from: "hw/dv/tools",     to: "dv/tools",     patch_dir: "dv_tools"},
+    {from: "hw/formal/tools", to: "formal/tools", patch_dir: "formal_tools"},
   ],
 
   exclude_from_upstream: [
