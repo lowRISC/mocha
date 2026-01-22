@@ -331,7 +331,7 @@ wheels = [
 
 [[package]]
 name = "dvsim"
-version = "1.7.1"
+version = "1.7.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -345,9 +345,9 @@ dependencies = [
     { name = "tabulate" },
     { name = "toml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/71/ce3d7fbd82cbce52a22207a37d6f530d52133eddf8d1c747dcad48a73272/dvsim-1.7.1.tar.gz", hash = "sha256:2058a71b8c94a5343d249309cdc78397e8adaaf7767adcca34b3b93e729e18f3", size = 415258, upload-time = "2026-01-08T12:13:23.52Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fa/5a/4201c8078b701b3a5fe09b8db624140684b31c76611889c2a70240a6b1c4/dvsim-1.7.3.tar.gz", hash = "sha256:9b29e44c33c9253029390e8ccae97da13320e85ce87b4b88031d144af6e7f365", size = 416703, upload-time = "2026-01-21T17:13:43.919Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ed/ad/b20297245f321ced42da3fce81ec3a910300012931a4088c95dae802acb5/dvsim-1.7.1-py3-none-any.whl", hash = "sha256:c1a73068763a85ed5c435e190f35cc9fc40a425d3063b669e0e0ba73b3f1f54b", size = 248968, upload-time = "2026-01-08T12:13:21.757Z" },
+    { url = "https://files.pythonhosted.org/packages/46/b0/5d58420439fd5fbd7d5559cc5c5c101e9d465ad8870060681f69c814e67d/dvsim-1.7.3-py3-none-any.whl", hash = "sha256:8e3989fe50a107cffd66321c3b172b52f076df45a7945b3fa63e208e25795eb8", size = 250756, upload-time = "2026-01-21T17:13:42.448Z" },
 ]
 
 [[package]]
@@ -781,7 +781,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "anytree", specifier = "==2.8.0" },
-    { name = "dvsim", specifier = ">=1.7.1" },
+    { name = "dvsim", specifier = ">=1.7.3" },
     { name = "fusesoc", specifier = "==2.4.3" },
     { name = "hjson", specifier = "==3.1.0" },
     { name = "jinja2", specifier = ">=3.1.6,<4" },
