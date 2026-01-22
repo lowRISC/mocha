@@ -1,9 +1,9 @@
-// Copyright lowRISC contributors (OpenTitan project).
+// Copyright lowRISC contributors.
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 {
   flow:             formal
-  formal_root:      "{proj_root}/hw/formal"
+  formal_root:      "{proj_root}/hw/vendor/lowrisc_ip/formal"
   flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
 
   import_cfgs:      [// common server configuration for results upload
