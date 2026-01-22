@@ -1,7 +1,7 @@
-diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
+diff --git a/dvsim/common_conn_cfg.hjson b/dvsim/common_conn_cfg.hjson
 index 52a54b9..5676c4f 100644
---- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
-+++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
+--- a/dvsim/common_conn_cfg.hjson
++++ b/dvsim/common_conn_cfg.hjson
 @@ -1,9 +1,9 @@
 -// Copyright lowRISC contributors (OpenTitan project).
 +// Copyright lowRISC contributors.
@@ -21,10 +21,10 @@ index 52a54b9..5676c4f 100644
 -}
 +}
 \ No newline at end of file
-diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
+diff --git a/dvsim/common_formal_cfg.hjson b/dvsim/common_formal_cfg.hjson
 index afff2bb..bac1387 100644
---- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
-+++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
+--- a/dvsim/common_formal_cfg.hjson
++++ b/dvsim/common_formal_cfg.hjson
 @@ -1,9 +1,9 @@
 -// Copyright lowRISC contributors (OpenTitan project).
 +// Copyright lowRISC contributors.
@@ -37,10 +37,10 @@ index afff2bb..bac1387 100644
    flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
 
    import_cfgs:      [// common server configuration for results upload
-diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
+diff --git a/dvsim/common_fpv_cfg.hjson b/dvsim/common_fpv_cfg.hjson
 index 4a92376..e8e8bef 100644
---- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
-+++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
+--- a/dvsim/common_fpv_cfg.hjson
++++ b/dvsim/common_fpv_cfg.hjson
 @@ -1,9 +1,9 @@
 -// Copyright lowRISC contributors (OpenTitan project).
 +// Copyright lowRISC contributors.
