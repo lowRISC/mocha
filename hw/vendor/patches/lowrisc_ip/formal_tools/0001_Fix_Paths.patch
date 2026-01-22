@@ -1,8 +1,11 @@
 diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
-index 52a54b9..56b14f3 100644
+index 52a54b9..5676c4f 100644
 --- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
 +++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
-@@ -3,7 +3,7 @@
+@@ -1,9 +1,9 @@
+-// Copyright lowRISC contributors (OpenTitan project).
++// Copyright lowRISC contributors.
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
  // SPDX-License-Identifier: Apache-2.0
  {
    sub_flow:    conn
@@ -11,11 +14,21 @@ index 52a54b9..56b14f3 100644
    dut:         "{name}"
 
    // Vars that need to exported to the env
+@@ -18,4 +18,4 @@
+       value: "default"
+     }
+   ]
+-}
++}
+\ No newline at end of file
 diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
-index afff2bb..fa355ed 100644
+index afff2bb..bac1387 100644
 --- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
 +++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
-@@ -3,7 +3,7 @@
+@@ -1,9 +1,9 @@
+-// Copyright lowRISC contributors (OpenTitan project).
++// Copyright lowRISC contributors.
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
  // SPDX-License-Identifier: Apache-2.0
  {
    flow:             formal
@@ -24,20 +37,14 @@ index afff2bb..fa355ed 100644
    flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
 
    import_cfgs:      [// common server configuration for results upload
-@@ -24,7 +24,7 @@
-   fusesoc_target:    formal
-   sv_flist_gen_opts: ["--cores-root {proj_root}/hw",
-                       "run",
--                       "{sv_flist_gen_flags}",
-+                      "{sv_flist_gen_flags}",
-                       "--tool=icarus",
-                       "--target={fusesoc_target}",
-                       "--work-root={build_dir}/fusesoc-work",
 diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
-index 4a92376..efc84dc 100644
+index 4a92376..e8e8bef 100644
 --- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
 +++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
-@@ -3,7 +3,7 @@
+@@ -1,9 +1,9 @@
+-// Copyright lowRISC contributors (OpenTitan project).
++// Copyright lowRISC contributors.
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
  // SPDX-License-Identifier: Apache-2.0
  {
    sub_flow: fpv
@@ -46,51 +53,10 @@ index 4a92376..efc84dc 100644
    stopats: []
    task: ""
    after_load: []
-diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
-index 52a54b9..56b14f3 100644
---- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
-+++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
-@@ -3,7 +3,7 @@
- // SPDX-License-Identifier: Apache-2.0
- {
-   sub_flow:    conn
--  import_cfgs: ["{proj_root}/hw/formal/tools/dvsim/common_formal_cfg.hjson"]
-+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson"]
-   dut:         "{name}"
-
-   // Vars that need to exported to the env
-diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
-index afff2bb..fa355ed 100644
---- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
-+++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson
-@@ -3,7 +3,7 @@
- // SPDX-License-Identifier: Apache-2.0
- {
-   flow:             formal
--  formal_root:      "{proj_root}/hw/formal"
-+  formal_root:      "{proj_root}/hw/vendor/lowrisc_ip/formal"
-   flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
-
-   import_cfgs:      [// common server configuration for results upload
-@@ -24,7 +24,7 @@
-   fusesoc_target:    formal
-   sv_flist_gen_opts: ["--cores-root {proj_root}/hw",
-                       "run",
--                       "{sv_flist_gen_flags}",
-+                      "{sv_flist_gen_flags}",
-                       "--tool=icarus",
-                       "--target={fusesoc_target}",
-                       "--work-root={build_dir}/fusesoc-work",
-diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
-index 4a92376..efc84dc 100644
---- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
-+++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson
-@@ -3,7 +3,7 @@
- // SPDX-License-Identifier: Apache-2.0
- {
-   sub_flow: fpv
--  import_cfgs: ["{proj_root}/hw/formal/tools/dvsim/common_formal_cfg.hjson"]
-+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson"]
-   stopats: []
-   task: ""
-   after_load: []
+@@ -14,4 +14,4 @@
+     {TASK:       '{task}'},
+     {AFTER_LOAD: '{after_load}'},
+   ]
+-}
++}
+\ No newline at end of file
