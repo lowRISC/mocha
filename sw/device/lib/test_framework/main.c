@@ -8,10 +8,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-__attribute__((weak)) bool test_main(uart_t console)
+/* the test's main function. returns whether the test was successful or not */
+[[gnu::weak]] bool test_main(uart_t console)
 {
-    uart_puts(console, "Test framework test");
-    return true;
+    (void)console;
+    /* fail by default */
+    return false;
 }
 
 int main(void)

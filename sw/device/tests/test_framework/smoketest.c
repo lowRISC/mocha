@@ -1,0 +1,12 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+#include "hal/uart.h"
+#include <stdbool.h>
+
+bool test_main(uart_t console)
+{
+    uart_puts(console, "Test framework smoketest\n");
+    return true;
+}
