@@ -11,7 +11,7 @@ index 66215b7..a48ca0e 100644
      {from: "hw/formal/tools", to: "formal/tools"},
    ],
  
-diff --git a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
+diff --git a/formal/tools/dvsim/common_conn_cfg.hjson b/formal/tools/dvsim/common_conn_cfg.hjson
 index 52a54b9..56b14f3 100644
 --- a/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
 +++ b/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_conn_cfg.hjson
