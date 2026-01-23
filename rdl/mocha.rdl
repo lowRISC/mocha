@@ -8,6 +8,7 @@
 `include "ip/rv_timer.rdl"
 `include "ip/plic.rdl"
 `include "ip/spi_device.rdl"
+`include "ip/sim_ctrl.rdl"
 
 addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;};
 
@@ -21,6 +22,8 @@ addrmap top_mocha {
   } SRAM @ 0x1000_0000;
 
   reserved DEBUG_MODULE @ 0x2000_0000;
+
+  sim_ctrl SIM_CTRL @ 0x2001_000;
 
   reserved GPIO @ 0x4000_0000;
 
@@ -39,5 +42,6 @@ addrmap top_mocha {
   external mem {
     mementries = 0x80000000; memwidth=8; // 2GiB
   } DRAM @ 0x8000_0000;
+
 };
   

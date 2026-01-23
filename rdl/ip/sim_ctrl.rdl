@@ -1,0 +1,16 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+addrmap sim_ctrl {
+  external mem {
+    mementries = 0x01; memwidth=32;
+    desc = "Write the simulation status";
+  } TEST_STATUS @ 0x80 ;
+
+  external mem {
+    mementries = 0x01; memwidth=32;
+    desc = "The simulation log struct";
+  } LOG;
+};
