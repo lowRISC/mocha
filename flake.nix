@@ -60,6 +60,13 @@
 
       pythonEnv = pythonSet.mkVirtualEnv "python-env" workspace.deps.default;
 
+      fpga = import nix/fpga.nix {
+        inherit
+          pkgs
+          pythonEnv;
+          llvm = lrPkgs.llvm_cheri;
+      };
+
       commonPackages = with pkgs; [
         cmake
         gnumake
@@ -92,6 +99,12 @@
             # Force uv to use nixpkgs Python interpreter
             UV_PYTHON = pythonSet.python.interpreter;
           };
+        };
+      };
+
+      apps = {
+        bitstream-build = flake-utils.lib.mkApp {
+          drv = fpga.bitstream-build;
         };
       };
     };
