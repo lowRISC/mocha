@@ -1,0 +1,65 @@
+diff --git a/csr_assert_gen/csr_assert_gen.py b/csr_assert_gen/csr_assert_gen.py
+index 693a79d..07003ce 100644
+--- a/csr_assert_gen/csr_assert_gen.py
++++ b/csr_assert_gen/csr_assert_gen.py
+@@ -18,7 +18,7 @@ except ImportError:
+ 
+ # Repo root is 4 levels up. Note that this will require an update if the path to
+ # this tool is changed.
+-REPO_ROOT = "../../../.."
++REPO_ROOT = "../../.."
+ 
+ 
+ def main():
+diff --git a/dvsim/common_conn_cfg.hjson b/dvsim/common_conn_cfg.hjson
+index 52a54b9..56b14f3 100644
+--- a/dvsim/common_conn_cfg.hjson
++++ b/dvsim/common_conn_cfg.hjson
+@@ -3,7 +3,7 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   sub_flow:    conn
+-  import_cfgs: ["{proj_root}/hw/formal/tools/dvsim/common_formal_cfg.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson"]
+   dut:         "{name}"
+ 
+   // Vars that need to exported to the env
+diff --git a/dvsim/common_formal_cfg.hjson b/dvsim/common_formal_cfg.hjson
+index afff2bb..c9cc179 100644
+--- a/dvsim/common_formal_cfg.hjson
++++ b/dvsim/common_formal_cfg.hjson
+@@ -3,7 +3,7 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   flow:             formal
+-  formal_root:      "{proj_root}/hw/formal"
++  formal_root:      "{proj_root}/hw/vendor/lowrisc_ip/formal"
+   flow_makefile:    "{formal_root}/tools/dvsim/formal.mk"
+ 
+   import_cfgs:      [// common server configuration for results upload
+diff --git a/dvsim/common_fpv_cfg.hjson b/dvsim/common_fpv_cfg.hjson
+index 4a92376..efc84dc 100644
+--- a/dvsim/common_fpv_cfg.hjson
++++ b/dvsim/common_fpv_cfg.hjson
+@@ -3,7 +3,7 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   sub_flow: fpv
+-  import_cfgs: ["{proj_root}/hw/formal/tools/dvsim/common_formal_cfg.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_formal_cfg.hjson"]
+   stopats: []
+   task: ""
+   after_load: []
+diff --git a/dvsim/formal.mk b/dvsim/formal.mk
+index e27d620..ceea8be 100644
+--- a/dvsim/formal.mk
++++ b/dvsim/formal.mk
+@@ -2,7 +2,7 @@
+ # Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ # SPDX-License-Identifier: Apache-2.0
+ 
+-export SHELL	:= /bin/bash
++export SHELL  := /usr/bin/env bash
+ .DEFAULT_GOAL := all
+ 
+ all: build
