@@ -72,6 +72,7 @@
         pythonEnv
         verilator
         srecord
+        d2
       ];
     in {
       formatter = pkgs.alejandra;

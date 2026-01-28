@@ -44,6 +44,8 @@ COMMANDS: list[list[str]] = [
         "sw/device/lib/boot/memory.ld",
     ],
     ["util/rdlgenerator.py", "gen-memory-map", "build/rdl/rdl.json", "doc/img/memmap.svg"],
+    # documentation
+    ["d2", "doc/img/mocha.d2"],
 ]
 
 
