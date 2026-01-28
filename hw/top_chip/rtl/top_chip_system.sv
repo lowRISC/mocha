@@ -138,6 +138,10 @@ module top_chip_system #(
   logic       intr_timer;
   logic [1:0] intr;
 
+  // Signals to intercept AXI traffic from CVA6 for DV puprose
+  top_pkg::axi_req_t  cva6_to_sim_req;
+  top_pkg::axi_resp_t sim_to_cva6_resp;
+
   // Instantiate CVA6-CHERI.
   cva6 #(
     .CVA6Cfg       ( CVA6Cfg                ),
@@ -160,9 +164,22 @@ module top_chip_system #(
     .rvfi_probes_o ( ),
     .cvxif_req_o   ( ),
     .cvxif_resp_i  ('0),
-    .noc_req_o     (xbar_host_req[top_pkg::CVA6]),
-    .noc_resp_i    (xbar_host_resp[top_pkg::CVA6])
+    .noc_req_o     (cva6_to_sim_req),
+    .noc_resp_i    (sim_to_cva6_resp)
   );
+
+  // Interception point for connecting simulation SRAM by disconnecting the AXI output. The
+  // disconnection is done only if `SYNTHESIS is NOT defined AND `INST_SIM_SRAM is defined.
+  // This define is used only for Verilator as it does not support forces.
+`ifdef INST_SIM_SRAM
+`ifdef SYNTHESIS
+  // Induce a compilation error by instantiating a non-existent module.
+  illegal_preprocessor_branch_taken u_illegal_preprocessor_branch_taken();
+`endif
+`else
+  assign xbar_host_req[top_pkg::CVA6] = cva6_to_sim_req;
+  assign sim_to_cva6_resp             = xbar_host_resp[top_pkg::CVA6];
+`endif
 
   // AXI SRAM
   axi_sram #(

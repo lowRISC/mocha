@@ -1,0 +1,22 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:sim_sram_axi:0.1"
+description: "SRAM instantiated on a AXI interface at chip level for simulation purpose."
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:prim:assert
+      - lowrisc:prim:ram_1p
+      - lowrisc:mocha:top_chip_system
+    files:
+      - sim_sram_axi_if.sv
+      - sim_sram_axi_sink.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv

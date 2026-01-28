@@ -54,3 +54,7 @@ parameters:
     paramtype: vlogdefine
     description: Primitives implementation to use, e.g. "prim_pkg::ImplGeneric".
     default: prim_pkg::ImplGeneric
+  INST_SIM_SRAM:
+    datatype: bool
+    paramtype: vlogdefine
+    description: Disconnect the AXI data output of CVA6 core so that we can attach the simulation SRAM.

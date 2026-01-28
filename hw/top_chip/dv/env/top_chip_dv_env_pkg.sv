@@ -40,10 +40,11 @@ package top_chip_dv_env_pkg;
   // 50 MHz Peripheral clock
   parameter int unsigned PeriClkFreq = 50_000_000;
 
-  // TODO see issue #250 (remove hardcoded addresses and point to a pkg instead when available)
-  parameter bit [top_pkg::TL_AW-1:0] SW_DV_START_ADDR       = 'h2001_0000;
-  parameter bit [top_pkg::TL_AW-1:0] SW_DV_TEST_STATUS_ADDR = SW_DV_START_ADDR + 'h80;
-  parameter bit [top_pkg::TL_AW-1:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h84;
+  // SW DV special write locations for test status and logging will always fit in 32-bits
+  parameter bit [31:0] SW_DV_START_ADDR       = 'h2001_0000;
+  parameter bit [31:0] SW_DV_SIZE             = 'h0000_0100;        // 256 bytes reserved for SW DV
+  parameter bit [31:0] SW_DV_TEST_STATUS_ADDR = SW_DV_START_ADDR + 'h00;
+  parameter bit [31:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h04;
 
   // File includes
   `include "mem_clear_util.sv"

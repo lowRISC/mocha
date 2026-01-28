@@ -48,6 +48,9 @@ targets:
   sim:
     <<: *default_target
     default_tool: verilator
+    parameters:
+      - INST_SIM_SRAM=true
+
     filesets_append:
       - files_verilator
     toplevel: top_chip_verilator
@@ -69,3 +72,9 @@ targets:
           # RAM primitives wider than 64bit (required for ECC) fail to build in
           # Verilator without increasing the unroll count (see Verilator#1266)
           - "--unroll-count 72"
+
+parameters:
+  INST_SIM_SRAM:
+    datatype: bool
+    paramtype: vlogdefine
+    description: Disconnect the AXI data output of CVA6 core so that we can attach the simulation SRAM.
