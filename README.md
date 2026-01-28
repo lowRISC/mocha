@@ -144,6 +144,11 @@ To run block-level verification you can use the following command:
 dvsim hw/vendor/lowrisc_ip/ip/uart/dv/uart_sim_cfg.hjson -i uart_smoke -r 1 --tool xcelium
 ```
 
+To run block-level formal verification you can use the following command:
+```sh
+dvsim hw/top_chip/formal/top_chip_fpv_ip_cfgs.hjson --select-cfgs rv_plic_fpv
+```
+
 To run top-level verification you can use the following command:
 ```sh
 dvsim hw/top_chip/dv/mocha_sim_cfgs.hjson --tool xcelium
