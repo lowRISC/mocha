@@ -16,6 +16,7 @@
     // Utilities.
     {from: "util/basegen",         to: "util/basegen"}, // Dependency of top generator.
     {from: "util/design",          to: "util/design"}, // Dependency of IP generator.
+    {from: "util/device_sw_utils", to: "util/device_sw_utils"},
     {from: "util/ipgen.py",        to: "util/ipgen.py"}, // IP generator.
     {from: "util/ipgen",           to: "util/ipgen"},
     {from: "util/raclgen",         to: "util/raclgen"}, // Dependency of top generator.
