@@ -24,5 +24,6 @@
     "{proj_root}/hw/vendor/lowrisc_ip/ip/spi_device/dv/spi_device_2p_sim_cfg.hjson",
     // Top-level IPs.
     // Top level.
+    "{proj_root}/hw/top_chip/dv/top_chip_sim_cfg.hjson"
   ]
 }
