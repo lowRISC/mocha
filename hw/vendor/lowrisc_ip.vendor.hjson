@@ -29,7 +29,7 @@
     // Hardware IP blocks.
     {from: "hw/ip/lc_ctrl",    to: "ip/lc_ctrl"}, // Dependency of crossbar.
     {from: "hw/ip/rv_timer",   to: "ip/rv_timer"}, // Timer.
-    {from: "hw/ip/spi_device", to: "ip/spi_device"}, // SPI device.
+    {from: "hw/ip/spi_device", to: "ip/spi_device", patch_dir: "spi_device"}, // SPI device.
     {from: "hw/ip/tlul",       to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
     {from: "hw/ip/uart",       to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
 
