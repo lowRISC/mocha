@@ -33,10 +33,20 @@ module tb;
 
   // ------ DUT ------
   top_chip_system #() dut (
-    .clk_i              (clk              ),
-    .rst_ni             (rst_n            ),
-    .uart_rx_i          (uart_if.uart_rx  ),
-    .uart_tx_o          (uart_if.uart_tx  )
+    // Clock and reset.
+    .clk_i                (clk              ),
+    .rst_ni               (rst_n            ),
+    // UART receive and transmit.
+    .uart_rx_i            (uart_if.uart_rx  ),
+    .uart_tx_o            (uart_if.uart_tx  ),
+    // SPI device receive and transmit.
+    // TODO SPI device signals are currently tied off, need to be connected to a SPI agent
+    .spi_device_sck_i     (1'b0             ),
+    .spi_device_csb_i     (1'b1             ),
+    .spi_device_sd_o      (                 ),
+    .spi_device_sd_en_o   (                 ),
+    .spi_device_sd_i      (4'hF             ),
+    .spi_device_tpm_csb_i (1'b0             )
   );
 
   // Signals to connect the sink
