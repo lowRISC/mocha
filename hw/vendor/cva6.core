@@ -93,7 +93,23 @@ filesets:
       - cva6_cheri/core/cva6_mmu/cva6_shared_tlb.sv
     file_type: systemVerilogSource
 
+  files_model:
+    depend:
+      - pulp-platform.org::axi
+      - lowrisc:common_cells:all
+      - lowrisc:prim:lfsr
+    files:
+      # Includes.
+      - cva6_cheri/common/local/util/ex_trace_item.svh: {is_include_file: true, include_path: cva6_cheri/common/local/util}
+      - cva6_cheri/common/local/util/instr_trace_item.svh: {is_include_file: true, include_path: cva6_cheri/common/local/util}
+      # Packages.
+      - cva6_cheri/core/include/instr_tracer_pkg.sv
+      # Behavioral instr_tracer
+      - cva6_cheri/common/local/util/instr_tracer.sv
+    file_type: systemVerilogSource
+
 targets:
   default:
     filesets:
       - files_rtl
+      - files_model
