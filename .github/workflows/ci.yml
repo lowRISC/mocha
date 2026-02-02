@@ -100,7 +100,20 @@ jobs:
             substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
             trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
+      - name: Hash Bitstream
+        id: hash-bitstream
+        run: |
+          echo "hash=$(nix run .#bitstream-hash)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v5
+        id: cache
+        with:
+          path: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+          key: ${{ steps.hash-bitstream.outputs.hash }}
+          lookup-only: true
+
       - name: Build bitstream
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           module load xilinx/vivado
           nix run .#bitstream-build
