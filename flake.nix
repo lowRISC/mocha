@@ -93,16 +93,6 @@
             UV_PYTHON = pythonSet.python.interpreter;
           };
         };
-        legacy = pkgs.mkShell {
-          name = "mocha-legacy";
-          nativeBuildInputs =
-            commonPackages
-            ++ (with pkgs; [
-              clang_18
-              llvmPackages_18.llvm
-            ]);
-          buildInputs = with pkgs; [libelf zlib];
-        };
       };
     };
   in
