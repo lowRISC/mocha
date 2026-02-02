@@ -11,7 +11,7 @@ on:
     branches: ["main"]
 
 jobs:
-  test:
+  lint-check:
     runs-on: ["self-hosted", "nixos", "X64"]
 
     defaults:
@@ -48,6 +48,25 @@ jobs:
       - name: Lint - Clang Tidy
         run: |
           util/clang_tidy.py
+
+  verilator-test:
+    runs-on: ["self-hosted", "nixos", "X64"]
+    needs: lint-check 
+
+    defaults:
+      run:
+        shell: "nix develop -c bash -e {0}"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare Nix environment
+        run: |
+          true
+
+      - name: Generate software buildsystem
+        run: |
+          cmake -B build/sw -S sw
 
       - name: Build software
         run: |
