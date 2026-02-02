@@ -37,4 +37,13 @@ in {
         --BootRomInitFile=build/sw/device/examples/hello_world/hello_world.vmem
     '';
   };
+
+  bitstream-load = pkgs.writeShellApplication {
+    name = "bitstream-load";
+    runtimeInputs = [pkgs.openfpgaloader];
+    text = ''
+      openFPGALoader -b genesys2 build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+    '';
+  };
+
 }
