@@ -106,6 +106,9 @@
         bitstream-build = flake-utils.lib.mkApp {
           drv = fpga.bitstream-build;
         };
+        bitstream-hash = flake-utils.lib.mkApp {
+          drv = fpga.bitstream-hash;
+        };
         bitstream-load = flake-utils.lib.mkApp {
           drv = fpga.bitstream-load;
         };
