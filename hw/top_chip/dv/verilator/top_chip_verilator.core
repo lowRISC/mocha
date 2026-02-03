@@ -1,0 +1,87 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha:top_chip_verilator"
+description: "Chip-level simulation with Verilator of Mocha chip"
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:prim:mubi
+      - lowrisc:prim_generic:all
+      - lowrisc:mocha:top_chip_system
+
+  files_verilator:
+    depend:
+      - lowrisc:dv_verilator:memutil_verilator
+      - lowrisc:dv_verilator:simutil_verilator
+      - lowrisc:dv_dpi_c:uartdpi:0.1
+      - lowrisc:dv_dpi_sv:uartdpi:0.1
+      - lowrisc:dv_dpi_c:spidpi:0.1
+      - lowrisc:dv_dpi_sv:spidpi:0.1
+      - lowrisc:mocha_dv:sim_sram_axi:0.1
+      - lowrisc:dv:sw_test_status
+      - lowrisc:dv:dv_test_status
+
+    files:
+      - top_chip_verilator.sv:  { file_type: systemVerilogSource }
+      - top_chip_verilator.cc:  { file_type: cppSource }
+      - top_chip_verilator.vlt: { file_type: vlt }
+
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+
+  sim:
+    <<: *default_target
+    parameters:
+      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
+      - INST_SIM_SRAM=true
+    default_tool: verilator
+    filesets_append:
+      - files_verilator
+    toplevel: top_chip_verilator
+    tools:
+      verilator:
+        mode: cc
+        verilator_options:
+          # Disabling tracing reduces compile times but doesn't have a
+          # huge influence on runtime performance.
+          - '--trace'
+          - '--trace-fst' # this requires -DVM_TRACE_FMT_FST in CFLAGS below!
+          - '--trace-structs'
+          - '--trace-params'
+          - '--trace-max-array 1024'
+          - '-CFLAGS "-Wall -DVM_TRACE_FMT_FST -DTOPLEVEL_NAME=top_chip_verilator"'
+          - '-LDFLAGS "-pthread -lutil -lelf"'
+          - '--assert'
+          - '-Wall'
+          # RAM primitives wider than 64bit (required for ECC) fail to build in
+          # Verilator without increasing the unroll count (see Verilator#1266)
+          - "--unroll-count 72"
+
+  lint:
+    <<: *default_target
+    default_tool: verilator
+    filesets_append:
+      - files_verilator
+    toplevel: top_chip_verilator
+    tools:
+      verilator:
+        mode: lint-only
+    parameters:
+      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
+
+parameters:
+  PRIM_DEFAULT_IMPL:
+    datatype: str
+    paramtype: vlogdefine
+    description: Primitives implementation to use, e.g. "prim_pkg::ImplGeneric".
+    default: prim_pkg::ImplGeneric
+  INST_SIM_SRAM:
+    datatype: bool
+    paramtype: vlogdefine
+    description: Disconnect the AXI data output of CVA6 core so that we can attach the simulation SRAM.

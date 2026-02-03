@@ -75,7 +75,7 @@ jobs:
       - name: Build verilator
         run: |
           JOBS=$(($(nproc) / 4))
-          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
+          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
 
       - name: Run verilator software tests
         run: |

@@ -26,37 +26,32 @@ filesets:
       - rtl/top_chip_system.sv
     file_type: systemVerilogSource
 
-  files_verilator:
-    depend:
-      - lowrisc:dv_verilator:memutil_verilator
-      - lowrisc:dv_verilator:simutil_verilator
-      - lowrisc:dv_dpi_c:uartdpi:0.1
-      - lowrisc:dv_dpi_sv:uartdpi:0.1
-      - lowrisc:dv_dpi_c:spidpi:0.1
-      - lowrisc:dv_dpi_sv:spidpi:0.1
-      - lowrisc:prim_generic:all
+  files_verilator_waiver:
     files:
-      - dv/verilator/top_chip_verilator.sv: { file_type: systemVerilogSource }
-      - dv/verilator/top_chip_verilator.cc: { file_type: cppSource }
-      - lint/top_chip.vlt: { file_type: vlt }
+      - lint/top_chip_system.vlt
+    file_type: vlt
 
 targets:
   default: &default_target
     filesets:
+      - tool_verilator ? (files_verilator_waiver)
       - files_rtl
+    toplevel: top_chip_system
 
   sim:
+    default_tool: verilator
+    filesets:
+      - files_rtl
+    toplevel: top_chip_system
+
+  lint:
     <<: *default_target
     default_tool: verilator
     parameters:
-      - INST_SIM_SRAM=true
-
-    filesets_append:
-      - files_verilator
-    toplevel: top_chip_verilator
+      - SYNTHESIS=true
     tools:
       verilator:
-        mode: cc
+        mode: lint-only
         verilator_options:
           # Disabling tracing reduces compile times but doesn't have a
           # huge influence on runtime performance.
@@ -74,7 +69,6 @@ targets:
           - "--unroll-count 72"
 
 parameters:
-  INST_SIM_SRAM:
+  SYNTHESIS:
     datatype: bool
     paramtype: vlogdefine
-    description: Disconnect the AXI data output of CVA6 core so that we can attach the simulation SRAM.

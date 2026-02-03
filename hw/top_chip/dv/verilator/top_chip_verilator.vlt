@@ -1,0 +1,29 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Waivers for Mocha top DV for Verilator tool
+
+`verilator_config
+
+// Used here for DV purpose only
+lint_off -rule DECLFILENAME -file "*/pulp_axi/src/axi_intf.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/top_chip_verilator.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/*lowrisc_dv_dpi_sv_uartdpi*/*.sv"
+
+// Some issues in the `sw_test_status_if` and associated `sim_sram_axi_sink` +
+// `sim_sram_if` that we shall ignore.
+// They are used only for DV purposes, and so should be relatively safe.
+// They are also vendored from OpenTitan, which makes them a pain to change.
+lint_off -file "*sim_sram_axi_sink.sv"
+lint_off -file "*sim_sram_axi_if.sv"
+lint_off -file "*sw_test_status_if.sv"
+
+// Mute RTL style warning from lowRISC UART DPI
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"
+lint_off -rule WIDTHTRUNC -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_can_read(ctx)*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_write(ctx, rxsymbol)*"
+
+// Spidpi in Verilator top has single SPI interface, some QSPI signals are therefore unused
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/dv/verilator/top_chip_verilator.sv" -match "*qspi_device_sdo*"

@@ -1,8 +1,8 @@
-// Copyright lowRISC contributors.
+// Copyright lowRISC contributors (COSMIC project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// Waivers for for Mocha top for Verilator tool
+// Waivers for Mocha top RTL for Verilator tool
 
 `verilator_config
 
@@ -89,12 +89,6 @@ lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "
 lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
 lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*gnt_nodes*"
 
-// Mute RTL style warning from lowRISC UART DPI
-lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"
-lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"
-lint_off -rule WIDTHTRUNC -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_can_read(ctx)*"
-lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_write(ctx, rxsymbol)*"
-
 // Mute RTL style warning from lowRISC UART IP
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_uart*/rtl/uart_core.sv" -match "*uart_fifo_rxilvl*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_uart*/rtl/uart_core.sv" -match "*uart_fifo_txilvl*"
@@ -118,9 +112,6 @@ lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramCmdFifoIdx*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramAddrFifoIdx*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_spi_device*/rtl/spi_readcmd.sv" -match "*addr_cnt_d*"
-
-// Spidpi in verilator top has single SPI interface, some QSPI signals are therefore unused
-lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/dv/verilator/top_chip_verilator.sv" -match "*qspi_device_sdo*"
 
 // Memory downsizer truncates address bits
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/rtl/mem_downsizer.sv" -match "*mem64_addr_i*"

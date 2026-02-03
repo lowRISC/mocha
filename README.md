@@ -89,9 +89,9 @@ util/clang_tidy.py
 We use Verilator to simulate our hardware design and use FuseSoC as a build system:
 ```sh
 # Build simulator.
-fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_system
+fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
 # Run simulator.
-build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
+build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
 ```
 
 One specific feature of our simulator is that you can exit the simulation by using the following magic string:

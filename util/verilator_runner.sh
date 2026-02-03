@@ -6,7 +6,7 @@
 ROOT_DIR=$(dirname "$0")/..
 LOG_FILE="uart0.log"
 
-timeout 5m $ROOT_DIR/build/lowrisc_mocha_top_chip_system_0/sim-verilator/Vtop_chip_verilator \
+timeout 5m $ROOT_DIR/build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator \
   -E $1 > /dev/null 2>&1
 
 if grep -q "TEST RESULT: FAIL" "$LOG_FILE"; then
