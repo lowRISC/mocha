@@ -27,14 +27,23 @@ COMMANDS: list[list[str]] = [
         "-o",
         "hw/top_chip/ip/xbar_peri",
     ],
-    # generate PLIC
-    ["util/generate_plic.sh"],
+    # plic generator
+    [
+        "hw/vendor/lowrisc_ip/util/ipgen.py",
+        "generate",
+        "-C",
+        "hw/vendor/lowrisc_ip/ip_templates/rv_plic",
+        "-c",
+        "hw/top_chip/data/rv_plic_cfg.hjson",
+        "-o",
+        "hw/top_chip/ip_autogen/rv_plic",
+        "-f",
+    ],
     # vendored hardware dependencies
     ["util/vendor.py", "hw/vendor/cva6_cheri.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/lowrisc_ip.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_axi.vendor.hjson"],
-
-    # rdl code gen.
+    # rdl code gen
     ["mkdir", "-p", "build/rdl"],
     ["rdl2ot", "export-rtl", "--soc", "rdl/mocha.rdl", "build/rdl"],
     [
