@@ -16,7 +16,7 @@ jobs:
 
     defaults:
       run:
-        shell: "nix develop -c bash -e {0}"
+        shell: "nix develop --accept-flake-config -c bash -e {0}"
 
     steps:
       - uses: actions/checkout@v5
@@ -55,7 +55,7 @@ jobs:
 
     defaults:
       run:
-        shell: "nix develop -c bash -e {0}"
+        shell: "nix develop --accept-flake-config -c bash -e {0}"
 
     steps:
       - uses: actions/checkout@v5
@@ -101,6 +101,11 @@ jobs:
           extra_nix_config: |
             substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
             trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            trusted-users = runner
+
+      - name: Test
+        run: |
+          id -a
 
       - name: Hash Bitstream
         id: hash-bitstream
@@ -138,6 +143,11 @@ jobs:
           extra_nix_config: |
             substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
             trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+            trusted-users = runner
+
+      - name: Test
+        run: |
+          id -a
 
       - uses: actions/cache@v5
         with:
