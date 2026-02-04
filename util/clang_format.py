@@ -21,7 +21,6 @@ def main():
             if (Path(file).suffix in format_extensions)
         )
 
-    print(c_files)
     cmd = "clang-format"
     cmd_args = [cmd, "-i", *sys.argv[1:], *c_files]
     os.execvp(cmd, cmd_args)
