@@ -1,6 +1,6 @@
-// Copyright lowRISC contributors (COSMIC project).
-// Licensed under the Apache License, Version 2.0, see LICENSE for details.
-// SPDX-License-Identifier: Apache-2.0
+/* Copyright lowRISC contributors (COSMIC project). */
+/* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
+/* SPDX-License-Identifier: Apache-2.0 */
 
 .section .init_vectors, "ax"
 .option push
