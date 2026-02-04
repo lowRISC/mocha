@@ -1,6 +1,8 @@
-// Copyright lowRISC contributors (COSMIC project).
-// Licensed under the Apache License, Version 2.0, see LICENSE for details.
-// SPDX-License-Identifier: Apache-2.0
+/* Copyright lowRISC contributors (COSMIC project). */
+/* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+#include "boot/scratchpad.h"
 
 .section .text
 
@@ -182,6 +184,48 @@ zero_bss_end:
 #else /* !defined(__riscv_zcherihybrid) */
     /* in non-CHERI mode, just load the stack top */
     la sp, _stack_top
+#endif /* defined(__riscv_zcherihybrid) */
+
+setup_trap_vector:
+#if defined(__riscv_zcherihybrid)
+    /* create a trap handler capability and install it in mtvecc */
+    llc ct0, _trap_vector
+    scaddr ct0, ca0, t0
+    csrw mtvecc, ct0
+    mv ct0, cnull
+#else /* !defined(__riscv_zcherihybrid) */
+    /* install a new trap handler */
+    la t0, _trap_vector
+    csrw mtvec, t0
+    mv t0, zero
+#endif /* defined(__riscv_zcherihybrid) */
+
+#if defined(__riscv_zcherihybrid)
+setup_scratchpad:
+    /* create capability for scratchpad area in ca1 */
+    llc ct0, _scratch
+    li t1, SCRATCHPAD_SIZE
+    scaddr ct0, ca0, t0
+    scbnds ca1, ct0, t1
+
+    /* set up a known-good stack capability in the scratchpad area */
+    llc ct0, _stack_bottom
+    llc ct1, _stack_len
+    scaddr ct0, ca0, t0
+    scbnds ct0, ct0, t1
+    add ct0, ct0, t1
+    li t1, ~(__CHERI_CAP_PERMISSION_EXECUTE__)
+    acperm ct0, ct0, t1
+    sc ct0, SCRATCHPAD_TRAP_STACK_OFFSET(ca1)
+    /* mscratch will contain this scratchpad area */
+    csrw mscratchc, ca1
+    mv ct0, cnull
+    mv ca1, cnull
+    mv t1, zero
+#else /* !defined(__riscv_zcherihybrid) */
+    la t0, _scratch
+    csrw mscratch, t0
+    mv t0, zero
 #endif /* defined(__riscv_zcherihybrid) */
 
 #if defined(__riscv_zcherihybrid)
