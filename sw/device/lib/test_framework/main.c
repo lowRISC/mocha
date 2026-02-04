@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "boot/trap.h"
 #include "hal/mocha.h"
 #include "hal/uart.h"
 #include <stdbool.h>
@@ -30,4 +31,10 @@ int main(void)
     uart_puts(console, "\nSafe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7");
 
     return 0;
+}
+
+void _trap_handler(struct trap_registers *registers, struct trap_context *context)
+{
+    (void)registers;
+    (void)context;
 }

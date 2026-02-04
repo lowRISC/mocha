@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "boot/trap.h"
 #include "hal/mocha.h"
 #include "hal/timer.h"
 #include "hal/uart.h"
@@ -37,4 +38,10 @@ int main(void)
     }
 
     return 0;
+}
+
+void _trap_handler(struct trap_registers *registers, struct trap_context *context)
+{
+    (void)registers;
+    (void)context;
 }
