@@ -11,6 +11,7 @@
 #include <cheriintrin.h>
 #endif /* defined(__riscv_zcherihybrid) */
 
+static const uintptr_t dv_test_status_base = 0x20010000ul;
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
@@ -69,5 +70,14 @@ spi_device_t mocha_system_spi_device(void)
     return (spi_device_t)create_mmio_capability(spi_device_base, 0x1FC0u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (spi_device_t)spi_device_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+void *mocha_system_dv_test_status(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return create_mmio_capability(dv_test_status_base, 0x100u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (void *)dv_test_status_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }

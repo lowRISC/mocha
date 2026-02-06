@@ -3,10 +3,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "boot/trap.h"
+#include "hal/mmio.h"
 #include "hal/mocha.h"
 #include "hal/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
+
+enum test_status {
+    TEST_STATUS_IN_TEST = 0x4354u,
+    TEST_STATUS_PASSED = 0x900du,
+    TEST_STATUS_FAILED = 0xbaadu,
+};
 
 /* magic byte string to terminate the verilator simulation */
 static const char magic[] = "\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7";
@@ -43,12 +50,12 @@ test_exception_handler(struct trap_registers *registers, struct trap_context *co
 [[noreturn]] void test_exit(bool success)
 {
     uart_t console = mocha_system_uart();
+    void *dv_test_status = mocha_system_dv_test_status();
+
     uart_puts(console, "TEST RESULT: ");
-    if (success) {
-        uart_puts(console, "PASSED");
-    } else {
-        uart_puts(console, "FAILED");
-    }
+    uart_puts(console, success ? "PASSED" : "FAILED");
+    DEV_WRITE(dv_test_status, success ? TEST_STATUS_PASSED : TEST_STATUS_FAILED);
+
     uart_putchar(console, '\n');
     uart_puts(console, "Safe to exit simulator.");
     uart_puts(console, magic);
@@ -61,7 +68,10 @@ test_exception_handler(struct trap_registers *registers, struct trap_context *co
 [[noreturn]] void main(void)
 {
     uart_t console = mocha_system_uart();
+    void *dv_test_status = mocha_system_dv_test_status();
+
     uart_init(console);
+    DEV_WRITE(dv_test_status, TEST_STATUS_IN_TEST);
 
     bool result = test_main(console);
 

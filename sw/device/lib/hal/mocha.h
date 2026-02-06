@@ -18,3 +18,4 @@ uart_t mocha_system_uart(void);
 timer_t mocha_system_timer(void);
 plic_t mocha_system_plic(void);
 spi_device_t mocha_system_spi_device(void);
+void *mocha_system_dv_test_status(void);
