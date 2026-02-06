@@ -29,17 +29,17 @@ package top_pkg;
     TlCrossbar = 1
   } axi_devices_t;
 
-  typedef enum int unsigned {
-    SRAMBase       = 32'h1000_0000,
-    TlCrossbarBase = 32'h4000_0000
+  typedef enum longint unsigned {
+    SRAMBase       = 64'h1000_0000,
+    TlCrossbarBase = 64'h4000_0000
   } axi_addr_start_t;
 
-  typedef enum int unsigned {
-    SRAMLength       = 32'h0002_0000,
-    TlCrossbarLength = 32'h1000_0000
+  typedef enum longint unsigned {
+    SRAMLength       = 64'h0002_0000,
+    TlCrossbarLength = 64'h1000_0000
   } axi_addr_length_t;
 
-  typedef enum int unsigned {
+  typedef enum longint unsigned {
     SRAMMask       = SRAMLength - 1,
     TlCrossbarMask = TlCrossbarLength - 1
   } axi_addr_mask_t;

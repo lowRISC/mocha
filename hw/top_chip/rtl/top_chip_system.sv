@@ -24,7 +24,6 @@ module top_chip_system #(
   // Local parameters.
   localparam int unsigned SramMemSize   = 128 * 1024; // 128 KiB
   localparam int unsigned TlDataWidth   = top_pkg::TL_DW;
-  localparam int unsigned TlIntgWidth   = 7;
   localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
   localparam int unsigned UartIrqs      = 9;
@@ -67,7 +66,7 @@ module top_chip_system #(
   };
 
   // AXI crossbar address mapping
-  axi_pkg::xbar_rule_32_t [xbar_cfg.NoAddrRules-1:0] addr_map;
+  axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
   assign addr_map = '{
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength }
@@ -102,7 +101,6 @@ module top_chip_system #(
   logic [(TlDataWidth/8)-1:0] mem32_tl_xbar_be;
   logic [top_pkg::TL_AW-1:0]  mem32_tl_xbar_addr;
   logic [TlDataWidth-1:0]     mem32_tl_xbar_wdata;
-  logic [TlIntgWidth-1:0]     mem32_tl_xbar_wdata_intg;
   logic                       mem32_tl_xbar_rvalid;
   logic [TlDataWidth-1:0]     mem32_tl_xbar_rdata;
 
@@ -168,7 +166,6 @@ module top_chip_system #(
 
   // AXI SRAM
   axi_sram #(
-    .Width       ( top_pkg::AxiDataWidth ),
     .AddrWidth   ( SramAddrWidth         ),
     .MemInitFile ( SramInitFile          )
   ) u_axi_sram (
@@ -198,7 +195,7 @@ module top_chip_system #(
     .slv_resp_t   (top_pkg::axi_resp_t    ),
     .mst_req_t    (top_pkg::axi_req_t     ),
     .mst_resp_t   (top_pkg::axi_resp_t    ),
-    .rule_t       (axi_pkg::xbar_rule_32_t)
+    .rule_t       (axi_pkg::xbar_rule_64_t)
   ) u_axi_xbar (
     .clk_i                (clk_i),
     .rst_ni               (rst_ni),
@@ -280,7 +277,7 @@ module top_chip_system #(
     .addr_i       (mem32_tl_xbar_addr),
     .we_i         (mem32_tl_xbar_we),
     .wdata_i      (mem32_tl_xbar_wdata),
-    .wdata_intg_i (mem32_tl_xbar_wdata_intg),
+    .wdata_intg_i ('0),
     .be_i         (mem32_tl_xbar_be),
     .instr_type_i (prim_mubi_pkg::MuBi4False),
     .user_rsvd_i  ('0),

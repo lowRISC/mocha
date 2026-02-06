@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+`include "prim_assert.sv"
+
 module mem_downsizer (
   // Clocking and reset
   input  logic clk_i,
@@ -30,7 +32,7 @@ module mem_downsizer (
   // Send side downsizer signals
   logic                                 dw_valid;     // Has valid transaction
   logic                                 dw_first_done;
-  logic     [top_pkg::AxiAddrWidth-1:0] dw_store_addr;
+  logic            [top_pkg::TL_AW-1:0] dw_store_addr;
   logic     [top_pkg::AxiDataWidth-1:0] dw_store_wdata;
   logic                                 dw_store_we;
   logic [(top_pkg::AxiDataWidth/8)-1:0] dw_store_be;
@@ -57,7 +59,7 @@ module mem_downsizer (
       dw_first_done <= 0; // have not done first 32 bits
 
       // Store transaction information
-      dw_store_addr  <= mem64_addr_i;
+      dw_store_addr  <= mem64_addr_i[top_pkg::TL_AW-1:0];
       dw_store_wdata <= mem64_wdata_i;
       dw_store_we    <= mem64_we_i;
       dw_store_be    <= mem64_be_i;
@@ -70,7 +72,7 @@ module mem_downsizer (
     end else if (dw_valid && !mem32_req_o && !dw_first_done) begin // Valid transaction, no untaken output, but have not started first 32 bits
       // Start first 32 bits
       mem32_req_o   <= 1;
-      mem32_addr_o  <= dw_store_addr[31:0];
+      mem32_addr_o  <= dw_store_addr;
       mem32_wdata_o <= dw_store_wdata[31:0];
       mem32_we_o    <= dw_store_we;
       mem32_be_o    <= dw_store_be[3:0];
@@ -85,7 +87,7 @@ module mem_downsizer (
     end else if (dw_valid && !mem32_req_o && dw_first_done) begin // Valid transaction, no untaken output, first 32 bits already done
       // Start next 32 bits
       mem32_req_o   <= 1;
-      mem32_addr_o  <= dw_store_addr[31:0] + 4;
+      mem32_addr_o  <= dw_store_addr + 4;
       mem32_wdata_o <= dw_store_wdata[63:32];
       mem32_we_o    <= dw_store_we;
       mem32_be_o    <= dw_store_be[7:4];
@@ -102,6 +104,11 @@ module mem_downsizer (
       mem32_wdata_o <= '0;
     end
   end
+
+  // Check that address bits outside TL address width are zeros for transactions from AXI to TL
+  `ASSERT(AxiToTlAddrUpperZeroed,
+          mem64_req_i && mem64_gnt_o |-> mem64_addr_i[top_pkg::AxiAddrWidth-1:top_pkg::TL_AW] == '0,
+          clk_i, !rst_ni)
 
   // Receive side upsizer
   always_ff @(posedge clk_i or negedge rst_ni) begin

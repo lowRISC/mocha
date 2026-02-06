@@ -5,7 +5,6 @@
 `include "prim_assert.sv"
 
 module axi_sram #(
-  parameter int Width       = 64,
   parameter int AddrWidth   = 14,
   parameter     MemInitFile = ""
 ) (
@@ -47,10 +46,10 @@ module axi_sram #(
 
   // Assume AW data unchanged until W finished
   assign tag_mem_a_req_i   = axi_resp_o.w_ready && axi_req_i.w_valid && axi_req_i.w.last;
-  assign tag_mem_a_addr_i  = (axi_req_i.aw.addr & top_pkg::SRAMMask) >> $clog2(CapSizeBits / 8);
+  assign tag_mem_a_addr_i  = TagAw'((axi_req_i.aw.addr & top_pkg::SRAMMask) >> $clog2(CapSizeBits / 8));
   assign tag_mem_a_wdata_i = axi_req_i.w.user;
   assign tag_mem_b_req_i   = axi_resp_o.ar_ready && axi_req_i.ar_valid;
-  assign tag_mem_b_addr_i  = (axi_req_i.ar.addr & top_pkg::SRAMMask) >> $clog2(CapSizeBits / 8);
+  assign tag_mem_b_addr_i  = TagAw'((axi_req_i.ar.addr & top_pkg::SRAMMask) >> $clog2(CapSizeBits / 8));
 
   // Tag memory
   prim_ram_2p #(
@@ -143,7 +142,7 @@ module axi_sram #(
   );
 
   // Remove base offset and convert byte address to 64-bit word address
-  assign sram_word_addr = (sram_addr & top_pkg::SRAMMask) >> $clog2(top_pkg::AxiDataWidth / 8);
+  assign sram_word_addr = AddrWidth'((sram_addr & top_pkg::SRAMMask) >> $clog2(top_pkg::AxiDataWidth / 8));
   always_comb begin
     for (int i=0; i < (top_pkg::AxiDataWidth / 8); ++i) begin
       sram_wmask[i*8 +: 8] = {8{sram_be[i]}};
