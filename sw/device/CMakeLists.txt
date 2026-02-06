@@ -98,6 +98,7 @@ macro(mocha_add_library)
     endforeach()
 endmacro()
 
+add_subdirectory(bootrom)
 add_subdirectory(lib)
 add_subdirectory(tests)
 add_subdirectory(examples/hello_world)

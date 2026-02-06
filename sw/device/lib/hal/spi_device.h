@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "hal/mmio.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -191,6 +192,14 @@ void spi_device_cmd_info_write_disable_set(spi_device_t spi_device, uint8_t opco
 uint32_t spi_device_cmd_info_write_disable_get(spi_device_t spi_device);
 bool spi_device_flash_read_buffer_write(spi_device_t spi_device, uint32_t offset, uint32_t data);
 uint32_t spi_device_flash_payload_buffer_read(spi_device_t spi_device, uint32_t offset);
+
+static inline uint64_t
+spi_device_flash_payload_buffer_read64(spi_device_t spi_device, uint32_t offset)
+{
+    uintptr_t addr = (uint64_t)spi_device + SPI_DEVICE_INGRESS_BUFFER_OFFSET +
+                     SPI_DEVICE_PAYLOAD_AREA_OFFSET + offset;
+    return DEV_READ64(addr);
+}
 
 void spi_device_sfdp_table_init(spi_device_t spi_device);
 void spi_device_init(spi_device_t spi_device);

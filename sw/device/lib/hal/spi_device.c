@@ -608,6 +608,7 @@ spi_device_cmd_t spi_device_cmd_get(spi_device_t spi_device)
     // Check for payload overflow
     if (spi_device_interrupt_is_pending(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW)) {
         cmd.status = 1;
+        spi_device_interrupt_clear(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
         return cmd;
     }
 
@@ -626,6 +627,5 @@ spi_device_cmd_t spi_device_cmd_get(spi_device_t spi_device)
     // Get payload size
     cmd.payload_byte_count = (uint16_t)(spi_device_upload_status2_get(spi_device) &
                                         SPI_DEVICE_UPLOAD_STATUS2_PAYLOAD_DEPTH_MASK);
-
     return cmd;
 }

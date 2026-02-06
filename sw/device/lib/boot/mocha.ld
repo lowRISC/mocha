@@ -8,8 +8,13 @@ INCLUDE memory.ld
 
 _stack_len = 0x1000; /* 4 KiB */
 
+/* TODO: Remove this when we implement a ROM. */
+/* This should be provided by the build system, otherwise the default is 0x0000*/
+PROVIDE(BOOT_ROM_OFFSET=0x0000);
+_offset_ = BOOT_ROM_OFFSET; 
+
 MEMORY {
-    ram   (RWX) : ORIGIN = ORIGIN(SRAM), LENGTH = (LENGTH(SRAM) - _stack_len)
+    ram   (RWX) : ORIGIN = ORIGIN(SRAM) + _offset_, LENGTH = (LENGTH(SRAM) - _stack_len - _offset_)
     stack (ARW) : ORIGIN = ORIGIN(ram) + LENGTH(ram), LENGTH = _stack_len 
 }
 
@@ -21,6 +26,7 @@ _stack_top = _stack_bottom + _stack_len;
 ENTRY(_init_vector)
 
 SECTIONS {
+    _program_start = ORIGIN(ram);
     .init_vectors ORIGIN(ram) : {
         *(.init_vectors)
     } > ram
@@ -80,4 +86,5 @@ SECTIONS {
         *(.got.*)
         . = ALIGN(8);
     } > ram
+    _program_end = .;
 }
