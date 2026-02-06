@@ -36,5 +36,94 @@ lint_off -rule LATCH -file "*/cva6_cheri/core/cva6_mmu/cva6_tlb.sv"
 lint_off -rule LATCH -file "*/cva6_cheri/core/load_unit.sv" -match "*result_cap*"
 lint_off -rule LATCH -file "*/cva6_cheri/core/scoreboard.sv" -match "*new_sbe*"
 
-// Mute RTL style warning
-lint_off -rule ALWCOMBORDER -file "*/rtl/prim_leading_one_ppc.sv"
+// Mute RTL style warnings from CHERI CVA6
+// TODO: clean up lint issues
+lint_off -rule DECLFILENAME -file "*/cva6_cheri/core/*.sv"
+lint_off -rule GENUNNAMED -file "*/cva6_cheri/common/*.sv"
+lint_off -rule GENUNNAMED -file "*/cva6_cheri/core/*.sv"
+lint_off -rule UNDRIVEN -file "*/cva6_cheri/core/*.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/cva6_cheri/common/*.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/cva6_cheri/core/*.sv"
+lint_off -rule UNUSEDPARAM -file "*/cva6_cheri/common/*.sv"
+lint_off -rule UNUSEDPARAM -file "*/cva6_cheri/core/*.sv"
+lint_off -rule WIDTHTRUNC -file "*/cva6_cheri/common/*.sv"
+lint_off -rule WIDTHTRUNC -file "*/cva6_cheri/core/*.sv"
+lint_off -rule WIDTHEXPAND -file "*/cva6_cheri/common/*.sv"
+lint_off -rule WIDTHEXPAND -file "*/cva6_cheri/core/*.sv"
+lint_off -rule UNOPTFLAT -file "*/cva6_cheri/core/*.sv"
+// Caused by using async reset in sync concurrent assertion in CVA6
+lint_off -rule SYNCASYNCNET -file "*/*lowrisc_mocha_top_chip_system*/top_chip_verilator.sv" -match "*rst_ni*"
+
+// Mute RTL style warnings from PULP AXI
+// TODO: clean up lint issues
+lint_off -rule DECLFILENAME -file "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule GENUNNAMED -file "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNUSEDPARAM -file "*/pulp-platform*_axi*/src/*.sv" -match "*AxiIdWidth*"
+lint_off -rule WIDTHTRUNC -file "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule WIDTHEXPAND -file "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNOPTFLAT -file "*/pulp-platform*_axi*/src/*.sv"
+
+// Mute RTL style warning from lowRISC prim
+lint_off -rule ALWCOMBORDER -file "*/lowrisc_prim_leading_one_ppc*/rtl/prim_leading_one_ppc.sv" -match "*ppc_out*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_prim_lfsr*/rtl/prim_lfsr.sv" -match "*sbox_out*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_prim_diff_decode*/rtl/prim_diff_decode.sv" -match "*skew_cnt_q*"
+
+// Mute RTL style warning from lowRISC common cells
+lint_off -rule GENUNNAMED -file "*/lowrisc_common_cells_all*/rtl/popcount.sv" -match "*genblk1*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/addr_decode.sv" -match "*matched_rules*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/shift_reg_gated.sv" -match "*clk_i*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/shift_reg_gated.sv" -match "*rst_ni*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/spill_register.sv" -match "*clk_i*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/spill_register.sv" -match "*rst_ni*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*rr_i*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*lower_empty*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*sel*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*sel_nodes*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
+lint_off -rule UNUSEDPARAM -file "*/lowrisc_common_cells_all*/rtl/counter.sv" -match "*STICKY_OVERFLOW*"
+lint_off -rule UNUSEDPARAM -file "*/lowrisc_common_cells_all*/rtl/delta_counter.sv" -match "*STICKY_OVERFLOW*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_common_cells_all*/rtl/fifo_v3.sv" -match "*depth_o*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_common_cells_all*/rtl/popcount.sv" -match "*popcount_o*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*sel_nodes*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
+lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*gnt_nodes*"
+
+// Mute RTL style warning from lowRISC UART DPI
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"
+lint_off -rule WIDTHTRUNC -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_can_read(ctx)*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_write(ctx, rxsymbol)*"
+
+// Mute RTL style warning from lowRISC UART IP
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_uart*/rtl/uart_core.sv" -match "*uart_fifo_rxilvl*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_uart*/rtl/uart_core.sv" -match "*uart_fifo_txilvl*"
+
+// Mute RTL style warning from lowRISC SPI device IP
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_spi_device*/rtl/spi_tpm.sv" -match "*csb_i*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_spi_device*/rtl/spi_tpm.sv" -match "*sys_clk_tpm_cfg*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_spi_device*/rtl/spi_tpm.sv" -match "*addr*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_spi_device*/rtl/spi_tpm.sv" -match "*wrdata_q*"
+lint_off -rule UNUSEDPARAM -file "*/lowrisc_ip_spi_device*/rtl/spi_tpm.sv" -match "*TpmRegisterSize*"
+lint_off -rule WIDTHTRUNC -file "*/lowrisc_ip_spi_device*/rtl/spid_status.sv" -match "*byte_sel_d = i*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SPI_DEVICE_INGRESS_BUFFER_OFFSET*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SPI_DEVICE_EGRESS_BUFFER_OFFSET*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramReadBufferIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramMailboxIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramSfdpIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramTpmRdFifoIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramTpmWrFifoIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramPayloadIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramIngressIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramCmdFifoIdx*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramAddrFifoIdx*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_spi_device*/rtl/spi_readcmd.sv" -match "*addr_cnt_d*"
+
+// Spidpi in verilator top has single SPI interface, some QSPI signals are therefore unused
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/dv/verilator/top_chip_verilator.sv" -match "*qspi_device_sdo*"
+
+// Memory downsizer truncates address bits
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/rtl/mem_downsizer.sv" -match "*mem64_addr_i*"
+
+// OT SPI device upstream issue
+lint_off -rule VARHIDDEN -file "*/lowrisc_ip_spi_device*/rtl/spi_device.sv" -match "*TpmRdFifoWidth*"
