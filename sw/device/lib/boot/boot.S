@@ -91,9 +91,8 @@ cap_relocs_loop:
     ld t6, 32(ct0) /* t6 = cr_flags */
 
     /* create the capability from the infinite capability,
-     * setting the base address, offset, and length */
+     * setting the base address and offset */
     scaddr cs0, ca0, t3
-    scbndsr cs0, cs0, t5
     add cs0, cs0, t4
     /* set capability mode to capability pointer mode */
     scmode cs0, cs0, zero
@@ -102,18 +101,34 @@ cap_relocs_loop:
     /* t3 is reused to test each flag */
     li t3, (1 << 63) /* executable capability if set, otherwise data capability */
     and t3, t3, t6
-    bnez t3, cap_reloc_no_write_perm
+    bnez t3, cap_reloc_executable
+
     /* data capability, exclude execute permissions */
     li t3, ~(__CHERI_CAP_PERMISSION_EXECUTE__)
     acperm cs0, cs0, t3
     li t3, (1 << 62) /* if data capability, next bit determines whether it is read-only */
     and t3, t3, t6
-    bnez t3, cap_reloc_no_write_perm
-    j cap_reloc_write_cap
-cap_reloc_no_write_perm:
-    /* executable capability or read-only data capability, exclude write permissions */
+    bnez t3, cap_reloc_data_ro
+    /* read-write data capability */
+    j cap_reloc_data
+
+cap_reloc_executable:
+    /* remove write permissions and do not set bounds for executable capabilities */
     li t3, ~(__CHERI_CAP_PERMISSION_WRITE__)
     acperm cs0, cs0, t3
+    j cap_reloc_write_cap
+
+cap_reloc_data_ro:
+    /* remove write permissions for read-only data capabilities */
+    li t3, ~(__CHERI_CAP_PERMISSION_WRITE__)
+    acperm cs0, cs0, t3
+    /* fallthrough */
+
+cap_reloc_data:
+    /* set bounds for all data capabilities */
+    scbndsr cs0, cs0, t5
+    /* fallthrough */
+
 cap_reloc_write_cap:
     /* write created capability to the corresponding location */
     scaddr cs1, ca0, t2
