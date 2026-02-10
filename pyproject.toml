@@ -51,3 +51,12 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "SIM", "PTH", "C4", "A", "RUF", "PERF"]
+
+[tool.uv.sources]
+# TODO: Get DVPlan from some other source than a private repo
+dvplan = { git = "ssh://git@github.com/lowRISC/dvplan.git", rev = "ba37c3cadc245f4308ec3bcf8446f115aa016c16" }
+
+[project.optional-dependencies]
+dv-private = [
+    "dvplan",
+]
