@@ -58,7 +58,7 @@
           ]
         );
 
-      pythonEnv = pythonSet.mkVirtualEnv "python-env" workspace.deps.default;
+      pythonEnv = pythonSet.mkVirtualEnv "python-env" workspace.deps.all;
 
       fpga = import nix/fpga.nix {
         inherit
