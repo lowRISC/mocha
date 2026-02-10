@@ -5,6 +5,7 @@
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
 #include "hal/uart.h"
+#include "runtime/print.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -38,32 +39,26 @@ bool spi_cmd_poll_test(spi_device_t spi_device, uart_t uart)
         }
 
         if (cmd.address != UINT32_MAX) {
-            uart_puts(uart, " addr: 0x");
-            uart_put_uint32_hex(uart, cmd.address);
+            uprintf(uart, " addr: 0x%x\n", cmd.address);
         }
 
         if (cmd.payload_byte_count > 0) {
-            uart_puts(uart, " payload_bytes: 0x");
-            uart_put_uint32_hex(uart, (uint32_t)cmd.payload_byte_count);
-
+            uprintf(uart, "payload bytes: 0x%x\n", cmd.payload_byte_count);
             uint32_t payload_word_count = ((uint32_t)cmd.payload_byte_count) / sizeof(uint32_t);
             if ((cmd.payload_byte_count % sizeof(uint32_t)) != 0) {
                 ++payload_word_count;
             }
 
-            uart_puts(uart, " payload:");
+            uart_puts(uart, "payload data:\n");
 
             uint32_t word;
             for (uint32_t i = 0; i < payload_word_count; ++i) {
                 word = spi_device_flash_payload_buffer_read(spi_device, i * sizeof(uint32_t));
                 spi_device_flash_read_buffer_write(spi_device, cmd.address + i * sizeof(uint32_t),
                                                    word);
-
-                uart_puts(uart, " 0x");
-                uart_put_uint32_hex(uart, word);
+                uprintf(uart, "0x%x\n", word);
             }
         }
-
         uart_puts(uart, "\n");
 
         spi_device_flash_status_set(spi_device, 0);
