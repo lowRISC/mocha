@@ -3,6 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(SRCS main.c)
-set(LIBS hal startup)
+set(LIBS hal startup runtime)
 
 mocha_add_library(NAME test_framework SOURCES ${SRCS} LIBRARIES ${LIBS})
