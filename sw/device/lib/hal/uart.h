@@ -53,4 +53,3 @@ void uart_out(uart_t uart, char c);
 void uart_loopback(uart_t uart, bool enable);
 int uart_putchar(uart_t uart, int c);
 int uart_puts(uart_t uart, const char *str);
-void uart_put_uint32_hex(uart_t uart, uint32_t num);
