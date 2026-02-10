@@ -6,6 +6,8 @@
 #include "hal/mmio.h"
 #include "hal/mocha.h"
 #include "hal/uart.h"
+#include "runtime/print.h"
+#include "runtime/string.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -78,6 +80,58 @@ test_exception_handler(struct trap_registers *registers, struct trap_context *co
     test_exit(result);
 }
 
+static const size_t register_name_max = 5;
+
+static const char *register_abi_name[32] = {
+/* clang-format off */
+#if defined(__riscv_zcherihybrid)
+    "cnull", "cra", "csp",  "cgp",
+    "ctp",   "ct0", "ct1",  "ct2",
+    "cs0",   "cs1", "ca0",  "ca1",
+    "ca2",   "ca3", "ca4",  "ca5",
+    "ca6",   "ca7", "cs2",  "cs3",
+    "cs4",   "cs5", "cs6",  "cs7",
+    "cs8",   "cs9", "cs10", "cs11",
+    "ct3",   "ct4", "ct5",  "ct6",
+#else /* !defined(__riscv_zcherihybrid) */
+    "zero", "ra", "sp",  "gp",
+    "tp",   "t0", "t1",  "t2",
+    "s0",   "s1", "a0",  "a1",
+    "a2",   "a3", "a4",  "a5",
+    "a6",   "a7", "s2",  "s3",
+    "s4",   "s5", "s6",  "s7",
+    "s8",   "s9", "s10", "s11",
+    "t3",   "t4", "t5",  "t6",
+#endif /* defined(__riscv_zcherihybrid) */
+    /* clang-format on */
+};
+
+void print_register_trace(struct trap_registers *registers, struct trap_context *context)
+{
+    uart_t console = mocha_system_uart();
+#if defined(__riscv_zcherihybrid)
+    uprintf(console, "epcc:  %#p\n", &context->epc);
+#else /* !defined(__riscv_zcherihybrid) */
+    uprintf(console, "epc:   %lx\n", (unsigned long)context->epc);
+#endif /* defined(__riscv_zcherihybrid) */
+    uprintf(console, "cause: %lx\n", context->cause);
+    uprintf(console, "tval:  %lx\n", context->tval);
+    uprintf(console, "tval2: %lx\n", context->tval2);
+    for (size_t i = 0; i < 32; i++) {
+        size_t reg_name_len = strlen(register_abi_name[i]);
+        uprintf(console, "%s: ", register_abi_name[i]);
+        /* pad with spaces for alignment */
+        while (reg_name_len++ < register_name_max) {
+            uart_putchar(console, ' ');
+        }
+#if defined(__riscv_zcherihybrid)
+        uprintf(console, "%#p\n", &registers->x[i]);
+#else /* !defined(__riscv_zcherihybrid) */
+        uprintf(console, "%lx\n", (unsigned long)registers->x[i]);
+#endif /* defined(__riscv_zcherihybrid) */
+    }
+}
+
 /* internal interrupt handler, calls the test-defined test_interrupt_handler to handle
  * the interrupt. if the handler does not succeed, the test is aborted */
 void _interrupt_handler(struct trap_registers *registers, struct trap_context *context)
@@ -88,6 +142,7 @@ void _interrupt_handler(struct trap_registers *registers, struct trap_context *c
     if (!handled) {
         uart_t console = mocha_system_uart();
         uart_puts(console, "unhandled interrupt!\n");
+        print_register_trace(registers, context);
         test_exit(false);
     }
 }
@@ -103,6 +158,7 @@ void _exception_handler(struct trap_registers *registers, struct trap_context *c
     if (in_exception) {
         uart_t console = mocha_system_uart();
         uart_puts(console, "exception in exception handler!\n");
+        print_register_trace(registers, context);
         test_exit(false);
     }
     in_exception = true;
@@ -111,6 +167,7 @@ void _exception_handler(struct trap_registers *registers, struct trap_context *c
     if (!handled) {
         uart_t console = mocha_system_uart();
         uart_puts(console, "unhandled exception!\n");
+        print_register_trace(registers, context);
         test_exit(false);
     }
     in_exception = false;
