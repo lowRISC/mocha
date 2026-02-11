@@ -7,6 +7,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import TextIO
 
 import jinja2
 import svgwrite
@@ -55,6 +56,15 @@ SPDX-License-Identifier: Apache-2.0
 """
 # REUSE-IgnoreEnd
 
+
+def emit_file_header(file: TextIO, comment_open: str = "", comment_close: str = "") -> None:
+    """Emit a file header consisting of the project's license header and a line showing
+    what command was invoked to generate it, wrapped in comments."""
+    for line in LICENSE_HEADER.splitlines():
+        file.write(f"{comment_open}{line}{comment_close}\n")
+    file.write(f"{comment_open}Auto-generated: '{get_command_line()}'{comment_close}\n")
+
+
 LD_TEMPLATE = """
 MEMORY {
 {%- for device in devices %}
@@ -77,11 +87,8 @@ def gen_linker_script(args) -> None:
     input_file = Path(args.input_file)
     out_file = Path(args.out_file)
 
-    cmd = get_command_line()
     with out_file.open("w") as f:
-        for line in LICENSE_HEADER.splitlines():
-            f.write(f"/* {line} */\n")
-        f.write(f"/* Auto-generated: '{cmd}' */")
+        emit_file_header(f, comment_open="/* ", comment_close=" */")
     gen_from_template(input_file, out_file, LD_TEMPLATE)
 
 
