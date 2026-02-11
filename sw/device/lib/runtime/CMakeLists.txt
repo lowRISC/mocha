@@ -2,6 +2,8 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-set(SRCS string.c)
+set(SRCS print.c string.c)
 
-mocha_add_library(NAME runtime SOURCES ${SRCS} LIBRARIES)
+set(LIBS hal)
+
+mocha_add_library(NAME runtime SOURCES ${SRCS} LIBRARIES ${LIBS})
