@@ -20,7 +20,8 @@ module chip_mocha_genesys2 #(
   input  logic spi_device_sck_i,
   input  logic spi_device_csb_i,
   input  logic spi_device_sd_i,
-  output logic spi_device_sd_o
+  output logic spi_device_sd_o,
+  output logic spien
 );
   // Internal clock and reset signals
   logic clk_50m;
@@ -41,6 +42,7 @@ module chip_mocha_genesys2 #(
     .clk_50m_o   (clk_50m)
   );
 
+  assign spien = 1;
   // Internal reset generation
   assign rst_n = pll_locked & ext_rst_ni;
 

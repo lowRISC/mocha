@@ -14,7 +14,8 @@ set_property -dict { PACKAGE_PIN Y20   IOSTANDARD LVCMOS33 } [get_ports { uart_r
 set_property -dict { PACKAGE_PIN Y23   IOSTANDARD LVCMOS33 } [get_ports { uart_tx_o }];
 
 ## SPI (PMOD Header JD)
-set_property -dict { PACKAGE_PIN U24   IOSTANDARD LVCMOS33   PULLTYPE PULLDOWN } [get_ports { spi_device_sd_o  }];
-set_property -dict { PACKAGE_PIN Y26   IOSTANDARD LVCMOS33   PULLTYPE PULLDOWN } [get_ports { spi_device_sd_i  }];
-set_property -dict { PACKAGE_PIN V22   IOSTANDARD LVCMOS33   PULLTYPE PULLUP   } [get_ports { spi_device_csb_i }];
-set_property -dict { PACKAGE_PIN W21   IOSTANDARD LVCMOS33   PULLTYPE PULLDOWN } [get_ports { spi_device_sck_i }];
+set_property -dict { PACKAGE_PIN W28   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_o  }];
+set_property -dict { PACKAGE_PIN W27   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_i  }];
+set_property -dict { PACKAGE_PIN W29   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { spi_device_csb_i }];
+set_property -dict { PACKAGE_PIN AD27  IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sck_i }];
+set_property -dict { PACKAGE_PIN AD29  IOSTANDARD LVCMOS33 } [get_ports { spien }];
