@@ -18,6 +18,7 @@ def human_size(num, suffix="B"):
             return f"{num:3.1f} {unit}{suffix}"
         num /= 1024
 
+
 def gen_from_template(input_file: Path, out_file: Path, template: str, comment_scape: str = "//"):
     """Process a template and generate a file."""
 
@@ -26,7 +27,7 @@ def gen_from_template(input_file: Path, out_file: Path, template: str, comment_s
         rdljson = json.load(f)
 
     for device in rdljson["devices"]:
-       device["human_size"] = human_size(device["size"]) 
+        device["human_size"] = human_size(device["size"])
 
     template = jinja2.Template(template)
 
