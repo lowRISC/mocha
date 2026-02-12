@@ -38,14 +38,22 @@ macro(mocha_add_verilator_test NAME)
     )
 endmacro()
 
+macro(mocha_add_fpga_test NAME)
+    add_test(
+        NAME ${NAME}_fpga_genesys2
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${NAME}
+    )
+endmacro()
+
 # wrapper macro to create a CHERI and non-CHERI software test.
 # this macro automatically handles CHERI libraries by appending "_cheri" to
 # the output executable name and all of the libraries it is linked against.
 macro(mocha_add_test)
     # parse arguments
+    set(options FPGA)
     set(one_value_args NAME)
     set(multi_value_args SOURCES LIBRARIES)
-    cmake_parse_arguments(arg ""
+    cmake_parse_arguments(arg "${options}"
         "${one_value_args}" "${multi_value_args}" ${ARGN})
 
     # create non-CHERI executable from SOURCES and LIBRARIES.
@@ -58,6 +66,9 @@ macro(mocha_add_test)
     # create artefacts and verilator test
     mocha_add_executable_artefacts(${arg_NAME})
     mocha_add_verilator_test(${arg_NAME})
+    if(arg_FPGA)
+      mocha_add_fpga_test(${arg_NAME})
+    endif()
     # do the same for the CHERI executable, but append "_cheri" to the output
     # exectuable name and all of the libraries it is being linked against.
     add_executable(${arg_NAME}_cheri ${arg_SOURCES})
@@ -69,6 +80,9 @@ macro(mocha_add_test)
     # create artefacts and verilator test
     mocha_add_executable_artefacts(${arg_NAME}_cheri)
     mocha_add_verilator_test(${arg_NAME}_cheri)
+    if(arg_FPGA)
+      mocha_add_fpga_test(${arg_NAME}_cheri)
+    endif()
 endmacro()
 
 # wrapper macro to create a CHERI and non-CHERI library.
