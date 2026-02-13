@@ -201,7 +201,7 @@ uint32_t spi_device_flash_payload_buffer_read(spi_device_t spi_device, uint32_t 
 static inline uint64_t
 spi_device_flash_payload_buffer_read64(spi_device_t spi_device, uint32_t offset)
 {
-    uintptr_t addr = (uint64_t)spi_device + SPI_DEVICE_INGRESS_BUFFER_OFFSET +
+    uintptr_t addr = (uintptr_t)spi_device + SPI_DEVICE_INGRESS_BUFFER_OFFSET +
                      SPI_DEVICE_PAYLOAD_AREA_OFFSET + offset;
     return DEV_READ64(addr);
 }

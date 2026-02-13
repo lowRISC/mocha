@@ -35,7 +35,7 @@
 
 #define BAUD_RATE (1000000)
 
-#define UART_EOF -1
+#define UART_EOF (-1)
 
 typedef void *uart_t;
 
