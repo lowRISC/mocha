@@ -16,7 +16,7 @@ DEFAULT_BUILD_DIR = "build/sw"
 
 def main():
     c_files = []
-    tidy_extensions = [".c", ".cc"]
+    tidy_extensions = [".c", ".cc", ".h", ".hh"]
     for directory, _, files in os.walk("sw"):
         c_files.extend(
             Path(directory) / Path(file) for file in files if (Path(file).suffix in tidy_extensions)
