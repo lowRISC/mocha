@@ -33,7 +33,7 @@ module top_chip_verilator (input logic clk_i, rst_ni);
 
   // Virtual UART
   uartdpi #(
-    .BAUD        ( 921_600                                                   ),
+    .BAUD        ( 1_000_000                                                   ),
     .FREQ        ( 50_000_000                                                ),
     .EXIT_STRING ( "Safe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7" )
   ) u_uartdpi (

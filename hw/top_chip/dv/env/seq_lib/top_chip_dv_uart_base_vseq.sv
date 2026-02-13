@@ -5,7 +5,7 @@
 class top_chip_dv_uart_base_vseq extends top_chip_dv_base_vseq;
   `uvm_object_utils(top_chip_dv_uart_base_vseq)
 
-  uart_agent_pkg::baud_rate_e uart_baud_rate = uart_agent_pkg::BaudRate921600;
+  uart_agent_pkg::baud_rate_e uart_baud_rate = uart_agent_pkg::BaudRate1Mbps;
 
   // Local queue for holding received UART TX data.
   byte uart_tx_data_q[$];

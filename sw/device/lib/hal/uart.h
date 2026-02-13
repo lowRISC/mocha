@@ -33,7 +33,7 @@
 #define UART_RX_REG (0x18)
 #define UART_TX_REG (0x1C)
 
-#define BAUD_RATE (921600)
+#define BAUD_RATE (1000000)
 
 #define UART_EOF -1
 

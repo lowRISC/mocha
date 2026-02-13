@@ -7,8 +7,6 @@
 #include "hal/mocha.h"
 #include <stdint.h>
 
-#define BAUD_RATE (921600)
-
 void uart_interrupt_disable_all(uart_t uart)
 {
     DEV_WRITE(uart + UART_INTR_ENABLE_REG, 0);
