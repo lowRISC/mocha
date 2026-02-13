@@ -6,6 +6,7 @@
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
 #include "hal/uart.h"
+#include "runtime/print.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -46,7 +47,9 @@ bool spi_boot_strap(uart_t console)
 {
     spi_device_t spid = mocha_system_spi_device();
     spi_device_init(spid);
+    spi_device_enable_set(spid, true);
     spi_device_flash_status_set(spid, 0);
+    uint32_t received_resets = 0;
 
     while (true) {
         spi_device_cmd_t cmd = spi_device_cmd_get(spid);
@@ -66,8 +69,14 @@ bool spi_boot_strap(uart_t console)
             }
             break;
         case SPI_DEVICE_OPCODE_RESET:
-            // Exit boot strap
-            return true;
+            // This is a workaround to openFPGALoader that starts with a reset.
+            if (received_resets++ > 0) {
+                // Exit boot strap
+                spi_device_enable_set(spid, false);
+                return true;
+            }
+            uprintf(console, "\nFirst reset");
+            break;
         default:
             uprintf(console, "\nUnsupported command: 0x%0x", cmd.opcode);
             break;

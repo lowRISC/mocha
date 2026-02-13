@@ -51,6 +51,11 @@ void spi_device_interrupt_trigger(spi_device_t spi_device, uint8_t intr_id)
     }
 }
 
+void spi_device_enable_set(spi_device_t spi_device, bool enable)
+{
+    DEV_WRITE(spi_device + SPI_DEVICE_CTRL_REG, enable << SPI_DEVICE_CTRL_MODE_OFFSET);
+}
+
 void spi_device_4b_addr_mode_enable_set(spi_device_t spi_device, bool enable)
 {
     DEV_WRITE(spi_device + SPI_DEVICE_ADDR_MODE_REG, (uint32_t)enable);
