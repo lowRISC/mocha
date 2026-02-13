@@ -145,6 +145,17 @@ jobs:
           key: ${{ needs.fpga-build.outputs.bitstream-hash }}
           fail-on-cache-miss: true
 
+      - name: Build software
+        shell: "nix develop -c bash -e {0}"
+        run: |
+          cmake -B build/sw -S sw
+          cmake --build build/sw -j $(nproc)
+
       - name: Flash bitstream
         run: |
           nix run .#bitstream-load
+
+      - name: Run FPGA tests
+        shell: "nix develop -c bash -e {0}"
+        run: |
+          ctest --test-dir build/sw -R fpga
