@@ -68,11 +68,13 @@ Mocha: {
     tlul.style.stroke-dash: 3
 
 
-    CVA6-CHERI.cache subsystem <-> axi
-    CVA6-CHERI.EX stage <-> tlul
+    CVA6-CHERI.Cache subsystem <-> axi
+    CVA6-CHERI.Cache subsystem <-> tlul
     axi <-> Tag control
     axi <-> Debug
+    Debug.style.fill: hotpink
     axi <-> SRAM
+    SRAM.style.fill: hotpink
 
     Peripherals {
         Mailbox
@@ -122,9 +124,11 @@ chip: |md
     128-bit wide
 |
 chip.shape: rectangle
+chip.style.fill: hotpink
 chip.style.stroke-dash: 3
 
 chip <-> Flash
+Flash.style.fill: hotpink
 Flash.style.stroke-dash: 3
 
 # External interfaces
@@ -132,12 +136,16 @@ Mocha.Tag control <-> dram
 Mocha.axi <-> chip
 Mocha.Peripherals.Mailbox <-> chip
 Mocha.Peripherals.I2C <-> I2C
+I2C.style.fill: hotpink
 I2C.style.stroke-dash: 3
 Mocha.Peripherals.SPI dev <-> SPI
+SPI.style.fill: hotpink
 SPI.style.stroke-dash: 3
 Mocha.Peripherals.UART <-> UART
+UART.style.fill: hotpink
 UART.style.stroke-dash: 3
 Mocha.Peripherals.GPIO <-> GPIO
+GPIO.style.fill: hotpink
 GPIO.style.stroke-dash: 3
 
 # Legend
