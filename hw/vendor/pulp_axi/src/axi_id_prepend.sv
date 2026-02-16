@@ -111,6 +111,7 @@ module axi_id_prepend #(
 
 // pragma translate_off
 `ifndef VERILATOR
+`ifndef XSIM
   initial begin : p_assert
     assert(NoBus > 0)
       else $fatal(1, "Input must be at least one element wide.");
@@ -156,6 +157,7 @@ module axi_id_prepend #(
       else $fatal (1, "Something with the R channel ID stripping went wrong.");
   r_resp  : assert final(mst_r_chans_i[0].resp === slv_r_chans_o[0].resp)
       else $fatal (1, "Something with the R channel ID stripping went wrong.");
+`endif
 `endif
 // pragma translate_on
 endmodule

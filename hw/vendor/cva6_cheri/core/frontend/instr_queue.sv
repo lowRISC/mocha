@@ -531,7 +531,7 @@ module instr_queue
   );
 
   logic unused_branch_and_fifo;
-  assign unused_branch_and_fifo = |branch_mask_extended | |fifo_pos_extended;
+  assign unused_branch_and_fifo = (|branch_mask_extended) | (|fifo_pos_extended);
 
   if (CVA6Cfg.RVC) begin : gen_pc_q_with_c
     always_ff @(posedge clk_i or negedge rst_ni) begin
