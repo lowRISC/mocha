@@ -40,6 +40,6 @@
 
 // Flip-Flop with load-enable and asynchronous active-low reset and synchronous clear
 `define FFLARNC(__q, __d, __load, __clear, __reset_value, __clk, __arst_n) \
-  `FFL(__q, __clear ? __reset_value : __d, __load | __clear, __reset_value, __clk, __arst_n);
+  `FFL(__q, __clear ? __reset_value : __d, __load | __clear, __reset_value, __clk, __arst_n)
 
 `endif
