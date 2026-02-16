@@ -5,7 +5,7 @@
   // This is a cfg hjson group for DV simulations. It includes ALL individual DV simulation
   // cfgs of the IPs and the full chip used in top_chip. This enables the common
   // regression sets to be run in one shot.
-  name: top_chip_batch_sim
+  name: top_mocha_batch_sim
 
   import_cfgs: [
     // Project wide common cfg file
