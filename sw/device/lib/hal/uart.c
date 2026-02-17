@@ -12,7 +12,7 @@ void uart_init(uart_t uart)
     uart_ctrl ctrl = VOLATILE_READ(uart->ctrl);
     ctrl.tx = true;
     ctrl.rx = true;
-    ctrl.nco = (((uint64_t)BAUD_RATE << 20) / SYSCLK_FREQ);
+    ctrl.nco = (((uint64_t)BAUD_RATE << 20) / system_clock_frequency);
     VOLATILE_WRITE(uart->ctrl, ctrl);
 }
 
