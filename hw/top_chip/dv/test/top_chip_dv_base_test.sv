@@ -7,10 +7,14 @@ class top_chip_dv_base_test extends uvm_test;
 
   `uvm_component_utils(top_chip_dv_base_test)
 
+  uint   max_quit_count  = 1;
+  uint64 test_timeout_ns = 200_000_000; // 200ms
+
   // Standard SV/UVM methods
   extern function new(string name="", uvm_component parent=null);
   extern function void build_phase(uvm_phase phase);
   extern function void connect_phase(uvm_phase phase);
+  extern function void end_of_elaboration_phase(uvm_phase phase);
   extern task run_phase(uvm_phase phase);
 
   // Class specific methods
@@ -37,6 +41,14 @@ endfunction : build_phase
 function void top_chip_dv_base_test::connect_phase(uvm_phase phase);
   super.connect_phase(phase);
 endfunction : connect_phase
+
+function void top_chip_dv_base_test::end_of_elaboration_phase(uvm_phase phase);
+  super.end_of_elaboration_phase(phase);
+  void'($value$plusargs("max_quit_count=%0d", max_quit_count));
+  set_max_quit_count(max_quit_count);
+  void'($value$plusargs("test_timeout_ns=%0d", test_timeout_ns));
+  uvm_top.set_timeout((test_timeout_ns * 1ns));
+endfunction : end_of_elaboration_phase
 
 task top_chip_dv_base_test::run_phase(uvm_phase phase);
   env.load_memories();
