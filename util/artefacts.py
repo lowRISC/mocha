@@ -58,13 +58,27 @@ COMMANDS: list[list[str]] = [
     # rdl code gen
     ["mkdir", "-p", "build/rdl"],
     ["rdl2ot", "export-rtl", "--soc", "rdl/mocha.rdl", "build/rdl"],
+    # rdl: generate device register headers
+    [
+        "util/rdlgenerator.py",
+        "gen-device-headers",
+        "build/rdl/rdl.json",
+        "sw/device/lib/hal/autogen",
+    ],
+    # rdl: generate linkerscript
     [
         "util/rdlgenerator.py",
         "gen-linker-script",
         "build/rdl/rdl.json",
         "sw/device/lib/boot/memory.ld",
     ],
-    ["util/rdlgenerator.py", "gen-memory-map", "build/rdl/rdl.json", "doc/img/memmap.svg"],
+    # rdl: generate memory map image
+    [
+        "util/rdlgenerator.py",
+        "gen-memory-map",
+        "build/rdl/rdl.json",
+        "doc/img/memmap.svg",
+    ],
     # documentation
     ["d2", "doc/img/mocha.d2"],
 ]
