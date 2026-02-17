@@ -22,7 +22,7 @@
 
 static const uintptr_t dram_base = 0x80000000ul;
 
-// In order of memory map.
+/* In order of memory map. */
 gpio_t mocha_system_gpio(void);
 clkmgr_t mocha_system_clkmgr(void);
 rstmgr_t mocha_system_rstmgr(void);

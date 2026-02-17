@@ -7,93 +7,107 @@
 #include "hal/mocha.h"
 #include <stdint.h>
 
+void uart_init(uart_t uart)
+{
+    uart_ctrl ctrl = volatile_read(uart->ctrl);
+    ctrl.tx = true;
+    ctrl.rx = true;
+    ctrl.nco = (((uint64_t)BAUD_RATE << 20) / SYSCLK_FREQ);
+    volatile_write(uart->ctrl, ctrl);
+}
+
+uart_intr uart_interrupt_enable_get(uart_t uart)
+{
+    return volatile_read(uart->intr_enable);
+}
+
+void uart_interrupt_enable_set(uart_t uart, uart_intr intrs)
+{
+    volatile_write(uart->intr_enable, intrs);
+}
+
+void uart_interrupt_enable(uart_t uart, uart_intr intrs)
+{
+    uart_intr intr_enable = volatile_read(uart->intr_enable);
+    intr_enable |= intrs;
+    volatile_write(uart->intr_enable, intr_enable);
+}
+
+void uart_interrupt_disable(uart_t uart, uart_intr intrs)
+{
+    uart_intr intr_enable = volatile_read(uart->intr_enable);
+    intr_enable &= ~intrs;
+    volatile_write(uart->intr_enable, intr_enable);
+}
+
 void uart_interrupt_disable_all(uart_t uart)
 {
-    DEV_WRITE(uart + UART_INTR_ENABLE_REG, 0);
+    volatile_write(uart->intr_enable, 0u);
 }
 
-void uart_interrupt_enable(uart_t uart, uint8_t intr_id)
+void uart_interrupt_force(uart_t uart, uart_intr intrs)
 {
-    if (intr_id <= UART_MAX_INTR) {
-        DEV_WRITE(uart + UART_INTR_ENABLE_REG,
-                  DEV_READ(uart + UART_INTR_ENABLE_REG) | (1 << intr_id));
-    }
+    volatile_write(uart->intr_test, intrs);
 }
 
-void uart_interrupt_disable(uart_t uart, uint8_t intr_id)
+void uart_interrupt_clear(uart_t uart, uart_intr intrs)
 {
-    if (intr_id <= UART_MAX_INTR) {
-        DEV_WRITE(uart + UART_INTR_ENABLE_REG,
-                  DEV_READ(uart + UART_INTR_ENABLE_REG) & ~(1 << intr_id));
-    }
+    volatile_write(uart->intr_state, intrs);
 }
 
-void uart_interrupt_trigger(uart_t uart, uint8_t intr_id)
+bool uart_interrupt_all_pending(uart_t uart, uart_intr intrs)
 {
-    if (intr_id <= UART_MAX_INTR) {
-        DEV_WRITE(uart + UART_INTR_TEST_REG, 1 << intr_id);
-    }
+    return (volatile_read(uart->intr_state) & intrs) == intrs;
 }
 
-void uart_interrupt_clear(uart_t uart, uint8_t intr_id)
+bool uart_interrupt_any_pending(uart_t uart, uart_intr intrs)
 {
-    if (intr_id <= UART_MAX_INTR) {
-        DEV_WRITE(uart + UART_INTR_STATE_REG, 1 << intr_id);
-    }
+    return (volatile_read(uart->intr_state) & intrs) != 0u;
 }
 
-int uart_init(uart_t uart)
+void uart_loopback_set(uart_t uart, bool system_enable, bool line_enable)
 {
-    // NCO = 2^20 * baud rate / cpu frequency
-    uint32_t nco = (uint32_t)(((uint64_t)BAUD_RATE << 20) / SYSCLK_FREQ);
-
-    DEV_WRITE(uart + UART_CTRL_REG, (nco << 16) | 0x3U);
-
-    return 0;
+    uart_ctrl ctrl = volatile_read(uart->ctrl);
+    ctrl.slpbk = system_enable;
+    ctrl.llpbk = line_enable;
+    volatile_write(uart->ctrl, ctrl);
 }
 
-int uart_in(uart_t uart)
+char uart_in(uart_t uart)
 {
-    int res = UART_EOF;
+    uart_status status;
+    do {
+        status = volatile_read(uart->status);
+    } while (status & uart_status_rxempty);
 
-    if (!(DEV_READ(uart + UART_STATUS_REG) & UART_STATUS_RX_EMPTY)) {
-        res = DEV_READ(uart + UART_RX_REG);
-    }
-
-    return res;
+    uart_rdata rdata = volatile_read(uart->rdata);
+    return (char)(rdata.rdata);
 }
 
-void uart_out(uart_t uart, char c)
+void uart_out(uart_t uart, char ch)
 {
-    while (DEV_READ(uart + UART_STATUS_REG) & UART_STATUS_TX_FULL) {
-    }
+    uart_status status;
+    do {
+        status = volatile_read(uart->status);
+    } while (status & uart_status_txfull);
 
-    DEV_WRITE(uart + UART_TX_REG, c);
+    uart_wdata wdata = {
+        .wdata = ch,
+    };
+    volatile_write(uart->wdata, wdata);
 }
 
-void uart_loopback(uart_t uart, bool enable)
+void uart_putchar(uart_t uart, char ch)
 {
-    uint32_t reg = DEV_READ(uart + UART_CTRL_REG);
-    uint32_t mask = 0x01 << UART_CTRL_SLPBK | 0x01 << UART_CTRL_LLPBK;
-    reg &= ~mask;
-    reg |= (enable << UART_CTRL_SLPBK | enable << UART_CTRL_LLPBK);
-    DEV_WRITE(uart + UART_CTRL_REG, reg);
-}
-
-int uart_putchar(uart_t uart, int c)
-{
-    if (c == '\n') {
+    if (ch == '\n') {
         uart_out(uart, '\r');
     }
-
-    uart_out(uart, c);
-    return c;
+    uart_out(uart, ch);
 }
 
-int uart_puts(uart_t uart, const char *str)
+void uart_puts(uart_t uart, const char *str)
 {
-    while (*str) {
+    while (*str != '\0') {
         uart_putchar(uart, *str++);
     }
-    return 0;
 }

@@ -59,8 +59,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     plic_interrupt_priority_set(plic, UART_INTR_ID, 3);
     plic_machine_priority_threshold_set(plic, 0);
 
-    uart_interrupt_disable_all(uart);
-    uart_interrupt_enable(uart, UART_INTR_RX_FRAME_ERR);
+    uart_interrupt_enable_set(uart, uart_intr_rx_frame_err);
 
     plic_machine_interrupt_enable(plic, UART_INTR_ID);
 
@@ -69,7 +68,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
         return false;
     }
 
-    uart_interrupt_trigger(uart, UART_INTR_RX_FRAME_ERR);
+    uart_interrupt_force(uart, uart_intr_rx_frame_err);
 
     // Check that mip MEIP is set
     // Retry to give time for mip to be updated
@@ -81,7 +80,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     }
 
     intr_id = plic_machine_interrupt_claim(plic);
-    uart_interrupt_clear(uart, UART_INTR_RX_FRAME_ERR);
+    uart_interrupt_clear(uart, uart_intr_rx_frame_err);
     plic_machine_interrupt_complete(plic, intr_id);
 
     // Check that mip MEIP is clear
@@ -104,8 +103,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     plic_interrupt_priority_set(plic, UART_INTR_ID, 3);
     plic_supervisor_priority_threshold_set(plic, 0);
 
-    uart_interrupt_disable_all(uart);
-    uart_interrupt_enable(uart, UART_INTR_RX_TIMEOUT);
+    uart_interrupt_enable_set(uart, uart_intr_rx_timeout);
 
     plic_supervisor_interrupt_enable(plic, UART_INTR_ID);
 
@@ -114,7 +112,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
         return false;
     }
 
-    uart_interrupt_trigger(uart, UART_INTR_RX_TIMEOUT);
+    uart_interrupt_force(uart, uart_intr_rx_timeout);
 
     // Check that mip SEIP is set
     // Retry to give time for mip to be updated
@@ -126,7 +124,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     }
 
     intr_id = plic_supervisor_interrupt_claim(plic);
-    uart_interrupt_clear(uart, UART_INTR_RX_TIMEOUT);
+    uart_interrupt_clear(uart, uart_intr_rx_timeout);
     plic_supervisor_interrupt_complete(plic, intr_id);
 
     // Check that mip SEIP is clear

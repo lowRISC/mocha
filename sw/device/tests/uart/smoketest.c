@@ -6,23 +6,23 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-const char UartLoopbackTestString[] = "Test String";
+const char uart_loopback_test_string[] = "Test String";
 
 static bool loopback_test(uart_t uart)
 {
-    uart_loopback(uart, true);
-    for (uint32_t idx = 0; idx < sizeof(UartLoopbackTestString); idx++) {
-        uart_out(uart, UartLoopbackTestString[idx]);
+    uart_loopback_set(uart, true, true);
+    for (uint32_t idx = 0; idx < sizeof(uart_loopback_test_string); idx++) {
+        uart_out(uart, uart_loopback_test_string[idx]);
     }
 
     bool res = true;
-    for (uint32_t idx = 0; idx < sizeof(UartLoopbackTestString); idx++) {
-        if (uart_in(uart) != UartLoopbackTestString[idx]) {
+    for (uint32_t idx = 0; idx < sizeof(uart_loopback_test_string); idx++) {
+        if (uart_in(uart) != uart_loopback_test_string[idx]) {
             res = false;
             break;
         }
     }
-    uart_loopback(uart, false);
+    uart_loopback_set(uart, false, false);
     return res;
 }
 
