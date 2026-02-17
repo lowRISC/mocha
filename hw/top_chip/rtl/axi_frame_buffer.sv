@@ -26,7 +26,7 @@ module axi_frame_buffer #(
 );
   // Local parameters.
   localparam int unsigned FRAME_BUFFER_WIDTH          = 512;
-  localparam int unsigned FRAME_BUFFER_HEIGHT         = 800;
+  localparam int unsigned FRAME_BUFFER_HEIGHT         = 1024;
   localparam int unsigned FRAME_BUFFER_BITS_PER_PIXEL = 16;
   localparam int unsigned FRAME_BUFFER_DEPTH          = FRAME_BUFFER_WIDTH * FRAME_BUFFER_HEIGHT / (top_pkg::AxiDataWidth / FRAME_BUFFER_BITS_PER_PIXEL);
   localparam int unsigned FRAME_BUFFER_ADDR_BITS      = $clog2(FRAME_BUFFER_DEPTH);
@@ -45,6 +45,14 @@ module axi_frame_buffer #(
   logic [top_pkg::AxiDataWidth-1:0]     axi_port_rdata;
   logic [FRAME_BUFFER_ADDR_BITS-1:0]                 axi_port_word_addr;
   logic [top_pkg::AxiDataWidth-1:0]     axi_port_wmask;
+
+  // Address pipeline stage for large memories
+  logic [16:0] mem_addr_pipe;
+  logic [17:0] logo_rom_addr_pipe;
+
+  // Data pipeline stage for large memories
+  logic [63:0] mem_data_prepipe;
+  logic  [7:0] logo_rom_data_prepipe;
 
   // AXI to 64-bit mem for frame buffer
   axi_to_mem #(
@@ -83,6 +91,14 @@ module axi_frame_buffer #(
     end
   end
 
+  // Memory address and data pipeline
+  always_ff @(posedge clk_pix_i) begin
+    mem_addr_pipe      <= mem_addr;
+    logo_rom_addr_pipe <= logo_rom_addr;
+    mem_data      <= mem_data_prepipe;
+    logo_rom_data <= logo_rom_data_prepipe;
+  end
+
   // Frame buffer memory
   prim_ram_2p #(
     .Width           ( top_pkg::AxiDataWidth ),
@@ -101,10 +117,10 @@ module axi_frame_buffer #(
 
     .b_req_i   (mem_en),
     .b_write_i ('0),
-    .b_addr_i  (mem_addr),
+    .b_addr_i  (mem_addr_pipe),
     .b_wdata_i ('0),
     .b_wmask_i ('0),
-    .b_rdata_o (mem_data),
+    .b_rdata_o (mem_data_prepipe),
 
     .cfg_i     ('0),
     .cfg_rsp_o ( )
@@ -128,10 +144,10 @@ module axi_frame_buffer #(
 
     .req_i   (logo_rom_en),
     .write_i ('0),
-    .addr_i  (logo_rom_addr),
+    .addr_i  (logo_rom_addr_pipe),
     .wdata_i ('0),
     .wmask_i ('0),
-    .rdata_o (logo_rom_data),
+    .rdata_o (logo_rom_data_prepipe),
 
     .cfg_i     ('0),
     .cfg_rsp_o ( )

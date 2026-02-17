@@ -29,7 +29,7 @@ module video_tx (
   localparam int unsigned BPC                      = 8;  // Bits per channel
   localparam int unsigned CHANNELS                 = 3;
   localparam int unsigned FRAME_BUFFER_WIDTH       = 512;
-  localparam int unsigned FRAME_BUFFER_HEIGHT      = 800;
+  localparam int unsigned FRAME_BUFFER_HEIGHT      = 1024;
   localparam int unsigned FRAME_BUFFER_WIDTH_BITS  = $clog2(FRAME_BUFFER_WIDTH);
   localparam int unsigned FRAME_BUFFER_HEIGHT_BITS = $clog2(FRAME_BUFFER_HEIGHT);
   localparam int unsigned LOGO_WIDTH       = 1024;
@@ -225,7 +225,7 @@ module video_tx (
       if (counter_x[FRAME_BUFFER_WIDTH_BITS-1:0] == '1 && (counter_y + 1) == FRAME_BUFFER_HEIGHT) begin
         // Last pixel
         mem_addr <= '0;
-      end else if (counter_x[1:0] == 2'b10) begin
+      end else if (counter_x[1:0] == 2'b00) begin
         mem_addr <= {counter_y[FRAME_BUFFER_HEIGHT_BITS-1:0], counter_x[FRAME_BUFFER_WIDTH_BITS-1:2]} + 1;
       end
     end else if (counter_x >= LOGO_X_OFFSET && counter_x < (LOGO_X_OFFSET + LOGO_WIDTH) && counter_y >= LOGO_Y_OFFSET && counter_y < (LOGO_Y_OFFSET + LOGO_HEIGHT)) begin // Inside logo
@@ -259,7 +259,7 @@ module video_tx (
       if ((counter_x + 1) == (LOGO_X_OFFSET + LOGO_WIDTH) && (counter_y + 1) == (LOGO_Y_OFFSET + LOGO_HEIGHT)) begin
         // Last pixel
         logo_rom_addr <= '0;
-      end else if (counter_x[1:0] == 2'b10) begin
+      end else if (counter_x[1:0] == 2'b00) begin
         logo_rom_addr <= logo_rom_addr + 1;
       end
     end else begin // Outside frame buffer and logo

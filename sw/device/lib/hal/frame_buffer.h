@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 #define FRAME_BUFFER_WIDTH (512)
-#define FRAME_BUFFER_HEIGHT (800)
+#define FRAME_BUFFER_HEIGHT (1024)
 #define FRAME_BUFFER_BYTES_PER_PIXEL (2)
 
 typedef void *frame_buffer_t;

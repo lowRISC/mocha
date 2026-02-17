@@ -52,27 +52,27 @@ int main(void)
     frame_buffer_write_pixel_565(frame_buffer, 510, 2, 0b11111, 0, 0);
     frame_buffer_write_pixel_565(frame_buffer, 511, 2, 0b11111, 0, 0);
 
-    frame_buffer_write_pixel_565(frame_buffer, 0, 795, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 1, 795, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 0, 796, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 1, 796, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 0, 797, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 1, 797, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 0, 798, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 1, 798, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 2, 798, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 3, 798, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 0, 799, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 1, 799, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 2, 799, 0, 0b111111, 0);
-    frame_buffer_write_pixel_565(frame_buffer, 3, 799, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 0, 1019, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 1, 1019, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 0, 1020, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 1, 1020, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 0, 1021, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 1, 1021, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 0, 1022, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 1, 1022, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 2, 1022, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 3, 1022, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 0, 1023, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 1, 1023, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 2, 1023, 0, 0b111111, 0);
+    frame_buffer_write_pixel_565(frame_buffer, 3, 1023, 0, 0b111111, 0);
 
-    frame_buffer_write_pixel_565(frame_buffer, 510, 797, 0, 0, 0b11111);
-    frame_buffer_write_pixel_565(frame_buffer, 511, 797, 0, 0, 0b11111);
-    frame_buffer_write_pixel_565(frame_buffer, 510, 798, 0, 0, 0b11111);
-    frame_buffer_write_pixel_565(frame_buffer, 511, 798, 0, 0, 0b11111);
-    frame_buffer_write_pixel_565(frame_buffer, 510, 799, 0, 0, 0b11111);
-    frame_buffer_write_pixel_565(frame_buffer, 511, 799, 0, 0, 0b11111);
+    frame_buffer_write_pixel_565(frame_buffer, 510, 1021, 0, 0, 0b11111);
+    frame_buffer_write_pixel_565(frame_buffer, 511, 1021, 0, 0, 0b11111);
+    frame_buffer_write_pixel_565(frame_buffer, 510, 1022, 0, 0, 0b11111);
+    frame_buffer_write_pixel_565(frame_buffer, 511, 1022, 0, 0, 0b11111);
+    frame_buffer_write_pixel_565(frame_buffer, 510, 1023, 0, 0, 0b11111);
+    frame_buffer_write_pixel_565(frame_buffer, 511, 1023, 0, 0, 0b11111);
 
     for (int i = 0; i < 300; ++i) {
         for (int j = 0; j < 120; ++j) {
