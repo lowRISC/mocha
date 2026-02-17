@@ -1,0 +1,13 @@
+diff --git a/dv/uart_sim_cfg.hjson b/dv/uart_sim_cfg.hjson
+index 812dc65..e05d17e 100644
+--- a/dv/uart_sim_cfg.hjson
++++ b/dv/uart_sim_cfg.hjson
+@@ -12,7 +12,7 @@
+   tb: tb
+
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:uart_sim:0.1
