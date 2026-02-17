@@ -55,8 +55,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     plic_interrupt_priority_set(plic, UART_INTR_ID, 3);
     plic_machine_priority_threshold_set(plic, 0);
 
-    uart_interrupt_disable_all(uart);
-    uart_interrupt_enable(uart, UART_INTR_RX_FRAME_ERR);
+    uart_interrupt_enable_write(uart, uart_intr_rx_frame_err);
 
     plic_machine_interrupt_enable(plic, UART_INTR_ID);
 
@@ -65,7 +64,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
         return false;
     }
 
-    uart_interrupt_trigger(uart, UART_INTR_RX_FRAME_ERR);
+    uart_interrupt_force(uart, uart_intr_rx_frame_err);
 
     // Check that mip MEIP is set following the triggered interrupt
     for (size_t i = 0; i < mip_read_retry_count; i++) {
@@ -79,7 +78,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     }
 
     intr_id = plic_machine_interrupt_claim(plic);
-    uart_interrupt_clear(uart, UART_INTR_RX_FRAME_ERR);
+    uart_interrupt_clear(uart, uart_intr_rx_frame_err);
     plic_machine_interrupt_complete(plic, intr_id);
 
     // Check that mip MEIP is clear
@@ -100,8 +99,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     plic_interrupt_priority_set(plic, UART_INTR_ID, 3);
     plic_supervisor_priority_threshold_set(plic, 0);
 
-    uart_interrupt_disable_all(uart);
-    uart_interrupt_enable(uart, UART_INTR_RX_TIMEOUT);
+    uart_interrupt_enable_write(uart, uart_intr_rx_timeout);
 
     plic_supervisor_interrupt_enable(plic, UART_INTR_ID);
 
@@ -110,7 +108,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
         return false;
     }
 
-    uart_interrupt_trigger(uart, UART_INTR_RX_TIMEOUT);
+    uart_interrupt_force(uart, uart_intr_rx_timeout);
 
     // Check for mip SEIP is set following the triggered interrupt
     for (size_t i = 0; i < mip_read_retry_count; i++) {
@@ -124,7 +122,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     }
 
     intr_id = plic_supervisor_interrupt_claim(plic);
-    uart_interrupt_clear(uart, UART_INTR_RX_TIMEOUT);
+    uart_interrupt_clear(uart, uart_intr_rx_timeout);
     plic_supervisor_interrupt_complete(plic, intr_id);
 
     // Check that mip SEIP is clear
