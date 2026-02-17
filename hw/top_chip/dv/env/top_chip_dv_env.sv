@@ -13,6 +13,7 @@ class top_chip_dv_env extends uvm_env;
 
   // Agents
   uart_agent m_uart_agent;
+  spi_agent m_spi_device_agent;
 
   // Standard SV/UVM methods
   extern function new(string name="", uvm_component parent=null);
@@ -70,6 +71,10 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   m_uart_agent = uart_agent::type_id::create("m_uart_agent", this);
   uvm_config_db#(uart_agent_cfg)::set(this, "m_uart_agent*", "cfg", cfg.m_uart_agent_cfg);
 
+  // Instantiate SPI device agent
+  m_spi_device_agent = spi_agent::type_id::create("m_spi_device_agent", this);
+  uvm_config_db#(spi_agent_cfg)::set(this, "m_spi_device_agent*", "cfg", cfg.m_spi_device_agent_cfg);
+
   uvm_config_db#(top_chip_dv_env_cfg)::set(this, "", "cfg", cfg);
 
   top_vsqr = top_chip_dv_virtual_sequencer::type_id::create("top_vsqr", this);
@@ -82,6 +87,7 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Track specific agent sequencers in the virtual sequencer.
   // Allows virtual sequences to use the agents to drive RX items.
   top_vsqr.uart_sqr = m_uart_agent.sequencer;
+  top_vsqr.spi_device_sqr = m_spi_device_agent.sequencer;
 
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.

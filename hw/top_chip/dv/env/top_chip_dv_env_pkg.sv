@@ -9,6 +9,7 @@ package top_chip_dv_env_pkg;
   import mem_bkdr_util_pkg::*;
   import sw_test_status_pkg::*;
   import uart_agent_pkg::*;
+  import spi_agent_pkg::*;
 
   // Macro includes
   `include "uvm_macros.svh"
