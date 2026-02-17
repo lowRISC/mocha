@@ -95,5 +95,4 @@ endmacro()
 
 add_subdirectory(lib)
 add_subdirectory(tests)
-add_subdirectory(examples/hello_world)
-add_subdirectory(examples/tag_check)
+add_subdirectory(examples)
