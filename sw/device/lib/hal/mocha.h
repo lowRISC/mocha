@@ -16,10 +16,15 @@
 #include "hal/timer.h"
 #include "hal/uart.h"
 
-/* System clock frequency (50 MHz) */
-#define SYSCLK_FREQ (50000000)
 /* System clock period in nanoseconds (20 ns) */
 #define SYSCLK_NS (20)
+
+enum : uint64_t {
+    /* System clock frequency (50 MHz) */
+    system_clock_frequency = 50000000ul,
+    /* System clock cycles per microsecond */
+    cycles_per_us = (system_clock_frequency / 1000000u),
+};
 
 static const uintptr_t dram_base = 0x80000000ul;
 
