@@ -1,0 +1,25 @@
+From a29aa2574ce31df4af9a0fc97d7fd1e10dea6c9c Mon Sep 17 00:00:00 2001
+From: Douglas Reis <doreis@lowrisc.org>
+Date: Thu, 19 Feb 2026 21:09:38 +0000
+Subject: [PATCH] [vendor] Configure dvsim to use cmake to build
+
+---
+ hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dvsim/common_sim_cfg.hjson b/dvsim/common_sim_cfg.hjson
+index 30d5335..648cc47 100644
+--- a/dvsim/common_sim_cfg.hjson
++++ b/dvsim/common_sim_cfg.hjson
+@@ -10,7 +10,7 @@
+   import_cfgs:      ["{proj_root}/hw/data/common_project_cfg.hjson",
+                      "{dv_root}/tools/dvsim/common_modes.hjson",
+                      "{dv_root}/tools/dvsim/fusesoc.hjson",
+-                     "{dv_root}/tools/dvsim/bazel.hjson",
++                     "{proj_root}/hw/top_chip/dv/cmake.hjson",
+                      "{dv_root}/tools/dvsim/{tool}.hjson"]
+ 
+   sv_flist_gen_flags: ["--mapping=lowrisc:prim_generic:all:0.1"]
+-- 
+2.51.2
+
