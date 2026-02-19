@@ -24,6 +24,9 @@ macro(mocha_add_executable_artefacts NAME)
                 -o "$<TARGET_FILE:${NAME}>.vmem" -vmem 64
         VERBATIM
     )
+
+    install(TARGETS ${NAME} DESTINATION . COMPONENT ${NAME})
+    install(FILES "$<TARGET_FILE:${NAME}>.vmem" DESTINATION . COMPONENT ${NAME})
 endmacro()
 
 # for a given executable, add a test that runs the executable
