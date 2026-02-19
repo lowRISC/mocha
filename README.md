@@ -126,9 +126,9 @@ fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_moc
 
 #### Test on Genesys2
 
-Open a UART terminal with 921600 baud rate:
+Open a UART terminal with 1Mbps baud rate:
 ```sh
-screen /dev/ttyUSB0 921600
+screen /dev/ttyUSB0 1000000
 ```
 You may have to change the ttyUSB number.
 
