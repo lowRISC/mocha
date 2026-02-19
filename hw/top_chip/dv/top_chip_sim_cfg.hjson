@@ -47,7 +47,8 @@
     {
       name: uart_smoke
       uvm_test_seq: top_chip_dv_uart_base_vseq
-      run_opts: ["+ChipMemSRAM_image_file={proj_root}/build/sw/device/tests/uart_smoketest.vmem"]
+      sw_images: ["uart_smoketest:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest.vmem"]
     }
   ]
 
