@@ -11,7 +11,7 @@ class esc_monitor extends alert_esc_base_monitor;
 
   `uvm_component_utils(esc_monitor)
 
-  extern function new (string name="", uvm_component parent=null);
+  extern function new (string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
   extern virtual task esc_thread();
   extern virtual task unexpected_resp_thread();
@@ -36,18 +36,25 @@ class esc_monitor extends alert_esc_base_monitor;
 
 endclass : esc_monitor
 
-function esc_monitor::new (string name="", uvm_component parent=null);
+function esc_monitor::new (string name, uvm_component parent);
   super.new(name, parent);
 endfunction : new
 
 task esc_monitor::run_phase(uvm_phase phase);
-  super.run_phase(phase);
+  // Run the base class run_phase task in parallel (which runs reset_thread, maintaining the
+  // under_reset flag). For the escalation monitor in particular, don't start all the tasks until
+  // reset has finished.
   fork
-    esc_thread();
-    reset_thread();
-    unexpected_resp_thread();
-    sig_int_fail_thread();
-  join_none
+    super.run_phase(phase);
+    begin
+      wait_for_reset_done();
+      fork
+        esc_thread();
+        unexpected_resp_thread();
+        sig_int_fail_thread();
+      join
+    end
+  join
 endtask : run_phase
 
 task esc_monitor::esc_thread();
