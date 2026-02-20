@@ -11,4 +11,9 @@
 #define DEV_WRITE(addr, val) (*((volatile uint32_t *)(addr)) = (val))
 #define DEV_READ(addr)       (*((volatile uint32_t *)(addr)))
 
-#define DEV_READ64(addr) (*((volatile uint64_t *)(addr)))
+#define DEV_WRITE8(addr, val)  (*((volatile uint8_t *)(addr)) = (val))
+#define DEV_READ8(addr)        (*((volatile uint8_t *)(addr)))
+#define DEV_WRITE16(addr, val) (*((volatile uint16_t *)(addr)) = (val))
+#define DEV_READ16(addr)       (*((volatile uint16_t *)(addr)))
+#define DEV_WRITE64(addr, val) (*((volatile uint64_t *)(addr)) = (val))
+#define DEV_READ64(addr)       (*((volatile uint64_t *)(addr)))

@@ -103,6 +103,15 @@ plic_t mocha_system_plic(void)
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
+void *mocha_system_dram(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return create_mmio_capability(dram_base, 0x3F800000u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (void *)dram_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
 void *mocha_system_dv_test_status(void)
 {
 #if defined(__riscv_zcherihybrid)

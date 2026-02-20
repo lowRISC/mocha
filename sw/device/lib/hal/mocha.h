@@ -17,6 +17,8 @@
 /* System clock frequency (50 MHz) */
 #define SYSCLK_FREQ (50000000)
 
+static const uintptr_t dram_base = 0x80000000ul;
+
 // In order of memory map.
 gpio_t mocha_system_gpio(void);
 clkmgr_t mocha_system_clkmgr(void);
@@ -25,5 +27,6 @@ uart_t mocha_system_uart(void);
 spi_device_t mocha_system_spi_device(void);
 timer_t mocha_system_timer(void);
 plic_t mocha_system_plic(void);
+void *mocha_system_dram(void);
 
 void *mocha_system_dv_test_status(void);
