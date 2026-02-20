@@ -55,7 +55,7 @@ module axi_llc_burst_cutter #(
 
   // line offset is the index where we are interested in, or where the line index starts
   localparam int unsigned LineOffset     = Cfg.ByteOffsetLength + Cfg.BlockOffsetLength;
-  localparam int unsigned RuleIndexWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity + 32'd1);
+  localparam int unsigned RuleIndexWidth = prim_util_pkg::vbits(Cfg.SetAssociativity + 32'd1);
 
   addr_t         this_line_address; // address of this line (tag included)
   addr_t         next_line_address; // address of the next line (tag included)

@@ -120,22 +120,24 @@ module axi_llc_evict_unit #(
   );
 
   // FIFO between AW master and W master, this many evictions transactions can be in flight
-  stream_fifo #(
-    .FALL_THROUGH ( 1'b1                        ),
-    .DEPTH        ( axi_llc_pkg::EvictFifoDepth ),
-    .T            ( desc_t                      )
+  prim_fifo_sync #(
+    .Pass  ( 1'b1                        ),
+    .Width ( $bits(desc_t)               ),
+    .Depth ( axi_llc_pkg::EvictFifoDepth )
   ) i_stream_fifo_evict (
     .clk_i,
     .rst_ni,
-    .flush_i    ( 1'b0          ),
-    .testmode_i ( test_i        ),
-    .usage_o    ( /*not used*/  ),
-    .data_i     ( desc_aw       ),
-    .valid_i    ( desc_aw_valid ),
-    .ready_o    ( desc_aw_ready ),
-    .data_o     ( desc_w        ),
-    .valid_o    ( desc_w_valid  ),
-    .ready_i    ( desc_w_ready  )
+
+    .clr_i    ( 1'b0          ),
+    .wdata_i  ( desc_aw       ),
+    .wvalid_i ( desc_aw_valid ),
+    .wready_o ( desc_aw_ready ),
+    .rdata_o  ( desc_w        ),
+    .rvalid_o ( desc_w_valid  ),
+    .rready_i ( desc_w_ready  ),
+    .depth_o  ( ),
+    .full_o   ( ),
+    .err_o    ( )
   );
 
   axi_llc_w_master #(
@@ -178,21 +180,23 @@ module axi_llc_evict_unit #(
     .flush_desc_recv_o(flush_desc_recv_o)
   );
 
-  stream_fifo #(
-    .FALL_THROUGH ( 1'b1                         ),
-    .DEPTH        ( axi_llc_pkg::MissBufferDepth ),
-    .T            ( desc_t                       )
+  prim_fifo_sync #(
+    .Pass  ( 1'b1                         ),
+    .Width ( $bits(desc_t)                ),
+    .Depth ( axi_llc_pkg::MissBufferDepth )
   ) i_stream_fifo_miss_buffer (
     .clk_i,
     .rst_ni,
-    .flush_i    ( 1'b0         ),
-    .testmode_i ( test_i       ),
-    .usage_o    ( /*not used*/ ),
-    .data_i     (desc_b        ),
-    .valid_i    (desc_b_valid  ),
-    .ready_o    (desc_b_ready  ),
-    .data_o     (desc_o        ),
-    .valid_o    (desc_valid_o  ),
-    .ready_i    (desc_ready_i  )
+
+    .clr_i    ( 1'b0         ),
+    .wdata_i  ( desc_b       ),
+    .wvalid_i ( desc_b_valid ),
+    .wready_o ( desc_b_ready ),
+    .rdata_o  ( desc_o       ),
+    .rvalid_o ( desc_valid_o ),
+    .rready_i ( desc_ready_i ),
+    .depth_o  ( ),
+    .full_o   ( ),
+    .err_o    ( )
   );
 endmodule

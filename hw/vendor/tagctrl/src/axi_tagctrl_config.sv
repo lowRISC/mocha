@@ -264,7 +264,7 @@ module axi_tagctrl_config #(
   // Type for the Set Associativity puls padding
   localparam int unsigned SetAssoPadWidth = RegWidth - Cfg.SetAssociativity;
 
-  localparam int unsigned FlushIdxWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
+  localparam int unsigned FlushIdxWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
   typedef logic [FlushIdxWidth-1:0] flush_idx_t;
 
   // Counter signals for flush control

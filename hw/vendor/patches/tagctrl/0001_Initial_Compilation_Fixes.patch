@@ -1,0 +1,320 @@
+diff --git a/src/axi_llc_tag_store.sv b/src/axi_llc_tag_store.sv
+index e3d6b82..be4d016 100644
+--- a/src/axi_llc_tag_store.sv
++++ b/src/axi_llc_tag_store.sv
+@@ -79,7 +79,7 @@ module axi_llc_tag_store #(
+   } tag_data_t;
+ 
+   // Binary indicator of the output way selected.
+-  localparam int unsigned BinIndicatorWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
++  localparam int unsigned BinIndicatorWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
+   typedef logic [BinIndicatorWidth-1:0] bin_ind_t;
+ 
+   // The module can be busy or not.
+@@ -267,25 +267,28 @@ module axi_llc_tag_store #(
+     tag_data_t ram_rdata;    // read data from the sram
+     tag_data_t ram_compared; // comparison result of tags
+ 
+-    tc_sram #(
+-      .NumWords    ( Cfg.NumLines                 ),
+-      .DataWidth   ( TagDataLen                   ),
+-      .ByteWidth   ( TagDataLen                   ),
+-      .NumPorts    ( 32'd1                        ),
+-      .Latency     ( axi_llc_pkg::TagMacroLatency ),
+-      .SimInit     ( "none"                       ),
+-      .PrintSimCfg ( PrintSramCfg                 )
++    prim_ram_1p #(
++      .Width           (TagDataLen),
++      .Depth           (Cfg.NumLines),
++      .DataBitsPerMask (32'd1)
+     ) i_tag_store (
+       .clk_i,
+       .rst_ni,
+-      .req_i   ( ram_req[i] ),
+-      .we_i    ( ram_we[i]  ),
+-      .addr_i  ( ram_index  ),
+-      .wdata_i ( ram_wdata  ),
+-      .be_i    ( ram_we[i]  ),
+-      .rdata_o ( ram_rdata  )
++
++      .req_i   (ram_req[i]),
++      .write_i (ram_we[i]),
++      .addr_i  (ram_index),
++      .wdata_i (ram_wdata),
++      .wmask_i ({TagDataLen{ram_we[i]}}),
++      .rdata_o (ram_rdata),
++
++      .cfg_i     ('0),
++      .cfg_rsp_o ( )
+     );
+ 
++    // prim_ram_1p assumes 1 cycle latency
++    `ASSERT_INIT(TagStoreLatency1Cycle, axi_llc_pkg::TagMacroLatency == 1)
++
+     // shift register for a validtoken for read data, this pulses once for each read request
+     shift_reg #(
+       .dtype ( logic                        ),
+diff --git a/src/axi_tagc_write_unit.sv b/src/axi_tagc_write_unit.sv
+index 062c41e..d462453 100644
+--- a/src/axi_tagc_write_unit.sv
++++ b/src/axi_tagc_write_unit.sv
+@@ -88,22 +88,24 @@ module axi_tagc_write_unit #(
+   // W channel pipeline FIFO
+   // This FIFO buffers W beats as long as the corresponding AW
+   // vector goes through the pipeline for lookup etc.
+-  stream_fifo #(
+-      .FALL_THROUGH(1'b0),
+-      .DEPTH       (axi_llc_pkg::WChanBufferDepth),
+-      .T           (w_chan_t)
++  prim_fifo_sync #(
++    .Pass  ( 1'b0                          ),
++    .Width ( $bits(w_chan_t)               ),
++    .Depth ( axi_llc_pkg::WChanBufferDepth )
+   ) i_w_stream_fifo (
+-      .clk_i,
+-      .rst_ni,
+-      .flush_i   (1'b0),
+-      .testmode_i(test_i),
+-      .usage_o   (  /*not used*/),
+-      .data_i    (w_chan_slv_i),
+-      .valid_i   (w_chan_valid_i),
+-      .ready_o   (w_chan_ready_o),
+-      .data_o    (w_chan),
+-      .valid_o   (w_valid),
+-      .ready_i   (w_ready)
++    .clk_i,
++    .rst_ni,
++
++    .clr_i    ( 1'b0           ),
++    .wdata_i  ( w_chan_slv_i   ),
++    .wvalid_i ( w_chan_valid_i ),
++    .wready_o ( w_chan_ready_o ),
++    .rdata_o  ( w_chan         ),
++    .rvalid_o ( w_valid        ),
++    .rready_i ( w_ready        ),
++    .depth_o  ( ),
++    .full_o   ( ),
++    .err_o    ( )
+   );
+ 
+   // way_inp assignments
+diff --git a/src/axi_tagctrl_config.sv b/src/axi_tagctrl_config.sv
+index 98f1219..fdfc700 100644
+--- a/src/axi_tagctrl_config.sv
++++ b/src/axi_tagctrl_config.sv
+@@ -264,7 +264,7 @@ module axi_tagctrl_config #(
+   // Type for the Set Associativity puls padding
+   localparam int unsigned SetAssoPadWidth = RegWidth - Cfg.SetAssociativity;
+ 
+-  localparam int unsigned FlushIdxWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
++  localparam int unsigned FlushIdxWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
+   typedef logic [FlushIdxWidth-1:0] flush_idx_t;
+ 
+   // Counter signals for flush control
+diff --git a/src/axi_tagctrl_data_way.sv b/src/axi_tagctrl_data_way.sv
+index 972996d..f910cde 100644
+--- a/src/axi_tagctrl_data_way.sv
++++ b/src/axi_tagctrl_data_way.sv
+@@ -179,23 +179,31 @@ module axi_tagctrl_data_way #(
+ 
+   end
+ 
+-  tc_sram #(
+-      .NumWords   (Cfg.NumLines * Cfg.NumBlocks),
+-      .DataWidth  (Cfg.BlockSize),
+-      .ByteWidth  (32'd8),
+-      .NumPorts   (32'd1),
+-      .Latency    (32'd1),
+-      .SimInit    ("none"),
+-      .PrintSimCfg(PrintSramCfg)
++  // Convert byte enable to wmask
++  logic [Cfg.BlockSize-1:0] data_sram_wmask;
++  always_comb begin
++    for (int i=0; i < (Cfg.BlockSize / 8); ++i) begin
++      data_sram_wmask[i*8 +: 8] = wr_en_q ? {8{wr_strb_q[i]}} : {8{inp_i.strb[i]}};
++    end
++  end
++
++  prim_ram_1p #(
++    .Width           (Cfg.BlockSize),
++    .Depth           (Cfg.NumLines * Cfg.NumBlocks),
++    .DataBitsPerMask (32'd8)
+   ) i_data_sram (
+-      .clk_i,
+-      .rst_ni,
+-      .req_i  (wr_en_q ? ram_req_q : ram_req),
+-      .we_i   (wr_en_q),
+-      .addr_i (wr_en_q ? wr_addr_q : addr),
+-      .wdata_i(wr_en_q ? ((out_o.data & ~wr_bit_en_q) | wr_data_q) : inp_i.data),
+-      .be_i   (wr_en_q ? wr_strb_q : inp_i.strb),
+-      .rdata_o(out_o.data)
++    .clk_i,
++    .rst_ni,
++
++    .req_i   (wr_en_q ? ram_req_q : ram_req),
++    .write_i (wr_en_q),
++    .addr_i  (wr_en_q ? wr_addr_q : addr),
++    .wdata_i (wr_en_q ? ((out_o.data & ~wr_bit_en_q) | wr_data_q) : inp_i.data),
++    .wmask_i (data_sram_wmask),
++    .rdata_o (out_o.data),
++
++    .cfg_i     ('0),
++    .cfg_rsp_o ( )
+   );
+ 
+   // Flip Flops to hold the read request meta information
+diff --git a/src/axi_tagctrl_reg_wrap.sv b/src/axi_tagctrl_reg_wrap.sv
+index 528dd06..313372f 100644
+--- a/src/axi_tagctrl_reg_wrap.sv
++++ b/src/axi_tagctrl_reg_wrap.sv
+@@ -262,6 +262,7 @@ module axi_tagctrl_reg_wrap #(
+       .CapSize         (CapSize),
+       .TagCacheMemBase (TagCacheMemBase),
+       .DRAMMemBase     (DRAMMemBase),
++      .DRAMMemLength   (DRAMMemLength),
+       .SetAssociativity(SetAssociativity),
+       .NumLines        (NumLines),
+       .NumBlocks       (NumBlocks),
+diff --git a/src/axi_tagctrl_top.sv b/src/axi_tagctrl_top.sv
+index 00ac574..b1d5068 100644
+--- a/src/axi_tagctrl_top.sv
++++ b/src/axi_tagctrl_top.sv
+@@ -353,6 +353,10 @@ module axi_tagctrl_top #(
+   // global flush signals
+   logic tagctrl_isolate, tagctrl_isolated, aw_unit_busy, ar_unit_busy, flush_recv;
+ 
++  // assume 0 to fix UNDRIVEN warning
++  assign aw_unit_busy = 0;
++  assign ar_unit_busy = 0;
++
+   // define address rules from the address ports, propagate it throughout the design
+   rule_full_t cached_addr_rule;
+   always_comb begin
+@@ -363,7 +367,7 @@ module axi_tagctrl_top #(
+ 
+   // configuration, also has control over bypass logic and flush
+   axi_tagctrl_config #(
+-      .Cfg          (Cfg),
++      .Cfg          (Cfg.tagc_cfg),
+       .AxiCfg       (AxiCfg),
+       .RegWidth     (RegWidth),
+       .conf_regs_d_t(conf_regs_d_t),
+@@ -426,22 +430,24 @@ module axi_tagctrl_top #(
+   );
+ 
+   // FIFO between AR master and R master, there can be DEPTH inflight transactions
+-  stream_fifo #(
+-      .FALL_THROUGH(1'b1),
+-      .DEPTH       (Cfg.TagAXFifoDepth),
+-      .T           (tagctrl_desc_t)
++  prim_fifo_sync #(
++    .Pass  ( 1'b1                  ),
++    .Width ( $bits(tagctrl_desc_t) ),
++    .Depth ( Cfg.TagAXFifoDepth    )
+   ) i_stream_fifo_r (
+-      .clk_i,
+-      .rst_ni,
+-      .flush_i   (1'b0),
+-      .testmode_i(test_i),
+-      .usage_o   (  /*not used*/),
+-      .data_i    (tagctrl_ar_desc),
+-      .valid_i   (tagctrl_ar_valid),
+-      .ready_o   (tagctrl_ar_ready),
+-      .data_o    (tagctrl_r_desc),
+-      .valid_o   (tagctrl_r_valid),
+-      .ready_i   (tagctrl_r_ready)
++    .clk_i,
++    .rst_ni,
++
++    .clr_i    ( 1'b0             ),
++    .wdata_i  ( tagctrl_ar_desc  ),
++    .wvalid_i ( tagctrl_ar_valid ),
++    .wready_o ( tagctrl_ar_ready ),
++    .rdata_o  ( tagctrl_r_desc   ),
++    .rvalid_o ( tagctrl_r_valid  ),
++    .rready_i ( tagctrl_r_ready  ),
++    .depth_o  ( ),
++    .full_o   ( ),
++    .err_o    ( )
+   );
+ 
+   axi_tagctrl_r #(
+@@ -494,22 +500,24 @@ module axi_tagctrl_top #(
+   );
+ 
+   // FIFO between AW master and W master, there can be DEPTH inflight transactions
+-  stream_fifo #(
+-      .FALL_THROUGH(1'b1),
+-      .DEPTH       (Cfg.TagAXFifoDepth),
+-      .T           (tagctrl_desc_t)
++  prim_fifo_sync #(
++    .Pass  ( 1'b1                  ),
++    .Width ( $bits(tagctrl_desc_t) ),
++    .Depth ( Cfg.TagAXFifoDepth    )
+   ) i_stream_fifo_w (
+-      .clk_i,
+-      .rst_ni,
+-      .flush_i   (1'b0),
+-      .testmode_i(test_i),
+-      .usage_o   (  /*not used*/),
+-      .data_i    (tagctrl_aw_desc),
+-      .valid_i   (tagctrl_aw_valid),
+-      .ready_o   (tagctrl_aw_ready),
+-      .data_o    (tagctrl_w_desc),
+-      .valid_o   (tagctrl_w_valid),
+-      .ready_i   (tagctrl_w_ready)
++    .clk_i,
++    .rst_ni,
++
++    .clr_i    ( 1'b0             ),
++    .wdata_i  ( tagctrl_aw_desc  ),
++    .wvalid_i ( tagctrl_aw_valid ),
++    .wready_o ( tagctrl_aw_ready ),
++    .rdata_o  ( tagctrl_w_desc   ),
++    .rvalid_o ( tagctrl_w_valid  ),
++    .rready_i ( tagctrl_w_ready  ),
++    .depth_o  ( ),
++    .full_o   ( ),
++    .err_o    ( )
+   );
+ 
+   axi_tagctrl_w #(
+@@ -823,8 +831,12 @@ module axi_tagctrl_top #(
+   // AXI requests get stalled while flush is active
+   axi_isolate #(
+       .NumPending  (axi_llc_pkg::MaxTrans),
+-      .req_t   (slv_req_t),
+-      .resp_t  (slv_resp_t)
++      .AxiAddrWidth(AxiAddrWidth),  // Added to fix ASCRANGE error
++      .AxiDataWidth(AxiDataWidth),
++      .AxiIdWidth  (AxiIdWidth),
++      .AxiUserWidth(AxiUserWidth),
++      .axi_req_t   (slv_req_t),
++      .axi_resp_t  (slv_resp_t)
+   ) i_axi_isolate_flush (
+       .clk_i,
+       .rst_ni,
+@@ -843,8 +855,8 @@ module axi_tagctrl_top #(
+       .b_chan_t   (slv_b_chan_t),
+       .ar_chan_t  (slv_ar_chan_t),
+       .r_chan_t   (slv_r_chan_t),
+-      .req_t  (slv_req_t),
+-      .resp_t (slv_resp_t)
++      .axi_req_t  (slv_req_t),
++      .axi_resp_t (slv_resp_t)
+   ) i_axi_cut (
+       .clk_i,
+       .rst_ni,
+diff --git a/src/axi_tagctrl_ways.sv b/src/axi_tagctrl_ways.sv
+index ce38acb..1d31d94 100644
+--- a/src/axi_tagctrl_ways.sv
++++ b/src/axi_tagctrl_ways.sv
+@@ -52,7 +52,7 @@ module axi_tagctrl_ways #(
+     /// Read unit is ready for the response.
+     input logic read_way_out_ready_i
+ );
+-  localparam int unsigned SelIdxWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
++  localparam int unsigned SelIdxWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
+   typedef logic [SelIdxWidth-1:0] way_sel_t;  // Binary representation of the way selection
+   typedef logic [Cfg.SetAssociativity-1:0] way_ind_t;  // way indicator for switching decision
+ 

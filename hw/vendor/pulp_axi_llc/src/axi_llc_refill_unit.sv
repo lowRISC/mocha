@@ -93,22 +93,24 @@ module axi_llc_refill_unit #(
     .ax_chan_ready_i ( ar_chan_ready_i )
   );
 
-  stream_fifo #(
-    .FALL_THROUGH ( 1'b1                         ),
-    .DEPTH        ( axi_llc_pkg::RefillFifoDepth ),
-    .T            ( desc_t                       )
+  prim_fifo_sync #(
+    .Pass  ( 1'b1                         ),
+    .Width ( $bits(desc_t)                ),
+    .Depth ( axi_llc_pkg::RefillFifoDepth )
   ) i_stream_fifo_refill (
     .clk_i,
     .rst_ni,
-    .flush_i   ( 1'b0          ),
-    .testmode_i( test_i        ),
-    .usage_o   ( /*not used*/  ),
-    .data_i    ( desc_ar       ),
-    .valid_i   ( desc_ar_valid ),
-    .ready_o   ( desc_ar_ready ),
-    .data_o    ( desc_r        ),
-    .valid_o   ( desc_r_valid  ),
-    .ready_i   ( desc_r_ready  )
+
+    .clr_i    ( 1'b0          ),
+    .wdata_i  ( desc_ar       ),
+    .wvalid_i ( desc_ar_valid ),
+    .wready_o ( desc_ar_ready ),
+    .rdata_o  ( desc_r        ),
+    .rvalid_o ( desc_r_valid  ),
+    .rready_i ( desc_r_ready  ),
+    .depth_o  ( ),
+    .full_o   ( ),
+    .err_o    ( )
   );
 
   axi_llc_r_master #(

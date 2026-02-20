@@ -79,7 +79,7 @@ module axi_llc_tag_store #(
   } tag_data_t;
 
   // Binary indicator of the output way selected.
-  localparam int unsigned BinIndicatorWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
+  localparam int unsigned BinIndicatorWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
   typedef logic [BinIndicatorWidth-1:0] bin_ind_t;
 
   // The module can be busy or not.
@@ -267,24 +267,27 @@ module axi_llc_tag_store #(
     tag_data_t ram_rdata;    // read data from the sram
     tag_data_t ram_compared; // comparison result of tags
 
-    tc_sram #(
-      .NumWords    ( Cfg.NumLines                 ),
-      .DataWidth   ( TagDataLen                   ),
-      .ByteWidth   ( TagDataLen                   ),
-      .NumPorts    ( 32'd1                        ),
-      .Latency     ( axi_llc_pkg::TagMacroLatency ),
-      .SimInit     ( "none"                       ),
-      .PrintSimCfg ( PrintSramCfg                 )
+    prim_ram_1p #(
+      .Width           (TagDataLen),
+      .Depth           (Cfg.NumLines),
+      .DataBitsPerMask (32'd1)
     ) i_tag_store (
       .clk_i,
       .rst_ni,
-      .req_i   ( ram_req[i] ),
-      .we_i    ( ram_we[i]  ),
-      .addr_i  ( ram_index  ),
-      .wdata_i ( ram_wdata  ),
-      .be_i    ( ram_we[i]  ),
-      .rdata_o ( ram_rdata  )
+
+      .req_i   (ram_req[i]),
+      .write_i (ram_we[i]),
+      .addr_i  (ram_index),
+      .wdata_i (ram_wdata),
+      .wmask_i ({TagDataLen{ram_we[i]}}),
+      .rdata_o (ram_rdata),
+
+      .cfg_i     ('0),
+      .cfg_rsp_o ( )
     );
+
+    // prim_ram_1p assumes 1 cycle latency
+    `ASSERT_INIT(TagStoreLatency1Cycle, axi_llc_pkg::TagMacroLatency == 1)
 
     // shift register for a validtoken for read data, this pulses once for each read request
     shift_reg #(

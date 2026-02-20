@@ -224,8 +224,15 @@ module axi_llc_tag_pattern_gen #(
     .down_i    (     down_cnt ),
     .d_i       (     data_cnt ),
     .q_o       (      index_o ),
-    .overflow_o( overflow_cnt )
+    .overflow_o( )
   );
+
+  // Generate sticky overflow flag as prim_count is a saturating counter
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if      (!rst_ni)                 overflow_cnt <= 1'b0;
+    else if (clear_cnt || load_cnt)   overflow_cnt <= 1'b0;
+    else if (!overflow_cnt && en_cnt) overflow_cnt <= (index_o == '1 && !down_cnt) || (index_o == '0 && down_cnt);
+  end
 
   // Flip Flops
   `FFLARN(busy_q,     busy_d,     switch_busy,      '0, clk_i, rst_ni)

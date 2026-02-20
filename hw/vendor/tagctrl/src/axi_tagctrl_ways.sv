@@ -52,7 +52,7 @@ module axi_tagctrl_ways #(
     /// Read unit is ready for the response.
     input logic read_way_out_ready_i
 );
-  localparam int unsigned SelIdxWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
+  localparam int unsigned SelIdxWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
   typedef logic [SelIdxWidth-1:0] way_sel_t;  // Binary representation of the way selection
   typedef logic [Cfg.SetAssociativity-1:0] way_ind_t;  // way indicator for switching decision
 

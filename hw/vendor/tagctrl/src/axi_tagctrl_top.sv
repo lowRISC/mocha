@@ -353,6 +353,10 @@ module axi_tagctrl_top #(
   // global flush signals
   logic tagctrl_isolate, tagctrl_isolated, aw_unit_busy, ar_unit_busy, flush_recv;
 
+  // assume 0 to fix UNDRIVEN warning
+  assign aw_unit_busy = 0;
+  assign ar_unit_busy = 0;
+
   // define address rules from the address ports, propagate it throughout the design
   rule_full_t cached_addr_rule;
   always_comb begin
@@ -363,7 +367,7 @@ module axi_tagctrl_top #(
 
   // configuration, also has control over bypass logic and flush
   axi_tagctrl_config #(
-      .Cfg          (Cfg),
+      .Cfg          (Cfg.tagc_cfg),
       .AxiCfg       (AxiCfg),
       .RegWidth     (RegWidth),
       .conf_regs_d_t(conf_regs_d_t),
@@ -426,22 +430,24 @@ module axi_tagctrl_top #(
   );
 
   // FIFO between AR master and R master, there can be DEPTH inflight transactions
-  stream_fifo #(
-      .FALL_THROUGH(1'b1),
-      .DEPTH       (Cfg.TagAXFifoDepth),
-      .T           (tagctrl_desc_t)
+  prim_fifo_sync #(
+    .Pass  ( 1'b1                  ),
+    .Width ( $bits(tagctrl_desc_t) ),
+    .Depth ( Cfg.TagAXFifoDepth    )
   ) i_stream_fifo_r (
-      .clk_i,
-      .rst_ni,
-      .flush_i   (1'b0),
-      .testmode_i(test_i),
-      .usage_o   (  /*not used*/),
-      .data_i    (tagctrl_ar_desc),
-      .valid_i   (tagctrl_ar_valid),
-      .ready_o   (tagctrl_ar_ready),
-      .data_o    (tagctrl_r_desc),
-      .valid_o   (tagctrl_r_valid),
-      .ready_i   (tagctrl_r_ready)
+    .clk_i,
+    .rst_ni,
+
+    .clr_i    ( 1'b0             ),
+    .wdata_i  ( tagctrl_ar_desc  ),
+    .wvalid_i ( tagctrl_ar_valid ),
+    .wready_o ( tagctrl_ar_ready ),
+    .rdata_o  ( tagctrl_r_desc   ),
+    .rvalid_o ( tagctrl_r_valid  ),
+    .rready_i ( tagctrl_r_ready  ),
+    .depth_o  ( ),
+    .full_o   ( ),
+    .err_o    ( )
   );
 
   axi_tagctrl_r #(
@@ -494,22 +500,24 @@ module axi_tagctrl_top #(
   );
 
   // FIFO between AW master and W master, there can be DEPTH inflight transactions
-  stream_fifo #(
-      .FALL_THROUGH(1'b1),
-      .DEPTH       (Cfg.TagAXFifoDepth),
-      .T           (tagctrl_desc_t)
+  prim_fifo_sync #(
+    .Pass  ( 1'b1                  ),
+    .Width ( $bits(tagctrl_desc_t) ),
+    .Depth ( Cfg.TagAXFifoDepth    )
   ) i_stream_fifo_w (
-      .clk_i,
-      .rst_ni,
-      .flush_i   (1'b0),
-      .testmode_i(test_i),
-      .usage_o   (  /*not used*/),
-      .data_i    (tagctrl_aw_desc),
-      .valid_i   (tagctrl_aw_valid),
-      .ready_o   (tagctrl_aw_ready),
-      .data_o    (tagctrl_w_desc),
-      .valid_o   (tagctrl_w_valid),
-      .ready_i   (tagctrl_w_ready)
+    .clk_i,
+    .rst_ni,
+
+    .clr_i    ( 1'b0             ),
+    .wdata_i  ( tagctrl_aw_desc  ),
+    .wvalid_i ( tagctrl_aw_valid ),
+    .wready_o ( tagctrl_aw_ready ),
+    .rdata_o  ( tagctrl_w_desc   ),
+    .rvalid_o ( tagctrl_w_valid  ),
+    .rready_i ( tagctrl_w_ready  ),
+    .depth_o  ( ),
+    .full_o   ( ),
+    .err_o    ( )
   );
 
   axi_tagctrl_w #(
@@ -823,8 +831,12 @@ module axi_tagctrl_top #(
   // AXI requests get stalled while flush is active
   axi_isolate #(
       .NumPending  (axi_llc_pkg::MaxTrans),
-      .req_t   (slv_req_t),
-      .resp_t  (slv_resp_t)
+      .AxiAddrWidth(AxiAddrWidth),  // Added to fix ASCRANGE error
+      .AxiDataWidth(AxiDataWidth),
+      .AxiIdWidth  (AxiIdWidth),
+      .AxiUserWidth(AxiUserWidth),
+      .axi_req_t   (slv_req_t),
+      .axi_resp_t  (slv_resp_t)
   ) i_axi_isolate_flush (
       .clk_i,
       .rst_ni,
@@ -843,8 +855,8 @@ module axi_tagctrl_top #(
       .b_chan_t   (slv_b_chan_t),
       .ar_chan_t  (slv_ar_chan_t),
       .r_chan_t   (slv_r_chan_t),
-      .req_t  (slv_req_t),
-      .resp_t (slv_resp_t)
+      .axi_req_t  (slv_req_t),
+      .axi_resp_t (slv_resp_t)
   ) i_axi_cut (
       .clk_i,
       .rst_ni,

@@ -179,23 +179,31 @@ module axi_tagctrl_data_way #(
 
   end
 
-  tc_sram #(
-      .NumWords   (Cfg.NumLines * Cfg.NumBlocks),
-      .DataWidth  (Cfg.BlockSize),
-      .ByteWidth  (32'd8),
-      .NumPorts   (32'd1),
-      .Latency    (32'd1),
-      .SimInit    ("none"),
-      .PrintSimCfg(PrintSramCfg)
+  // Convert byte enable to wmask
+  logic [Cfg.BlockSize-1:0] data_sram_wmask;
+  always_comb begin
+    for (int i=0; i < (Cfg.BlockSize / 8); ++i) begin
+      data_sram_wmask[i*8 +: 8] = wr_en_q ? {8{wr_strb_q[i]}} : {8{inp_i.strb[i]}};
+    end
+  end
+
+  prim_ram_1p #(
+    .Width           (Cfg.BlockSize),
+    .Depth           (Cfg.NumLines * Cfg.NumBlocks),
+    .DataBitsPerMask (32'd8)
   ) i_data_sram (
-      .clk_i,
-      .rst_ni,
-      .req_i  (wr_en_q ? ram_req_q : ram_req),
-      .we_i   (wr_en_q),
-      .addr_i (wr_en_q ? wr_addr_q : addr),
-      .wdata_i(wr_en_q ? ((out_o.data & ~wr_bit_en_q) | wr_data_q) : inp_i.data),
-      .be_i   (wr_en_q ? wr_strb_q : inp_i.strb),
-      .rdata_o(out_o.data)
+    .clk_i,
+    .rst_ni,
+
+    .req_i   (wr_en_q ? ram_req_q : ram_req),
+    .write_i (wr_en_q),
+    .addr_i  (wr_en_q ? wr_addr_q : addr),
+    .wdata_i (wr_en_q ? ((out_o.data & ~wr_bit_en_q) | wr_data_q) : inp_i.data),
+    .wmask_i (data_sram_wmask),
+    .rdata_o (out_o.data),
+
+    .cfg_i     ('0),
+    .cfg_rsp_o ( )
   );
 
   // Flip Flops to hold the read request meta information

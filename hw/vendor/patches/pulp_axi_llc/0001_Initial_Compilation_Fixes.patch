@@ -1,0 +1,396 @@
+diff --git a/include/axi_llc/assign.svh b/include/axi_llc/assign.svh
+index de20ed6..319a0ea 100644
+--- a/include/axi_llc/assign.svh
++++ b/include/axi_llc/assign.svh
+@@ -43,4 +43,4 @@
+     assign q_struct.commit_cfg = regbus.commit_cfg.q;                               \
+     assign q_struct.flushed = {regbus.flushed_high.q, regbus.flushed_low.q};
+ 
+-`endif
+\ No newline at end of file
++`endif
+diff --git a/include/axi_llc/typedef.svh b/include/axi_llc/typedef.svh
+index 2200d48..ad95997 100644
+--- a/include/axi_llc/typedef.svh
++++ b/include/axi_llc/typedef.svh
+@@ -81,4 +81,4 @@
+   `AXI_LLC_TYPEDEF_REGS_D_T(__name``_cfg_regs_d_t, __reg_data_t, __set_asso_t) \
+   `AXI_LLC_TYPEDEF_REGS_Q_T(__name``_cfg_regs_q_t, __reg_data_t, __set_asso_t)
+ 
+-`endif
+\ No newline at end of file
++`endif
+diff --git a/src/axi_llc_burst_cutter.sv b/src/axi_llc_burst_cutter.sv
+index b89d152..c77bbb7 100644
+--- a/src/axi_llc_burst_cutter.sv
++++ b/src/axi_llc_burst_cutter.sv
+@@ -55,7 +55,7 @@ module axi_llc_burst_cutter #(
+ 
+   // line offset is the index where we are interested in, or where the line index starts
+   localparam int unsigned LineOffset     = Cfg.ByteOffsetLength + Cfg.BlockOffsetLength;
+-  localparam int unsigned RuleIndexWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity + 32'd1);
++  localparam int unsigned RuleIndexWidth = prim_util_pkg::vbits(Cfg.SetAssociativity + 32'd1);
+ 
+   addr_t         this_line_address; // address of this line (tag included)
+   addr_t         next_line_address; // address of the next line (tag included)
+diff --git a/src/axi_llc_config.sv b/src/axi_llc_config.sv
+index da0421e..a8117c1 100644
+--- a/src/axi_llc_config.sv
++++ b/src/axi_llc_config.sv
+@@ -277,7 +277,7 @@ module axi_llc_config #(
+   // Type for the Set Associativity puls padding
+   localparam int unsigned SetAssoPadWidth = RegWidth - Cfg.SetAssociativity;
+    
+-  localparam int unsigned FlushIdxWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
++  localparam int unsigned FlushIdxWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
+   typedef logic [FlushIdxWidth-1:0] flush_idx_t;
+ 
+   // Counter signals for flush control
+diff --git a/src/axi_llc_evict_unit.sv b/src/axi_llc_evict_unit.sv
+index b2c1e7d..afeaaca 100644
+--- a/src/axi_llc_evict_unit.sv
++++ b/src/axi_llc_evict_unit.sv
+@@ -120,22 +120,24 @@ module axi_llc_evict_unit #(
+   );
+ 
+   // FIFO between AW master and W master, this many evictions transactions can be in flight
+-  stream_fifo #(
+-    .FALL_THROUGH ( 1'b1                        ),
+-    .DEPTH        ( axi_llc_pkg::EvictFifoDepth ),
+-    .T            ( desc_t                      )
++  prim_fifo_sync #(
++    .Pass  ( 1'b1                        ),
++    .Width ( $bits(desc_t)               ),
++    .Depth ( axi_llc_pkg::EvictFifoDepth )
+   ) i_stream_fifo_evict (
+     .clk_i,
+     .rst_ni,
+-    .flush_i    ( 1'b0          ),
+-    .testmode_i ( test_i        ),
+-    .usage_o    ( /*not used*/  ),
+-    .data_i     ( desc_aw       ),
+-    .valid_i    ( desc_aw_valid ),
+-    .ready_o    ( desc_aw_ready ),
+-    .data_o     ( desc_w        ),
+-    .valid_o    ( desc_w_valid  ),
+-    .ready_i    ( desc_w_ready  )
++
++    .clr_i    ( 1'b0          ),
++    .wdata_i  ( desc_aw       ),
++    .wvalid_i ( desc_aw_valid ),
++    .wready_o ( desc_aw_ready ),
++    .rdata_o  ( desc_w        ),
++    .rvalid_o ( desc_w_valid  ),
++    .rready_i ( desc_w_ready  ),
++    .depth_o  ( ),
++    .full_o   ( ),
++    .err_o    ( )
+   );
+ 
+   axi_llc_w_master #(
+@@ -178,21 +180,23 @@ module axi_llc_evict_unit #(
+     .flush_desc_recv_o(flush_desc_recv_o)
+   );
+ 
+-  stream_fifo #(
+-    .FALL_THROUGH ( 1'b1                         ),
+-    .DEPTH        ( axi_llc_pkg::MissBufferDepth ),
+-    .T            ( desc_t                       )
++  prim_fifo_sync #(
++    .Pass  ( 1'b1                         ),
++    .Width ( $bits(desc_t)                ),
++    .Depth ( axi_llc_pkg::MissBufferDepth )
+   ) i_stream_fifo_miss_buffer (
+     .clk_i,
+     .rst_ni,
+-    .flush_i    ( 1'b0         ),
+-    .testmode_i ( test_i       ),
+-    .usage_o    ( /*not used*/ ),
+-    .data_i     (desc_b        ),
+-    .valid_i    (desc_b_valid  ),
+-    .ready_o    (desc_b_ready  ),
+-    .data_o     (desc_o        ),
+-    .valid_o    (desc_valid_o  ),
+-    .ready_i    (desc_ready_i  )
++
++    .clr_i    ( 1'b0         ),
++    .wdata_i  ( desc_b       ),
++    .wvalid_i ( desc_b_valid ),
++    .wready_o ( desc_b_ready ),
++    .rdata_o  ( desc_o       ),
++    .rvalid_o ( desc_valid_o ),
++    .rready_i ( desc_ready_i ),
++    .depth_o  ( ),
++    .full_o   ( ),
++    .err_o    ( )
+   );
+ endmodule
+diff --git a/src/axi_llc_refill_unit.sv b/src/axi_llc_refill_unit.sv
+index 16b6bcc..f827278 100644
+--- a/src/axi_llc_refill_unit.sv
++++ b/src/axi_llc_refill_unit.sv
+@@ -93,22 +93,24 @@ module axi_llc_refill_unit #(
+     .ax_chan_ready_i ( ar_chan_ready_i )
+   );
+ 
+-  stream_fifo #(
+-    .FALL_THROUGH ( 1'b1                         ),
+-    .DEPTH        ( axi_llc_pkg::RefillFifoDepth ),
+-    .T            ( desc_t                       )
++  prim_fifo_sync #(
++    .Pass  ( 1'b1                         ),
++    .Width ( $bits(desc_t)                ),
++    .Depth ( axi_llc_pkg::RefillFifoDepth )
+   ) i_stream_fifo_refill (
+     .clk_i,
+     .rst_ni,
+-    .flush_i   ( 1'b0          ),
+-    .testmode_i( test_i        ),
+-    .usage_o   ( /*not used*/  ),
+-    .data_i    ( desc_ar       ),
+-    .valid_i   ( desc_ar_valid ),
+-    .ready_o   ( desc_ar_ready ),
+-    .data_o    ( desc_r        ),
+-    .valid_o   ( desc_r_valid  ),
+-    .ready_i   ( desc_r_ready  )
++
++    .clr_i    ( 1'b0          ),
++    .wdata_i  ( desc_ar       ),
++    .wvalid_i ( desc_ar_valid ),
++    .wready_o ( desc_ar_ready ),
++    .rdata_o  ( desc_r        ),
++    .rvalid_o ( desc_r_valid  ),
++    .rready_i ( desc_r_ready  ),
++    .depth_o  ( ),
++    .full_o   ( ),
++    .err_o    ( )
+   );
+ 
+   axi_llc_r_master #(
+diff --git a/src/axi_llc_reg_top.sv b/src/axi_llc_reg_top.sv
+index e320217..24888f8 100644
+--- a/src/axi_llc_reg_top.sv
++++ b/src/axi_llc_reg_top.sv
+@@ -5,9 +5,10 @@
+ // Register Top module auto-generated by `reggen`
+ 
+ 
+-`include "common_cells/assertions.svh"
+ 
+-module axi_llc_reg_top #(
++module axi_llc_reg_top
++  import prim_subreg_pkg::*;
++#(
+     parameter type reg_req_t = logic,
+     parameter type reg_rsp_t = logic,
+     parameter int AW = 7
+@@ -102,7 +103,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RW"),
++    .SwAccess(SwAccessRW),
+     .RESVAL  (32'h0)
+   ) u_cfg_spm_low (
+     .clk_i   (clk_i    ),
+@@ -129,7 +130,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RW"),
++    .SwAccess(SwAccessRW),
+     .RESVAL  (32'h0)
+   ) u_cfg_spm_high (
+     .clk_i   (clk_i    ),
+@@ -156,7 +157,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RW"),
++    .SwAccess(SwAccessRW),
+     .RESVAL  (32'h0)
+   ) u_cfg_flush_low (
+     .clk_i   (clk_i    ),
+@@ -183,7 +184,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RW"),
++    .SwAccess(SwAccessRW),
+     .RESVAL  (32'h0)
+   ) u_cfg_flush_high (
+     .clk_i   (clk_i    ),
+@@ -210,7 +211,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (1),
+-    .SWACCESS("W1S"),
++    .SwAccess(SwAccessW1S),
+     .RESVAL  (1'h0)
+   ) u_commit_cfg (
+     .clk_i   (clk_i    ),
+@@ -237,7 +238,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_flushed_low (
+     .clk_i   (clk_i    ),
+@@ -263,7 +264,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_flushed_high (
+     .clk_i   (clk_i    ),
+@@ -289,7 +290,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_bist_out_low (
+     .clk_i   (clk_i    ),
+@@ -315,7 +316,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_bist_out_high (
+     .clk_i   (clk_i    ),
+@@ -341,7 +342,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_set_asso_low (
+     .clk_i   (clk_i    ),
+@@ -367,7 +368,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_set_asso_high (
+     .clk_i   (clk_i    ),
+@@ -393,7 +394,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_num_lines_low (
+     .clk_i   (clk_i    ),
+@@ -419,7 +420,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_num_lines_high (
+     .clk_i   (clk_i    ),
+@@ -445,7 +446,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_num_blocks_low (
+     .clk_i   (clk_i    ),
+@@ -471,7 +472,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_num_blocks_high (
+     .clk_i   (clk_i    ),
+@@ -497,7 +498,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_version_low (
+     .clk_i   (clk_i    ),
+@@ -523,7 +524,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (32),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (32'h0)
+   ) u_version_high (
+     .clk_i   (clk_i    ),
+@@ -549,7 +550,7 @@ module axi_llc_reg_top #(
+ 
+   prim_subreg #(
+     .DW      (1),
+-    .SWACCESS("RO"),
++    .SwAccess(SwAccessRO),
+     .RESVAL  (1'h0)
+   ) u_bist_status (
+     .clk_i   (clk_i    ),
+diff --git a/src/axi_llc_ways.sv b/src/axi_llc_ways.sv
+index c217401..4b50741 100644
+--- a/src/axi_llc_ways.sv
++++ b/src/axi_llc_ways.sv
+@@ -50,7 +50,7 @@ module axi_llc_ways #(
+   /// Read unit is ready for the response.
+   input logic read_way_out_ready_i
+ );
+-  localparam int unsigned SelIdxWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
++  localparam int unsigned SelIdxWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
+   typedef logic [SelIdxWidth-1:0]          way_sel_t; // Binary representation of the way selection
+   typedef logic [Cfg.SetAssociativity-1:0] way_ind_t; // way indicator for switching decision
+ 
+diff --git a/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv b/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
+index 2d9b2f8..130372e 100644
+--- a/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
++++ b/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
+@@ -224,9 +224,16 @@ module axi_llc_tag_pattern_gen #(
+     .down_i    (     down_cnt ),
+     .d_i       (     data_cnt ),
+     .q_o       (      index_o ),
+-    .overflow_o( overflow_cnt )
++    .overflow_o( )
+   );
+ 
++  // Generate sticky overflow flag as prim_count is a saturating counter
++  always_ff @(posedge clk_i or negedge rst_ni) begin
++    if      (!rst_ni)                 overflow_cnt <= 1'b0;
++    else if (clear_cnt || load_cnt)   overflow_cnt <= 1'b0;
++    else if (!overflow_cnt && en_cnt) overflow_cnt <= (index_o == '1 && !down_cnt) || (index_o == '0 && down_cnt);
++  end
++
+   // Flip Flops
+   `FFLARN(busy_q,     busy_d,     switch_busy,      '0, clk_i, rst_ni)
+   `FFLARN(eoc_q,      eoc_d,      '1,               '0, clk_i, rst_ni)
+diff --git a/src/hit_miss_detect/axi_llc_tag_store.sv b/src/hit_miss_detect/axi_llc_tag_store.sv
+index d15691a..b9c922b 100644
+--- a/src/hit_miss_detect/axi_llc_tag_store.sv
++++ b/src/hit_miss_detect/axi_llc_tag_store.sv
+@@ -79,7 +79,7 @@ module axi_llc_tag_store #(
+   } tag_data_t;
+ 
+   // Binary indicator of the output way selected.
+-  localparam int unsigned BinIndicatorWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
++  localparam int unsigned BinIndicatorWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
+   typedef logic [BinIndicatorWidth-1:0] bin_ind_t;
+ 
+   // The module can be busy or not.

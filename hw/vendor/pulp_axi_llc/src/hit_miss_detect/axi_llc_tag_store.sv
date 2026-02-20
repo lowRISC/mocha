@@ -79,7 +79,7 @@ module axi_llc_tag_store #(
   } tag_data_t;
 
   // Binary indicator of the output way selected.
-  localparam int unsigned BinIndicatorWidth = cf_math_pkg::idx_width(Cfg.SetAssociativity);
+  localparam int unsigned BinIndicatorWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
   typedef logic [BinIndicatorWidth-1:0] bin_ind_t;
 
   // The module can be busy or not.

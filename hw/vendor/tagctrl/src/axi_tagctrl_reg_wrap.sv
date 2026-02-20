@@ -262,6 +262,7 @@ module axi_tagctrl_reg_wrap #(
       .CapSize         (CapSize),
       .TagCacheMemBase (TagCacheMemBase),
       .DRAMMemBase     (DRAMMemBase),
+      .DRAMMemLength   (DRAMMemLength),
       .SetAssociativity(SetAssociativity),
       .NumLines        (NumLines),
       .NumBlocks       (NumBlocks),
