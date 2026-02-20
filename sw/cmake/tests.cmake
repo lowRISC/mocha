@@ -45,6 +45,14 @@ macro(mocha_add_fpga_test NAME)
     )
 endmacro()
 
+set(BOOT_CFG              rom                 bare        ) # Config Name
+set(BOOT_CFG_OFFSET       0x4000              0x00        ) # Offset
+set(BOOT_CFG_FPGA         YES                 NO          ) # Fpga supported?
+set(BOOT_CFG_VERILATOR    NO                  YES         ) # Verilator supported?
+
+set(ARCHS                 vanilla             cheri       ) # Config Name
+set(ARCHS_FLAGS           NON_CHERI_FLAGS     CHERI_FLAGS ) # Flags
+
 # wrapper macro to create a CHERI and non-CHERI software test.
 # this macro automatically handles CHERI libraries by appending "_cheri" to
 # the output executable name and all of the libraries it is linked against.
@@ -56,33 +64,34 @@ macro(mocha_add_test)
     cmake_parse_arguments(arg "${options}"
         "${one_value_args}" "${multi_value_args}" ${ARGN})
 
-    # create non-CHERI executable from SOURCES and LIBRARIES.
-    add_executable(${arg_NAME} ${arg_SOURCES})
-    target_compile_options(${arg_NAME} PUBLIC ${NON_CHERI_FLAGS})
-    foreach(LIB ${arg_LIBRARIES})
-        target_link_libraries(${arg_NAME} PUBLIC ${LIB})
-    endforeach()
-    target_link_options(${arg_NAME} PUBLIC "-T${LDS}" "-L${LDS_DIR}")
-    # create artefacts and verilator test
-    mocha_add_executable_artefacts(${arg_NAME})
-    mocha_add_verilator_test(${arg_NAME})
-    if(arg_FPGA)
-      mocha_add_fpga_test(${arg_NAME})
-    endif()
-    # do the same for the CHERI executable, but append "_cheri" to the output
-    # exectuable name and all of the libraries it is being linked against.
-    add_executable(${arg_NAME}_cheri ${arg_SOURCES})
-    target_compile_options(${arg_NAME}_cheri PUBLIC ${CHERI_FLAGS})
-    foreach(LIB ${arg_LIBRARIES})
-        target_link_libraries(${arg_NAME}_cheri PUBLIC ${LIB}_cheri)
-    endforeach()
-    target_link_options(${arg_NAME}_cheri PUBLIC "-T${LDS}" "-L${LDS_DIR}")
-    # create artefacts and verilator test
-    mocha_add_executable_artefacts(${arg_NAME}_cheri)
-    mocha_add_verilator_test(${arg_NAME}_cheri)
-    if(arg_FPGA)
-      mocha_add_fpga_test(${arg_NAME}_cheri)
-    endif()
+      foreach(ARCH_NAME FLAGS_VAR IN ZIP_LISTS ARCHS ARCHS_FLAGS)
+      set(FLAGS ${${FLAGS_VAR}})
+
+      foreach(CONFIG OFFSET FPGA SIM IN ZIP_LISTS BOOT_CFG BOOT_CFG_OFFSET BOOT_CFG_FPGA BOOT_CFG_VERILATOR)
+        set(NAME ${arg_NAME}_${ARCH_NAME}_${CONFIG})
+        add_executable(${NAME} ${arg_SOURCES})
+        target_compile_options(${NAME} PUBLIC ${FLAGS})
+        foreach(LIB ${arg_LIBRARIES})
+            target_link_libraries(${NAME} PUBLIC ${LIB})
+        endforeach()
+        target_link_options(${NAME} PUBLIC 
+          "-Wl,--defsym,BOOT_ROM_OFFSET=${OFFSET}"
+          "-T${LDS}" "-L${LDS_DIR}"
+        )
+
+        # create artefacts 
+        mocha_add_executable_artefacts(${NAME})
+
+        if(SIM)
+          mocha_add_verilator_test(${NAME})
+        endif()
+
+        if(FPGA AND arg_FPGA)
+          mocha_add_fpga_test(${NAME})
+        endif()
+
+      endforeach() # BOOT_CFG
+    endforeach() # ARCH
 endmacro()
 
 # wrapper macro to create a CHERI and non-CHERI library.
