@@ -38,7 +38,6 @@ targets:
   sim:
     <<: *default_target
     parameters:
-      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
       - INST_SIM_SRAM=true
     default_tool: verilator
     filesets_append:
@@ -72,15 +71,8 @@ targets:
     tools:
       verilator:
         mode: lint-only
-    parameters:
-      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
 
 parameters:
-  PRIM_DEFAULT_IMPL:
-    datatype: str
-    paramtype: vlogdefine
-    description: Primitives implementation to use, e.g. "prim_pkg::ImplGeneric".
-    default: prim_pkg::ImplGeneric
   INST_SIM_SRAM:
     datatype: bool
     paramtype: vlogdefine
