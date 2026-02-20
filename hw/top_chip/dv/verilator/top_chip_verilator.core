@@ -27,6 +27,7 @@ filesets:
       - lowrisc:dv:dv_test_status
 
     files:
+      - dram_wrapper_sim.sv:    { file_type: systemVerilogSource }
       - top_chip_verilator.sv:  { file_type: systemVerilogSource }
       - top_chip_verilator.cc:  { file_type: cppSource }
       - top_chip_verilator.vlt: { file_type: vlt }

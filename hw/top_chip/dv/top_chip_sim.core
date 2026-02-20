@@ -28,6 +28,7 @@ filesets:
     files:
       - tb/tb.sv
       - tb/chip_hier_macros.svh: {is_include_file: true}
+      - verilator/dram_wrapper_sim.sv
     file_type: systemVerilogSource
 
 

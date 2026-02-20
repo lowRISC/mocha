@@ -2,6 +2,10 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+// Include macros for tag controller
+`include "register_interface/assign.svh"
+`include "register_interface/typedef.svh"
+
 module top_chip_system #(
   SramInitFile = ""
 ) (
@@ -24,7 +28,11 @@ module top_chip_system #(
   output logic [3:0] spi_device_sd_o,
   output logic [3:0] spi_device_sd_en_o,
   input  logic [3:0] spi_device_sd_i,
-  input  logic       spi_device_tpm_csb_i
+  input  logic       spi_device_tpm_csb_i,
+
+  // DRAM AXI interface.
+  output top_pkg::axi_dram_req_t  dram_req_o,
+  input  top_pkg::axi_dram_resp_t dram_resp_i
 );
   // Local parameters.
   localparam int unsigned SramMemSize   = 128 * 1024; // 128 KiB
@@ -75,7 +83,8 @@ module top_chip_system #(
   axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
   assign addr_map = '{
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
-    '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength }
+    '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
+    '{ idx: top_pkg::DRAM,       start_addr: top_pkg::DRAMBase,       end_addr: top_pkg::DRAMBase       + top_pkg::DRAMLength       }
   };
 
   // TileLink signals.
@@ -650,4 +659,40 @@ module top_chip_system #(
     (|rstmgr_resets.rst_por_n) | (|rstmgr_resets.rst_spi_device_n) | (|rstmgr_resets.rst_spi_host_n) | (|rstmgr_resets.rst_i2c_n) |
     (|rstmgr_rst_en);
 
+  // Define types for tag controller
+  `REG_BUS_TYPEDEF_ALL(conf, logic [31:0], logic [31:0], logic [3:0])
+
+  // Instantiate CHERI tag controller for DRAM
+  axi_tagctrl_reg_wrap #(
+    .DRAMMemBase      ( 32'(top_pkg::DRAMBase)            ),
+    .DRAMMemLength    ( 32'(top_pkg::DRAMLength)          ),
+    .CapSize          ( top_pkg::CapSizeBits              ),
+    .TagCacheMemBase  ( 32'(top_pkg::TagCacheMemBase)     ),
+    .SetAssociativity ( top_pkg::TagCacheSetAssociativity ),
+    .NumLines         ( top_pkg::TagCacheNumLines         ),
+    .NumBlocks        ( top_pkg::TagCacheNumBlocks        ),
+    .AxiIdWidth       ( top_pkg::AxiIdWidth               ),
+    .AxiAddrWidth     ( top_pkg::AxiAddrWidth             ),
+    .AxiDataWidth     ( top_pkg::AxiDataWidth             ),
+    .AxiUserWidth     ( top_pkg::AxiUserWidth             ),
+    .slv_req_t        ( top_pkg::axi_req_t                ),
+    .slv_resp_t       ( top_pkg::axi_resp_t               ),
+    .mst_req_t        ( top_pkg::axi_dram_req_t           ), // ID is 1 bit wider than normal AXI types
+    .mst_resp_t       ( top_pkg::axi_dram_resp_t          ),
+    .reg_req_t        ( conf_req_t                        ),
+    .reg_resp_t       ( conf_rsp_t                        ),
+    .rule_full_t      ( axi_pkg::xbar_rule_64_t           )
+  ) u_tag_controller (
+    .clk_i               (clkmgr_clocks.clk_main_infra),
+    .rst_ni              (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .test_i              ('0),
+    .slv_req_i           (xbar_device_req[top_pkg::DRAM]),
+    .slv_resp_o          (xbar_device_resp[top_pkg::DRAM]),
+    .mst_req_o           (dram_req_o),
+    .mst_resp_i          (dram_resp_i),
+    .conf_req_i          ('0),
+    .conf_resp_o         ( ),
+    .cached_start_addr_i (top_pkg::DRAMBase),
+    .cached_end_addr_i   (top_pkg::TagCacheMemBase)
+  );
 endmodule

@@ -19,6 +19,10 @@ module top_chip_verilator (input logic clk_i, rst_ni);
   logic [3:0] qspi_device_sdo_en;
   logic       spi_device_sdi;
 
+  // AXI signals
+  top_pkg::axi_dram_req_t  dram_req;
+  top_pkg::axi_dram_resp_t dram_resp;
+
   // CHERI Mocha top
   top_chip_system #(
   ) u_top_chip_system (
@@ -37,7 +41,10 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .spi_device_sd_o      (qspi_device_sdo),
     .spi_device_sd_en_o   (qspi_device_sdo_en),
     .spi_device_sd_i      ({3'h0, spi_device_sdi}), // SPI MOSI = QSPI DQ0
-    .spi_device_tpm_csb_i ('0)
+    .spi_device_tpm_csb_i ('0),
+
+    .dram_req_o  (dram_req),
+    .dram_resp_i (dram_resp)
   );
 
   // Virtual GPIO
@@ -129,7 +136,7 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     u_sw_test_status_if.sw_test_status_addr = VERILATOR_SW_DV_TEST_STATUS_ADDR;
   end
 
-  always @(posedge clk_i) begin
+  always @(posedge `SIM_SRAM_IF.clk_i) begin
     if (u_sw_test_status_if.sw_test_done) begin
       $display("Verilator sim termination requested");
       $display("Your simulation wrote to 0x%h", u_sw_test_status_if.sw_test_status_addr);
@@ -140,4 +147,14 @@ module top_chip_verilator (input logic clk_i, rst_ni);
 
   `undef DUT
   `undef SIM_SRAM_IF
+
+  // Mock AXI external memory
+  dram_wrapper_sim u_dram_wrapper(
+    .clk_i  (u_top_chip_system.clkmgr_clocks.clk_main_infra),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+
+    // AXI interface
+    .axi_req_i  (dram_req),
+    .axi_resp_o (dram_resp)
+  );
 endmodule
