@@ -1,0 +1,19 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "pulp_axi_llc",
+  target_dir: "pulp_axi_llc",
+  patch_dir: "patches/pulp_axi_llc",
+
+  upstream: {
+    url: "https://github.com/pulp-platform/axi_llc.git",
+    rev: "master",
+  },
+
+  exclude_from_upstream: [
+    // CI configurations.
+    ".github",
+    ".gitlab-ci.yml",
+  ]
+}

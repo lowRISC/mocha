@@ -1,0 +1,47 @@
+# Copyright 2022 Bruno Sá and ZeroDay Labs.
+# Solderpad Hardware License, Version 0.51, see LICENSE for details.
+# SPDX-License-Identifier: SHL-0.51
+
+package:
+  name: axi_tag_ctrl
+  authors:
+    - "Bruno Sá <bruno.vilaca.sa@gmail.com>" # current maintainer
+
+dependencies:
+  axi: { git: "https://github.com/pulp-platform/axi.git", version: "0.39.1" }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: "1.32.0" }
+  common_verification: { git: "https://github.com/pulp-platform/common_verification.git", version: "0.2.0" }
+  register_interface: { git: "https://github.com/pulp-platform/register_interface.git", version: "0.3.6" }
+  tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: "0.2.9" }
+  axi_llc: {git: "https://github.com/pulp-platform/axi_llc.git", version: "0.2.1"}
+
+sources:
+  # Source files grouped in levels. Files in level 0 have no dependencies on files in this
+  # package. Files in level 1 only depend on files in level 0, files in level 2 on files in
+  # levels 1 and 0, etc. Files within a level are ordered alphabetically.
+  # Level 0
+  - src/axi_tagctrl_pkg.sv
+  - src/axi_tagctrl_data_way.sv
+  - src/axi_tagctrl_ways.sv
+  # Level 1
+  - src/axi_tagc_read_unit.sv
+  - src/axi_tagc_write_unit.sv
+  - src/axi_tagctrl_ax.sv
+  - src/axi_tagctrl_config.sv
+  - src/axi_tagctrl_r.sv
+  - src/axi_tagctrl_w.sv
+  # Level 2
+  - src/axi_tagctrl_top.sv
+  - src/axi_tagctrl_reg_wrap.sv
+
+
+  - target: tb
+    include_dirs:
+      - tb
+    files:
+      # Level 0:
+      - test/hdl/tc_sram_wrapper.sv
+      - test/hdl/sram.sv
+      - test/hdl/axi2mem.sv
+      - test/hdl/tag_ctrl_testharness.sv
+

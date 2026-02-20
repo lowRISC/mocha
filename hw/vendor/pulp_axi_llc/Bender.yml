@@ -1,0 +1,62 @@
+# Copyright 2022 ETH Zurich and University of Bologna.
+# Solderpad Hardware License, Version 0.51, see LICENSE for details.
+# SPDX-License-Identifier: SHL-0.51
+
+package:
+  name: axi_llc
+  authors:
+    - "Thomas Benz <tbenz@iis.ee.ethz.ch>" # current maintainer
+    - "Wolfgang Roenninger <wroennin@ethz.ch>"
+
+dependencies:
+  axi: { git: "https://github.com/pulp-platform/axi.git", version: 0.39.0-beta.2 }
+  common_cells: { git: "https://github.com/pulp-platform/common_cells.git", version: 1.21.0 }
+  common_verification: { git: "https://github.com/pulp-platform/common_verification.git", version: 0.2.0 }
+  register_interface: { git: "https://github.com/pulp-platform/register_interface.git", version: 0.3.6 }
+  tech_cells_generic: { git: "https://github.com/pulp-platform/tech_cells_generic.git", version: 0.2.9 }
+
+export_include_dirs:
+  - include
+
+sources:
+  # Source files grouped in levels. Files in level 0 have no dependencies on files in this
+  # package. Files in level 1 only depend on files in level 0, files in level 2 on files in
+  # levels 1 and 0, etc. Files within a level are ordered alphabetically.
+  # Level 0
+  - src/axi_llc_pkg.sv
+  - src/axi_llc_burst_cutter.sv
+  - src/axi_llc_data_way.sv
+  - src/axi_llc_merge_unit.sv
+  - src/axi_llc_read_unit.sv
+  - src/axi_llc_reg_pkg.sv
+  - src/axi_llc_reg_top.sv
+  - src/axi_llc_write_unit.sv
+  - src/eviction_refill/axi_llc_ax_master.sv
+  - src/eviction_refill/axi_llc_r_master.sv
+  - src/eviction_refill/axi_llc_w_master.sv
+  - src/hit_miss_detect/axi_llc_evict_box.sv
+  - src/hit_miss_detect/axi_llc_lock_box_bloom.sv
+  - src/hit_miss_detect/axi_llc_miss_counters.sv
+  - src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
+  # Level 1
+  - src/axi_llc_chan_splitter.sv
+  - src/axi_llc_evict_unit.sv
+  - src/axi_llc_refill_unit.sv
+  - src/axi_llc_ways.sv
+  - src/hit_miss_detect/axi_llc_tag_store.sv
+  # Level 2
+  - src/axi_llc_config.sv
+  - src/axi_llc_hit_miss.sv
+  # Level 3
+  - src/axi_llc_top.sv
+  # Level 4
+  - src/axi_llc_reg_wrap.sv
+
+
+  - target: test
+    include_dirs:
+      - test
+    files:
+      # Level 0:
+      - test/tb_axi_llc.sv
+

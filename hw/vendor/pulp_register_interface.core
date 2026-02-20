@@ -1,0 +1,21 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "cosmic::pulp_register_interface"
+description: "PULP register interface core file for COSMIC project."
+
+filesets:
+  files_rtl:
+    files:
+      # Includes.
+      - pulp_register_interface/include/register_interface/assign.svh: {is_include_file: true, include_path: pulp_register_interface/include}
+      - pulp_register_interface/include/register_interface/typedef.svh: {is_include_file: true, include_path: pulp_register_interface/include}
+      # Skip other sources
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

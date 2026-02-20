@@ -22,8 +22,9 @@ filesets:
       - lowrisc:tlul:adapter_reg
       - lowrisc:mocha_constants:top_racl_pkg
       - pulp-platform.org::axi
-      - cosmic::cva6cheri
       - lowrisc:common_cells:all
+      - cosmic::cva6cheri
+      - cosmic::tagctrl
     files:
       - rtl/mem_downsizer.sv
       - rtl/axi_sram.sv

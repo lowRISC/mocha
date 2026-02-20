@@ -1,0 +1,4 @@
+/test/work-ver/*
+/test/verilator/*
+/test/logs/*
+.bender/*

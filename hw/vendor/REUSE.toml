@@ -13,6 +13,22 @@ SPDX-License-Identifier = "SHL-0.51"
 SPDX-FileCopyrightText = ["2014-2025 ETH Zurich and University of Bologna."]
 
 [[annotations]]
+path = ["pulp_axi_llc/**"]
+precedence = "override"
+SPDX-License-Identifier = "SHL-0.51"
+SPDX-FileCopyrightText = ["2022 ETH Zurich and University of Bologna."]
+
+[[annotations]]
+path = ["pulp_register_interface/**"]
+SPDX-License-Identifier = "SHL-0.51"
+SPDX-FileCopyrightText = ["2020 ETH Zurich and University of Bologna."]
+
+[[annotations]]
+path = ["tagctrl/**"]
+SPDX-License-Identifier = "SHL-0.51"
+SPDX-FileCopyrightText = ["2022 ETH Zurich and University of Bologna."]
+
+[[annotations]]
 path = ["cva6_cheri/**"]
 SPDX-License-Identifier = "SHL-0.51 OR Apache-2.0 OR BSD-3-Clause"
 SPDX-FileCopyrightText = [

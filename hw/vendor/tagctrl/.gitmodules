@@ -1,0 +1,9 @@
+[submodule "modules/axi_llc"]
+	path = modules/axi_llc
+	url = https://github.com/pulp-platform/axi_llc.git
+[submodule "src/axi_llc"]
+	path = src/axi_llc
+	url = https://github.com/pulp-platform/axi_llc.git
+[submodule "src/common_cells"]
+	path = src/common_cells
+	url = https://github.com/pulp-platform/common_cells.git

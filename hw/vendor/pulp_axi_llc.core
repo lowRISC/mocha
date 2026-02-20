@@ -1,0 +1,48 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "cosmic::pulp_axi_llc"
+description: "PULP AXI last level cache core file for COSMIC project."
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:common_cells:all
+      - lowrisc:prim:util
+      - pulp-platform.org::axi
+    files:
+      # Includes.
+      - pulp_axi_llc/include/axi_llc/assign.svh: {is_include_file: true, include_path: pulp_axi_llc/include}
+      - pulp_axi_llc/include/axi_llc/typedef.svh: {is_include_file: true, include_path: pulp_axi_llc/include}
+      # Packages.
+      - pulp_axi_llc/src/axi_llc_pkg.sv
+      - pulp_axi_llc/src/axi_llc_reg_pkg.sv
+      # LLC.
+      - pulp_axi_llc/src/eviction_refill/axi_llc_ax_master.sv
+      - pulp_axi_llc/src/eviction_refill/axi_llc_w_master.sv
+      - pulp_axi_llc/src/hit_miss_detect/axi_llc_evict_box.sv
+      - pulp_axi_llc/src/hit_miss_detect/axi_llc_lock_box_bloom.sv
+      - pulp_axi_llc/src/hit_miss_detect/axi_llc_miss_counters.sv
+      - pulp_axi_llc/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
+      - pulp_axi_llc/src/axi_llc_burst_cutter.sv
+      - pulp_axi_llc/src/axi_llc_chan_splitter.sv
+      - pulp_axi_llc/src/axi_llc_config.sv
+      - pulp_axi_llc/src/axi_llc_data_way.sv
+      - pulp_axi_llc/src/axi_llc_evict_unit.sv
+      - pulp_axi_llc/src/axi_llc_hit_miss.sv
+      - pulp_axi_llc/src/axi_llc_merge_unit.sv
+      - pulp_axi_llc/src/axi_llc_read_unit.sv
+      - pulp_axi_llc/src/axi_llc_refill_unit.sv
+      - pulp_axi_llc/src/axi_llc_reg_top.sv
+      - pulp_axi_llc/src/axi_llc_reg_wrap.sv
+      - pulp_axi_llc/src/axi_llc_top.sv
+      - pulp_axi_llc/src/axi_llc_ways.sv
+      - pulp_axi_llc/src/axi_llc_write_unit.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

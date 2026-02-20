@@ -1,0 +1,37 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "cosmic::tagctrl"
+description: "CHERI tag controller core file for COSMIC project."
+
+filesets:
+  files_rtl:
+    depend:
+      - cosmic::pulp_axi_llc
+      - cosmic::pulp_register_interface
+      - lowrisc:prim:util
+      - lowrisc:common_cells:all
+    files:
+      # Packages.
+      - tagctrl/src/axi_tagctrl_pkg.sv
+      # Tag controller.
+      - tagctrl/src/eviction_refill/axi_llc_r_master.sv
+      - tagctrl/src/axi_llc_tag_store.sv
+      - tagctrl/src/axi_tagc_read_unit.sv
+      - tagctrl/src/axi_tagc_write_unit.sv
+      - tagctrl/src/axi_tagctrl_ax.sv
+      - tagctrl/src/axi_tagctrl_config.sv
+      - tagctrl/src/axi_tagctrl_data_way.sv
+      - tagctrl/src/axi_tagctrl_r.sv
+      - tagctrl/src/axi_tagctrl_reg_wrap.sv
+      - tagctrl/src/axi_tagctrl_top.sv
+      - tagctrl/src/axi_tagctrl_w.sv
+      - tagctrl/src/axi_tagctrl_ways.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

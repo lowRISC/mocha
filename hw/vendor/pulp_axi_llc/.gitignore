@@ -1,0 +1,16 @@
+.bender
+.nfs*
+AN.DB
+modelsim.ini
+work
+transcript
+*.wlf
+scripts/compile_vsim.tcl
+scripts/compile_vcs.sh
+scripts/__pycache__
+bin
+sources*.txt
+pickle
+doc/morty*
+bender
+morty*
