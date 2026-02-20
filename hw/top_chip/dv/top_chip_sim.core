@@ -20,7 +20,7 @@ filesets:
       - lowrisc:dv:pins_if
       - lowrisc:dv:common_ifs
       - lowrisc:dv:dv_macros
-      - lowrisc:prim:prim_legacy_pkg
+      - lowrisc:prim_generic:prim_pkg
       - lowrisc:prim_generic:ram_2p
       - lowrisc:dv:xbar_macros
       - lowrisc:dv_dpi_c:uartdpi:0.1
@@ -39,7 +39,6 @@ targets:
   sim:
     <<: *default_target
     parameters:
-      - PRIM_DEFAULT_IMPL=prim_pkg::ImplGeneric
       - INST_SIM_SRAM=false
     filesets:
       - files_dv
@@ -49,11 +48,6 @@ targets:
     default_tool: vcs
 
 parameters:
-  PRIM_DEFAULT_IMPL:
-    datatype: str
-    paramtype: vlogdefine
-    description: Primitives implementation to use, e.g. "prim_pkg::ImplGeneric".
-    default: prim_pkg::ImplGeneric
   INST_SIM_SRAM:
     datatype: bool
     paramtype: vlogdefine

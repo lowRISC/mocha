@@ -80,7 +80,7 @@ module tb;
   end
 
   // ------ Memory backdoor accesses ------
-  if (`PRIM_DEFAULT_IMPL == prim_pkg::ImplGeneric) begin : gen_mem_bkdr_utils
+  if (prim_pkg::PrimTechName == "Generic") begin : gen_mem_bkdr_utils
     initial begin
       chip_mem_e    mem;
       mem_bkdr_util m_mem_bkdr_util[chip_mem_e];
