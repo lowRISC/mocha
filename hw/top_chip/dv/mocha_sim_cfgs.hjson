@@ -22,6 +22,11 @@
     "{proj_root}/hw/vendor/lowrisc_ip/ip/uart/dv/uart_sim_cfg.hjson",
     //"{proj_root}/hw/vendor/lowrisc_ip/ip/spi_device/dv/spi_device_1r1w_sim_cfg.hjson", // As per mocha issue #271, keep this here as a reminder. Currently Mocha uses the two-port version so leave out the 1R1W for now.
     "{proj_root}/hw/vendor/lowrisc_ip/ip/spi_device/dv/spi_device_2p_sim_cfg.hjson",
+    "{proj_root}/hw/vendor/lowrisc_ip/ip/rv_timer/dv/rv_timer_sim_cfg.hjson",
+    "{proj_root}/hw/vendor/lowrisc_ip/ip/prim/dv/prim_alert/prim_alert_sim_cfg.hjson",
+    "{proj_root}/hw/vendor/lowrisc_ip/ip/prim/dv/prim_esc/prim_esc_sim_cfg.hjson",
+    "{proj_root}/hw/vendor/lowrisc_ip/ip/prim/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson",
+
     // Top-level IPs.
     // Top level.
     "{proj_root}/hw/top_chip/dv/top_chip_sim_cfg.hjson"
