@@ -50,6 +50,72 @@
       sw_images: ["uart_smoketest_vanilla_bare:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_vanilla_bare.vmem"]
     }
+    {
+      name: uart_smoke_cheri
+      uvm_test_seq: top_chip_dv_uart_base_vseq
+      sw_images: ["uart_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_cheri_bare.vmem"]
+    }
+    {
+      name: rv_plic_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["plic_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: rv_plic_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["plic_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_cheri_bare.vmem"]
+    }
+    {
+      name: rv_timer_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["timer_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: rv_timer_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["timer_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_cheri_bare.vmem"]
+    }
+    {
+      name: rv_timer_irq
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["timer_interrupt_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_vanilla_bare.vmem"]
+    }
+    {
+      name: rv_timer_irq_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["timer_interrupt_test_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_cheri_bare.vmem"]
+    }
+    {
+      name: test_framework_exception_test
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["test_framework_exception_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_vanilla_bare.vmem"]
+    }
+    {
+      name: test_framework_exception_test_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["test_framework_exception_test_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_cheri_bare.vmem"]
+    }
+    {
+      name: spi_device_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["spi_device_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: spi_device_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["spi_device_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_cheri_bare.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -57,12 +123,56 @@
     {
       name: smoke
       tests: [
-        "uart_smoke"
+        "uart_smoke",
+        "uart_smoke_cheri",
+        "rv_plic_smoke",
+        "rv_plic_smoke_cheri",
+        "rv_timer_smoke",
+        "rv_timer_smoke_cheri",
+        "rv_timer_irq",
+        "rv_timer_irq_cheri",
+        "test_framework_exception_test",
+        "test_framework_exception_test_cheri",
+        "spi_device_smoke",
+        "spi_device_smoke_cheri"
       ]
     }
     {
       name: uart
-      tests: ["uart_smoke"]
+      tests: [
+        "uart_smoke",
+        "uart_smoke_cheri"
+      ]
+    }
+    {
+      name: rv_plic
+      tests: [
+        "rv_plic_smoke",
+        "rv_plic_smoke_cheri"
+      ]
+    }
+    {
+      name: rv_timer
+      tests: [
+        "rv_timer_smoke",
+        "rv_timer_smoke_cheri",
+        "rv_timer_irq",
+        "rv_timer_irq_cheri"
+      ]
+    }
+    {
+      name: test_framework
+      tests: [
+        "test_framework_exception_test",
+        "test_framework_exception_test_cheri"
+      ]
+    }
+    {
+      name: spi_device
+      tests: [
+        "spi_device_smoke",
+        "spi_device_smoke_cheri"
+      ]
     }
   ]
 }
