@@ -115,6 +115,3 @@ lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_spi_device*/rtl/spi_readcmd.sv" -ma
 
 // Memory downsizer truncates address bits
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/rtl/mem_downsizer.sv" -match "*mem64_addr_i*"
-
-// OT SPI device upstream issue
-lint_off -rule VARHIDDEN -file "*/lowrisc_ip_spi_device*/rtl/spi_device.sv" -match "*TpmRdFifoWidth*"
