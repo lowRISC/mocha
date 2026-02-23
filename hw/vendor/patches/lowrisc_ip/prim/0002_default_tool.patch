@@ -1,0 +1,52 @@
+diff --git a/dv/prim_alert/prim_alert_sim_cfg.hjson b/dv/prim_alert/prim_alert_sim_cfg.hjson
+index 7f9e137..e768cd3 100644
+--- a/dv/prim_alert/prim_alert_sim_cfg.hjson
++++ b/dv/prim_alert/prim_alert_sim_cfg.hjson
+@@ -12,7 +12,7 @@
+   tb: prim_alert_tb
+
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:prim_alert_sim:0.1
+diff --git a/dv/prim_esc/prim_esc_sim_cfg.hjson b/dv/prim_esc/prim_esc_sim_cfg.hjson
+index 24d9905..a102b9b 100644
+--- a/dv/prim_esc/prim_esc_sim_cfg.hjson
++++ b/dv/prim_esc/prim_esc_sim_cfg.hjson
+@@ -12,7 +12,7 @@
+   tb: prim_esc_tb
+
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:prim_esc_sim:0.1
+diff --git a/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson b/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
+index 7adc99e..0a33d8f 100644
+--- a/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
++++ b/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
+@@ -12,7 +12,7 @@
+   tb: prim_lfsr_tb
+
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:prim_lfsr_sim:0.1
+diff --git a/dv/prim_present/prim_present_sim_cfg.hjson b/dv/prim_present/prim_present_sim_cfg.hjson
+index cf76a0a..1fe2df0 100644
+--- a/dv/prim_present/prim_present_sim_cfg.hjson
++++ b/dv/prim_present/prim_present_sim_cfg.hjson
+@@ -12,7 +12,7 @@
+   tb: prim_present_tb
+
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:prim_present_sim:0.1
