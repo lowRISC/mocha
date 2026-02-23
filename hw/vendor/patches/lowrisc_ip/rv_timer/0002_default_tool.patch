@@ -1,0 +1,13 @@
+diff --git a/dv/rv_timer_sim_cfg.hjson b/dv/rv_timer_sim_cfg.hjson
+index e532389..f55b819 100644
+--- a/dv/rv_timer_sim_cfg.hjson
++++ b/dv/rv_timer_sim_cfg.hjson
+@@ -12,7 +12,7 @@
+   tb: tb
+
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:rv_timer_sim:0.1
