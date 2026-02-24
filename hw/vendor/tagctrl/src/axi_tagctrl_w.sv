@@ -124,10 +124,10 @@ module axi_tagctrl_w #(
   assign tag_fifo_pop = tagc_oup_valid_o && tagc_oup_ready_i;
 
   // FIFO w beats memory assignments
-  assign w_mst_fifo_pop = w_chan_mst_ready_i && w_chan_mst_valid_o;
+  assign w_mst_fifo_pop = w_chan_mst_ready_i && w_chan_mst_valid_o && state_q == SEND_W_CHANNEL;
   assign w_mst_fifo_indata = w_chan_slv_i;
   assign w_chan_mst_o = w_mst_fifo_data;
-  assign w_chan_mst_valid_o = ~w_mst_fifo_empty;
+  assign w_chan_mst_valid_o = !w_mst_fifo_empty && state_q == SEND_W_CHANNEL;
 
   always_comb begin : w_chan_ctrl
     automatic axi_addr_t addr;
@@ -172,6 +172,8 @@ module axi_tagctrl_w #(
         en_mem_b_chan = 1'b1;
         mem_b_chan_valid_d = 1'b0;
         en_mem_b_chan_valid = 1'b1;
+        store_tagc_bit_en = 1'b1;
+        tagc_w_bit_en_d = '0;
       end
       SEND_W_CHANNEL: begin
         // handshake ready to receive beats from the slave interface
