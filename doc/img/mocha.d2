@@ -83,13 +83,15 @@ Mocha: {
         I2C
         I2C.style.fill: lightpink
         I2C.style.stroke-dash: 3
-        SPI dev
-        SPI dev.style.fill: lightpink
-        SPI dev.style.stroke-dash: 3
+        SPI host
+        SPI host.style.fill: lightpink
+        SPI host.style.stroke-dash: 3
+        SPI devc
+        SPI devc.style.fill: lightpink
+        SPI devc.style.stroke-dash: 3
         UART
         UART.style.fill: lightpink
         UART.style.stroke-dash: 3
-        # USB device
         GPIO
         GPIO.style.fill: lightpink
         GPIO.style.stroke-dash: 3
@@ -107,6 +109,16 @@ Mocha: {
         Timer
         Timer.style.fill: lightpink
         Timer.style.stroke-dash: 3
+        managers: |md
+            #### Managers
+
+            - Clock
+            - Reset
+            - Power
+        |
+        managers.shape: rectangle
+        managers.style.fill: lightpink
+        managers.style.stroke-dash: 3
     }
     # Uncached
     Peripherals.style.fill: hotpink
@@ -127,7 +139,7 @@ chip.shape: rectangle
 chip.style.fill: hotpink
 chip.style.stroke-dash: 3
 
-chip <-> Flash
+Mocha.Peripherals.SPI host <-> Flash
 Flash.style.fill: hotpink
 Flash.style.stroke-dash: 3
 
@@ -138,7 +150,7 @@ Mocha.Peripherals.Mailbox <-> chip
 Mocha.Peripherals.I2C <-> I2C
 I2C.style.fill: hotpink
 I2C.style.stroke-dash: 3
-Mocha.Peripherals.SPI dev <-> SPI
+Mocha.Peripherals.SPI devc <-> SPI
 SPI.style.fill: hotpink
 SPI.style.stroke-dash: 3
 Mocha.Peripherals.UART <-> UART

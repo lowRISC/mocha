@@ -24,7 +24,15 @@ addrmap top_mocha {
 
   reserved GPIO @ 0x4000_0000;
 
-  reserved Mailbox @ 0x4001_0000;
+  reserved MAILBOX @ 0x4001_0000;
+
+  reserved CLOCK_MANAGER @ 0x4002_0000;
+
+  reserved RESET_MANAGER @ 0x4003_0000;
+
+  reserved POWER_MANAGER @ 0x4004_0000;
+
+  reserved ROM_CONTROL @ 0x4005_0000;
 
   uart UART[1] @ 0x4100_0000 += 0x10000;
 
@@ -34,10 +42,12 @@ addrmap top_mocha {
 
   rv_timer TIMER[1] @ 0x4400_0000 += 0x10000;
 
+  reserved SPI_HOST @ 0x4500_0000;
+
   rv_plic PLIC @ 0x4800_0000;
 
   external mem {
     mementries = 0x80000000; memwidth=8; // 2GiB
   } DRAM @ 0x8000_0000;
 };
-  
+
