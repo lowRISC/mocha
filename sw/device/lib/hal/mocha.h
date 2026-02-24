@@ -23,7 +23,17 @@
 
 static const uintptr_t dram_base = 0x80000000ul;
 
-// In order of memory map.
+/* device IRQs at the PLIC */
+enum mocha_system_irq : uint32_t {
+    mocha_system_irq_i2c = (1u << 6),
+    mocha_system_irq_spi_device = (1u << 7),
+    mocha_system_irq_uart = (1u << 8),
+    mocha_system_irq_gpio = (1u << 9),
+    mocha_system_irq_pwrmgr = (1u << 10),
+    mocha_system_irq_mailbox = (1u << 11),
+};
+
+/* In order of memory map. */
 mailbox_t mocha_system_mailbox(void);
 gpio_t mocha_system_gpio(void);
 clkmgr_t mocha_system_clkmgr(void);
