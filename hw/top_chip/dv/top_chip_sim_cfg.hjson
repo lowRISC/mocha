@@ -116,6 +116,54 @@
       sw_images: ["spi_device_smoketest_cheri_bare:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_cheri_bare.vmem"]
     }
+    {
+      name: i2c_host_tx_rx
+      uvm_test_seq: top_chip_dv_i2c_host_tx_rx_vseq
+      sw_images: ["i2c_host_tx_rx_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_host_tx_rx_test_vanilla_bare.vmem"]
+      }
+    {
+      name: i2c_device_tx_rx
+      uvm_test_seq: top_chip_dv_i2c_device_tx_rx_vseq
+      sw_images: ["i2c_device_tx_rx_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_device_tx_rx_test_vanilla_bare.vmem"]
+    }
+    {
+      name: gpio_smoke
+      uvm_test_seq: top_chip_dv_gpio_vseq
+      sw_images: ["gpio_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: rom_ctrl_integrity_check
+      uvm_test_seq: top_chip_dv_rom_ctrl_integrity_check_vseq
+      sw_images: ["rom_ctrl_integrity_check_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_integrity_check_test_vanilla_bare.vmem"]
+    }
+    {
+      name: rv_dm_ndm_reset_req
+      uvm_test_seq: "top_chip_dv_rv_dm_ndm_reset_req_vseq"
+      sw_images: ["rv_dm_ndm_reset_req_test_vanilla_bare:5"]
+      run_opts: ["+en_scb_tl_err_chk=0", "+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_test_vanilla_bare.vmem"]
+    }
+    {
+      name: rv_dm_ndm_reset_req_when_cpu_halted
+      uvm_test_seq: "top_chip_dv_rv_dm_ndm_reset_req_when_cpu_halted_vseq"
+      sw_images: ["rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla_bare:5"]
+      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla_bare.vmem"]
+    }
+    {
+      name: rv_dm_access_after_wakeup
+      uvm_test_seq: top_chip_dv_rv_dm_access_after_wakeup_vseq
+      sw_images: ["rv_dm_access_after_wakeup_test_vanilla_bare:5"]
+      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_wakeup_test_vanilla_bare.vmem"]
+    }
+    {
+      name: rv_dm_access_after_escalation_reset
+      uvm_test_seq: "top_chip_dv_rv_dm_access_after_escalation_reset_vseq"
+      sw_images: ["rv_dm_access_after_escalation_reset_test_vanilla_bare:5"]
+      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_escalation_reset_test_vanilla_bare.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -134,7 +182,8 @@
         "test_framework_exception_test",
         "test_framework_exception_test_cheri",
         "spi_device_smoke",
-        "spi_device_smoke_cheri"
+        "spi_device_smoke_cheri",
+        "gpio_smoke"
       ]
     }
     {
@@ -172,6 +221,34 @@
       tests: [
         "spi_device_smoke",
         "spi_device_smoke_cheri"
+      ]
+    }
+    {
+      name: i2c
+      tests: [
+        "i2c_host_tx_rx",
+        "i2c_device_tx_rx"
+      ]
+    }
+    {
+      name: gpio
+      tests: [
+        "gpio_smoke"
+      ]
+    }
+    {
+      name: rom_ctrl
+      tests: [
+        "rom_ctrl_integrity_check"
+      ]
+    }
+    {
+      name: rv_dm
+      tests: [
+        "rv_dm_ndm_reset_req",
+        "rv_dm_ndm_reset_req_when_cpu_halted",
+        "rv_dm_access_after_wakeup",
+        "rv_dm_access_after_escalation_reset"
       ]
     }
   ]
