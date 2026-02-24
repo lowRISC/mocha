@@ -73,3 +73,60 @@ For more details, see: [sim_sram_axi/README.md](./sim_sram_axi/README.md)
   The `sw_test_status_if` detects this and signals the UVM environment to terminate the simulation.
 * **Logging:** The SW writes debug strings to `SW_DV_LOG_ADDR`.
   The `sw_logger_if` captures these characters and prints them to the simulation log, avoiding the latency of the UART peripheral.
+
+## Simulation commands
+
+### Run Simulations with `dvsim`
+The `dvsim` command is used to build and run simulations, and also to manage regressions.
+All simulation configurations are defined in HJSON files, which specify the DUT, test cases, and simulation arguments.
+There are individual HJSON files for each IP block, as well as for the top-level (called `top_chip_sim_cfg.hjson`).
+Another HJSON file called `mocha_sim_cfgs.hjson` aggregates all the individual test configurations for the various IPs and the top-level.
+Here are some command examples:
+
+```bash
+# Run the top-level SW based UART smoke test
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke
+# Run the top-level SW based smoke regression
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i smoke
+# Run the same top-level SW based smoke regression but from the aggregated Mocha config file
+dvsim hw/top_chip/dv/mocha_sim_cfgs.hjson --select-cfgs top_mocha_sim -i smoke
+# Run the block-level UART smoke regression from the aggregated Mocha config file
+dvsim hw/top_chip/dv/mocha_sim_cfgs.hjson --select-cfgs uart -i smoke
+```
+
+### Specify simulation options
+#### DVSIM options
+You can also specify additional simulation and simulator options from `dvsim`.
+To know which options are available, you can run:
+```bash
+dvsim --help
+```
+
+The following are some examples of how to specify additional options:
+```bash
+# Run with a specific seed for reproducibility
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke -fs 123456789
+# Run with a specific simulator (e.g., Xcelium)
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke -t xcelium
+# Run simulation in interactive mode (opens the simulator GUI and enable interactive debugging)
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke -gd
+# Change the default UVM verbosity level to UVM_DEBUG
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke -v d
+```
+
+#### Control UVM reporting and logging with plusargs
+
+The UVM environment supports several runtime switches that can be passed to the simulator as plusargs to control the reporting and logging behavior.
+See [uvm_cmdline_processor.svh](https://verificationacademy.com/verification-methodology-reference/uvm/docs_1.2/html/files/base/uvm_cmdline_processor-svh.html#uvm_cmdline_processor) for more details.
+These plusargs can be specified from the DVSim command in the `run_opts` field of the test configuration in the HJSON file, or passed directly from the command line using the `--run-opts` flag.
+
+Also, we have implemented a custom plusargs called `+max_quit_count` and `+test_timeout_ns` that can be used to control when the simulation should terminate.
+Underneath the hood, these plusargs are calling the methods `uvm_report_server::set_max_quit_count()` and `uvm_root::set_timeout()` respectively.
+
+Example usage:
+```bash
+# Limit the number of UVM_ERROR messages to 10
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke --run-opts "+max_quit_count=10"
+# Set simulation timeout to 10,000 ns
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke --run-opts "+test_timeout_ns=10000"
+```
