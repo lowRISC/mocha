@@ -132,6 +132,13 @@ module top_chip_system #(
   top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
   top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
+  top_pkg::axi_req_t                            tag_controller_isolated_req;
+  top_pkg::axi_resp_t                           tag_controller_isolated_resp;
+
+  // Tag controller isolation signals and registers
+  logic tag_controller_isolate;
+  logic tag_controller_isolate_reg;
+  logic tag_controller_isolated;
 
   // IP block raised interrupts
   logic [GpioIrqs-1:0]      gpio_interrupts;
@@ -659,6 +666,37 @@ module top_chip_system #(
     (|rstmgr_resets.rst_por_n) | (|rstmgr_resets.rst_spi_device_n) | (|rstmgr_resets.rst_spi_host_n) | (|rstmgr_resets.rst_i2c_n) |
     (|rstmgr_rst_en);
 
+  // AXI Isolator for tag controller
+  axi_isolate #(
+    .TerminateTransaction ( 1'b0                  ),
+    .AtopSupport          ( 1'b1                  ),
+    .AxiAddrWidth         ( top_pkg::AxiAddrWidth ),
+    .AxiDataWidth         ( top_pkg::AxiDataWidth ),
+    .AxiIdWidth           ( top_pkg::AxiIdWidth   ),
+    .AxiUserWidth         ( top_pkg::AxiUserWidth ),
+    .axi_req_t            ( top_pkg::axi_req_t    ),
+    .axi_resp_t           ( top_pkg::axi_resp_t   )
+  ) u_tag_controller_isolate (
+    .clk_i      (clkmgr_clocks.clk_main_infra),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .slv_req_i  (xbar_device_req[top_pkg::DRAM]),
+    .slv_resp_o (xbar_device_resp[top_pkg::DRAM]),
+    .mst_req_o  (tag_controller_isolated_req),
+    .mst_resp_i (tag_controller_isolated_resp),
+    .isolate_i  (tag_controller_isolate | tag_controller_isolate_reg),
+    .isolated_o (tag_controller_isolated)
+  );
+
+  // Tag controller isolation logic
+  assign tag_controller_isolate = (xbar_device_req[top_pkg::DRAM].ar_valid && xbar_device_resp[top_pkg::DRAM].ar_ready) ||
+                                  (xbar_device_req[top_pkg::DRAM].aw_valid && xbar_device_resp[top_pkg::DRAM].aw_ready);
+
+  always_ff @(posedge clkmgr_clocks.clk_main_infra or negedge rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
+    if (!rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) tag_controller_isolate_reg <= 1'b0;
+    else if (tag_controller_isolate)                       tag_controller_isolate_reg <= 1'b1;
+    else if (tag_controller_isolated)                      tag_controller_isolate_reg <= 1'b0;
+  end
+
   // Define types for tag controller
   `REG_BUS_TYPEDEF_ALL(conf, logic [31:0], logic [31:0], logic [3:0])
 
@@ -686,8 +724,8 @@ module top_chip_system #(
     .clk_i               (clkmgr_clocks.clk_main_infra),
     .rst_ni              (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
     .test_i              ('0),
-    .slv_req_i           (xbar_device_req[top_pkg::DRAM]),
-    .slv_resp_o          (xbar_device_resp[top_pkg::DRAM]),
+    .slv_req_i           (tag_controller_isolated_req),
+    .slv_resp_o          (tag_controller_isolated_resp),
     .mst_req_o           (dram_req_o),
     .mst_resp_i          (dram_resp_i),
     .conf_req_i          ('0),
