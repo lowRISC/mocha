@@ -39,6 +39,42 @@ COMMANDS: list[list[str]] = [
         "hw/top_chip/ip_autogen/gpio",
         "-f",
     ],
+    # clock manager (clkmgr) generator
+    [
+        "hw/vendor/lowrisc_ip/util/ipgen.py",
+        "generate",
+        "-C",
+        "hw/vendor/lowrisc_ip/ip_templates/clkmgr",
+        "-c",
+        "hw/top_chip/data/clkmgr_cfg.hjson",
+        "-o",
+        "hw/top_chip/ip_autogen/clkmgr",
+        "-f",
+    ],
+    # power manager (pwrmgr) generator
+    [
+        "hw/vendor/lowrisc_ip/util/ipgen.py",
+        "generate",
+        "-C",
+        "hw/vendor/lowrisc_ip/ip_templates/pwrmgr",
+        "-c",
+        "hw/top_chip/data/pwrmgr_cfg.hjson",
+        "-o",
+        "hw/top_chip/ip_autogen/pwrmgr",
+        "-f",
+    ],
+    # reset manager (rstmgr) generator
+    [
+        "hw/vendor/lowrisc_ip/util/ipgen.py",
+        "generate",
+        "-C",
+        "hw/vendor/lowrisc_ip/ip_templates/rstmgr",
+        "-c",
+        "hw/top_chip/data/rstmgr_cfg.hjson",
+        "-o",
+        "hw/top_chip/ip_autogen/rstmgr",
+        "-f",
+    ],
     # plic generator
     [
         "hw/vendor/lowrisc_ip/util/ipgen.py",

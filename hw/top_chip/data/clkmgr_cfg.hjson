@@ -1,0 +1,117 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  instance_name: mocha_clkmgr
+  param_values:
+  {
+    ext_clk_bypass: false
+    // Source clocks
+    // These are the input clocks that should come from outside the top and are first buffered before used.
+    // All clocks are derived from these source clocks, with or without additional SW or hint-based clock gating.
+    src_clks:
+    {
+      // The main clock which is connected to the core and memory components.
+      // This is a fast clock running at 1 GHz.
+      main:
+      {
+        name: main
+        aon: false
+        freq: 1000000000
+      }
+      // The IO clock that runs at a slower frequency (50 MHz) which contains all the peripherals that don't need a high clock frequency.
+      // This clock domain is separate from the always on domain.
+      // The blocks that are connected to the IO clock are also driven by the IO reset which can be requested by software.
+      // Examples: UART and SPI device.
+      io:
+      {
+        name: io
+        aon: false
+        freq: 50000000
+      }
+      // The always on clock domain which is only used for peripherals that need to stay active to come out of reset.
+      // Examples: clock, reset and power managers.
+      aon:
+      {
+        name: aon
+        aon: true
+        freq: 50000000
+      }
+    }
+    derived_clks: {}
+    typed_clocks:
+    {
+      // These are buffered versions of the input clocks that are output by the clock manager and circumvent any clock gating.
+      ft_clks:
+      {
+        clk_main_powerup:
+        {
+          src_name: main
+        }
+        clk_io_powerup:
+        {
+          src_name: io
+        }
+        clk_aon_powerup:
+        {
+          src_name: aon
+        }
+      }
+      // Root-gate-only clocks.
+      // These are copies of the specified source root clock, with no additional gating.
+      rg_clks:
+      {
+        // Clock going out to the core and the high-speed domain.
+        clk_main_infra:
+        {
+          src_name: main
+          endpoint_ip: core
+        }
+        // Clock going out to the low-speed peripherals.
+        clk_io_infra:
+        {
+          src_name: io
+          endpoint_ip: peri
+        }
+      }
+      // Software controlled clocks.
+      // These clocks can be controlled via the clock enables in the clock manager.
+      sw_clks:
+      {
+        clk_io_peri:
+        {
+          src_name: io
+        }
+      }
+      hint_clks:
+      {
+        // This hint is not currently used but there needs to be one.
+        clk_main_hint:
+        {
+          src_name: main
+          endpoint_ip: none
+        }
+      }
+    }
+    hint_names:
+    {
+      clk_main_hint: HintMainHint
+    }
+    parent_child_clks:
+    {
+      main:
+      [
+        main
+      ]
+      io:
+      [
+        io
+      ]
+    }
+    exported_clks: {}
+    with_alert_handler: true
+    topname: mocha
+    uniquified_modules: {}
+    module_instance_name: clkmgr
+  }
+}
