@@ -99,7 +99,8 @@ i2c_t mocha_system_i2c(void)
 spi_device_t mocha_system_spi_device(void)
 {
 #if defined(__riscv_zcherihybrid)
-    return (spi_device_t)create_mmio_capability(spi_device_base, 0x1FC0u);
+    return (spi_device_t)create_mmio_capability(spi_device_base,
+                                                sizeof(struct spi_device_memory_layout));
 #else /* !defined(__riscv_zcherihybrid) */
     return (spi_device_t)spi_device_base;
 #endif /* defined(__riscv_zcherihybrid) */
