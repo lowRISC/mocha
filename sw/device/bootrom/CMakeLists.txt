@@ -5,7 +5,7 @@
 set(NAME bootrom)
 add_executable(${NAME} bootrom.c)
 target_link_libraries(${NAME} hal runtime startup)
-target_compile_options(${NAME} PUBLIC ${NON_CHERI_FLAGS})
+target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
 target_link_options(${NAME} PUBLIC 
   "-nodefaultlibs"
   "-Wl,--defsym,BOOT_ROM_OFFSET=0x00"

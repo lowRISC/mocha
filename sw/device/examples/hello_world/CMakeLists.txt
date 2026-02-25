@@ -5,7 +5,7 @@
 set(NAME hello_world)
 add_executable(${NAME} hello_world.c)
 target_link_libraries(${NAME} hal startup runtime)
-target_compile_options(${NAME} PUBLIC ${NON_CHERI_FLAGS})
+target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
 target_link_options(${NAME} PUBLIC "-T" "${LDS}" "-L" "${LDS_DIR}")
 install(TARGETS ${NAME})
 mocha_add_executable_artefacts(${NAME})

@@ -51,7 +51,7 @@ set(BOOT_CFG_FPGA         YES                 NO          ) # Fpga supported?
 set(BOOT_CFG_VERILATOR    NO                  YES         ) # Verilator supported?
 
 set(ARCHS                 vanilla             cheri       ) # Config Name
-set(ARCHS_FLAGS           NON_CHERI_FLAGS     CHERI_FLAGS ) # Flags
+set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
 
 # wrapper macro to create a CHERI and non-CHERI software test.
 # this macro automatically handles CHERI libraries by appending "_cheri" to
@@ -106,7 +106,7 @@ macro(mocha_add_library)
 
     # create non-CHERI library from SOURCES and LIBRARIES.
     add_library(${arg_NAME} OBJECT ${arg_SOURCES})
-    target_compile_options(${arg_NAME} PUBLIC ${NON_CHERI_FLAGS})
+    target_compile_options(${arg_NAME} PUBLIC ${VANILLA_FLAGS})
     target_include_directories(${arg_NAME} PUBLIC "..")
     foreach(LIB ${arg_LIBRARIES})
         target_link_libraries(${arg_NAME} PUBLIC ${LIB})

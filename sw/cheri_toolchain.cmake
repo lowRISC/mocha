@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(CHERI_FLAGS -march=rv64imc_zcherihybrid -mabi=l64pc128)
-set(NON_CHERI_FLAGS -march=rv64imc -mabi=lp64 -mcmodel=medlow)
+set(VANILLA_FLAGS -march=rv64imc -mabi=lp64 -mcmodel=medlow)
 
 set(CMAKE_SYSTEM_NAME Generic)
 
