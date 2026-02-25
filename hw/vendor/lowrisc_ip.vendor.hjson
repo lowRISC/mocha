@@ -35,6 +35,7 @@
     {from: "hw/ip/uart",       to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
 
     // Hardware IP templates.
+    {from: "hw/ip_templates/gpio",    to: "ip_templates/gpio"}, // General purpose I/O
     {from: "hw/ip_templates/rv_plic", to: "ip_templates/rv_plic"},
 
     // Primitives.
@@ -46,6 +47,7 @@
     {from: "hw/lint", to: "lint", patch_dir: "lint"},
 
     // Simulation.
+    {from: "hw/dv/dpi/gpiodpi", to: "dv/dpi/gpiodpi"},
     {from: "hw/dv/dpi/spidpi",  to: "dv/dpi/spidpi"},
     {from: "hw/dv/dpi/uartdpi", to: "dv/dpi/uartdpi"},
     {from: "hw/dv/sv",          to: "dv/sv", patch_dir: "dv_sv"},
