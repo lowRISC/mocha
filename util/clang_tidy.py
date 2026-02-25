@@ -27,7 +27,7 @@ def main():
         )
 
     cmd = "clang-tidy"
-    cmd_args = [cmd, "-p", BUILD_DIR, *sys.argv[1:], *c_files]
+    cmd_args = [cmd, "-p", BUILD_DIR, "--header-filter=.*", *sys.argv[1:], *c_files]
     os.execvp(cmd, cmd_args)
 
 
