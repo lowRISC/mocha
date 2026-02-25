@@ -33,7 +33,7 @@ interface pwrmgr_rstreqs_sva_if
   // The timing of the escalation reset is determined by the slow clock, but will not propagate if
   // the non-slow clock is off. We use the regular clock and multiply the clock cycles times the
   // clock ratio.
-  // Mocha has a 20x clock ratio between the slow and fast clocks. (1GHz / 50MHz = 20)
+  // Mocha has a 20x clock ratio between the slow (io/aon) clocks and the fast system clock. (1000MHz / 50MHz = 20)
   localparam int FastToSlowFreqRatio = 20;
 
   localparam int MinEscRstCycles = 0;

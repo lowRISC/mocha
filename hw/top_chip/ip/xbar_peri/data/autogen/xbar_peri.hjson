@@ -27,6 +27,24 @@
     }
     { struct: "tl"
       type:   "req_rsp"
+      name:   "tl_clkmgr"
+      act:    "req"
+      package: "tlul_pkg"
+    }
+    { struct: "tl"
+      type:   "req_rsp"
+      name:   "tl_rstmgr"
+      act:    "req"
+      package: "tlul_pkg"
+    }
+    { struct: "tl"
+      type:   "req_rsp"
+      name:   "tl_pwrmgr"
+      act:    "req"
+      package: "tlul_pkg"
+    }
+    { struct: "tl"
+      type:   "req_rsp"
       name:   "tl_uart"
       act:    "req"
       package: "tlul_pkg"

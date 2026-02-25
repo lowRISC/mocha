@@ -10,11 +10,20 @@ tl_device_t xbar_devices[$] = '{
     '{"gpio", '{
         '{32'h40000000, 32'h4000ffff}
     }},
+    '{"clkmgr", '{
+        '{32'h40020000, 32'h4002ffff}
+    }},
+    '{"rstmgr", '{
+        '{32'h40030000, 32'h4003ffff}
+    }},
+    '{"pwrmgr", '{
+        '{32'h40040000, 32'h4004ffff}
+    }},
     '{"uart", '{
-        '{32'h41000000, 32'h41000fff}
+        '{32'h41000000, 32'h4100ffff}
     }},
     '{"spi_device", '{
-        '{32'h43000000, 32'h43001fff}
+        '{32'h43000000, 32'h4300ffff}
     }},
     '{"timer", '{
         '{32'h44000000, 32'h4400ffff}
@@ -27,6 +36,9 @@ tl_device_t xbar_devices[$] = '{
 tl_host_t xbar_hosts[$] = '{
     '{"axi_xbar", 0, '{
         "gpio",
+        "clkmgr",
+        "rstmgr",
+        "pwrmgr",
         "uart",
         "spi_device",
         "timer",

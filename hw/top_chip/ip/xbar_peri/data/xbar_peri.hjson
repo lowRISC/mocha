@@ -33,6 +33,42 @@
         size_byte: "0x00010000",
       }],
     },
+    { name:  "clkmgr", // Clock manager
+      type:  "device",
+      clock: "clk_i",
+      reset: "rst_ni",
+      xbar:  false,
+      addr_range: [{
+        base_addrs: {
+          hart: "0x40020000",
+        },
+        size_byte: "0x00010000",
+      }],
+    },
+    { name:  "rstmgr", // Reset manager
+      type:  "device",
+      clock: "clk_i",
+      reset: "rst_ni",
+      xbar:  false,
+      addr_range: [{
+        base_addrs: {
+          hart: "0x40030000",
+        },
+        size_byte: "0x00010000",
+      }],
+    },
+    { name:  "pwrmgr", // Power manager
+      type:  "device",
+      clock: "clk_i",
+      reset: "rst_ni",
+      xbar:  false,
+      addr_range: [{
+        base_addrs: {
+          hart: "0x40040000",
+        },
+        size_byte: "0x00010000",
+      }],
+    },
     { name:  "uart", // UART
       type:  "device",
       clock: "clk_i",
@@ -42,7 +78,7 @@
         base_addrs: {
           hart: "0x41000000",
         },
-        size_byte: "0x00001000",
+        size_byte: "0x00010000",
       }],
     },
     { name:  "spi_device", // SPI device
@@ -54,7 +90,7 @@
         base_addrs: {
           hart: "0x43000000",
         },
-        size_byte: "0x00002000",
+        size_byte: "0x00010000",
       }],
     },
     { name:  "timer", // Timer
@@ -85,10 +121,13 @@
   connections: {
     axi_xbar: [
       "gpio",
+      "clkmgr",
+      "rstmgr",
+      "pwrmgr",
       "uart",
       "spi_device",
       "timer",
-      "plic"
+      "plic",
     ],
   },
 }

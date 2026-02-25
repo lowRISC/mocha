@@ -83,6 +83,12 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_axi_xbar_d2h;
   tlul_pkg::tl_h2d_t tl_gpio_h2d;
   tlul_pkg::tl_d2h_t tl_gpio_d2h;
+  tlul_pkg::tl_h2d_t tl_clkmgr_h2d;
+  tlul_pkg::tl_d2h_t tl_clkmgr_d2h;
+  tlul_pkg::tl_h2d_t tl_rstmgr_h2d;
+  tlul_pkg::tl_d2h_t tl_rstmgr_d2h;
+  tlul_pkg::tl_h2d_t tl_pwrmgr_h2d;
+  tlul_pkg::tl_d2h_t tl_pwrmgr_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
   tlul_pkg::tl_h2d_t tl_timer_h2d;
@@ -129,6 +135,7 @@ module top_chip_system #(
   logic gpio_irq;
   logic uart_irq;
   logic spi_device_irq;
+  logic pwrmgr_wakeup_irq;
 
   always_comb begin
     // Single interrupt line per IP block.
@@ -140,7 +147,8 @@ module top_chip_system #(
   // Interrupt vector
   logic [31:0] intr_vector;
 
-  assign intr_vector[31 :10] = '0;      // Reserved for future use.
+  assign intr_vector[31 :11] = '0;      // Reserved for future use.
+  assign intr_vector[10    ] = pwrmgr_wakeup_irq;
   assign intr_vector[ 9    ] = gpio_irq;
   assign intr_vector[ 8    ] = uart_irq;
   assign intr_vector[ 7    ] = spi_device_irq;
@@ -153,6 +161,17 @@ module top_chip_system #(
   // Signals to intercept AXI traffic from CVA6 for DV puprose
   top_pkg::axi_req_t  cva6_to_sim_req;
   top_pkg::axi_resp_t sim_to_cva6_resp;
+
+  // Define the signals used by the clock, reset and power managers.
+  clkmgr_pkg::clkmgr_cg_en_t  clkmgr_cg_en;
+  clkmgr_pkg::clkmgr_out_t    clkmgr_clocks;
+  rstmgr_pkg::rstmgr_out_t    rstmgr_resets;
+  rstmgr_pkg::rstmgr_rst_en_t rstmgr_rst_en;
+  prim_mubi_pkg::mubi4_t      rstmgr_sw_rst_req;
+  pwrmgr_pkg::pwr_clk_req_t   pwrmgr_pwr_clk_req;
+  pwrmgr_pkg::pwr_clk_rsp_t   pwrmgr_pwr_clk_rsp;
+  pwrmgr_pkg::pwr_rst_req_t   pwrmgr_pwr_rst_req;
+  pwrmgr_pkg::pwr_rst_rsp_t   pwrmgr_pwr_rst_rsp;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -333,6 +352,12 @@ module top_chip_system #(
     // Device interfaces.
     .tl_gpio_o       (tl_gpio_h2d),
     .tl_gpio_i       (tl_gpio_d2h),
+    .tl_clkmgr_o     (tl_clkmgr_h2d),
+    .tl_clkmgr_i     (tl_clkmgr_d2h),
+    .tl_rstmgr_o     (tl_rstmgr_h2d),
+    .tl_rstmgr_i     (tl_rstmgr_d2h),
+    .tl_pwrmgr_o     (tl_pwrmgr_h2d),
+    .tl_pwrmgr_i     (tl_pwrmgr_d2h),
     .tl_uart_o       (tl_uart_h2d),
     .tl_uart_i       (tl_uart_d2h),
     .tl_spi_device_o (tl_spi_device_h2d),
@@ -499,4 +524,127 @@ module top_chip_system #(
     .scan_rst_ni ('1),
     .scanmode_i  (prim_mubi_pkg::MuBi4False)
   );
+
+  ///////////////
+  // Managers. //
+  ///////////////
+
+  // These managers include clock, power and reset.
+  // These are all in the always on clock domain.
+
+  clkmgr u_clkmgr (
+    // Alerts.
+    .alert_tx_o ( ),
+    .alert_rx_i ('{default: prim_alert_pkg::ALERT_RX_DEFAULT}),
+
+    // Inter-module signals.
+    .clocks_o    (clkmgr_clocks),
+    .cg_en_o     (clkmgr_cg_en),
+    .jitter_en_o ( ),
+    .pwr_i       (pwrmgr_pwr_clk_req),
+    .pwr_o       (pwrmgr_pwr_clk_rsp),
+    .idle_i      (prim_mubi_pkg::MuBi4False),
+    .tl_i        (tl_clkmgr_h2d),
+    .tl_o        (tl_clkmgr_d2h),
+    .scanmode_i  (prim_mubi_pkg::MuBi4False),
+
+    // Clock and reset connections.
+    .clk_i            (clkmgr_clocks.clk_io_powerup),
+    .clk_main_i       (clk_i),
+    .clk_io_i         (clk_i),
+    .clk_aon_i        (clk_i),
+    .rst_shadowed_ni  (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_ni           (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_aon_ni       (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_io_ni        (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_main_ni      (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_root_ni      (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_root_io_ni   (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_root_main_ni (rstmgr_resets.rst_por_n[rstmgr_pkg::DomainAonSel])
+  );
+
+  pwrmgr u_pwrmgr (
+    // Interrupt.
+    .intr_wakeup_o (pwrmgr_wakeup_irq),
+
+    // Alerts.
+    .alert_tx_o ( ),
+    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
+
+    // Inter-module signals.
+    .pwr_rst_o        (pwrmgr_pwr_rst_req),
+    .pwr_rst_i        (pwrmgr_pwr_rst_rsp),
+    .pwr_clk_o        (pwrmgr_pwr_clk_req),
+    .pwr_clk_i        (pwrmgr_pwr_clk_rsp),
+    .pwr_ast_i        (pwrmgr_pkg::PWR_AST_RSP_DEFAULT),
+    .pwr_ast_o        ( ),
+    .pwr_otp_i        (pwrmgr_pkg::PWR_OTP_RSP_DEFAULT), // Default to done and idle.
+    .pwr_otp_o        ( ),
+    .pwr_lc_o         ( ),
+    .pwr_lc_i         (lc_ctrl_pkg::PWR_LC_RSP_DEFAULT), // Default to initialised and done.
+    .pwr_flash_i      (pwrmgr_pkg::PWR_FLASH_DEFAULT), // Default to idle.
+    .esc_rst_tx_i     (prim_esc_pkg::ESC_RX_DEFAULT),
+    .esc_rst_rx_o     ( ),
+    .pwr_cpu_i        ('0), // Core is not sleeping.
+    .fetch_en_o       ( ), // No fetch enable on CVA6.
+    .wakeups_i        ('0), // Always wake up immediately.
+    .rstreqs_i        ('0), // No reset requests yet.
+    .ndmreset_req_i   ('0), // No debug module yet.
+    .strap_o          ( ), //TODO strap this to GPIO.
+    .low_power_o      ( ), // Low power not yet supported.
+    .rom_ctrl_i       (rom_ctrl_pkg::PWRMGR_DATA_DEFAULT),
+    .lc_dft_en_i      (4'b1010), // lc_tx_t value Off.
+    .lc_hw_debug_en_i (4'b0101), // lc_tx_t value On.
+    .sw_rst_req_i     (rstmgr_sw_rst_req),
+    .tl_i             (tl_pwrmgr_h2d),
+    .tl_o             (tl_pwrmgr_d2h),
+
+    // Clock and reset connections.
+    .clk_i       (clkmgr_clocks.clk_io_powerup),
+    .clk_slow_i  (clkmgr_clocks.clk_aon_powerup),
+    .clk_lc_i    (clkmgr_clocks.clk_io_powerup),
+    .clk_esc_i   (clkmgr_clocks.clk_io_powerup),
+    .rst_ni      (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_main_ni (rstmgr_resets.rst_por_aon_n[rstmgr_pkg::Domain0Sel]),
+    .rst_lc_ni   (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_esc_ni  (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_slow_ni (rstmgr_resets.rst_por_aon_n[rstmgr_pkg::DomainAonSel])
+  );
+
+  rstmgr u_rstmgr (
+    .alert_tx_o ( ),
+    .alert_rx_i ('{default: prim_alert_pkg::ALERT_RX_DEFAULT}),
+
+    // Inter-module signals
+    .por_n_i      ({rst_ni, rst_ni}),
+    .pwr_i        (pwrmgr_pwr_rst_req),
+    .pwr_o        (pwrmgr_pwr_rst_rsp),
+    .resets_o     (rstmgr_resets),
+    .rst_en_o     (rstmgr_rst_en),
+    .alert_dump_i (alert_handler_pkg::ALERT_CRASHDUMP_DEFAULT),
+    .cpu_dump_i   ('0),
+    .sw_rst_req_o (rstmgr_sw_rst_req),
+    .tl_i         (tl_rstmgr_h2d),
+    .tl_o         (tl_rstmgr_d2h),
+    .scanmode_i   (prim_mubi_pkg::MuBi4False),
+    .scan_rst_ni  ('1),
+
+    // Clock and reset connections
+    .clk_i      (clkmgr_clocks.clk_io_powerup),
+    .clk_por_i  (clkmgr_clocks.clk_io_powerup),
+    .clk_aon_i  (clkmgr_clocks.clk_aon_powerup),
+    .clk_main_i (clkmgr_clocks.clk_main_powerup),
+    .clk_io_i   (clkmgr_clocks.clk_io_powerup),
+    .rst_ni     (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
+    .rst_por_ni (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel])
+  );
+
+  // Mark outputs as unused for the current setup of the managers.
+  logic unused_manager_output;
+  assign unused_manager_output =
+    clkmgr_clocks.clk_main_hint | clkmgr_clocks.clk_io_peri |
+    (|clkmgr_cg_en) |
+    (|rstmgr_resets.rst_por_n) | (|rstmgr_resets.rst_spi_device_n) | (|rstmgr_resets.rst_spi_host_n) | (|rstmgr_resets.rst_i2c_n) |
+    (|rstmgr_rst_en);
+
 endmodule

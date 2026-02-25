@@ -10,10 +10,13 @@ filesets:
     depend:
       - lowrisc:ip:uart
       - lowrisc:ip:rv_timer
-      - lowrisc:mocha_ip:gpio
-      - lowrisc:mocha_ip:rv_plic
       - lowrisc:ip:spi_device
       - lowrisc:ip:xbar_peri
+      - lowrisc:mocha_ip:clkmgr
+      - lowrisc:mocha_ip:gpio
+      - lowrisc:mocha_ip:pwrmgr
+      - lowrisc:mocha_ip:rstmgr
+      - lowrisc:mocha_ip:rv_plic
       - lowrisc:prim:onehot
       - lowrisc:tlul:adapter_host
       - lowrisc:tlul:adapter_reg
