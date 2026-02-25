@@ -27,6 +27,18 @@ COMMANDS: list[list[str]] = [
         "-o",
         "hw/top_chip/ip/xbar_peri",
     ],
+    # gpio generator
+    [
+        "hw/vendor/lowrisc_ip/util/ipgen.py",
+        "generate",
+        "-C",
+        "hw/vendor/lowrisc_ip/ip_templates/gpio",
+        "-c",
+        "hw/top_chip/data/gpio_cfg.hjson",
+        "-o",
+        "hw/top_chip/ip_autogen/gpio",
+        "-f",
+    ],
     # plic generator
     [
         "hw/vendor/lowrisc_ip/util/ipgen.py",
