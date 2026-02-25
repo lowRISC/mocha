@@ -12,6 +12,10 @@ module chip_mocha_genesys2 #(
   // External reset
   input  logic ext_rst_ni,
 
+  // GPIO - enough for the user switches and LEDs as a starting point
+  input  logic [7:0] gpio_i,
+  output logic [7:0] gpio_o,
+
   // UART
   input  logic uart_rx_i,
   output logic uart_tx_o,
@@ -30,9 +34,11 @@ module chip_mocha_genesys2 #(
   // PLL lock signal
   logic pll_locked;
 
-  // QSPI signals
-  logic [3:0] qspi_device_sdo;
-  logic [3:0] qspi_device_sdo_en;
+  // Output buffer value+enable signals
+  logic [31:0] gpio_outputs;
+  logic [31:0] gpio_en_outputs;
+  logic [3:0]  qspi_device_sdo;
+  logic [3:0]  qspi_device_sdo_en;
 
   // Clock generation
   clkgen_xil7series clk_gen(
@@ -53,6 +59,12 @@ module chip_mocha_genesys2 #(
     // Clock and reset
     .clk_i    (clk_50m),
     .rst_ni   (rst_n),
+
+    // GPIO
+    .gpio_i    ({24'd0, gpio_i}),
+    .gpio_o    (gpio_outputs),
+    .gpio_en_o (gpio_en_outputs),
+
     // UART
     .uart_rx_i,
     .uart_tx_o,
@@ -64,6 +76,16 @@ module chip_mocha_genesys2 #(
     .spi_device_sd_i      ({3'h0, spi_device_sd_i}), // SPI MOSI = QSPI DQ0
     .spi_device_tpm_csb_i ('0)
   );
+
+  // GPIO tri-state output drivers
+  // Instantiate for only the outputs connected to an FPGA pin
+  for (genvar ii = 0; ii < 8; ii++) begin : gen_gpio_o
+    OBUFT obuft (
+      .I(gpio_outputs[ii]),
+      .T(~gpio_en_outputs[ii]),
+      .O(gpio_o[ii])
+    );
+  end
 
   // SPI tri-state output driver
   OBUFT spi_obuft (
