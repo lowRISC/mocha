@@ -1,0 +1,64 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  instance_name: mocha_pwrmgr
+  param_values:
+  {
+    NumWkups: 1
+    Wkups:
+    [
+      {
+        name: ext_wkup_req
+        width: "1"
+        module: soc_proxy
+      }
+    ]
+    NumRstReqs: 1
+    rst_reqs:
+    {
+      int:
+      [
+        {
+          name: MainPwr
+          desc: main power glitch reset request
+          module: pwrmgr_aon
+        }
+        {
+          name: Esc
+          desc: escalation reset request
+          module: alert_handler
+        }
+      ]
+      debug:
+      [
+        {
+          name: Ndm
+          desc: non-debug-module reset request
+          module: rv_dm
+        }
+      ]
+      peripheral:
+      [
+        {
+          name: rst_req_external
+          width: "1"
+          module: soc_proxy
+          desc: External reset request
+          enabled_after_reset: true
+        }
+      ]
+    }
+    wait_for_external_reset: false
+    NumRomInputs: 1
+    has_aon_clk: true
+    src_clks:
+    [
+      main
+      io
+    ]
+    topname: mocha
+    uniquified_modules: {}
+    module_instance_name: pwrmgr
+  }
+}
