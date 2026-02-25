@@ -17,7 +17,7 @@ in {
       fusesoc --cores-root=. run --target=synth --setup lowrisc:mocha:chip_mocha_genesys2 > /dev/null 2>&1
       
       # Build the bootROM because it's cheap, and copy the vmem to the src to be hashed.
-      cmake -B build/sw -S sw  > /dev/null 2>&1
+      cmake -DCMAKE_BUILD_TYPE=Release -B build/sw -S sw  > /dev/null 2>&1
       cmake --build build/sw --target bootrom > /dev/null 2>&1
       cp ${bootrom_path}/bootrom.vmem ${bitstream_path}
 
