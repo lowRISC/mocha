@@ -7,6 +7,9 @@
 
 // List of Xbar device memory map
 tl_device_t xbar_devices[$] = '{
+    '{"gpio", '{
+        '{32'h40000000, 32'h4000ffff}
+    }},
     '{"uart", '{
         '{32'h41000000, 32'h41000fff}
     }},
@@ -23,6 +26,7 @@ tl_device_t xbar_devices[$] = '{
   // List of Xbar hosts
 tl_host_t xbar_hosts[$] = '{
     '{"axi_xbar", 0, '{
+        "gpio",
         "uart",
         "spi_device",
         "timer",

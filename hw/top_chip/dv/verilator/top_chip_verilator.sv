@@ -3,6 +3,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module top_chip_verilator (input logic clk_i, rst_ni);
+  // GPIO signals
+  logic [31:0] gpio_inputs;
+  logic [31:0] gpio_outputs;
+  logic [31:0] gpio_en_outputs;
+
   // UART signals
   logic uart_rx;
   logic uart_tx;
@@ -20,6 +25,10 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .clk_i,
     .rst_ni,
 
+    .gpio_i    (gpio_inputs),
+    .gpio_o    (gpio_outputs),
+    .gpio_en_o (gpio_en_outputs),
+
     .uart_rx_i (uart_rx),
     .uart_tx_o (uart_tx),
 
@@ -29,6 +38,20 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .spi_device_sd_en_o   (qspi_device_sdo_en),
     .spi_device_sd_i      ({3'h0, spi_device_sdi}), // SPI MOSI = QSPI DQ0
     .spi_device_tpm_csb_i ('0)
+  );
+
+  // Virtual GPIO
+  gpiodpi #(
+    .N_GPIO(32)
+  ) u_gpiodpi (
+    .clk_i,
+    .rst_ni,
+    .active        (1'b1),
+    .gpio_p2d      (gpio_inputs),
+    .gpio_d2p      (gpio_outputs),
+    .gpio_en_d2p   (gpio_en_outputs),
+    .gpio_pull_en  ('0), // no pull-ups in simple SoC
+    .gpio_pull_sel ('0)  // no pull-ups in simple SoC
   );
 
   // Virtual UART

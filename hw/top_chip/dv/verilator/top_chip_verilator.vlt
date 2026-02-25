@@ -19,6 +19,9 @@ lint_off -file "*sim_sram_axi_sink.sv"
 lint_off -file "*sim_sram_axi_if.sv"
 lint_off -file "*sw_test_status_if.sv"
 
+// Waive this warning about an unused DPI signal that was left hanging around after a refactor
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_dv_dpi_sv_gpiodpi_0.1/gpiodpi.sv" -match "*gpio_write_pulse*"
+
 // Mute RTL style warning from lowRISC UART DPI
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*automatic int c*"

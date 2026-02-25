@@ -9,6 +9,11 @@ module top_chip_system #(
   input  logic clk_i,
   input  logic rst_ni,
 
+  // GPIO inputs and outputs with output enable
+  input  logic [31:0] gpio_i,
+  output logic [31:0] gpio_o,
+  output logic [31:0] gpio_en_o,
+
   // UART receive and transmit.
   input  logic uart_rx_i,
   output logic uart_tx_o,
@@ -26,6 +31,7 @@ module top_chip_system #(
   localparam int unsigned TlDataWidth   = top_pkg::TL_DW;
   localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
+  localparam int unsigned GpioIrqs      = 32;
   localparam int unsigned UartIrqs      = 9;
   localparam int unsigned SPIDeviceIrqs = 8;
 
@@ -75,6 +81,8 @@ module top_chip_system #(
   // TileLink signals.
   tlul_pkg::tl_h2d_t tl_axi_xbar_h2d;
   tlul_pkg::tl_d2h_t tl_axi_xbar_d2h;
+  tlul_pkg::tl_h2d_t tl_gpio_h2d;
+  tlul_pkg::tl_d2h_t tl_gpio_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
   tlul_pkg::tl_h2d_t tl_timer_h2d;
@@ -111,17 +119,20 @@ module top_chip_system #(
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
   // IP block raised interrupts
+  logic [GpioIrqs-1:0]      gpio_interrupts;
   logic [UartIrqs-1:0]      uart_interrupts;
   logic [SPIDeviceIrqs-1:0] spi_device_interrupts;
 
   // Interrupt lines to PLIC
   // Each IP block has a single interrupt line to the PLIC and software shall consult the intr_state
   // register within the block itself to identify the interrupt source(s).
+  logic gpio_irq;
   logic uart_irq;
   logic spi_device_irq;
 
   always_comb begin
     // Single interrupt line per IP block.
+    gpio_irq = |gpio_interrupts;
     uart_irq = |uart_interrupts;
     spi_device_irq = |spi_device_interrupts;
   end
@@ -129,7 +140,8 @@ module top_chip_system #(
   // Interrupt vector
   logic [31:0] intr_vector;
 
-  assign intr_vector[31 : 9] = '0;      // Reserved for future use.
+  assign intr_vector[31 :10] = '0;      // Reserved for future use.
+  assign intr_vector[ 9    ] = gpio_irq;
   assign intr_vector[ 8    ] = uart_irq;
   assign intr_vector[ 7    ] = spi_device_irq;
   assign intr_vector[ 6 : 0] = '0;      // Reserved for future use.
@@ -319,6 +331,8 @@ module top_chip_system #(
     .tl_axi_xbar_o(tl_axi_xbar_d2h),
 
     // Device interfaces.
+    .tl_gpio_o       (tl_gpio_h2d),
+    .tl_gpio_i       (tl_gpio_d2h),
     .tl_uart_o       (tl_uart_h2d),
     .tl_uart_i       (tl_uart_d2h),
     .tl_spi_device_o (tl_spi_device_h2d),
@@ -329,6 +343,37 @@ module top_chip_system #(
     .tl_plic_i       (tl_plic_d2h),
 
     .scanmode_i (prim_mubi_pkg::MuBi4False)
+  );
+
+  // Instantiate GPIO block from IP template
+  gpio #(
+    .GpioAsyncOn(1), // inputs may be directly connected to external I/O or other SoC clock domains
+    .GpioAsHwStrapsEn(0) // straps not our problem when we are only a SoC subsystem
+  ) u_gpio (
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
+    .alert_tx_o ( ),
+
+    .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o    ( ),
+
+    // Unused strap ports
+    .strap_en_i       ('0),
+    .sampled_straps_o ( ),
+
+    // GPIOs
+    .cio_gpio_i    (gpio_i),
+    .cio_gpio_o    (gpio_o),
+    .cio_gpio_en_o (gpio_en_o),
+
+    // Signals to xbar
+    .tl_i (tl_gpio_h2d),
+    .tl_o (tl_gpio_d2h),
+
+    // Interrupts
+    .intr_gpio_o (gpio_interrupts)
   );
 
   // Instantiate our UART block.
