@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "hal/gpio.h"
 #include "hal/plic.h"
 #include "hal/spi_device.h"
 #include "hal/timer.h"
@@ -14,6 +15,7 @@
 /* System clock frequency (50 MHz) */
 #define SYSCLK_FREQ (50000000)
 
+uart_t mocha_system_gpio(void);
 uart_t mocha_system_uart(void);
 timer_t mocha_system_timer(void);
 plic_t mocha_system_plic(void);

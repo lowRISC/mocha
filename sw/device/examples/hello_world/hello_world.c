@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "boot/trap.h"
+#include "hal/gpio.h"
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
 #include "hal/timer.h"
@@ -12,9 +13,14 @@
 
 int main(void)
 {
+    gpio_t gpio = mocha_system_gpio();
     uart_t uart = mocha_system_uart();
     timer_t timer = mocha_system_timer();
     spi_device_t spi_device = mocha_system_spi_device();
+    gpio_set_oe_pin(gpio, 0, true);
+    gpio_set_oe_pin(gpio, 1, true);
+    gpio_set_oe_pin(gpio, 2, true);
+    gpio_set_oe_pin(gpio, 3, true);
     uart_init(uart);
     timer_init(timer);
     spi_device_init(spi_device);
@@ -29,6 +35,7 @@ int main(void)
         timer_busy_sleep(timer, 100);
 
         uart_puts(uart, "timer 100us\n");
+        gpio_write_pin(gpio, i, 1); // turn on LEDs in sequence
     }
 
     // Trying out simulation exit.
@@ -37,7 +44,16 @@ int main(void)
 
     // Poll and process SPI command
     spi_device_cmd_t cmd;
+    uint8_t loop_count = 1;
     while (1) {
+        // Count loops using the user LEDs - just to make some use of them
+        gpio_write_pin(gpio, 0, !!(loop_count & 0x1));
+        gpio_write_pin(gpio, 1, !!(loop_count & 0x2));
+        gpio_write_pin(gpio, 2, !!(loop_count & 0x4));
+        gpio_write_pin(gpio, 3, !!(loop_count & 0x8));
+        loop_count++;
+
+        // Now process SPI command (if any)
         cmd = spi_device_cmd_get(spi_device);
         if (cmd.status != 0) {
             uart_puts(uart, "SPI payload overflow\n");
