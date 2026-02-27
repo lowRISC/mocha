@@ -50,6 +50,16 @@
       sw_images: ["uart_smoketest:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest.vmem"]
     }
+    {
+      name: spi_device_smoke
+      uvm_test_seq: top_chip_dv_spi_device_base_vseq
+      run_opts: ["+ChipMemSRAM_image_file={proj_root}/build/sw/device/tests/spi_device_smoketest.vmem"]
+    }
+    {
+      name: spi_device_smoke_cheri
+      uvm_test_seq: top_chip_dv_spi_device_base_vseq
+      run_opts: ["+ChipMemSRAM_image_file={proj_root}/build/sw/device/tests/spi_device_smoke_cheri_test.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -57,12 +67,18 @@
     {
       name: smoke
       tests: [
-        "uart_smoke"
+        "uart_smoke",
+        "spi_device_smoke",
+        "spi_device_smoke_cheri"
       ]
     }
     {
       name: uart
       tests: ["uart_smoke"]
+    }
+    {
+      name: spi
+      tests: ["spi_device_smoke", "spi_device_smoke_cheri"]
     }
   ]
 }

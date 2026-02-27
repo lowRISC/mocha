@@ -25,29 +25,50 @@ module tb;
   wire rst_n;
   wire peri_clk;
   wire peri_rst_n;
+  wire [3:0] spi_device_sd_o;
+  wire [3:0] spi_device_sd_en_o;
+  wire [3:0] spi_device_sd_i;
+  wire csb;
+  wire tpm_csb;
 
   // ------ Interfaces ------
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
   uart_if uart_if();
+  spi_if spi_device_if(.rst_n(peri_rst_n));
 
   // ------ DUT ------
   top_chip_system #() dut (
     // Clock and reset.
-    .clk_i                (clk              ),
-    .rst_ni               (rst_n            ),
+    .clk_i                (clk                    ),
+    .rst_ni               (rst_n                  ),
     // UART receive and transmit.
-    .uart_rx_i            (uart_if.uart_rx  ),
-    .uart_tx_o            (uart_if.uart_tx  ),
+    .uart_rx_i            (uart_if.uart_rx        ),
+    .uart_tx_o            (uart_if.uart_tx        ),
     // SPI device receive and transmit.
-    // TODO SPI device signals are currently tied off, need to be connected to a SPI agent
-    .spi_device_sck_i     (1'b0             ),
-    .spi_device_csb_i     (1'b1             ),
-    .spi_device_sd_o      (                 ),
-    .spi_device_sd_en_o   (                 ),
-    .spi_device_sd_i      (4'hF             ),
-    .spi_device_tpm_csb_i (1'b0             )
+    .spi_device_sck_i     (spi_device_if.sck      ),
+    .spi_device_csb_i     (csb                    ),
+    .spi_device_sd_o      (spi_device_sd_o        ),
+    .spi_device_sd_en_o   (spi_device_sd_en_o     ),
+    .spi_device_sd_i      (spi_device_sd_i        ),
+    .spi_device_tpm_csb_i (tpm_csb                )
   );
+
+  assign csb           = spi_device_if.csb[0];
+  assign tpm_csb       = spi_device_if.csb[1];
+
+  // Convert sd_o, sd_en_o and sd_i to sio, as the SPI agent expect a bidirectional inout while
+  // top_chip_system propagates single direction inputs or outputs
+  `define CONNECT_SPI_IO(_INTF, _SD_I, _SD_O, _SD_EN_O, _IDX) \
+    wire sd_en_o_``_IDX``  = _SD_EN_O[_IDX]; \
+    assign _INTF.sio[_IDX] = (sd_en_o_``_IDX``) ? _SD_O[_IDX] : 1'bz; \
+    assign _SD_I[_IDX]     = _INTF.sio[_IDX];
+
+  `CONNECT_SPI_IO(spi_device_if, spi_device_sd_i, spi_device_sd_o, spi_device_sd_en_o, 0)
+  `CONNECT_SPI_IO(spi_device_if, spi_device_sd_i, spi_device_sd_o, spi_device_sd_en_o, 1)
+  `CONNECT_SPI_IO(spi_device_if, spi_device_sd_i, spi_device_sd_o, spi_device_sd_en_o, 2)
+  `CONNECT_SPI_IO(spi_device_if, spi_device_sd_i, spi_device_sd_o, spi_device_sd_en_o, 3)
+
 
   // Signals to connect the sink
   top_pkg::axi_req_t  sim_sram_cpu_req;
@@ -160,6 +181,7 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "sys_clk_if", sys_clk_if);
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "peri_clk_if", peri_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
+    uvm_config_db#(virtual spi_if)::set(null, "*.env.m_spi_device_agent*", "vif", spi_device_if);
 
     // SW logger and test status interfaces.
     uvm_config_db#(virtual sw_test_status_if)::set(
