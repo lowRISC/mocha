@@ -3,22 +3,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module clkgen_xil7series (
-  input  logic clk_200m_ni,
-  input  logic clk_200m_pi,
+  input  logic clk_200m_i,
+  output logic clk_cfg_o,
   output logic pll_locked_o,
   output logic clk_50m_o
 );
   // Internal signals
-  logic clk_200m_buf;
-  logic clk_fb_int;
+  logic clk_fb_unbuf;
+  logic clk_fb_buf;
   logic clk_50m_unbuf;
-
-  // Input buffering
-  IBUFDS clk_200m_ibufds_inst(
-    .I (clk_200m_pi),
-    .IB(clk_200m_ni),
-    .O (clk_200m_buf)
-  );
+  logic clk_cfg_unbuf;
 
   // PLL
   MMCME2_ADV #(
@@ -36,7 +30,7 @@ module clkgen_xil7series (
     .CLKOUT0_DUTY_CYCLE   (0.500),
     .CLKOUT0_USE_FINE_PS  ("FALSE")
   ) pll (
-    .CLKFBOUT            (clk_fb_int),
+    .CLKFBOUT            (clk_fb_unbuf),
     .CLKFBOUTB           (),
     .CLKOUT0             (clk_50m_unbuf),
     .CLKOUT0B            (),
@@ -50,8 +44,8 @@ module clkgen_xil7series (
     .CLKOUT5             (),
     .CLKOUT6             (),
     // Input clock control
-    .CLKFBIN             (clk_fb_int),
-    .CLKIN1              (clk_200m_buf),
+    .CLKFBIN             (clk_fb_buf),
+    .CLKIN1              (clk_200m_i),
     .CLKIN2              (1'b0),
     // Tied to always select the primary input clock
     .CLKINSEL            (1'b1),
@@ -76,10 +70,38 @@ module clkgen_xil7series (
     .RST                 (1'b0)
   );
 
+  // Feedback clock buffering
+  BUFG clk_fb_bufg_inst(
+    .I(clk_fb_unbuf),
+    .O(clk_fb_buf)
+  );
+
+  // Get free-running clock from configuration logic
+  STARTUPE2 STARTUPE2_inst (
+    .CFGCLK    ( ),             // 1-bit output: Configuration main clock output
+    .CFGMCLK   (clk_cfg_unbuf), // 1-bit output: Configuration internal oscillator clock output
+    .EOS       ( ),             // 1-bit output: Active high output signal indicating the End Of Startup
+    .PREQ      ( ),             // 1-bit output: PROGRAM request to fabric output
+    .CLK       ('0),            // 1-bit input: User start-up clock input
+    .GSR       ('0),            // 1-bit input: Global Set/Reset input
+    .GTS       ('0),            // 1-bit input: Global 3-state input
+    .KEYCLEARB ('0),            // 1-bit input: Clear AES Decrypter Key input from Battery-Backed RAM (BBRAM)
+    .PACK      ('0),            // 1-bit input: PROGRAM acknowledge input
+    .USRCCLKO  ('0),            // 1-bit input: User CCLK input
+    .USRCCLKTS ('0),            // 1-bit input: User CCLK 3-state enable input
+    .USRDONEO  (1'b1),          // 1-bit input: User DONE pin output control
+    .USRDONETS (1'b1)           // 1-bit input: User DONE 3-state enable output
+  );
+
   // Output buffering
   BUFG clk_50m_bufg_inst(
     .I(clk_50m_unbuf),
     .O(clk_50m_o)
+  );
+
+  BUFG clk_cfg_bufg_inst(
+    .I(clk_cfg_unbuf),
+    .O(clk_cfg_o)
   );
 
 endmodule

@@ -71,6 +71,8 @@ lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_prim_lfsr*/rtl/prim_lfsr.sv" -match
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_prim_diff_decode*/rtl/prim_diff_decode.sv" -match "*skew_cnt_q*"
 
 // Mute RTL style warning from lowRISC common cells
+lint_off -rule DECLFILENAME -file "*/lowrisc_common_cells_all*/rtl/cdc_fifo_gray.sv" -match "*cdc_fifo_gray_src*"
+lint_off -rule GENUNNAMED -file "*/lowrisc_common_cells_all*/rtl/gray_to_binary.sv" -match "*genblk1*"
 lint_off -rule GENUNNAMED -file "*/lowrisc_common_cells_all*/rtl/popcount.sv" -match "*genblk1*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/addr_decode.sv" -match "*matched_rules*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/shift_reg_gated.sv" -match "*clk_i*"
