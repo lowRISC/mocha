@@ -323,8 +323,8 @@ module top_chip_system #(
   // TileLink peripheral crossbar
   xbar_peri u_tl_xbar (
     // Clock and reset.
-    .clk_i,
-    .rst_ni,
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
 
     // Host interfaces.
     .tl_axi_xbar_i(tl_axi_xbar_h2d),
