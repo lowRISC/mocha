@@ -39,6 +39,18 @@ COMMANDS: list[list[str]] = [
         "hw/top_chip/ip_autogen/gpio",
         "-f",
     ],
+    # alert handler generator
+    [
+        "hw/vendor/lowrisc_ip/util/ipgen.py",
+        "generate",
+        "-C",
+        "hw/vendor/lowrisc_ip/ip_templates/alert_handler",
+        "-c",
+        "hw/top_chip/data/alert_handler_cfg.hjson",
+        "-o",
+        "hw/top_chip/ip_autogen/alert_handler",
+        "-f",
+    ],
     # clock manager (clkmgr) generator
     [
         "hw/vendor/lowrisc_ip/util/ipgen.py",

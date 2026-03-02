@@ -1,0 +1,30 @@
+// Copyright lowRISC contributors (OpenTitan project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  instance_name: mocha_alert_handler
+  param_values:
+  {
+    module_instance_name: alert_handler
+    n_alerts: 1
+    esc_cnt_dw: 32
+    accu_cnt_dw: 16
+    async_on:
+    [
+      1'b1
+    ]
+    n_classes: 4
+    n_esc_sev: 4
+    ping_cnt_dw: 16
+    n_lpg: 1
+    lpg_map:
+    [
+      1'd0
+    ]
+    topname: mocha
+    uniquified_modules: {}
+    n_loc_alert: 7
+    racl_support: false
+  }
+}
+
