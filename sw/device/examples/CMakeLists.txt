@@ -7,5 +7,12 @@ add_executable(${NAME} hello_world.c)
 target_link_libraries(${NAME} hal_vanilla startup_vanilla runtime_vanilla)
 target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
 target_link_options(${NAME} PUBLIC "-T" "${LDS}" "-L" "${LDS_DIR}")
-install(TARGETS ${NAME})
+mocha_add_executable_artefacts(${NAME})
+
+
+set(NAME tag_check)
+add_executable(${NAME} tag_check.S)
+target_link_libraries(${NAME} init_vectors_cheri)
+target_compile_options(${NAME} PUBLIC ${CHERI_FLAGS})
+target_link_options(${NAME} PUBLIC "-T${LDS}" "-L${LDS_DIR}")
 mocha_add_executable_artefacts(${NAME})

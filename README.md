@@ -91,7 +91,7 @@ We use Verilator to simulate our hardware design and use FuseSoC as a build syst
 # Build simulator.
 fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
 # Run simulator.
-build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world/hello_world
+build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world
 ```
 
 One specific feature of our simulator is that you can exit the simulation by using the following magic string:
@@ -121,7 +121,7 @@ sudo usermod -a $USER -G plugdev
 
 Make sure that Vivado is on your path, then run:
 ```sh
-fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --BootRomInitFile=$PWD/build/sw/device/examples/hello_world/hello_world.vmem
+fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --BootRomInitFile=$PWD/build/sw/device/examples/hello_world.vmem
 ```
 
 #### Test on Genesys2
