@@ -64,7 +64,7 @@ macro(mocha_add_test)
     cmake_parse_arguments(arg "${options}"
         "${one_value_args}" "${multi_value_args}" ${ARGN})
 
-      foreach(ARCH_NAME FLAGS_VAR IN ZIP_LISTS ARCHS ARCHS_FLAGS)
+    foreach(ARCH_NAME FLAGS_VAR IN ZIP_LISTS ARCHS ARCHS_FLAGS)
       set(FLAGS ${${FLAGS_VAR}})
 
       foreach(CONFIG OFFSET FPGA SIM IN ZIP_LISTS BOOT_CFG BOOT_CFG_OFFSET BOOT_CFG_FPGA BOOT_CFG_VERILATOR)
@@ -72,7 +72,7 @@ macro(mocha_add_test)
         add_executable(${NAME} ${arg_SOURCES})
         target_compile_options(${NAME} PUBLIC ${FLAGS})
         foreach(LIB ${arg_LIBRARIES})
-            target_link_libraries(${NAME} PUBLIC ${LIB})
+          target_link_libraries(${NAME} PUBLIC ${LIB}_${ARCH_NAME})
         endforeach()
         target_link_options(${NAME} PUBLIC 
           "-Wl,--defsym,BOOT_ROM_OFFSET=${OFFSET}"
@@ -94,7 +94,7 @@ macro(mocha_add_test)
     endforeach() # ARCH
 endmacro()
 
-# wrapper macro to create a CHERI and non-CHERI library.
+# wrapper macro to create a CHERI and Vanilla library.
 # this macro automatically handles CHERI libraries by appending "_cheri" to
 # the output library name and all of the libraries it is linked against.
 macro(mocha_add_library)
@@ -104,20 +104,20 @@ macro(mocha_add_library)
     cmake_parse_arguments(arg ""
         "${one_value_args}" "${multi_value_args}" ${ARGN})
 
-    # create non-CHERI library from SOURCES and LIBRARIES.
-    add_library(${arg_NAME} OBJECT ${arg_SOURCES})
-    target_compile_options(${arg_NAME} PUBLIC ${VANILLA_FLAGS})
-    target_include_directories(${arg_NAME} PUBLIC "..")
-    foreach(LIB ${arg_LIBRARIES})
-        target_link_libraries(${arg_NAME} PUBLIC ${LIB})
-    endforeach()
-    # do the same for the CHERI library, but append "_cheri" to the output
-    # library name and all of the libraries it is being linked against.
-    add_library(${arg_NAME}_cheri OBJECT ${arg_SOURCES})
-    target_compile_options(${arg_NAME}_cheri PUBLIC ${CHERI_FLAGS})
-    target_include_directories(${arg_NAME}_cheri PUBLIC "..")
-    foreach(LIB ${arg_LIBRARIES})
-        target_link_libraries(${arg_NAME}_cheri PUBLIC ${LIB}_cheri)
-    endforeach()
+    foreach(ARCH_NAME FLAGS_VAR IN ZIP_LISTS ARCHS ARCHS_FLAGS)
+      set(FLAGS ${${FLAGS_VAR}})
+      set(NAME ${arg_NAME}_${ARCH_NAME})
+
+      add_library(${NAME} OBJECT ${arg_SOURCES})
+      target_compile_options(${NAME} PUBLIC ${FLAGS})
+      target_include_directories(${NAME} PUBLIC "${CMAKE_CURRENT_LIST_DIR}/..")
+
+      get_target_property(VAR ${NAME} INCLUDE_DIRECTORIES)
+
+      foreach(LIB ${arg_LIBRARIES})
+        target_link_libraries(${NAME} PUBLIC ${LIB}_${ARCH_NAME})
+      endforeach()
+
+    endforeach() # ARCH
 endmacro()
 
