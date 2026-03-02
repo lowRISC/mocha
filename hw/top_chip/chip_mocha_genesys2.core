@@ -9,15 +9,22 @@ filesets:
     depend:
       - lowrisc:mocha:top_chip_system
       - lowrisc:prim_xilinx:all
+      - pulp-platform.org::axi
     files:
       - rtl/clkgen_xil7series.sv
       - rtl/chip_mocha_genesys2.sv
     file_type: systemVerilogSource
 
+  files_xilinx_ip:
+    files:
+      - ip/gen_xilinx_ip.tcl:      { file_type: tclSource }
+      - ip/mig_genesys2_mocha.prj: { file_type: data      }
+
   files_constraints:
     files:
-      - data/clocks_genesys2.xdc
+      - data/config_genesys2.xdc
       - data/pins_genesys2.xdc
+      - data/timing_genesys2.xdc
     file_type: xdc
 
 parameters:
@@ -36,6 +43,7 @@ parameters:
 targets:
   default: &default_target
     filesets:
+      - files_xilinx_ip
       - files_rtl
 
   synth:

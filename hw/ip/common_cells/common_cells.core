@@ -11,6 +11,7 @@ filesets:
     depend:
       - lowrisc:prim:fifo
       - lowrisc:prim:util
+      - lowrisc:prim_generic:flop_2sync
     files:
       # Includes.
       - include/common_cells/registers.svh: {is_include_file: true, include_path: include}
@@ -18,11 +19,14 @@ filesets:
       - rtl/cb_filter_pkg.sv
       # Modules.
       - rtl/addr_decode.sv
+      - rtl/binary_to_gray.sv
       - rtl/cb_filter.sv
+      - rtl/cdc_fifo_gray.sv
       - rtl/counter.sv
       - rtl/delta_counter.sv
       - rtl/exp_backoff.sv
       - rtl/fifo_v3.sv
+      - rtl/gray_to_binary.sv
       - rtl/id_queue.sv
       - rtl/lzc.sv
       - rtl/onehot_to_bin.sv

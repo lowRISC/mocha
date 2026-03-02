@@ -25,11 +25,40 @@ module chip_mocha_genesys2 #(
   input  logic spi_device_csb_i,
   input  logic spi_device_sd_i,
   output logic spi_device_sd_o,
-  output logic spien
+  output logic spien,
+
+  // DDR3
+  inout  wire  [31:0] ddr3_dq,
+  inout  wire  [ 3:0] ddr3_dqs_n,
+  inout  wire  [ 3:0] ddr3_dqs_p,
+  output logic [14:0] ddr3_addr,
+  output logic [ 2:0] ddr3_ba,
+  output logic        ddr3_ras_n,
+  output logic        ddr3_cas_n,
+  output logic        ddr3_we_n,
+  output logic        ddr3_reset_n,
+  output logic [ 0:0] ddr3_ck_p,
+  output logic [ 0:0] ddr3_ck_n,
+  output logic [ 0:0] ddr3_cke,
+  output logic [ 0:0] ddr3_cs_n,
+  output logic [ 3:0] ddr3_dm,
+  output logic [ 0:0] ddr3_odt
 );
+  // Local parameters
+  localparam int unsigned InitialResetCycles = 4;
+
   // Internal clock and reset signals
-  logic clk_50m;
-  logic rst_n;
+  logic clk_cfg;       // Free-running configuration clock
+  logic clk_200m;      // 200 MHz clock from MIG
+  logic clk_50m;       // 50 MHz mocha clock generated from clk_200m
+  logic mig_rst_n;     // MIG system reset, deassertion synchronous to clk_cfg
+  logic mig_axi_rst_n; // MIG AXI reset, deassertion synchronous to clk_200m
+  logic rst_n;         // Mocha top reset, deassertion synchronous to clk_50m
+
+  // Internal reset shift registers
+  logic [InitialResetCycles-1:0] mig_rst_n_shreg;
+  logic [InitialResetCycles-1:0] mig_axi_rst_n_shreg;
+  logic [InitialResetCycles-1:0] rst_n_shreg;
 
   // PLL lock signal
   logic pll_locked;
@@ -40,17 +69,50 @@ module chip_mocha_genesys2 #(
   logic [3:0]  qspi_device_sdo;
   logic [3:0]  qspi_device_sdo_en;
 
+  // AXI signals
+  // Tag controller to CDC FIFO, synchronous to u_top_chip_system.clkmgr_clocks.clk_main_infra
+  top_pkg::axi_dram_req_t  dram_req;
+  top_pkg::axi_dram_resp_t dram_resp;
+  // CDC FIFO to MIG, synchronous to clk_200m
+  top_pkg::axi_dram_req_t  mig_req;
+  top_pkg::axi_dram_resp_t mig_resp;
+
   // Clock generation
-  clkgen_xil7series clk_gen(
-    .clk_200m_ni (sysclk_200m_ni),
-    .clk_200m_pi (sysclk_200m_pi),
-    .pll_locked_o(pll_locked),
-    .clk_50m_o   (clk_50m)
+  clkgen_xil7series clk_gen (
+    .clk_200m_i   (clk_200m),
+    .clk_cfg_o    (clk_cfg),
+    .pll_locked_o (pll_locked),
+    .clk_50m_o    (clk_50m)
   );
 
   assign spien = 1;
+
   // Internal reset generation
-  assign rst_n = pll_locked & ext_rst_ni;
+  initial mig_rst_n_shreg     = '0;
+  initial mig_axi_rst_n_shreg = '0;
+  initial rst_n_shreg         = '0;
+
+  always_ff @(posedge clk_cfg or negedge ext_rst_ni) begin
+    if (!ext_rst_ni) mig_rst_n_shreg <= '0;
+    else             mig_rst_n_shreg <= {1'b1, mig_rst_n_shreg[InitialResetCycles-1:1]};
+  end
+
+  always_ff @(posedge clk_200m or negedge u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
+    if (!u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
+      mig_axi_rst_n_shreg <= '0;
+    end else begin
+      mig_axi_rst_n_shreg <= {1'b1, mig_axi_rst_n_shreg[InitialResetCycles-1:1]};
+    end
+  end
+
+  always_ff @(posedge clk_50m or negedge ext_rst_ni) begin
+    if (!ext_rst_ni) rst_n_shreg <= '0;
+    else             rst_n_shreg <= {1'b1, rst_n_shreg[InitialResetCycles-1:1]};
+  end
+
+  assign mig_rst_n     = mig_rst_n_shreg[0];
+  assign mig_axi_rst_n = mig_axi_rst_n_shreg[0];
+  assign rst_n         = rst_n_shreg[0];
 
   // CHERI Mocha top
   top_chip_system #(
@@ -69,12 +131,17 @@ module chip_mocha_genesys2 #(
     .uart_rx_i,
     .uart_tx_o,
 
+    // SPI device
     .spi_device_sck_i     (spi_device_sck_i),
     .spi_device_csb_i     (spi_device_csb_i),
     .spi_device_sd_o      (qspi_device_sdo),
     .spi_device_sd_en_o   (qspi_device_sdo_en),
     .spi_device_sd_i      ({3'h0, spi_device_sd_i}), // SPI MOSI = QSPI DQ0
-    .spi_device_tpm_csb_i ('0)
+    .spi_device_tpm_csb_i ('0),
+
+    // DRAM
+    .dram_req_o  (dram_req),
+    .dram_resp_i (dram_resp)
   );
 
   // GPIO tri-state output drivers
@@ -93,5 +160,133 @@ module chip_mocha_genesys2 #(
     .T(~qspi_device_sdo_en[1]), // SPI MISO = QSPI DQ1
     .O(spi_device_sd_o)
   );
+
+  // Async AXI FIFO from tag controller to MIG
+  axi_cdc #(
+    .aw_chan_t  (top_pkg::axi_dram_aw_chan_t),
+    .w_chan_t   (top_pkg::axi_w_chan_t),
+    .b_chan_t   (top_pkg::axi_dram_b_chan_t),
+    .ar_chan_t  (top_pkg::axi_dram_ar_chan_t),
+    .r_chan_t   (top_pkg::axi_dram_r_chan_t),
+    .axi_req_t  (top_pkg::axi_dram_req_t),
+    .axi_resp_t (top_pkg::axi_dram_resp_t),
+    .LogDepth   (3),
+    .SyncStages (2)   // Needs to be 2 for prim_flop_2sync
+  ) u_mig_async_axi_fifo (
+    .src_clk_i  (u_top_chip_system.clkmgr_clocks.clk_main_infra),
+    .src_rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .src_req_i  (dram_req),
+    .src_resp_o (dram_resp),
+    .dst_clk_i  (clk_200m),
+    .dst_rst_ni (mig_axi_rst_n),
+    .dst_req_o  (mig_req),
+    .dst_resp_i (mig_resp)
+  );
+
+  // DDR3 MIG
+  // Part of the MIG (e.g. PHY) is not reset by mocha internal reset signals.
+  // Therefore CVA6 may receive stray AXI responses after coming out of reset.
+  // This is currently not handled.
+  // TODO: Add handling of in-flight AXI requests when infrastructure is reset
+  u_xlnx_mig_7_ddr3 u_ddr3_mig (
+    // System clock input
+    .sys_clk_p (sysclk_200m_pi),
+    .sys_clk_n (sysclk_200m_ni),
+
+    // System reset input
+    // Asynchronous, at least 5ns
+    .sys_rst (mig_rst_n),
+
+    // AXI interface reset input
+    // Synchronous to ui_clk
+    .aresetn (mig_axi_rst_n),
+
+    // User interface clock and reset output
+    .ui_clk          (clk_200m),
+    .ui_clk_sync_rst ( ),
+
+    // User interface signals
+    .mmcm_locked         ( ),
+    .init_calib_complete ( ),
+    .device_temp         ( ),
+    .app_sr_req          ('0),
+    .app_ref_req         ('0),
+    .app_zq_req          ('0),
+    .app_sr_active       ( ),
+    .app_ref_ack         ( ),
+    .app_zq_ack          ( ),
+
+    // DDR3 interface
+    .ddr3_dq      (ddr3_dq),
+    .ddr3_dqs_n   (ddr3_dqs_n),
+    .ddr3_dqs_p   (ddr3_dqs_p),
+    .ddr3_addr    (ddr3_addr),
+    .ddr3_ba      (ddr3_ba),
+    .ddr3_ras_n   (ddr3_ras_n),
+    .ddr3_cas_n   (ddr3_cas_n),
+    .ddr3_we_n    (ddr3_we_n),
+    .ddr3_reset_n (ddr3_reset_n),
+    .ddr3_ck_p    (ddr3_ck_p),
+    .ddr3_ck_n    (ddr3_ck_n),
+    .ddr3_cke     (ddr3_cke),
+    .ddr3_cs_n    (ddr3_cs_n),
+    .ddr3_dm      (ddr3_dm),
+    .ddr3_odt     (ddr3_odt),
+
+    // AXI interface
+    // AXI write address channel
+    .s_axi_awid    (mig_req.aw.id),
+    .s_axi_awaddr  (mig_req.aw.addr[29:0]), // Implicit XOR with 0x8000_0000 for address translation
+    .s_axi_awlen   (mig_req.aw.len),
+    .s_axi_awsize  (mig_req.aw.size),
+    .s_axi_awburst (mig_req.aw.burst),
+    .s_axi_awlock  (mig_req.aw.lock),
+    .s_axi_awcache (mig_req.aw.cache),
+    .s_axi_awprot  (mig_req.aw.prot),
+    .s_axi_awqos   (mig_req.aw.qos),
+    .s_axi_awvalid (mig_req.aw_valid),
+    .s_axi_awready (mig_resp.aw_ready),
+    // mig_req.aw.region is unused
+    // mig_req.aw.atop is unused
+    // mig_req.aw.user is unused
+
+    // AXI write data channel
+    .s_axi_wdata  (mig_req.w.data),
+    .s_axi_wstrb  (mig_req.w.strb),
+    .s_axi_wlast  (mig_req.w.last),
+    .s_axi_wvalid (mig_req.w_valid),
+    .s_axi_wready (mig_resp.w_ready),
+
+    // AXI write response channel
+    .s_axi_bready (mig_req.b_ready),
+    .s_axi_bid    (mig_resp.b.id),
+    .s_axi_bresp  (mig_resp.b.resp),
+    .s_axi_bvalid (mig_resp.b_valid),
+
+    // AXI read address channel
+    .s_axi_arid    (mig_req.ar.id),
+    .s_axi_araddr  (mig_req.ar.addr[29:0]), // Implicit XOR with 0x8000_0000 for address translation
+    .s_axi_arlen   (mig_req.ar.len),
+    .s_axi_arsize  (mig_req.ar.size),
+    .s_axi_arburst (mig_req.ar.burst),
+    .s_axi_arlock  (mig_req.ar.lock),
+    .s_axi_arcache (mig_req.ar.cache),
+    .s_axi_arprot  (mig_req.ar.prot),
+    .s_axi_arqos   (mig_req.ar.qos),
+    .s_axi_arvalid (mig_req.ar_valid),
+    .s_axi_arready (mig_resp.ar_ready),
+
+    // AXI read data channel
+    .s_axi_rready (mig_req.r_ready),
+    .s_axi_rid    (mig_resp.r.id),
+    .s_axi_rdata  (mig_resp.r.data),
+    .s_axi_rresp  (mig_resp.r.resp),
+    .s_axi_rlast  (mig_resp.r.last),
+    .s_axi_rvalid (mig_resp.r_valid)
+  );
+
+  // AXI response fields not provided by the MIG are tied to 0
+  assign mig_resp.b.user = '0;
+  assign mig_resp.r.user = '0;
 
 endmodule
