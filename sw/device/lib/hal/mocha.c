@@ -13,6 +13,7 @@
 
 static const uintptr_t dv_test_status_base = 0x20010000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
+static const uintptr_t clkmgr_base = 0x40020000ul;
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
@@ -38,12 +39,21 @@ static void *create_mmio_capability(uintptr_t address, size_t length)
 }
 #endif /* defined(__riscv_zcherihybrid) */
 
-uart_t mocha_system_gpio(void)
+gpio_t mocha_system_gpio(void)
 {
 #if defined(__riscv_zcherihybrid)
-    return (uart_t)create_mmio_capability(gpio_base, 0x48u);
+    return (gpio_t)create_mmio_capability(gpio_base, 0x48u);
 #else /* !defined(__riscv_zcherihybrid) */
-    return (uart_t)gpio_base;
+    return (gpio_t)gpio_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+clkmgr_t mocha_system_clkmgr(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (clkmgr_t)create_mmio_capability(clkmgr_base, 0x38u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (clkmgr_t)clkmgr_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
