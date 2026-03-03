@@ -184,8 +184,8 @@ module top_chip_system #(
     .noc_req_t     ( top_pkg::axi_req_t     ),
     .noc_resp_t    ( top_pkg::axi_resp_t    )
   ) i_cva6 (
-    .clk_i         (clk_i),
-    .rst_ni        (rst_ni),
+    .clk_i         (clkmgr_clocks.clk_main_infra),
+    .rst_ni        (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
     .boot_addr_i   (boot_cap),
     .hart_id_i     ('0),
     .irq_i         (intr),
@@ -217,8 +217,8 @@ module top_chip_system #(
     .AddrWidth   ( SramAddrWidth         ),
     .MemInitFile ( SramInitFile          )
   ) u_axi_sram (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_main_infra),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
 
     // Capability AXI interface
     .axi_req_i  (xbar_device_req[top_pkg::SRAM]),
@@ -244,8 +244,8 @@ module top_chip_system #(
     .mst_resp_t   (top_pkg::axi_resp_t    ),
     .rule_t       (axi_pkg::xbar_rule_64_t)
   ) u_axi_xbar (
-    .clk_i                (clk_i),
-    .rst_ni               (rst_ni),
+    .clk_i                (clkmgr_clocks.clk_main_infra),
+    .rst_ni               (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
     .test_i               (1'b0),
     .slv_ports_req_i      (xbar_host_req),
     .slv_ports_resp_o     (xbar_host_resp),
@@ -265,8 +265,8 @@ module top_chip_system #(
     .IdWidth    ( top_pkg::AxiIdWidth   ),
     .NumBanks   ( 1                     )
   ) u_tl_xbar_axi_to_mem (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_main_infra),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
 
     // AXI interface.
     .busy_o     ( ),
@@ -287,8 +287,8 @@ module top_chip_system #(
 
   // 64-bit mem to 32-bit mem for TLUL crossbar
   mem_downsizer u_tl_xbar_mem_downsizer (
-    .clk_i(clk_i),
-    .rst_ni(rst_ni),
+    .clk_i  (clkmgr_clocks.clk_main_infra),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
 
     // 64-bit memory request in
     .mem64_req_i   (mem64_tl_xbar_req),
@@ -316,8 +316,8 @@ module top_chip_system #(
     .EnableDataIntgGen      ( 1 ),
     .EnableRspDataIntgCheck ( 1 )
   ) u_tl_xbar_tlul_host_adapter (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_main_infra),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
 
     .req_i        (mem32_tl_xbar_req),
     .gnt_o        (mem32_tl_xbar_gnt),
@@ -342,8 +342,10 @@ module top_chip_system #(
   // TileLink peripheral crossbar
   xbar_peri u_tl_xbar (
     // Clock and reset.
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_main_i  (clkmgr_clocks.clk_main_infra),
+    .clk_io_i    (clkmgr_clocks.clk_io_infra),
+    .rst_main_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_io_ni   (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
 
     // Host interfaces.
     .tl_axi_xbar_i(tl_axi_xbar_h2d),
@@ -375,8 +377,8 @@ module top_chip_system #(
     .GpioAsyncOn(1), // inputs may be directly connected to external I/O or other SoC clock domains
     .GpioAsHwStrapsEn(0) // straps not our problem when we are only a SoC subsystem
   ) u_gpio (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
 
     .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
     .alert_tx_o ( ),
@@ -403,8 +405,8 @@ module top_chip_system #(
 
   // Instantiate our UART block.
   uart u_uart (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
 
     .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
     .alert_tx_o ( ),
@@ -437,8 +439,8 @@ module top_chip_system #(
 
   // Instantiate timer
   rv_timer u_timer (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
 
     .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
     .alert_tx_o ( ),
@@ -456,8 +458,8 @@ module top_chip_system #(
 
   // Instantiate PLIC
   rv_plic u_rv_plic (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
 
     // Signals to xbar
     .tl_i (tl_plic_h2d),
@@ -478,8 +480,8 @@ module top_chip_system #(
 
   // Instantiate SPI device
   spi_device u_spi_device (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
 
     // Signals to xbar
     .tl_i (tl_spi_device_h2d),

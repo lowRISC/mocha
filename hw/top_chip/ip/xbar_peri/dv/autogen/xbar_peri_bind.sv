@@ -7,58 +7,58 @@ module xbar_peri_bind;
 `ifndef GATE_LEVEL
   // Host interfaces
   bind xbar_peri tlul_assert #(.EndpointType("Device")) tlul_assert_host_axi_xbar (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_main_i),
+    .rst_ni (rst_main_ni),
     .h2d    (tl_axi_xbar_i),
     .d2h    (tl_axi_xbar_o)
   );
 
   // Device interfaces
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_gpio (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_gpio_o),
     .d2h    (tl_gpio_i)
   );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_clkmgr (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_clkmgr_o),
     .d2h    (tl_clkmgr_i)
   );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_rstmgr (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_rstmgr_o),
     .d2h    (tl_rstmgr_i)
   );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_pwrmgr (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_pwrmgr_o),
     .d2h    (tl_pwrmgr_i)
   );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_uart (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_uart_o),
     .d2h    (tl_uart_i)
   );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_spi_device (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_spi_device_o),
     .d2h    (tl_spi_device_i)
   );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_timer (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_timer_o),
     .d2h    (tl_timer_i)
   );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_plic (
-    .clk_i  (clk_i),
-    .rst_ni (rst_ni),
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
     .h2d    (tl_plic_o),
     .d2h    (tl_plic_i)
   );

@@ -93,12 +93,12 @@ module top_chip_verilator (input logic clk_i, rst_ni);
 
   // Detect SW test termination.
   sim_sram_axi_sink u_sim_sram (
-    .clk_i          (`DUT.clk_i         ),
-    .rst_ni         (`DUT.rst_ni        ),
-    .cpu_req_i      (sim_sram_cpu_req   ),
-    .cpu_resp_o     (sim_sram_cpu_resp  ),
-    .xbar_req_o     (sim_sram_xbar_req  ),
-    .xbar_resp_i    (sim_sram_xbar_resp )
+    .clk_i       (`DUT.clkmgr_clocks.clk_main_infra),
+    .rst_ni      (`DUT.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .cpu_req_i   (sim_sram_cpu_req                 ),
+    .cpu_resp_o  (sim_sram_cpu_resp                ),
+    .xbar_req_o  (sim_sram_xbar_req                ),
+    .xbar_resp_i (sim_sram_xbar_resp               )
   );
 
   // Connect the sim SRAM directly at CVA6 AXI interface

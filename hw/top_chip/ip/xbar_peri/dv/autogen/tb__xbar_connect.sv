@@ -6,22 +6,25 @@
 
 xbar_peri dut();
 
-`DRIVE_CLK(clk_i)
+`DRIVE_CLK(clk_main_i)
+`DRIVE_CLK(clk_io_i)
 
-initial force dut.clk_i = clk_i;
+initial force dut.clk_main_i = clk_main_i;
+initial force dut.clk_io_i = clk_io_i;
 
 // TODO, all resets tie together
-initial force dut.rst_ni = rst_n;
+initial force dut.rst_main_ni = rst_n;
+initial force dut.rst_io_ni = rst_n;
 
 // Host TileLink interface connections
-`CONNECT_TL_HOST_IF(axi_xbar, dut, clk_i, rst_n)
+`CONNECT_TL_HOST_IF(axi_xbar, dut, clk_main_i, rst_n)
 
 // Device TileLink interface connections
-`CONNECT_TL_DEVICE_IF(gpio, dut, clk_i, rst_n)
-`CONNECT_TL_DEVICE_IF(clkmgr, dut, clk_i, rst_n)
-`CONNECT_TL_DEVICE_IF(rstmgr, dut, clk_i, rst_n)
-`CONNECT_TL_DEVICE_IF(pwrmgr, dut, clk_i, rst_n)
-`CONNECT_TL_DEVICE_IF(uart, dut, clk_i, rst_n)
-`CONNECT_TL_DEVICE_IF(spi_device, dut, clk_i, rst_n)
-`CONNECT_TL_DEVICE_IF(timer, dut, clk_i, rst_n)
-`CONNECT_TL_DEVICE_IF(plic, dut, clk_i, rst_n)
+`CONNECT_TL_DEVICE_IF(gpio, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(clkmgr, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(rstmgr, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(pwrmgr, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(uart, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(spi_device, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(timer, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(plic, dut, clk_io_i, rst_n)

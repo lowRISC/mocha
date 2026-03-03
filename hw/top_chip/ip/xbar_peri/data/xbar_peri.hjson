@@ -4,27 +4,29 @@
 
 { name: "peri",
   type: "xbar",
-  clock: "clk_i", // Main clock, used in sockets
+  clock: "clk_io_i",
   clock_connections: {
-    clk_i: "main",
+    clk_main_i: "main",
+    clk_io_i: "io",
   },
-  reset: "rst_ni",
+  reset: "rst_io_ni",
   reset_connections: {
-    rst_ni: "main",
+    rst_main_ni: "main",
+    rst_io_ni: "io",
   },
   nodes: [
     { name:  "axi_xbar", // Load store unit
       type:  "host",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_main_i",
+      reset: "rst_main_ni",
       addr_space: "hart",
       xbar:  true,
       pipeline: false,
     },
     { name:  "gpio", // GPIO
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
@@ -35,8 +37,8 @@
     },
     { name:  "clkmgr", // Clock manager
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
@@ -47,8 +49,8 @@
     },
     { name:  "rstmgr", // Reset manager
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
@@ -59,8 +61,8 @@
     },
     { name:  "pwrmgr", // Power manager
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
@@ -71,8 +73,8 @@
     },
     { name:  "uart", // UART
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
@@ -83,8 +85,8 @@
     },
     { name:  "spi_device", // SPI device
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
@@ -95,8 +97,8 @@
     },
     { name:  "timer", // Timer
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
@@ -107,8 +109,8 @@
     },
     { name:  "plic", // PLIC
       type:  "device",
-      clock: "clk_i",
-      reset: "rst_ni",
+      clock: "clk_io_i",
+      reset: "rst_io_ni",
       xbar:  false,
       addr_range: [{
         base_addrs: {
