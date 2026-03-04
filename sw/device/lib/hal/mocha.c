@@ -14,6 +14,7 @@
 static const uintptr_t dv_test_status_base = 0x20010000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
+static const uintptr_t rstmgr_base = 0x40030000ul;
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
@@ -57,12 +58,30 @@ clkmgr_t mocha_system_clkmgr(void)
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
+rstmgr_t mocha_system_rstmgr(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (rstmgr_t)create_mmio_capability(rstmgr_base, 0x48u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (rstmgr_t)rstmgr_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
 uart_t mocha_system_uart(void)
 {
 #if defined(__riscv_zcherihybrid)
     return (uart_t)create_mmio_capability(uart_base, 0x20u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (uart_t)uart_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+spi_device_t mocha_system_spi_device(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (spi_device_t)create_mmio_capability(spi_device_base, 0x1FC0u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (spi_device_t)spi_device_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
@@ -81,15 +100,6 @@ plic_t mocha_system_plic(void)
     return (plic_t)create_mmio_capability(plic_base, 0x4004004u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (plic_t)plic_base;
-#endif /* defined(__riscv_zcherihybrid) */
-}
-
-spi_device_t mocha_system_spi_device(void)
-{
-#if defined(__riscv_zcherihybrid)
-    return (spi_device_t)create_mmio_capability(spi_device_base, 0x1FC0u);
-#else /* !defined(__riscv_zcherihybrid) */
-    return (spi_device_t)spi_device_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 

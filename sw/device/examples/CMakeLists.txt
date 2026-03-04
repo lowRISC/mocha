@@ -9,6 +9,12 @@ target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
 target_link_options(${NAME} PUBLIC "-T" "${LDS}" "-L" "${LDS_DIR}")
 mocha_add_executable_artefacts(${NAME})
 
+set(NAME software_reset)
+add_executable(${NAME} software_reset.c)
+target_link_libraries(${NAME} hal_vanilla startup_vanilla runtime_vanilla)
+target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
+target_link_options(${NAME} PUBLIC "-T" "${LDS}" "-L" "${LDS_DIR}")
+mocha_add_executable_artefacts(${NAME})
 
 set(NAME tag_check)
 add_executable(${NAME} tag_check.S)
