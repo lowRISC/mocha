@@ -1,0 +1,42 @@
+# Copyright lowRISC Contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  # This job will only succeed if a bitstream was published by a previous CI run to make sure it
+  # passed the tests.
+  bistream-release:
+    runs-on: ["self-hosted", "nixos", "X64"]
+    env:
+      ARTEFACT: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Hash Bitstream
+      id: hash-bitstream
+      run: |
+        echo "hash=$(nix run .#bitstream-hash)" >> $GITHUB_OUTPUT
+
+    - uses: actions/cache@v5
+      id: cache
+      with:
+        path: ${{ env.ARTEFACT }}
+        key: ${{ steps.hash-bitstream.outputs.hash }}
+        fail-on-cache-miss: true
+
+    - uses: softprops/action-gh-release@v2
+      if: github.ref_type == 'tag'
+      with:
+        prerelease: true
+        files: ${{ env.ARTEFACT }}
+
