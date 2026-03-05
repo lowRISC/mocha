@@ -68,3 +68,32 @@ jobs:
           prerelease: true
           files: ${{ env.ARTEFACT }}
 
+  software-release:
+    runs-on: ["self-hosted", "nixos", "X64"]
+    env:
+      SOURCE: build/sw/device/examples
+      ARTEFACT: examples.tar.gz
+
+    defaults:
+      run:
+        shell: "nix develop -c bash -e {0}"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare Nix environment
+        run: |
+          true
+
+      - name: Generate artefacts
+        run: |
+          cmake -B build/sw -S sw
+          cmake --build build/sw -j $(nproc) --target hello_world
+          cmake --install build/sw/ --prefix release --component hello_world
+          tar -czvf ${{ env.ARTEFACT }} release
+
+      - uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          prerelease: true
+          files: ${{ env.ARTEFACT }}
