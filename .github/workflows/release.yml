@@ -40,3 +40,31 @@ jobs:
         prerelease: true
         files: ${{ env.ARTEFACT }}
 
+
+  verilator-release:
+    runs-on: ["self-hosted", "nixos", "X64"]
+    env:
+      ARTEFACT: build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator
+
+    defaults:
+      run:
+        shell: "nix develop -c bash -e {0}"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare Nix environment
+        run: |
+          true
+
+      - name: Build verilator
+        run: |
+          JOBS=$(($(nproc) / 2))
+          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
+
+      - uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          prerelease: true
+          files: ${{ env.ARTEFACT }}
+
