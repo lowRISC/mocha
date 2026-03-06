@@ -10,6 +10,10 @@ on:
   pull_request:
     branches: ["main"]
 
+env:
+  BITSTREAM: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+  UTILIZATION_FILE: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.runs/impl_1/chip_mocha_genesys2_utilization_placed.rpt
+
 jobs:
   lint-check:
     runs-on: ["self-hosted", "nixos", "X64"]
@@ -110,7 +114,9 @@ jobs:
       - uses: actions/cache@v5
         id: cache
         with:
-          path: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+          path: |
+            ${{ env.BITSTREAM }}
+            ${{ env.UTILIZATION_FILE }}
           key: ${{ steps.hash-bitstream.outputs.hash }}
           lookup-only: true
 
@@ -141,7 +147,9 @@ jobs:
 
       - uses: actions/cache@v5
         with:
-          path: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+          path: |
+            ${{ env.BITSTREAM }}
+            ${{ env.UTILIZATION_FILE }}
           key: ${{ needs.fpga-build.outputs.bitstream-hash }}
           fail-on-cache-miss: true
 
