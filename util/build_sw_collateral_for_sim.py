@@ -12,11 +12,12 @@ def generate(args) -> None:
     """Build with cmake"""
 
     out_dir = Path(args.run_dir)
-    build_system_cmd = ["cmake", "-B", "build/sw", "-S", "sw"]
+    build_dir = out_dir / "sw_build"
+    build_system_cmd = ["cmake", "-B", build_dir, "-S", "sw"]
     subprocess.run(build_system_cmd, capture_output=False, check=True)
 
-    build_cmd = ["cmake", "--build", "build/sw", "--target"]
-    install_cmd = ["cmake", "--install", "build/sw", "--prefix", out_dir, "--component"]
+    build_cmd = ["cmake", "--build", build_dir, "-v", "--target"]
+    install_cmd = ["cmake", "--install", build_dir, "--prefix", out_dir, "--component"]
     for img in args.sw_images:
         target = img.split(":")[0]
         cmd = build_cmd + target.split(":")[0:]
