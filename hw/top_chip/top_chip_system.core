@@ -8,6 +8,7 @@ description: "System top-level for CHERI Mocha"
 filesets:
   files_rtl:
     depend:
+      - lowrisc:ip:i2c
       - lowrisc:ip:uart
       - lowrisc:ip:rv_timer
       - lowrisc:ip:spi_device

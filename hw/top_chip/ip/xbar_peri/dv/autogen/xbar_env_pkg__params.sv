@@ -22,6 +22,9 @@ tl_device_t xbar_devices[$] = '{
     '{"uart", '{
         '{32'h41000000, 32'h4100ffff}
     }},
+    '{"i2c", '{
+        '{32'h42000000, 32'h4200ffff}
+    }},
     '{"spi_device", '{
         '{32'h43000000, 32'h4300ffff}
     }},
@@ -40,6 +43,7 @@ tl_host_t xbar_hosts[$] = '{
         "rstmgr",
         "pwrmgr",
         "uart",
+        "i2c",
         "spi_device",
         "timer",
         "plic"}}

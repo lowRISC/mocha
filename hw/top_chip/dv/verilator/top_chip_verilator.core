@@ -25,6 +25,7 @@ filesets:
       - lowrisc:mocha_dv:sim_sram_axi:0.1
       - lowrisc:dv:sw_test_status
       - lowrisc:dv:dv_test_status
+      - lowrisc:sonata:i2cdpi
 
     files:
       - dram_wrapper_sim.sv:    { file_type: systemVerilogSource }

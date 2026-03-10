@@ -22,6 +22,14 @@ module top_chip_system #(
   input  logic uart_rx_i,
   output logic uart_tx_o,
 
+  // I^2C controller/target bidirectional interface.
+  input  logic i2c_scl_i,
+  output logic i2c_scl_o,
+  output logic i2c_scl_en_o,
+  input  logic i2c_sda_i,
+  output logic i2c_sda_o,
+  output logic i2c_sda_en_o,
+
   // SPI device receive and transmit.
   input  logic       spi_device_sck_i,
   input  logic       spi_device_csb_i,
@@ -41,6 +49,7 @@ module top_chip_system #(
   localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
   localparam int unsigned GpioIrqs      = 32;
   localparam int unsigned UartIrqs      = 9;
+  localparam int unsigned I2cIrqs       = 15;
   localparam int unsigned SPIDeviceIrqs = 8;
 
   // CVA6 configuration
@@ -100,6 +109,8 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_pwrmgr_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
+  tlul_pkg::tl_h2d_t tl_i2c_h2d;
+  tlul_pkg::tl_d2h_t tl_i2c_d2h;
   tlul_pkg::tl_h2d_t tl_timer_h2d;
   tlul_pkg::tl_d2h_t tl_timer_d2h;
   tlul_pkg::tl_h2d_t tl_plic_h2d;
@@ -143,6 +154,7 @@ module top_chip_system #(
   // IP block raised interrupts
   logic [GpioIrqs-1:0]      gpio_interrupts;
   logic [UartIrqs-1:0]      uart_interrupts;
+  logic [I2cIrqs-1:0]       i2c_interrupts;
   logic [SPIDeviceIrqs-1:0] spi_device_interrupts;
 
   // Interrupt lines to PLIC
@@ -150,6 +162,7 @@ module top_chip_system #(
   // register within the block itself to identify the interrupt source(s).
   logic gpio_irq;
   logic uart_irq;
+  logic i2c_irq;
   logic spi_device_irq;
   logic pwrmgr_wakeup_irq;
 
@@ -157,6 +170,7 @@ module top_chip_system #(
     // Single interrupt line per IP block.
     gpio_irq = |gpio_interrupts;
     uart_irq = |uart_interrupts;
+    i2c_irq = |i2c_interrupts;
     spi_device_irq = |spi_device_interrupts;
   end
 
@@ -168,7 +182,8 @@ module top_chip_system #(
   assign intr_vector[ 9    ] = gpio_irq;
   assign intr_vector[ 8    ] = uart_irq;
   assign intr_vector[ 7    ] = spi_device_irq;
-  assign intr_vector[ 6 : 0] = '0;      // Reserved for future use.
+  assign intr_vector[ 6    ] = i2c_irq;
+  assign intr_vector[ 5 : 0] = '0;      // Reserved for future use.
 
   // Interrupts to the CVA6
   logic       intr_timer;
@@ -379,6 +394,8 @@ module top_chip_system #(
     .tl_pwrmgr_i     (tl_pwrmgr_d2h),
     .tl_uart_o       (tl_uart_h2d),
     .tl_uart_i       (tl_uart_d2h),
+    .tl_i2c_o        (tl_i2c_h2d),
+    .tl_i2c_i        (tl_i2c_d2h),
     .tl_spi_device_o (tl_spi_device_h2d),
     .tl_spi_device_i (tl_spi_device_d2h),
     .tl_timer_o      (tl_timer_h2d),
@@ -452,6 +469,54 @@ module top_chip_system #(
     .intr_rx_break_err_o  (uart_interrupts[5]),
     .intr_rx_timeout_o    (uart_interrupts[6]),
     .intr_rx_parity_err_o (uart_interrupts[7])
+  );
+
+  // Instantiate I^2C controller/target
+  i2c #(
+    .InputDelayCycles(0) // note: may not be true for all tops
+  ) u_i2c (
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+
+    .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
+    .alert_tx_o ( ),
+
+    .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o    ( ),
+    .lsio_trigger_o  ( ),
+
+    // Unused RAM config ports
+    .ram_cfg_i     (prim_ram_1p_pkg::RAM_1P_CFG_DEFAULT),
+    .ram_cfg_rsp_o ( ),
+
+    // I^2C interface.
+    .cio_scl_i     (i2c_scl_i),
+    .cio_scl_o     (i2c_scl_o),
+    .cio_scl_en_o  (i2c_scl_en_o),
+    .cio_sda_i     (i2c_sda_i),
+    .cio_sda_o     (i2c_sda_o),
+    .cio_sda_en_o  (i2c_sda_en_o),
+
+    // Inter-module signals.
+    .tl_i (tl_i2c_h2d),
+    .tl_o (tl_i2c_d2h),
+
+    // Interrupts.
+    .intr_fmt_threshold_o     (i2c_interrupts[0]),
+    .intr_rx_threshold_o      (i2c_interrupts[1]),
+    .intr_acq_threshold_o     (i2c_interrupts[2]),
+    .intr_rx_overflow_o       (i2c_interrupts[3]),
+    .intr_controller_halt_o   (i2c_interrupts[4]),
+    .intr_scl_interference_o  (i2c_interrupts[5]),
+    .intr_sda_interference_o  (i2c_interrupts[6]),
+    .intr_stretch_timeout_o   (i2c_interrupts[7]),
+    .intr_sda_unstable_o      (i2c_interrupts[8]),
+    .intr_cmd_complete_o      (i2c_interrupts[9]),
+    .intr_tx_stretch_o        (i2c_interrupts[10]),
+    .intr_tx_threshold_o      (i2c_interrupts[11]),
+    .intr_acq_stretch_o       (i2c_interrupts[12]),
+    .intr_unexp_stop_o        (i2c_interrupts[13]),
+    .intr_host_timeout_o      (i2c_interrupts[14])
   );
 
   // Instantiate timer

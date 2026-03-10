@@ -8,6 +8,21 @@ module top_chip_verilator (input logic clk_i, rst_ni);
   logic [31:0] gpio_outputs;
   logic [31:0] gpio_en_outputs;
 
+  // I^2C signals
+  // Output and output enable clock and data from system.
+  logic i2c_scl_sys_o, i2c_scl_sys_oe;
+  logic i2c_sda_sys_o, i2c_sda_sys_oe;
+  // Output clock and data to the I^2C bus.
+  wire i2c_scl_sys_out = i2c_scl_sys_oe ? i2c_scl_sys_o : 1'b1;
+  wire i2c_sda_sys_out = i2c_sda_sys_oe ? i2c_sda_sys_o : 1'b1;
+  // Clock and data from the I2C DPI model.
+  wire i2c_scl_dpi, i2c_sda_dpi;
+  // Input clock and data from the I^2C bus; these signals must reflect the physical I^2C bus,
+  // ie. they carry both the outbound and the inbound activity, because otherwise the controller
+  // will perceive a mismatch between its own transmissions and the inputs as bus contention.
+  wire i2c_scl_sys_in = i2c_scl_sys_out & i2c_scl_dpi;
+  wire i2c_sda_sys_in = i2c_sda_sys_out & i2c_sda_dpi;
+
   // UART signals
   logic uart_rx;
   logic uart_tx;
@@ -36,6 +51,13 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .uart_rx_i (uart_rx),
     .uart_tx_o (uart_tx),
 
+    .i2c_scl_i    (i2c_scl_sys_in),
+    .i2c_scl_o    (i2c_scl_sys_o),
+    .i2c_scl_en_o (i2c_scl_sys_oe),
+    .i2c_sda_i    (i2c_sda_sys_in),
+    .i2c_sda_o    (i2c_sda_sys_o),
+    .i2c_sda_en_o (i2c_sda_sys_oe),
+
     .spi_device_sck_i     (spi_device_sck),
     .spi_device_csb_i     (spi_device_csb),
     .spi_device_sd_o      (qspi_device_sdo),
@@ -59,6 +81,22 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .gpio_en_d2p   (gpio_en_outputs),
     .gpio_pull_en  ('0), // no pull-ups in simple SoC
     .gpio_pull_sel ('0)  // no pull-ups in simple SoC
+  );
+
+  // I2C DPI - model an AS621x temperature sensor
+  i2cdpi #(
+    .ID ("i2c1")  // "i2c1" selects AS621x model
+  ) u_i2cdpi (
+    // Use clock-synchronised reset to avoid observing false-high signals near the start of time
+    .rst_ni  (u_top_chip_system.u_i2c.rst_ni),
+    // The connected signal names are from the perspective of the controller.
+    .scl_i   (i2c_scl_sys_out),
+    .sda_i   (i2c_sda_sys_out),
+    .scl_o   (i2c_scl_dpi),
+    .sda_o   (i2c_sda_dpi),
+    // Out-Of-Band data.
+    .oob_in  ('0),
+    .oob_out ( )  // not used
   );
 
   // Virtual UART
