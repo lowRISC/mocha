@@ -20,6 +20,10 @@ module chip_mocha_genesys2 #(
   input  logic uart_rx_i,
   output logic uart_tx_o,
 
+  // I^2C - PMOD Header "JA"
+  inout  logic i2c_scl_io,
+  inout  logic i2c_sda_io,
+
   // SPI
   input  logic spi_device_sck_i,
   input  logic spi_device_csb_i,
@@ -63,9 +67,13 @@ module chip_mocha_genesys2 #(
   // PLL lock signal
   logic pll_locked;
 
-  // Output buffer value+enable signals
+  // Output buffer value+enable signals and
+  // bi-directional buffer input+output+direction signals
   logic [31:0] gpio_outputs;
   logic [31:0] gpio_en_outputs;
+  logic        i2c_scl_input,     i2c_sda_input;
+  logic        i2c_scl_output,    i2c_sda_output;
+  logic        i2c_scl_en_output, i2c_sda_en_output;
   logic [3:0]  qspi_device_sdo;
   logic [3:0]  qspi_device_sdo_en;
 
@@ -131,6 +139,14 @@ module chip_mocha_genesys2 #(
     .uart_rx_i,
     .uart_tx_o,
 
+    // I^2C
+    .i2c_scl_i    (i2c_scl_input),
+    .i2c_scl_o    (i2c_scl_output),
+    .i2c_scl_en_o (i2c_scl_en_output),
+    .i2c_sda_i    (i2c_sda_input),
+    .i2c_sda_o    (i2c_sda_output),
+    .i2c_sda_en_o (i2c_sda_en_output),
+
     // SPI device
     .spi_device_sck_i     (spi_device_sck_i),
     .spi_device_csb_i     (spi_device_csb_i),
@@ -153,6 +169,20 @@ module chip_mocha_genesys2 #(
       .O(gpio_o[ii])
     );
   end
+
+  // I^2C bi-directional buffers
+  IOBUF i2c_scl_iobuf (
+    .I(i2c_scl_output),     // system output / buffer internal input
+    .T(~i2c_scl_en_output), // system output enable / buffer tri-state enable
+    .IO(i2c_scl_io),        // external FPGA pin / buffer external connection
+    .O(i2c_scl_input)       // system input / buffer internal output
+  );
+  IOBUF i2c_sda_iobuf (
+    .I(i2c_sda_output),
+    .T(~i2c_sda_en_output),
+    .IO(i2c_sda_io),
+    .O(i2c_sda_input)
+  );
 
   // SPI tri-state output driver
   OBUFT spi_obuft (

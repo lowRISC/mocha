@@ -33,6 +33,16 @@ set_property -dict { PACKAGE_PIN W23   IOSTANDARD LVCMOS33 } [get_ports { gpio_o
 set_property -dict { PACKAGE_PIN Y20   IOSTANDARD LVCMOS33 } [get_ports { uart_rx_i }];
 set_property -dict { PACKAGE_PIN Y23   IOSTANDARD LVCMOS33 } [get_ports { uart_tx_o }];
 
+## I^2C (PMOD Header "JA")
+# Enable pull-ups on SCL and SDA.
+# The PMOD I^2C specification states that the SCL and SDA pull-ups are provided
+# on the modules, so using the FPGA pull-ups is not required for their benefit.
+# However, the PCB tracks between the PMOD header and FPGA are not short,
+# and the FPGA pull-ups are not too strong (~20k based on Xilinx doc DS182),
+# so it seems best to enable the in-built pull-ups.
+set_property -dict { PACKAGE_PIN T26   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { i2c_scl_io }];
+set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { i2c_sda_io }];
+
 ## SPI (PMOD Header JD)
 set_property -dict { PACKAGE_PIN W28   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_o  }];
 set_property -dict { PACKAGE_PIN W27   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_i  }];
