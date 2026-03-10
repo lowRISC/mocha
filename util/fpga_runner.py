@@ -35,7 +35,7 @@ def load_fpga_test(test: Path, timeout: int = TIMEOUT) -> None:
         subprocess.run(command, capture_output=True, check=False)
         return
 
-    print("f[{Path(__file__).name}] Load FPGA test timeout")
+    print(f"[{Path(__file__).name}] Load FPGA test timeout")
     sys.exit(1)
 
 
@@ -57,7 +57,7 @@ def run_fpga_test(tty: str, test: Path, timeout: int = 10) -> int:
                 print(f"[{Path(__file__).name}] Unknown test result: {line}")
 
             return 1
-        print("f[{Path(__file__).name}] Test timeout")
+        print(f"[{Path(__file__).name}] Test timeout")
         return 1
 
 
@@ -76,7 +76,7 @@ def main() -> None:
     if uart_tty := find_uart():
         sys.exit(run_fpga_test(uart_tty, args.test, TIMEOUT))
 
-    print(f"[{Path(__file__).name}] Error: UART device not found.")
+    print(f"[{Path(__file__).name}] Error: UART device not found")
     sys.exit(1)
 
 
