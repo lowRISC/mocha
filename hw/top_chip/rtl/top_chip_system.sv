@@ -172,6 +172,7 @@ module top_chip_system #(
   pwrmgr_pkg::pwr_clk_rsp_t   pwrmgr_pwr_clk_rsp;
   pwrmgr_pkg::pwr_rst_req_t   pwrmgr_pwr_rst_req;
   pwrmgr_pkg::pwr_rst_rsp_t   pwrmgr_pwr_rst_rsp;
+  logic                       pwrmgr_strap_en;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -386,8 +387,8 @@ module top_chip_system #(
     .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
     .racl_error_o    ( ),
 
-    // Unused strap ports
-    .strap_en_i       ('0),
+    // Strap ports.
+    .strap_en_i       (pwrmgr_strap_en),
     .sampled_straps_o ( ),
 
     // GPIOs
@@ -592,7 +593,7 @@ module top_chip_system #(
     .wakeups_i        ('0), // Always wake up immediately.
     .rstreqs_i        ('0), // No reset requests yet.
     .ndmreset_req_i   ('0), // No debug module yet.
-    .strap_o          ( ), //TODO strap this to GPIO.
+    .strap_o          (pwrmgr_strap_en),
     .low_power_o      ( ), // Low power not yet supported.
     .rom_ctrl_i       (rom_ctrl_pkg::PWRMGR_DATA_DEFAULT),
     .lc_dft_en_i      (4'b1010), // lc_tx_t value Off.
