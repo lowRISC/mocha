@@ -25,6 +25,7 @@ initial force dut.rst_io_ni = rst_n;
 `CONNECT_TL_DEVICE_IF(rstmgr, dut, clk_io_i, rst_n)
 `CONNECT_TL_DEVICE_IF(pwrmgr, dut, clk_io_i, rst_n)
 `CONNECT_TL_DEVICE_IF(uart, dut, clk_io_i, rst_n)
+`CONNECT_TL_DEVICE_IF(i2c, dut, clk_io_i, rst_n)
 `CONNECT_TL_DEVICE_IF(spi_device, dut, clk_io_i, rst_n)
 `CONNECT_TL_DEVICE_IF(timer, dut, clk_io_i, rst_n)
 `CONNECT_TL_DEVICE_IF(plic, dut, clk_io_i, rst_n)
