@@ -5,12 +5,20 @@
 
 import argparse
 import json
+import shlex
 import sys
 from pathlib import Path
 from typing import TextIO
 
 import jinja2
 import svgwrite
+
+# root of the project directory
+PROJECT_ROOT = Path.resolve(Path(__file__)).parent.parent
+
+
+def root_resolve(path: Path) -> Path:
+    return path.resolve().relative_to(PROJECT_ROOT)
 
 
 def human_size(num, suffix="B"):
@@ -39,14 +47,19 @@ def gen_from_template(input_file: Path, out_file: Path, template: str, comment_s
     print(f"Successfully generated {out_file}")
 
 
-def get_command_line() -> str:
-    args = []
-    for item in sys.argv:
-        if Path(item).exists():
-            args.append(str(Path(item).resolve().relative_to(Path.cwd())))
+def get_command_line(args) -> str:
+    a = [str(root_resolve(Path(sys.argv[0])))]
+    for v in vars(args).values():
+        if isinstance(v, Path):
+            # if argument was a path, resolve it relative to the project root directory
+            a.append(str(root_resolve(v)))
+        elif isinstance(v, str):
+            # append as is if it is a string. at the moment it is assumed that there are no
+            # optional arguments or flags (flag names would be keys in the args namespace).
+            a.append(v)
         else:
-            args.append(item)
-    return " ".join(args)
+            pass
+    return shlex.join(a)
 
 
 # REUSE-IgnoreStart
@@ -57,12 +70,12 @@ SPDX-License-Identifier: Apache-2.0
 # REUSE-IgnoreEnd
 
 
-def emit_file_header(file: TextIO, comment_open: str = "", comment_close: str = "") -> None:
+def emit_file_header(file: TextIO, args, comment_open: str = "", comment_close: str = "") -> None:
     """Emit a file header consisting of the project's license header and a line showing
     what command was invoked to generate it, wrapped in comments."""
     for line in LICENSE_HEADER.splitlines():
         file.write(f"{comment_open}{line}{comment_close}\n")
-    file.write(f"{comment_open}Auto-generated: '{get_command_line()}'{comment_close}\n")
+    file.write(f"{comment_open}Auto-generated: '{get_command_line(args)}'{comment_close}\n")
 
 
 LD_TEMPLATE = """
@@ -88,7 +101,7 @@ def gen_linker_script(args) -> None:
     out_file = Path(args.out_file)
 
     with out_file.open("w") as f:
-        emit_file_header(f, comment_open="/* ", comment_close=" */")
+        emit_file_header(f, args, comment_open="/* ", comment_close=" */")
     gen_from_template(input_file, out_file, LD_TEMPLATE)
 
 
@@ -572,7 +585,7 @@ def gen_device_register_c_headers(args) -> None:
         device_header = output_dir / f"{device_name}.h"
         with Path.open(device_header, "w") as f:
             # emit license and auto-generation file header.
-            emit_file_header(f, comment_open="// ")
+            emit_file_header(f, args, comment_open="// ")
             # emit the required preprocessor statements.
             f.write("\n#pragma once\n\n#include <stdbool.h>\n#include <stdint.h>\n\n")
             # emit the generated C code.
@@ -592,7 +605,7 @@ def main():
         "out_file",
         type=Path,
         nargs="?",
-        default=Path("./build/memory.ld"),
+        default=root_resolve(PROJECT_ROOT / Path("build/memory.ld")),
         help="Output filename. (default: %(default)s)",
     )
     linker_parser.set_defaults(func=gen_linker_script)
@@ -606,7 +619,7 @@ def main():
         "out_file",
         type=Path,
         nargs="?",
-        default=Path("./build/memmap.svg"),
+        default=root_resolve(PROJECT_ROOT / Path("build/memmap.svg")),
         help="Output filename. (default: %(default)s)",
     )
     map_parser.set_defaults(func=gen_memory_map)
@@ -622,7 +635,7 @@ def main():
         "out_dir",
         type=Path,
         nargs="?",
-        default=Path("./sw/device/lib/hal/autogen"),
+        default=root_resolve(PROJECT_ROOT / Path("sw/device/lib/hal/autogen")),
         help="Output directory for auto-generated register DIF code. (default: %(default)s)",
     )
     register_parser.set_defaults(func=gen_device_register_c_headers)
