@@ -11,19 +11,23 @@ import os
 import sys
 from pathlib import Path
 
-DEFAULT_BUILD_DIR = "build/sw"
+# root of the project directory
+PROJECT_ROOT = Path.resolve(Path(__file__)).parent.parent
+
+# build directory
+BUILD_DIR = PROJECT_ROOT / Path("build/sw")
 
 
 def main():
     c_files = []
     tidy_extensions = [".c", ".cc", ".h", ".hh"]
-    for directory, _, files in os.walk("sw"):
+    for directory, _, files in os.walk(PROJECT_ROOT / Path("sw")):
         c_files.extend(
             Path(directory) / Path(file) for file in files if (Path(file).suffix in tidy_extensions)
         )
 
     cmd = "clang-tidy"
-    cmd_args = [cmd, "-p", DEFAULT_BUILD_DIR, *sys.argv[1:], *c_files]
+    cmd_args = [cmd, "-p", BUILD_DIR, *sys.argv[1:], *c_files]
     os.execvp(cmd, cmd_args)
 
 
