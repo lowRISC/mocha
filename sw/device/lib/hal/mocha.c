@@ -70,7 +70,7 @@ rstmgr_t mocha_system_rstmgr(void)
 uart_t mocha_system_uart(void)
 {
 #if defined(__riscv_zcherihybrid)
-    return (uart_t)create_mmio_capability(uart_base, 0x20u);
+    return (uart_t)create_mmio_capability(uart_base, 0x34u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (uart_t)uart_base;
 #endif /* defined(__riscv_zcherihybrid) */
