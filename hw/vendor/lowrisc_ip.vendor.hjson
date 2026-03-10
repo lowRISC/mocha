@@ -33,6 +33,7 @@
     {from: "hw/ip/spi_device", to: "ip/spi_device", patch_dir: "spi_device"}, // SPI device.
     {from: "hw/ip/tlul",       to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
     {from: "hw/ip/uart",       to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
+    {from: "hw/ip/rom_ctrl",   to: "ip/rom_ctrl", patch_dir: "rom_ctrl"}, // ROM Control.
 
     // Hardware IP templates.
     {from: "hw/ip_templates/gpio",    to: "ip_templates/gpio"}, // General purpose I/O
