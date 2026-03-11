@@ -37,6 +37,20 @@ This is the current memory map for Mocha, where the base and top addresses are i
 
 ![Mocha memory map](doc/img/memmap.svg)
 
+### Top-level interface
+
+The Mocha top will need a few top-level inputs.
+Some of these are listed here:
+- Clock outputs from PLLs.
+- Rollback counter backed by OTP.
+- Debug and design for test enable pins.
+- True random noise source to drive the entorpy source.
+- AXI subordinate port to connect to the mailbox.
+
+In terms of output, the top-level will need output signals:
+- Key to provide an AES engine outside of the secure enclave with the memory encryption key.
+- AXI manager port to interact with the rest of the chip.
+
 ## Developer guide
 
 ### Setup Python virtual environment
