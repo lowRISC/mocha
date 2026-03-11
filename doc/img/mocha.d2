@@ -10,10 +10,6 @@ dram: |md
     #### DRAM
 
     1 GiB of DDR3
-
-    Includes PHY
-
-    Includes controller
 |
 dram.shape: rectangle
 dram.style.stroke-dash: 3
@@ -52,7 +48,7 @@ Mocha: {
     axi: |md
         #### AXI crossbar
 
-        Capability width
+        64-bit width
     |
     axi.shape: rectangle
 
@@ -75,26 +71,11 @@ Mocha: {
     Debug.style.fill: hotpink
     axi <-> SRAM
     SRAM.style.fill: hotpink
+    axi <-> Mailbox
+    Mailbox.style.fill:hotpink
+    Mailbox.style.stroke-dash: 3
 
     Peripherals {
-        Mailbox
-        Mailbox.style.fill:lightpink
-        Mailbox.style.stroke-dash: 3
-        I2C
-        I2C.style.fill: lightpink
-        I2C.style.stroke-dash: 3
-        SPI host
-        SPI host.style.fill: lightpink
-        SPI host.style.stroke-dash: 3
-        SPI devc
-        SPI devc.style.fill: lightpink
-        SPI devc.style.stroke-dash: 3
-        UART
-        UART.style.fill: lightpink
-        UART.style.stroke-dash: 3
-        GPIO
-        GPIO.style.fill: lightpink
-        GPIO.style.stroke-dash: 3
         rom: |md
             #### ROM
 
@@ -103,12 +84,53 @@ Mocha: {
         rom.shape: rectangle
         rom.style.fill: lightpink
         rom.style.stroke-dash: 3
+        entropy: |md
+            #### Entropy
+
+            Source
+        |
+        entropy.shape: rectangle
+        entropy.style.fill: lightpink
+        entropy.style.stroke-dash: 3
+        kmac: |md
+            #### KMAC
+
+            SHA3
+        |
+        kmac.shape: rectangle
+        kmac.style.fill: lightpink
+        kmac.style.stroke-dash: 3
         PLIC
         PLIC.style.fill:lightpink
         PLIC.style.stroke-dash: 3
         Timer
         Timer.style.fill: lightpink
         Timer.style.stroke-dash: 3
+        GPIO
+        GPIO.style.fill: lightpink
+        GPIO.style.stroke-dash: 3
+        I2C
+        I2C.style.fill: lightpink
+        I2C.style.stroke-dash: 3
+        spi_dev: |md
+            #### SPI
+
+            Device
+        |
+        spi_dev.shape: rectangle
+        spi_dev.style.fill: lightpink
+        spi_dev.style.stroke-dash: 3
+        spi_host: |md
+            #### SPI
+
+            Host
+        |
+        spi_host.shape: rectangle
+        spi_host.style.fill: lightpink
+        spi_host.style.stroke-dash: 3
+        UART
+        UART.style.fill: lightpink
+        UART.style.stroke-dash: 3
         managers: |md
             #### Managers
 
@@ -131,26 +153,24 @@ Mocha: {
 chip: |md
     #### Rest of chip
 
-    AXI crossbar
-
-    128-bit wide
+    64-bit bus
 |
 chip.shape: rectangle
 chip.style.fill: hotpink
 chip.style.stroke-dash: 3
 
-Mocha.Peripherals.SPI host <-> Flash
+Mocha.Peripherals.spi_host <-> Flash
 Flash.style.fill: hotpink
 Flash.style.stroke-dash: 3
 
 # External interfaces
 Mocha.Tag control <-> dram
 Mocha.axi <-> chip
-Mocha.Peripherals.Mailbox <-> chip
+Mocha.Mailbox <-> chip
 Mocha.Peripherals.I2C <-> I2C
 I2C.style.fill: hotpink
 I2C.style.stroke-dash: 3
-Mocha.Peripherals.SPI devc <-> SPI
+Mocha.Peripherals.spi_dev <-> SPI
 SPI.style.fill: hotpink
 SPI.style.stroke-dash: 3
 Mocha.Peripherals.UART <-> UART
