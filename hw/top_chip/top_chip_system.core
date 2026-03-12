@@ -19,6 +19,7 @@ filesets:
       - lowrisc:tlul:adapter_reg
       - lowrisc:mocha_constants:top_racl_pkg
       - pulp-platform.org::axi
+      - pulp-platform.org::riscv_dbg
       - cosmic::cva6cheri
       - lowrisc:common_cells:all
     files:
