@@ -19,6 +19,13 @@ module top_chip_verilator (input logic clk_i, rst_ni);
   logic [3:0] qspi_device_sdo_en;
   logic       spi_device_sdi;
 
+  // JTAG signals
+  logic jtag_tck;
+  logic jtag_tms;
+  logic jtag_tdi;
+  logic jtag_tdo;
+  logic jtag_trst_n;
+
   // CHERI Mocha top
   top_chip_system #(
   ) u_top_chip_system (
@@ -37,7 +44,13 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .spi_device_sd_o      (qspi_device_sdo),
     .spi_device_sd_en_o   (qspi_device_sdo_en),
     .spi_device_sd_i      ({3'h0, spi_device_sdi}), // SPI MOSI = QSPI DQ0
-    .spi_device_tpm_csb_i ('0)
+    .spi_device_tpm_csb_i ('0),
+
+    .dm_jtag_tck(jtag_tck),
+    .dm_jtag_tms(jtag_tms),
+    .dm_jtag_tdi(jtag_tdi),
+    .dm_jtag_tdo(jtag_tdo),
+    .dm_jtag_trst_n(jtag_trst_n)
   );
 
   // Virtual GPIO
@@ -65,6 +78,22 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .active(1'b1),
     .tx_o  (uart_rx),
     .rx_i  (uart_tx)
+  );
+
+  // Virtual jtag
+  jtagdpi #(
+    .Name("jtag0"),
+    .ListenPort(44853)
+  ) u_jtagdpi (
+    .clk_i,
+    .rst_ni,
+    .active(1'b1),
+    .jtag_tck(jtag_tck),
+    .jtag_tms(jtag_tms),
+    .jtag_tdi(jtag_tdi),
+    .jtag_tdo(jtag_tdo),
+    .jtag_trst_n(jtag_trst_n),
+    .jtag_srst_n(/* TODO */)
   );
 
   // Virtual SPI host

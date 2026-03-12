@@ -22,6 +22,8 @@ filesets:
       - lowrisc:dv_dpi_sv:uartdpi:0.1
       - lowrisc:dv_dpi_c:spidpi:0.1
       - lowrisc:dv_dpi_sv:spidpi:0.1
+      - lowrisc:dv_dpi_c:jtagdpi:0.1
+      - lowrisc:dv_dpi_sv:jtagdpi:0.1
       - lowrisc:mocha_dv:sim_sram_axi:0.1
       - lowrisc:dv:sw_test_status
       - lowrisc:dv:dv_test_status

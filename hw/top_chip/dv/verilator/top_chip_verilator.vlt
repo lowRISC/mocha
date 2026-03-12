@@ -28,5 +28,7 @@ lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -matc
 lint_off -rule WIDTHTRUNC -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_can_read(ctx)*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -match "*uartdpi_write(ctx, rxsymbol)*"
 
+lint_off -rule BLKSEQ -file "*/lowrisc_dv_dpi_sv_jtagdpi*/jtagdpi.sv" -match "*ctx = jtagdpi_create(Name, port, assert_srst)*"
+
 // Spidpi in Verilator top has single SPI interface, some QSPI signals are therefore unused
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/dv/verilator/top_chip_verilator.sv" -match "*qspi_device_sdo*"

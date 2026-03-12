@@ -50,6 +50,8 @@
     {from: "hw/dv/dpi/gpiodpi", to: "dv/dpi/gpiodpi"},
     {from: "hw/dv/dpi/spidpi",  to: "dv/dpi/spidpi"},
     {from: "hw/dv/dpi/uartdpi", to: "dv/dpi/uartdpi"},
+    {from: "hw/dv/dpi/jtagdpi", to: "dv/dpi/jtagdpi"},
+    {from: "hw/dv/dpi/common/tcp_server", to: "dv/dpi/common/tcp_server"},
     {from: "hw/dv/sv",          to: "dv/sv", patch_dir: "dv_sv"},
     {from: "hw/dv/verilator",   to: "dv/verilator", patch_dir: "dv_verilator"},
 

@@ -53,6 +53,7 @@ lint_off -rule WIDTHEXPAND -file "*/cva6_cheri/core/*.sv"
 lint_off -rule UNOPTFLAT -file "*/cva6_cheri/core/*.sv"
 // Caused by using async reset in sync concurrent assertion in CVA6
 lint_off -rule SYNCASYNCNET -file "*/*lowrisc_mocha_top_chip_system*/top_chip_verilator.sv" -match "*rst_ni*"
+lint_off -rule SYNCASYNCNET -file "*/*lowrisc_prim_generic_ram_1p*/rtl/prim_ram_1p.sv" -match "*rst_ni*"
 
 // Mute RTL style warnings from PULP AXI
 // TODO: clean up lint issues

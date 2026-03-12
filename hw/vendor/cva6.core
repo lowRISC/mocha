@@ -79,6 +79,7 @@ filesets:
       - cva6_cheri/core/cache_subsystem/cva6_icache.sv
       - cva6_cheri/core/cache_subsystem/wt_cache_subsystem.sv
       - cva6_cheri/core/cache_subsystem/wt_axi_adapter.sv
+      - cva6_cheri/core/cache_subsystem/axi_adapter.sv
       - cva6_cheri/common/local/util/tc_sram_wrapper.sv
       - cva6_cheri/common/local/util/sram.sv
       - cva6_cheri/common/local/util/sram_cache.sv

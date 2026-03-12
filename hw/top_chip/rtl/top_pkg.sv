@@ -16,27 +16,31 @@ package top_pkg;
   localparam int TL_SZW = $clog2($clog2(TL_DBW)+1);
 
   // AXI crossbar parameters
-  localparam int AxiXbarHosts   = 1;
-  localparam int AxiXbarDevices = 2;
+  localparam int AxiXbarHosts   = 2;
+  localparam int AxiXbarDevices = 3;
 
   // AXI crossbar hosts and devices
   typedef enum int unsigned {
-    CVA6 = 0
+    CVA6 = 0,
+    DM_HOST = 1
   } axi_hosts_t;
 
   typedef enum int unsigned {
     SRAM       = 0,
-    TlCrossbar = 1
+    TlCrossbar = 1,
+    DM_DEV     = 2
   } axi_devices_t;
 
   typedef enum longint unsigned {
     SRAMBase       = 64'h1000_0000,
-    TlCrossbarBase = 64'h4000_0000
+    TlCrossbarBase = 64'h4000_0000,
+    DebugBase      = 64'h0000_0000
   } axi_addr_start_t;
 
   typedef enum longint unsigned {
     SRAMLength       = 64'h0002_0000,
-    TlCrossbarLength = 64'h1000_0000
+    TlCrossbarLength = 64'h1000_0000,
+    DebugLength      = 64'h0000_1000
   } axi_addr_length_t;
 
   typedef enum longint unsigned {
@@ -45,7 +49,7 @@ package top_pkg;
   } axi_addr_mask_t;
 
   // AXI parameters
-  localparam AxiIdWidth   = cva6_config_pkg::CVA6ConfigAxiIdWidth;
+  localparam AxiIdWidth   = cva6_config_pkg::CVA6ConfigAxiIdWidth + 1;
   localparam AxiUserWidth = cva6_config_pkg::CVA6ConfigDataUserWidth;
   localparam AxiAddrWidth = cva6_config_pkg::CVA6ConfigAxiAddrWidth;
   localparam AxiDataWidth = cva6_config_pkg::CVA6ConfigAxiDataWidth;
