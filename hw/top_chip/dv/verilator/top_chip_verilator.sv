@@ -130,7 +130,7 @@ module top_chip_verilator (input logic clk_i, rst_ni);
   `define DUT               u_top_chip_system
   `define SIM_SRAM_IF       u_sim_sram.u_sim_sram_if
 
-  localparam bit [31:0] VERILATOR_SW_DV_START_ADDR       = 'h2001_0000;
+  localparam bit [31:0] VERILATOR_SW_DV_START_ADDR       = 'h2002_0000;
   localparam bit [31:0] VERILATOR_SW_DV_SIZE             = 'h0000_0100;   // 256 bytes reserved
   localparam bit [31:0] VERILATOR_SW_DV_TEST_STATUS_ADDR = VERILATOR_SW_DV_START_ADDR + 'h00;
 

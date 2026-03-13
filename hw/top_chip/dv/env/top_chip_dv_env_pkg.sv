@@ -41,7 +41,7 @@ package top_chip_dv_env_pkg;
   parameter int unsigned PeriClkFreq = 50_000_000;
 
   // SW DV special write locations for test status and logging will always fit in 32-bits
-  parameter bit [31:0] SW_DV_START_ADDR       = 'h2001_0000;
+  parameter bit [31:0] SW_DV_START_ADDR       = 'h2002_0000;
   parameter bit [31:0] SW_DV_SIZE             = 'h0000_0100;        // 256 bytes reserved for SW DV
   parameter bit [31:0] SW_DV_TEST_STATUS_ADDR = SW_DV_START_ADDR + 'h00;
   parameter bit [31:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h04;
