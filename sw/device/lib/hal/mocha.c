@@ -11,7 +11,8 @@
 #include <cheriintrin.h>
 #endif /* defined(__riscv_zcherihybrid) */
 
-static const uintptr_t dv_test_status_base = 0x20010000ul;
+static const uintptr_t mailbox_base = 0x20010000ul;
+static const uintptr_t dv_test_status_base = 0x20020000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
 static const uintptr_t rstmgr_base = 0x40030000ul;
@@ -40,6 +41,15 @@ static void *create_mmio_capability(uintptr_t address, size_t length)
     return cap;
 }
 #endif /* defined(__riscv_zcherihybrid) */
+
+mailbox_t mocha_system_mailbox(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (mailbox_t)create_mmio_capability(mailbox_base, 0x50u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (mailbox_t)mailbox_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
 
 gpio_t mocha_system_gpio(void)
 {

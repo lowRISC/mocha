@@ -164,6 +164,18 @@
       sw_images: ["rv_dm_access_after_escalation_reset_test_vanilla_bare:5"]
       run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_escalation_reset_test_vanilla_bare.vmem"]
     }
+    {
+      name: mailbox_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["mailbox_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: mailbox_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["mailbox_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_cheri_bare.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -183,7 +195,10 @@
         "test_framework_exception_test_cheri",
         "spi_device_smoke",
         "spi_device_smoke_cheri",
-        "gpio_smoke"
+        "gpio_smoke",
+        "mailbox_smoke",
+        //TODO currently broken.
+        // "mailbox_smoke_cheri"
       ]
     }
     {
@@ -249,6 +264,13 @@
         "rv_dm_ndm_reset_req_when_cpu_halted",
         "rv_dm_access_after_wakeup",
         "rv_dm_access_after_escalation_reset"
+      ]
+    }
+    {
+      name: mailbox
+      tests: [
+        "mailbox_smoke",
+        "mailbox_smoke_cheri"
       ]
     }
   ]
