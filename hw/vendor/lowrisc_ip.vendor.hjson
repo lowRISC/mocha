@@ -34,6 +34,7 @@
     {from: "hw/ip/tlul",       to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
     {from: "hw/ip/uart",       to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
     {from: "hw/ip/rom_ctrl",   to: "ip/rom_ctrl", patch_dir: "rom_ctrl"}, // ROM Control.
+    {from: "hw/ip/kmac",       to: "ip/kmac", patch_dir: "kmac"}, // kmac.
 
     // Hardware IP templates.
     {from: "hw/ip_templates/gpio",    to: "ip_templates/gpio"}, // General purpose I/O
