@@ -64,6 +64,7 @@ lint_off -rule UNUSEDPARAM -file "*/pulp-platform*_axi*/src/*.sv" -match "*AxiId
 lint_off -rule WIDTHTRUNC -file "*/pulp-platform*_axi*/src/*.sv"
 lint_off -rule WIDTHEXPAND -file "*/pulp-platform*_axi*/src/*.sv"
 lint_off -rule UNOPTFLAT -file "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNUSEDPARAM -file "*/pulp-platform*_axi*/src/*.sv"
 
 // Mute RTL style warning from lowRISC prim
 lint_off -rule ALWCOMBORDER -file "*/lowrisc_prim_leading_one_ppc*/rtl/prim_leading_one_ppc.sv" -match "*ppc_out*"
@@ -91,6 +92,7 @@ lint_off -rule WIDTHEXPAND -file "*/lowrisc_common_cells_all*/rtl/popcount.sv" -
 lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*sel_nodes*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
 lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*gnt_nodes*"
+lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/id_queue.sv" -match "*match_in_id_valid*"
 
 // Mute RTL style warning from lowRISC UART IP
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_uart*/rtl/uart_core.sv" -match "*uart_fifo_rxilvl*"
