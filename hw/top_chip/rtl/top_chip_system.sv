@@ -596,8 +596,8 @@ module top_chip_system #(
     .strap_o          (pwrmgr_strap_en),
     .low_power_o      ( ), // Low power not yet supported.
     .rom_ctrl_i       (rom_ctrl_pkg::PWRMGR_DATA_DEFAULT),
-    .lc_dft_en_i      (4'b1010), // lc_tx_t value Off.
-    .lc_hw_debug_en_i (4'b0101), // lc_tx_t value On.
+    .lc_dft_en_i      (lc_ctrl_pkg::Off),
+    .lc_hw_debug_en_i (lc_ctrl_pkg::On),
     .sw_rst_req_i     (rstmgr_sw_rst_req),
     .tl_i             (tl_pwrmgr_h2d),
     .tl_o             (tl_pwrmgr_d2h),
