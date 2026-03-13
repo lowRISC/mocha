@@ -41,6 +41,7 @@ filesets:
       - rtl/stream_fork_dynamic.sv
       - rtl/stream_fork.sv
       - rtl/stream_mux.sv
+      - rtl/stream_register.sv
       - rtl/stream_xbar.sv
       - rtl/sub_per_hash.sv
     file_type: systemVerilogSource
