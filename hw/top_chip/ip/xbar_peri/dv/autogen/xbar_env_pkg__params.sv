@@ -7,8 +7,14 @@
 
 // List of Xbar device memory map
 tl_device_t xbar_devices[$] = '{
+    '{"rom_ctrl_rom", '{
+        '{32'h00080000, 32'h0009ffff}
+    }},
     '{"gpio", '{
         '{32'h40000000, 32'h4000ffff}
+    }},
+    '{"rom_ctrl_regs", '{
+        '{32'h40060000, 32'h4006ffff}
     }},
     '{"uart", '{
         '{32'h41000000, 32'h41000fff}
@@ -27,6 +33,8 @@ tl_device_t xbar_devices[$] = '{
 tl_host_t xbar_hosts[$] = '{
     '{"axi_xbar", 0, '{
         "gpio",
+        "rom_ctrl_rom",
+        "rom_ctrl_regs",
         "uart",
         "spi_device",
         "timer",
