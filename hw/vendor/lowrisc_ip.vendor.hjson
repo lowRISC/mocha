@@ -34,6 +34,7 @@
     {from: "hw/ip/rv_core_ibex", to: "ip/rv_core_pkg", patch_dir: "rv_core_pkg"}, // RISC-V core package.
     {from: "hw/ip/rv_timer",     to: "ip/rv_timer", patch_dir: "rv_timer"}, // Timer.
     {from: "hw/ip/spi_device",   to: "ip/spi_device", patch_dir: "spi_device"}, // SPI device.
+    {from: "hw/ip/spi_host",     to: "ip/spi_host"}, // SPI host.
     {from: "hw/ip/tlul",         to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
     {from: "hw/ip/uart",         to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
 
