@@ -51,6 +51,10 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .uart_rx_i (uart_rx),
     .uart_tx_o (uart_tx),
 
+    .axi_mailbox_req_i   ('0),
+    .axi_mailbox_resp_o  ( ),
+    .mailbox_ext_irq_o   ( ),
+
     .i2c_scl_i    (i2c_scl_sys_in),
     .i2c_scl_o    (i2c_scl_sys_o),
     .i2c_scl_en_o (i2c_scl_sys_oe),

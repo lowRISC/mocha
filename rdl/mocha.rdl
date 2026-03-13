@@ -22,9 +22,9 @@ addrmap top_mocha {
 
   reserved DEBUG_MODULE @ 0x2000_0000;
 
-  reserved GPIO @ 0x4000_0000;
+  reserved MAILBOX @ 0x2001_0000;
 
-  reserved MAILBOX @ 0x4001_0000;
+  reserved GPIO @ 0x4000_0000;
 
   reserved CLOCK_MANAGER @ 0x4002_0000;
 

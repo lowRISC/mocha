@@ -52,6 +52,10 @@ module tb;
     // UART receive and transmit.
     .uart_rx_i            (uart_if.uart_rx  ),
     .uart_tx_o            (uart_if.uart_tx  ),
+    // External Mailbox port
+    .axi_mailbox_req_i    ('0               ),
+    .axi_mailbox_resp_o   (                 ),
+    .mailbox_ext_irq_o    (                 ),
     // SPI device receive and transmit.
     // TODO SPI device signals are currently tied off, need to be connected to a SPI agent
     .spi_device_sck_i     (1'b0             ),

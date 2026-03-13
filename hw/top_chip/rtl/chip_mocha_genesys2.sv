@@ -173,6 +173,11 @@ module chip_mocha_genesys2 #(
     .i2c_sda_o    (i2c_sda_output),
     .i2c_sda_en_o (i2c_sda_en_output),
 
+    // Mailbox
+    .axi_mailbox_req_i   ('0),
+    .axi_mailbox_resp_o  ( ),
+    .mailbox_ext_irq_o   ( ),
+
     // SPI device
     .spi_device_sck_i     (spi_device_sck_i),
     .spi_device_csb_i     (spi_device_csb_i),

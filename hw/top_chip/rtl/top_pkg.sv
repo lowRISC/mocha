@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+`include "axi/typedef.svh"
+
 package top_pkg;
   import axi_pkg::*;
 
@@ -17,7 +19,7 @@ package top_pkg;
 
   // AXI crossbar parameters
   localparam int AxiXbarHosts   = 1;
-  localparam int AxiXbarDevices = 3;
+  localparam int AxiXbarDevices = 4;
 
   // AXI crossbar hosts and devices
   typedef enum int unsigned {
@@ -26,24 +28,28 @@ package top_pkg;
 
   typedef enum int unsigned {
     SRAM       = 0,
-    TlCrossbar = 1,
-    DRAM       = 2
+    Mailbox    = 1,
+    TlCrossbar = 2,
+    DRAM       = 3
   } axi_devices_t;
 
   typedef enum longint unsigned {
     SRAMBase       = 64'h1000_0000,
+    MailboxBase    = 64'h2001_0000,
     TlCrossbarBase = 64'h4000_0000,
     DRAMBase       = 64'h8000_0000
   } axi_addr_start_t;
 
   typedef enum longint unsigned {
     SRAMLength       = 64'h0002_0000,
+    MailboxLength    = 64'h0001_0000,
     TlCrossbarLength = 64'h1000_0000,
     DRAMLength       = 64'h3F80_0000
   } axi_addr_length_t;
 
   typedef enum longint unsigned {
     SRAMMask       = SRAMLength - 1,
+    MailboxMask    = MailboxLength - 1,
     TlCrossbarMask = TlCrossbarLength - 1,
     DRAMMask       = DRAMLength - 1
   } axi_addr_mask_t;
@@ -213,5 +219,11 @@ package top_pkg;
     logic             r_valid;
     axi_dram_r_chan_t r;
   } axi_dram_resp_t;
+
+  // Base Address Mailbox over ext AXI port
+  localparam addr_t MailboxExtBaseAddr = 'h0000_0000_0000_1000;
+
+  // AXI Lite type definitions
+  `AXI_LITE_TYPEDEF_ALL(axi_lite, addr_t, data_t, strb_t)
 
 endpackage

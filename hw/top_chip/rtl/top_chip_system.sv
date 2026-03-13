@@ -30,6 +30,13 @@ module top_chip_system #(
   output logic i2c_sda_o,
   output logic i2c_sda_en_o,
 
+  // External AXI mailbox access
+  input  top_pkg::axi_req_t  axi_mailbox_req_i,  // TODO: Adapt type to surrounding system.
+  output top_pkg::axi_resp_t axi_mailbox_resp_o, // TODO: Adapt type to surrounding system.
+
+  // Mailbox IRQ out
+  output logic mailbox_ext_irq_o,
+
   // SPI device receive and transmit.
   input  logic       spi_device_sck_i,
   input  logic       spi_device_csb_i,
@@ -92,6 +99,7 @@ module top_chip_system #(
   axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
   assign addr_map = '{
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
+    '{ idx: top_pkg::Mailbox,    start_addr: top_pkg::MailboxBase,    end_addr: top_pkg::MailboxBase    + top_pkg::MailboxLength    },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
     '{ idx: top_pkg::DRAM,       start_addr: top_pkg::DRAMBase,       end_addr: top_pkg::DRAMBase       + top_pkg::DRAMLength       }
   };
@@ -161,6 +169,7 @@ module top_chip_system #(
   // Each IP block has a single interrupt line to the PLIC and software shall consult the intr_state
   // register within the block itself to identify the interrupt source(s).
   logic gpio_irq;
+  logic mailbox_main_irq;
   logic uart_irq;
   logic i2c_irq;
   logic spi_device_irq;
@@ -177,7 +186,8 @@ module top_chip_system #(
   // Interrupt vector
   logic [31:0] intr_vector;
 
-  assign intr_vector[31 :11] = '0;      // Reserved for future use.
+  assign intr_vector[31 :12] = '0;      // Reserved for future use.
+  assign intr_vector[11    ] = mailbox_main_irq;
   assign intr_vector[10    ] = pwrmgr_wakeup_irq;
   assign intr_vector[ 9    ] = gpio_irq;
   assign intr_vector[ 8    ] = uart_irq;
@@ -204,6 +214,12 @@ module top_chip_system #(
   pwrmgr_pkg::pwr_rst_req_t   pwrmgr_pwr_rst_req;
   pwrmgr_pkg::pwr_rst_rsp_t   pwrmgr_pwr_rst_rsp;
   logic                       pwrmgr_strap_en;
+
+  // Define AXI Lite signals for the mailbox
+  top_pkg::axi_lite_req_t  mailbox_main_req;
+  top_pkg::axi_lite_resp_t mailbox_main_resp;
+  top_pkg::axi_lite_req_t  mailbox_ext_req;
+  top_pkg::axi_lite_resp_t mailbox_ext_resp;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -286,6 +302,73 @@ module top_chip_system #(
     .addr_map_i           (addr_map),
     .en_default_mst_port_i('0),
     .default_mst_port_i   ('0)
+  );
+
+
+  // Mailbox: main AXI to AXI Lite adapter
+  axi_to_axi_lite #(
+    .AxiAddrWidth   ( top_pkg::AxiAddrWidth ),
+    .AxiDataWidth   ( top_pkg::AxiDataWidth ),
+    .AxiIdWidth     ( top_pkg::AxiIdWidth   ),
+    .AxiUserWidth   ( top_pkg::AxiUserWidth ),
+    .AxiMaxWriteTxns( 32'd1 ),
+    .AxiMaxReadTxns ( 32'd1 ),
+    .FullBW         ( 32'd1 ), // TODO: Tune me
+    .FallThrough    ( 32'd0 ), // TODO: Tune me
+    .full_req_t     ( top_pkg::axi_req_t  ),
+    .full_resp_t    ( top_pkg::axi_resp_t ),
+    .lite_req_t     ( top_pkg::axi_lite_req_t  ),
+    .lite_resp_t    ( top_pkg::axi_lite_resp_t )
+  ) u_axi_to_axi_lite_mailbox_main (
+    .clk_i      ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+    .test_i     ( 1'b0 ),
+    .slv_req_i  ( xbar_device_req[top_pkg::Mailbox]  ),
+    .slv_resp_o ( xbar_device_resp[top_pkg::Mailbox] ),
+    .mst_req_o  ( mailbox_main_req  ),
+    .mst_resp_i ( mailbox_main_resp )
+  );
+
+  // Mailbox: external AXI to AXI Lite adapter
+  axi_to_axi_lite #(
+    .AxiAddrWidth   ( top_pkg::AxiAddrWidth ),
+    .AxiDataWidth   ( top_pkg::AxiDataWidth ),
+    .AxiIdWidth     ( top_pkg::AxiIdWidth   ),
+    .AxiUserWidth   ( top_pkg::AxiUserWidth ),
+    .AxiMaxWriteTxns( 32'd1 ),
+    .AxiMaxReadTxns ( 32'd1 ),
+    .FullBW         ( 32'd1 ), // TODO: Tune me
+    .FallThrough    ( 32'd0 ), // TODO: Tune me
+    .full_req_t     ( top_pkg::axi_req_t  ),
+    .full_resp_t    ( top_pkg::axi_resp_t ),
+    .lite_req_t     ( top_pkg::axi_lite_req_t  ),
+    .lite_resp_t    ( top_pkg::axi_lite_resp_t )
+  ) u_axi_to_axi_lite_mailbox_ext (
+    .clk_i      ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+    .test_i     ( 1'b0 ),
+    .slv_req_i  ( axi_mailbox_req_i  ),
+    .slv_resp_o ( axi_mailbox_resp_o ),
+    .mst_req_o  ( mailbox_ext_req  ),
+    .mst_resp_i ( mailbox_ext_resp )
+  );
+
+  // Mailbox
+  axi_lite_mailbox #(
+    .MailboxDepth ( 32'd3 ), // TODO: Tune me
+    .AxiAddrWidth ( top_pkg::AxiAddrWidth ),
+    .AxiDataWidth ( top_pkg::AxiDataWidth ),
+    .req_lite_t   ( top_pkg::axi_lite_req_t  ),
+    .resp_lite_t  ( top_pkg::axi_lite_resp_t ),
+    .addr_t       ( top_pkg::addr_t )
+  ) u_axi_lite_mailbox (
+    .clk_i       ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni      ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+    .test_i      ( 1'b0 ),
+    .slv_reqs_i  ( { mailbox_ext_req,   mailbox_main_req  } ),
+    .slv_resps_o ( { mailbox_ext_resp,  mailbox_main_resp } ),
+    .irq_o       ( { mailbox_ext_irq_o, mailbox_main_irq  } ),
+    .base_addr_i ( { top_pkg::MailboxExtBaseAddr, top_pkg::MailboxBase } )
   );
 
   // AXI to 64-bit mem for TLUL crossbar
