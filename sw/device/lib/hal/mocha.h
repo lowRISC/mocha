@@ -13,6 +13,7 @@
 #include "hal/plic.h"
 #include "hal/rstmgr.h"
 #include "hal/spi_device.h"
+#include "hal/spi_host.h"
 #include "hal/timer.h"
 #include "hal/uart.h"
 
@@ -32,6 +33,7 @@ uart_t mocha_system_uart(void);
 i2c_t mocha_system_i2c(void);
 spi_device_t mocha_system_spi_device(void);
 timer_t mocha_system_timer(void);
+spi_host_t mocha_system_spi_host(void);
 plic_t mocha_system_plic(void);
 void *mocha_system_dram(void);
 

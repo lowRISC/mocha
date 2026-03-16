@@ -20,6 +20,7 @@ static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t i2c_base = 0x42000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
+static const uintptr_t spi_host_base = 0x45000000ul;
 static const uintptr_t plic_base = 0x48000000ul;
 
 #if defined(__riscv_zcherihybrid)
@@ -111,6 +112,15 @@ timer_t mocha_system_timer(void)
     return (timer_t)create_mmio_capability(timer_base, 0x120u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (timer_t)timer_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+spi_host_t mocha_system_spi_host(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (spi_host_t)create_mmio_capability(spi_host_base, 0x38u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (spi_host_t)spi_host_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
