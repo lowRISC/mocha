@@ -105,6 +105,7 @@ COMMANDS: list[list[str]] = [
     ["util/vendor.py", "hw/vendor/pulp_axi.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_axi_llc.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_register_interface.vendor.hjson"],
+    ["util/vendor.py", "hw/vendor/sonata_system.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/tagctrl.vendor.hjson"],
     # rdl code gen
     ["mkdir", "-p", "build/rdl"],

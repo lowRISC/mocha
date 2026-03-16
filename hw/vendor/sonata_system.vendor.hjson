@@ -1,0 +1,21 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "sonata_system",
+  target_dir: "sonata_system",
+
+  upstream: {
+    url: "https://github.com/lowRISC/sonata-system"
+    // Pinned revision of main branch
+    rev: "main"
+  }
+
+  mapping: [
+    // Simulation.
+    {from: "dv/dpi/i2cdpi", to: "dv/dpi/i2cdpi"},
+  ],
+
+  exclude_from_upstream: [
+  ],
+}
