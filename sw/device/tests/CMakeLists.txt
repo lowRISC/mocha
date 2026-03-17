@@ -12,3 +12,4 @@ mocha_add_test(NAME spi_device_smoketest SOURCES spi_device/smoketest.c LIBRARIE
 mocha_add_test(NAME timer_smoketest SOURCES timer/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME timer_interrupt_test SOURCES timer/interrupt.c LIBRARIES ${LIBS})
 mocha_add_test(NAME uart_smoketest SOURCES uart/smoketest.c LIBRARIES ${LIBS})
+mocha_add_test(NAME rom_ctrl_smoketest SOURCES rom_ctrl/smoketest.c LIBRARIES ${LIBS})

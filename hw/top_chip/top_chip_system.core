@@ -13,6 +13,7 @@ filesets:
       - lowrisc:mocha_ip:gpio
       - lowrisc:mocha_ip:rv_plic
       - lowrisc:ip:spi_device
+      - lowrisc:ip:rom_ctrl
       - lowrisc:ip:xbar_peri
       - lowrisc:prim:onehot
       - lowrisc:tlul:adapter_host
