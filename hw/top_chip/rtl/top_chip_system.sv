@@ -83,6 +83,10 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_axi_xbar_d2h;
   tlul_pkg::tl_h2d_t tl_gpio_h2d;
   tlul_pkg::tl_d2h_t tl_gpio_d2h;
+  tlul_pkg::tl_h2d_t tl_rom_ctrl_rom_h2d;
+  tlul_pkg::tl_d2h_t tl_rom_ctrl_rom_d2h;
+  tlul_pkg::tl_h2d_t tl_rom_ctrl_regs_h2d;
+  tlul_pkg::tl_d2h_t tl_rom_ctrl_regs_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
   tlul_pkg::tl_h2d_t tl_timer_h2d;
@@ -331,16 +335,20 @@ module top_chip_system #(
     .tl_axi_xbar_o(tl_axi_xbar_d2h),
 
     // Device interfaces.
-    .tl_gpio_o       (tl_gpio_h2d),
-    .tl_gpio_i       (tl_gpio_d2h),
-    .tl_uart_o       (tl_uart_h2d),
-    .tl_uart_i       (tl_uart_d2h),
-    .tl_spi_device_o (tl_spi_device_h2d),
-    .tl_spi_device_i (tl_spi_device_d2h),
-    .tl_timer_o      (tl_timer_h2d),
-    .tl_timer_i      (tl_timer_d2h),
-    .tl_plic_o       (tl_plic_h2d),
-    .tl_plic_i       (tl_plic_d2h),
+    .tl_gpio_o          (tl_gpio_h2d),
+    .tl_gpio_i          (tl_gpio_d2h),
+    .tl_uart_o          (tl_uart_h2d),
+    .tl_uart_i          (tl_uart_d2h),
+    .tl_spi_device_o    (tl_spi_device_h2d),
+    .tl_spi_device_i    (tl_spi_device_d2h),
+    .tl_timer_o         (tl_timer_h2d),
+    .tl_timer_i         (tl_timer_d2h),
+    .tl_plic_o          (tl_plic_h2d),
+    .tl_plic_i          (tl_plic_d2h),
+    .tl_rom_ctrl_rom_o  (tl_rom_ctrl_rom_h2d),
+    .tl_rom_ctrl_rom_i  (tl_rom_ctrl_rom_d2h),
+    .tl_rom_ctrl_regs_o (tl_rom_ctrl_regs_h2d),
+    .tl_rom_ctrl_regs_i (tl_rom_ctrl_regs_d2h),
 
     .scanmode_i (prim_mubi_pkg::MuBi4False)
   );
@@ -499,4 +507,36 @@ module top_chip_system #(
     .scan_rst_ni ('1),
     .scanmode_i  (prim_mubi_pkg::MuBi4False)
   );
+
+
+  rom_ctrl #(
+    .BootRomInitFile("/home/kkoblasz/projects/mocha/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/tb/mem_init_file.vmem"),           // TO DO: What goes here?
+    .AlertAsyncOn(1'b1),            // TO DO: What goes here?
+    .AlertSkewCycles(1),            // TO DO: What goes here?
+    .FlopToKmac(1'b0),              // TO DO: What goes here?
+    .RndCnstScrNonce('0),           // TO DO: What goes here?
+    .RndCnstScrKey('0),             // TO DO: What goes here?
+    .SecDisableScrambling(1'b1),    // TO DO: What goes here?
+    .MemSizeRom(32768)              // TO DO: What goes here?
+  ) u_rom_ctrl (
+    // Clock and reset connections
+    .clk_i  (clk_i),
+    .rst_ni (rst_ni),
+
+    // Allert Signals
+    .alert_tx_o  ( ),
+    .alert_rx_i  ( prim_alert_pkg::ALERT_RX_DEFAULT ),
+
+    // Inter-module signals
+    .rom_cfg_i('0),     // TO DO: What goes here?
+    .pwrmgr_data_o(),   // TO DO: What goes here?
+    .keymgr_data_o(),   // TO DO: What goes here?
+    .kmac_data_o(),     // TO DO: What goes here?
+    .kmac_data_i('0),   // TO DO: What goes here?
+    .rom_tl_i(tl_rom_ctrl_rom_h2d),
+    .rom_tl_o(tl_rom_ctrl_rom_d2h),
+    .regs_tl_i(tl_rom_ctrl_regs_h2d),
+    .regs_tl_o(tl_rom_ctrl_regs_d2h)
+  );
+
 endmodule
