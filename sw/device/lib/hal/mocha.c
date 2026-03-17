@@ -11,8 +11,10 @@
 #include <cheriintrin.h>
 #endif /* defined(__riscv_zcherihybrid) */
 
+static const uintptr_t rom_base = 0x80000ul;
 static const uintptr_t dv_test_status_base = 0x20010000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
+static const uintptr_t rom_ctrl_base = 0x40050000ul;
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
@@ -38,12 +40,30 @@ static void *create_mmio_capability(uintptr_t address, size_t length)
 }
 #endif /* defined(__riscv_zcherihybrid) */
 
-uart_t mocha_system_gpio(void)
+rom_t mocha_system_rom(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (uart_t)create_mmio_capability(rom_base, 0x48u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (uart_t)rom_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+gpio_t mocha_system_gpio(void)
 {
 #if defined(__riscv_zcherihybrid)
     return (uart_t)create_mmio_capability(gpio_base, 0x48u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (uart_t)gpio_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+rom_ctrl_t mocha_system_rom_ctrl(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (rom_ctrl_t)create_mmio_capability(rom_ctrl_base, 0x48u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (rom_ctrl_t)rom_ctrl_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
