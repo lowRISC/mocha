@@ -39,7 +39,7 @@
     // Hardware IP templates.
     {from: "hw/ip_templates/alert_handler", to: "ip_templates/alert_handler"}, // Dependency of reset manager.
     {from: "hw/ip_templates/clkmgr",        to: "ip_templates/clkmgr"},
-    {from: "hw/ip_templates/gpio",          to: "ip_templates/gpio"}, // General purpose I/O
+    {from: "hw/ip_templates/gpio",          to: "ip_templates/gpio", patch_dir: "gpio"}, // General purpose I/O
     {from: "hw/ip_templates/pwrmgr",        to: "ip_templates/pwrmgr", patch_dir: "pwrmgr"},
     {from: "hw/ip_templates/rstmgr",        to: "ip_templates/rstmgr"},
     {from: "hw/ip_templates/rv_plic",       to: "ip_templates/rv_plic"},
