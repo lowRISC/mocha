@@ -157,4 +157,7 @@
   // Build-specific coverage cfg files for Xcelium.
   default_xcelium_cov_cfg_file: "{dv_root}/tools/xcelium/cover.ccf"
   cover_reg_top_xcelium_cov_cfg_file: "{dv_root}/tools/xcelium/cover_reg_top.ccf"
+
+  cov_dut_args: "-covdut {dut}"
+  cov_top_args: ["{dut}"]
 }

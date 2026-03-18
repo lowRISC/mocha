@@ -6,7 +6,7 @@
   name: prim_alert
 
   // Top level dut name (sv module).
-  dut: prim_alert_tb
+  dut: prim_alert
 
   // Top level testbench name (sv module).
   tb: prim_alert_tb
@@ -85,6 +85,14 @@
     {
       name: xcelium_cov_cfg_file
       value: "{default_xcelium_cov_cfg_file}"
+    }
+    {
+      name: cov_dut_args
+      value: "-covdut prim_alert_sender -covdut prim_alert_receiver"
+    }
+    {
+      name: cov_top_args
+      value: ["prim_alert_sender", "prim_alert_receiver"]
     }
   ]
 }

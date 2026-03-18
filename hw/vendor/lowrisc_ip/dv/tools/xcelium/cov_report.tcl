@@ -21,40 +21,44 @@ set cov_report_dir [string trim $::env(cov_report_dir) " \"'"]
 set cov_merge_db_dir [string trim $::env(cov_merge_db_dir) " \"'"]
 
 # Set the DUT name.
-set dut [string trim $::env(DUT_TOP)]
-set dut_uc [string toupper $dut]
+set dut [string trim $::env(COV_TOPS)]
 
 # Generate the text report (summary is sufficient).
-report -summary \
-  -inst uvm_pkg $dut \
-  -metrics all \
-  -all \
-  -cumulative on \
-  -local off \
-  -grading covered \
-  -out $cov_report_dir/cov_report.txt
+set x []
+foreach x $dut {
+  report -summary \
+    -inst uvm_pkg $x \
+    -metrics all \
+    -all \
+    -cumulative on \
+    -local off \
+    -grading covered \
+    -out $cov_report_dir/${x}_cov_report.txt
 
-# Generate the functional coverage report for tracking.
-report -summary \
-  -type \
-  -all \
-  -metrics covergroup \
-  -source off \
-  -out $cov_report_dir/cov_report_cg.txt
+  # Generate the functional coverage report for tracking.
+  report -summary \
+    -type \
+    -all \
+    -metrics covergroup \
+    -source off \
+    -out $cov_report_dir/cov_report_cg.txt
 
-# Generate the HTML reports.
-report_metrics \
-  -out $cov_report_dir \
-  -overwrite \
-  -title $dut_uc \
-  -detail \
-  -metrics all \
-  -kind aggregate \
-  -source on \
-  -exclComments \
-  -assertionStatus \
-  -allAssertionCounters \
-  -all
+  set dut_uc [string toupper $x]
+
+  # Generate the HTML reports.
+  report_metrics \
+    -out $cov_report_dir \
+    -overwrite \
+    -title $dut_uc \
+    -detail \
+    -metrics all \
+    -kind aggregate \
+    -source on \
+    -exclComments \
+    -assertionStatus \
+    -allAssertionCounters \
+    -all
+}
 
 # rank the test runs
 rank -runfile $cov_merge_db_dir/runs.txt -html -out $cov_report_dir/grading
