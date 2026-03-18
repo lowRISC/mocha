@@ -6,7 +6,7 @@
   name: prim_lfsr
 
   // Top level dut name (sv module).
-  dut: prim_lfsr
+  dut: prim_lfsr_tb
 
   // Top level testbench name (sv module).
   tb: prim_lfsr_tb
@@ -109,6 +109,13 @@
              "prim_lfsr_fib_smoke",
              "prim_lfsr_gal_test",
              "prim_lfsr_fib_test"]
+    }
+  ]
+
+  overrides: [
+    {
+      name: xcelium_cov_cfg_file
+      value: "{self_dir}/data/prim_lfsr_cover.ccf"
     }
   ]
 }

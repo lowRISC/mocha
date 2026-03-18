@@ -6,7 +6,7 @@
   name: prim_alert
 
   // Top level dut name (sv module).
-  dut: prim_alert
+  dut: prim_alert_tb
 
   // Top level testbench name (sv module).
   tb: prim_alert_tb
@@ -84,7 +84,7 @@
     }
     {
       name: xcelium_cov_cfg_file
-      value: ""
+      value: "{self_dir}/data/prim_alert_cover.ccf"
     }
   ]
 }

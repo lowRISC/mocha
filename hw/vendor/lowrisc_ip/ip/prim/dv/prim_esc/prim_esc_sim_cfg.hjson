@@ -6,7 +6,7 @@
   name: prim_esc
 
   // Top level dut name (sv module).
-  dut: prim_esc
+  dut: prim_esc_tb
 
   // Top level testbench name (sv module).
   tb: prim_esc_tb
@@ -48,6 +48,10 @@
     {
       name: vcs_cov_cfg_file
       value: "-cm_hier {proj_root}/hw/ip/prim/dv/prim_esc/data/prim_esc_cover.cfg"
+    }
+    {
+      name: xcelium_cov_cfg_file
+      value: "{self_dir}/data/prim_esc_cover.ccf"
     }
   ]
 }

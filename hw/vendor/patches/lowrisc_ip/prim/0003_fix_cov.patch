@@ -1,0 +1,114 @@
+diff --git a/dv/prim_alert/prim_alert_sim_cfg.hjson b/dv/prim_alert/prim_alert_sim_cfg.hjson
+index e768cd3..8c1cb12 100644
+--- a/dv/prim_alert/prim_alert_sim_cfg.hjson
++++ b/dv/prim_alert/prim_alert_sim_cfg.hjson
+@@ -6,7 +6,7 @@
+   name: prim_alert
+
+   // Top level dut name (sv module).
+-  dut: prim_alert
++  dut: prim_alert_tb
+
+   // Top level testbench name (sv module).
+   tb: prim_alert_tb
+@@ -84,7 +84,7 @@
+     }
+     {
+       name: xcelium_cov_cfg_file
+-      value: ""
++      value: "{self_dir}/data/prim_alert_cover.ccf"
+     }
+   ]
+ }
+diff --git a/dv/prim_esc/prim_esc_sim_cfg.hjson b/dv/prim_esc/prim_esc_sim_cfg.hjson
+index a102b9b..42d0543 100644
+--- a/dv/prim_esc/prim_esc_sim_cfg.hjson
++++ b/dv/prim_esc/prim_esc_sim_cfg.hjson
+@@ -6,7 +6,7 @@
+   name: prim_esc
+
+   // Top level dut name (sv module).
+-  dut: prim_esc
++  dut: prim_esc_tb
+
+   // Top level testbench name (sv module).
+   tb: prim_esc_tb
+@@ -49,5 +49,9 @@
+       name: vcs_cov_cfg_file
+       value: "-cm_hier {proj_root}/hw/ip/prim/dv/prim_esc/data/prim_esc_cover.cfg"
+     }
++    {
++      name: xcelium_cov_cfg_file
++      value: "{self_dir}/data/prim_esc_cover.ccf"
++    }
+   ]
+ }
+diff --git a/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson b/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
+index 0a33d8f..5f9be63 100644
+--- a/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
++++ b/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
+@@ -6,7 +6,7 @@
+   name: prim_lfsr
+
+   // Top level dut name (sv module).
+-  dut: prim_lfsr
++  dut: prim_lfsr_tb
+
+   // Top level testbench name (sv module).
+   tb: prim_lfsr_tb
+@@ -111,4 +111,11 @@
+              "prim_lfsr_fib_test"]
+     }
+   ]
++
++  overrides: [
++    {
++      name: xcelium_cov_cfg_file
++      value: "{self_dir}/data/prim_lfsr_cover.ccf"
++    }
++  ]
+ }
+diff --git a/dv/prim_alert/data/prim_alert_cover.ccf b/dv/prim_alert/data/prim_alert_cover.ccf
+new file mode 100644
+index 0000000..343d8f2
+--- /dev/null
++++ b/dv/prim_alert/data/prim_alert_cover.ccf
+@@ -0,0 +1,9 @@
++// Copyright lowRISC contributors (OpenTitan project).
++// Licensed under the Apache License, Version 2.0, see LICENSE for details.
++// SPDX-License-Identifier: Apache-2.0
++
++// Include our common coverage CCF.
++include_ccf ${dv_root}/tools/xcelium/common.ccf
++
++select_coverage -all -module prim_alert_sender
++select_coverage -all -module prim_alert_receiver
+diff --git a/dv/prim_esc/data/prim_esc_cover.ccf b/dv/prim_esc/data/prim_esc_cover.ccf
+new file mode 100644
+index 0000000..8264faf
+--- /dev/null
++++ b/dv/prim_esc/data/prim_esc_cover.ccf
+@@ -0,0 +1,9 @@
++// Copyright lowRISC contributors (OpenTitan project).
++// Licensed under the Apache License, Version 2.0, see LICENSE for details.
++// SPDX-License-Identifier: Apache-2.0
++
++// Include our common coverage CCF.
++include_ccf ${dv_root}/tools/xcelium/common.ccf
++
++select_coverage -all -module prim_esc_sender
++select_coverage -all -module prim_esc_receiver
+diff --git a/dv/prim_lfsr/data/prim_lfsr_cover.ccf b/dv/prim_lfsr/data/prim_lfsr_cover.ccf
+new file mode 100644
+index 0000000..d709b33
+--- /dev/null
++++ b/dv/prim_lfsr/data/prim_lfsr_cover.ccf
+@@ -0,0 +1,8 @@
++// Copyright lowRISC contributors (OpenTitan project).
++// Licensed under the Apache License, Version 2.0, see LICENSE for details.
++// SPDX-License-Identifier: Apache-2.0
++
++// Include our common coverage CCF.
++include_ccf ${dv_root}/tools/xcelium/common.ccf
++
++select_coverage -all -module prim_lfsr
