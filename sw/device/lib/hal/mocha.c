@@ -16,6 +16,7 @@ static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
 static const uintptr_t rstmgr_base = 0x40030000ul;
 static const uintptr_t uart_base = 0x41000000ul;
+static const uintptr_t i2c_base = 0x42000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
 static const uintptr_t timer_base = 0x44000000ul;
 static const uintptr_t plic_base = 0x48000000ul;
@@ -73,6 +74,15 @@ uart_t mocha_system_uart(void)
     return (uart_t)create_mmio_capability(uart_base, 0x34u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (uart_t)uart_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+i2c_t mocha_system_i2c(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (i2c_t)create_mmio_capability(i2c_base, 0x80u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (i2c_t)i2c_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
