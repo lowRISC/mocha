@@ -4,6 +4,7 @@
 
 #include "boot/trap.h"
 #include "hal/gpio.h"
+#include "hal/i2c.h"
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
 #include "hal/timer.h"
@@ -14,6 +15,7 @@
 int main(void)
 {
     gpio_t gpio = mocha_system_gpio();
+    i2c_t i2c = mocha_system_i2c();
     uart_t uart = mocha_system_uart();
     timer_t timer = mocha_system_timer();
     spi_device_t spi_device = mocha_system_spi_device();
@@ -21,6 +23,7 @@ int main(void)
     gpio_set_oe_pin(gpio, 1, true);
     gpio_set_oe_pin(gpio, 2, true);
     gpio_set_oe_pin(gpio, 3, true);
+    i2c_init(i2c);
     uart_init(uart);
     timer_init(timer);
     spi_device_init(spi_device);
@@ -36,6 +39,14 @@ int main(void)
 
         uart_puts(uart, "timer 100us\n");
         gpio_write_pin(gpio, i, 1); // turn on LEDs in sequence
+    }
+
+    // Read current temperature from an AS6212 I^2C-bus sensor and print the value
+    if (i2c_write_byte(i2c, 0x48u, 0u)) { // select TVAL reg; also a presence check
+        uint16_t sensor_reading = i2c_read_byte(i2c, 0x48u); // read TVAl reg
+        if (sensor_reading != 0xFF) { // only print if we get a non-error value
+            uprintf(uart, "Temperature: 0x%x degC\n", (sensor_reading << 1)); // no decimal printf
+        }
     }
 
     // Trying out simulation exit.
