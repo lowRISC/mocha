@@ -151,6 +151,8 @@ fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_moc
 
 #### Test on Genesys2
 
+Connect to the "UART" and "JTAG" USB ports on the Genesys2 board.
+
 Open a UART terminal with 1Mbps baud rate:
 ```sh
 screen /dev/ttyUSB0 1000000
