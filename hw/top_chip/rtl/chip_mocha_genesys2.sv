@@ -48,12 +48,15 @@ module chip_mocha_genesys2 #(
   localparam int unsigned InitialResetCycles = 4;
 
   // Internal clock and reset signals
-  logic clk_cfg;       // Free-running configuration clock
-  logic clk_200m;      // 200 MHz clock from MIG
-  logic clk_50m;       // 50 MHz mocha clock generated from clk_200m
-  logic mig_rst_n;     // MIG system reset, deassertion synchronous to clk_cfg
-  logic mig_axi_rst_n; // MIG AXI reset, deassertion synchronous to clk_200m
-  logic rst_n;         // Mocha top reset, deassertion synchronous to clk_50m
+  logic clk_cfg;            // Free-running configuration clock
+  logic clk_200m;           // 200 MHz clock from MIG
+  logic clk_50m;            // 50 MHz mocha clock generated from clk_200m
+  logic mig_rst_n;          // MIG system reset, deassertion synchronous to clk_cfg
+  logic mig_axi_rst_n;      // MIG AXI reset, deassertion synchronous to clk_200m
+  logic rst_n;              // Mocha top reset, deassertion synchronous to clk_50m
+  logic ext_rst_n_sync_cfg; // External reset synchronised to clk_cfg
+  logic ext_rst_n_sync_50m; // External reset synchronised to clk_50m
+
 
   // Internal reset shift registers
   logic [InitialResetCycles-1:0] mig_rst_n_shreg;
@@ -87,14 +90,37 @@ module chip_mocha_genesys2 #(
 
   assign spien = 1;
 
+  // External reset synchroniser
+  // Synchronisation is required here because the external reset is used in logic here,
+  // before it goes through the synchronisers in rstmgr.
+  // Use asynchronous assertion with synchronous deassertion.
+  prim_flop_2sync #(
+    .Width(1),
+    .ResetValue('0)
+  ) u_ext_rst_sync_cfg (
+    .clk_i(clk_cfg),
+    .rst_ni(ext_rst_ni),
+    .d_i(1'b1),
+    .q_o(ext_rst_n_sync_cfg)
+  );
+  prim_flop_2sync #(
+    .Width(1),
+    .ResetValue('0)
+  ) u_ext_rst_sync_50m (
+    .clk_i(clk_50m),
+    .rst_ni(ext_rst_ni),
+    .d_i(1'b1),
+    .q_o(ext_rst_n_sync_50m)
+  );
+
   // Internal reset generation
   initial mig_rst_n_shreg     = '0;
   initial mig_axi_rst_n_shreg = '0;
   initial rst_n_shreg         = '0;
 
-  always_ff @(posedge clk_cfg or negedge ext_rst_ni) begin
-    if (!ext_rst_ni) mig_rst_n_shreg <= '0;
-    else             mig_rst_n_shreg <= {1'b1, mig_rst_n_shreg[InitialResetCycles-1:1]};
+  always_ff @(posedge clk_cfg or negedge ext_rst_n_sync_cfg) begin
+    if (!ext_rst_n_sync_cfg) mig_rst_n_shreg <= '0;
+    else                     mig_rst_n_shreg <= {1'b1, mig_rst_n_shreg[InitialResetCycles-1:1]};
   end
 
   always_ff @(posedge clk_200m or negedge u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
@@ -105,9 +131,9 @@ module chip_mocha_genesys2 #(
     end
   end
 
-  always_ff @(posedge clk_50m or negedge ext_rst_ni) begin
-    if (!ext_rst_ni) rst_n_shreg <= '0;
-    else             rst_n_shreg <= {1'b1, rst_n_shreg[InitialResetCycles-1:1]};
+  always_ff @(posedge clk_50m or negedge ext_rst_n_sync_50m) begin
+    if (!ext_rst_n_sync_50m) rst_n_shreg <= '0;
+    else                     rst_n_shreg <= {1'b1, rst_n_shreg[InitialResetCycles-1:1]};
   end
 
   assign mig_rst_n     = mig_rst_n_shreg[0];
