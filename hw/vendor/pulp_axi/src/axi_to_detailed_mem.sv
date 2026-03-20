@@ -511,6 +511,7 @@ module axi_to_detailed_mem #(
   localparam NumBytesPerBank = DataWidth/NumBanks/8;
 
   logic [NumBanks-1:0] meta_buf_bank_strb, meta_buf_size_enable;
+  logic full_access;
   logic resp_b_err, resp_b_exokay, resp_r_err, resp_r_exokay, resp_cheri_r_tag;
 
   // Collect `err` and `exokay` from all banks
@@ -522,11 +523,15 @@ module axi_to_detailed_mem #(
     assign meta_buf_size_enable[i] = ((i*NumBytesPerBank + NumBytesPerBank) > (meta_buf.addr % DataWidth/8)) &&
                                      ((i*NumBytesPerBank) < ((meta_buf.addr % DataWidth/8) + 1<<meta_buf.size));
   end
+
+  // check if an access is a full or a partial access
+  assign full_access = meta_buf.size == prim_util_pkg::vbits(DataWidth/8);
+
   assign resp_b_err       = |(m2s_resp.err         &  meta_buf_bank_strb);   // Ensure only active banks are used (strobe)
   assign resp_b_exokay    = &(m2s_resp.exokay      | ~meta_buf_bank_strb) & meta_buf.lock;   // Ensure only active banks are used (strobe)
   assign resp_r_err       = |(m2s_resp.err         &  meta_buf_size_enable); // Ensure only active banks are used (size & addr offset)
   assign resp_r_exokay    = &(m2s_resp.exokay      | ~meta_buf_size_enable) & meta_buf.lock; // Ensure only active banks are used (size & addr offset)
-  assign resp_cheri_r_tag = &(m2s_resp.cheri_r_tag | ~meta_buf_size_enable);
+  assign resp_cheri_r_tag = &(m2s_resp.cheri_r_tag | ~meta_buf_size_enable) & full_access; // Only full access can return capability
 
   logic collect_b_err_d, collect_b_err_q;
   logic collect_b_exokay_d, collect_b_exokay_q;
