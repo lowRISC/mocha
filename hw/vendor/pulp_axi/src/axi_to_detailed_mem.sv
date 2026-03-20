@@ -88,6 +88,8 @@ module axi_to_detailed_mem #(
   output axi_pkg::qos_t    [NumBanks-1:0]  mem_qos_o,
   /// Memory stream master, region signal.
   output axi_pkg::region_t [NumBanks-1:0]  mem_region_o,
+  /// Memory stream master, CHERI tag output
+  output logic             [NumBanks-1:0]  mem_cheri_tag_o,
   /// Memory stream master, response is valid. This module expects always a response valid for a
   /// request regardless if the request was a write or a read.
   input  logic             [NumBanks-1:0]  mem_rvalid_i,
@@ -96,7 +98,9 @@ module axi_to_detailed_mem #(
   /// Memory stream master, error response.
   input  logic             [NumBanks-1:0]  mem_err_i,
   /// Memory stream master, read response exclusive access OK.
-  input  logic             [NumBanks-1:0]  mem_exokay_i
+  input  logic             [NumBanks-1:0]  mem_exokay_i,
+  /// Memory stream master, CHERI tag input
+  input  logic             [NumBanks-1:0]  mem_cheri_tag_i
 );
 
   typedef logic [DataWidth-1:0]   axi_data_t;
@@ -116,6 +120,7 @@ module axi_to_detailed_mem #(
     axi_pkg::prot_t   prot;
     axi_pkg::qos_t    qos;
     axi_pkg::region_t region;
+    logic             cheri_w_tag;
   } mem_req_t;
 
   typedef struct packed {
@@ -138,6 +143,7 @@ module axi_to_detailed_mem #(
     axi_data_t           data;
     logic [NumBanks-1:0] err;
     logic [NumBanks-1:0] exokay;
+    logic [NumBanks-1:0] cheri_r_tag;
   } mem_rsp_t;
 
   mem_rsp_t       m2s_resp;
@@ -375,18 +381,19 @@ module axi_to_detailed_mem #(
 
   // Assemble the actual memory request from meta information and write data.
   assign m2s_req = mem_req_t'{
-    addr:   meta.addr,
-    atop:   meta.atop,
-    lock:   meta.lock,
-    strb:   axi_req_i.w.strb,
-    wdata:  axi_req_i.w.data,
-    we:     meta.write,
-    id:     meta.id,
-    user:   meta.user,
-    cache:  meta.cache,
-    prot:   meta.prot,
-    qos:    meta.qos,
-    region: meta.region
+    addr:        meta.addr,
+    atop:        meta.atop,
+    lock:        meta.lock,
+    strb:        axi_req_i.w.strb,
+    wdata:       axi_req_i.w.data,
+    we:          meta.write,
+    id:          meta.id,
+    user:        meta.user,
+    cache:       meta.cache,
+    prot:        meta.prot,
+    qos:         meta.qos,
+    region:      meta.region,
+    cheri_w_tag: axi_req_i.w.user
   };
 
   typedef struct packed {
@@ -398,47 +405,52 @@ module axi_to_detailed_mem #(
     axi_pkg::prot_t   prot;
     axi_pkg::qos_t    qos;
     axi_pkg::region_t region;
+    logic             cheri_w_tag;
   } tmp_atop_t;
 
   tmp_atop_t mem_req_atop;
   tmp_atop_t [NumBanks-1:0] banked_req_atop;
 
   assign mem_req_atop = '{
-    atop:   m2s_req.atop,
-    lock:   m2s_req.lock,
-    id:     m2s_req.id,
-    user:   m2s_req.user,
-    cache:  m2s_req.cache,
-    prot:   m2s_req.prot,
-    qos:    m2s_req.qos,
-    region: m2s_req.region
+    atop:        m2s_req.atop,
+    lock:        m2s_req.lock,
+    id:          m2s_req.id,
+    user:        m2s_req.user,
+    cache:       m2s_req.cache,
+    prot:        m2s_req.prot,
+    qos:         m2s_req.qos,
+    region:      m2s_req.region,
+    cheri_w_tag: m2s_req.cheri_w_tag
   };
 
   for (genvar i = 0; i < NumBanks; i++) begin
-    assign mem_atop_o  [i] = banked_req_atop[i].atop;
-    assign mem_lock_o  [i] = banked_req_atop[i].lock;
-    assign mem_id_o    [i] = banked_req_atop[i].id;
-    assign mem_user_o  [i] = banked_req_atop[i].user;
-    assign mem_cache_o [i] = banked_req_atop[i].cache;
-    assign mem_prot_o  [i] = banked_req_atop[i].prot;
-    assign mem_qos_o   [i] = banked_req_atop[i].qos;
-    assign mem_region_o[i] = banked_req_atop[i].region;
+    assign mem_atop_o     [i] = banked_req_atop[i].atop;
+    assign mem_lock_o     [i] = banked_req_atop[i].lock;
+    assign mem_id_o       [i] = banked_req_atop[i].id;
+    assign mem_user_o     [i] = banked_req_atop[i].user;
+    assign mem_cache_o    [i] = banked_req_atop[i].cache;
+    assign mem_prot_o     [i] = banked_req_atop[i].prot;
+    assign mem_qos_o      [i] = banked_req_atop[i].qos;
+    assign mem_region_o   [i] = banked_req_atop[i].region;
+    assign mem_cheri_tag_o[i] = banked_req_atop[i].cheri_w_tag;
   end
 
-  logic [NumBanks-1:0][1:0] tmp_ersp;
-  logic [NumBanks-1:0][1:0] bank_ersp;
+  logic [NumBanks-1:0][2:0] tmp_ersp;
+  logic [NumBanks-1:0][2:0] bank_ersp;
   for (genvar i = 0; i < NumBanks; i++) begin
-    assign m2s_resp.err[i]    = tmp_ersp[i][0];
-    assign m2s_resp.exokay[i] = tmp_ersp[i][1];
+    assign m2s_resp.err[i]         = tmp_ersp[i][0];
+    assign m2s_resp.exokay[i]      = tmp_ersp[i][1];
+    assign m2s_resp.cheri_r_tag[i] = tmp_ersp[i][2];
     assign bank_ersp[i][0] = mem_err_i[i];
     assign bank_ersp[i][1] = mem_exokay_i[i];
+    assign bank_ersp[i][2] = mem_cheri_tag_i[i];
   end
 
   // Split single memory request to desired number of banks.
   mem_stream_to_banks_detailed #(
     .AddrWidth   ( AddrWidth         ),
     .DataWidth   ( DataWidth         ),
-    .RUserWidth  ( 2                 ),
+    .RUserWidth  ( 32'd3             ),
     .NumBanks    ( NumBanks          ),
     .HideStrb    ( HideStrb          ),
     .MaxTrans    ( BufDepth          ),
@@ -499,7 +511,7 @@ module axi_to_detailed_mem #(
   localparam NumBytesPerBank = DataWidth/NumBanks/8;
 
   logic [NumBanks-1:0] meta_buf_bank_strb, meta_buf_size_enable;
-  logic resp_b_err, resp_b_exokay, resp_r_err, resp_r_exokay;
+  logic resp_b_err, resp_b_exokay, resp_r_err, resp_r_exokay, resp_cheri_r_tag;
 
   // Collect `err` and `exokay` from all banks
   // To ensure correct propagation, `err` is grouped with `OR` and `exokay` is grouped with `AND`.
@@ -510,10 +522,11 @@ module axi_to_detailed_mem #(
     assign meta_buf_size_enable[i] = ((i*NumBytesPerBank + NumBytesPerBank) > (meta_buf.addr % DataWidth/8)) &&
                                      ((i*NumBytesPerBank) < ((meta_buf.addr % DataWidth/8) + 1<<meta_buf.size));
   end
-  assign resp_b_err    = |(m2s_resp.err    &  meta_buf_bank_strb);   // Ensure only active banks are used (strobe)
-  assign resp_b_exokay = &(m2s_resp.exokay | ~meta_buf_bank_strb) & meta_buf.lock;   // Ensure only active banks are used (strobe)
-  assign resp_r_err    = |(m2s_resp.err    &  meta_buf_size_enable); // Ensure only active banks are used (size & addr offset)
-  assign resp_r_exokay = &(m2s_resp.exokay | ~meta_buf_size_enable) & meta_buf.lock; // Ensure only active banks are used (size & addr offset)
+  assign resp_b_err       = |(m2s_resp.err         &  meta_buf_bank_strb);   // Ensure only active banks are used (strobe)
+  assign resp_b_exokay    = &(m2s_resp.exokay      | ~meta_buf_bank_strb) & meta_buf.lock;   // Ensure only active banks are used (strobe)
+  assign resp_r_err       = |(m2s_resp.err         &  meta_buf_size_enable); // Ensure only active banks are used (size & addr offset)
+  assign resp_r_exokay    = &(m2s_resp.exokay      | ~meta_buf_size_enable) & meta_buf.lock; // Ensure only active banks are used (size & addr offset)
+  assign resp_cheri_r_tag = &(m2s_resp.cheri_r_tag | ~meta_buf_size_enable);
 
   logic collect_b_err_d, collect_b_err_q;
   logic collect_b_exokay_d, collect_b_exokay_q;
@@ -553,7 +566,7 @@ module axi_to_detailed_mem #(
     id:   meta_buf.id,
     last: meta_buf.last,
     resp: resp_r_err ? axi_pkg::RESP_SLVERR : resp_r_exokay ? axi_pkg::RESP_EXOKAY : axi_pkg::RESP_OKAY,
-    user: '0
+    user: resp_cheri_r_tag
   };
 
   // Registers
@@ -661,6 +674,8 @@ module axi_to_detailed_mem_intf #(
   output axi_pkg::qos_t    [NUM_BANKS-1:0]  mem_qos_o,
   /// See `axi_to_mem`, port `mem_region_o`.
   output axi_pkg::region_t [NUM_BANKS-1:0]  mem_region_o,
+  /// See `axi_to_mem`, port `mem_cheri_tag_o`.
+  output logic             [NUM_BANKS-1:0]  mem_cheri_tag_o,
   /// See `axi_to_mem`, port `mem_rvalid_i`.
   input  logic             [NUM_BANKS-1:0]  mem_rvalid_i,
   /// See `axi_to_mem`, port `mem_rdata_i`.
@@ -668,7 +683,9 @@ module axi_to_detailed_mem_intf #(
   /// See `axi_to_mem`, port `mem_err_i`.
   input  logic             [NUM_BANKS-1:0]  mem_err_i,
   /// See `axi_to_mem`, port `mem_exokay_i`.
-  input  logic             [NUM_BANKS-1:0]  mem_exokay_i
+  input  logic             [NUM_BANKS-1:0]  mem_exokay_i,
+  /// See `axi_to_mem`, port `mem_cheri_tag_i`.
+  input logic              [NUM_BANKS-1:0]  mem_cheri_tag_i
 );
   typedef logic [ID_WIDTH-1:0]     id_t;
   typedef logic [DATA_WIDTH-1:0]   data_t;
@@ -716,10 +733,12 @@ module axi_to_detailed_mem_intf #(
     .mem_prot_o,
     .mem_qos_o,
     .mem_region_o,
+    .mem_cheri_tag_o,
     .mem_rvalid_i,
     .mem_rdata_i,
     .mem_err_i,
-    .mem_exokay_i
+    .mem_exokay_i,
+    .mem_cheri_tag_i
   );
 endmodule
 
