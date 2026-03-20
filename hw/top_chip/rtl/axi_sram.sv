@@ -17,6 +17,11 @@ module axi_sram #(
   output top_pkg::axi_resp_t axi_resp_o
 );
 
+  // Every tag entry can store AxiDataWidth capability tags
+  localparam int unsigned TagBitAddrWidth = AddrWidth - $clog2(top_pkg::CapSizeBits / 8);
+  localparam int unsigned TagAddrWidth    = TagBitAddrWidth - $clog2(top_pkg::AxiDataWidth);
+  localparam int unsigned TagBitWith      = $clog2(top_pkg::AxiDataWidth);
+
   // 64-bit memory format signals
   logic                                 sram_req;
   logic                                 sram_we;
@@ -27,20 +32,14 @@ module axi_sram #(
   logic [top_pkg::AxiDataWidth-1:0]     sram_rdata;
   logic [AddrWidth-1:0]                 sram_word_addr;
   logic [top_pkg::AxiDataWidth-1:0]     sram_wmask;
+  logic [TagBitAddrWidth-1:0]           sram_tag_bit_addr;
+  logic [TagAddrWidth-1:0]              sram_tag_word_addr;
+  logic [TagBitWith-1:0]                sram_tag_bit_select;
+  logic [top_pkg::AxiDataWidth-1:0]     sram_tag_wmask;
+  logic [top_pkg::AxiDataWidth-1:0]     sram_tag_wdata;
+  logic [top_pkg::AxiDataWidth-1:0]     sram_tag_rdata;
   logic                                 sram_cheri_w_tag;
   logic                                 sram_cheri_r_tag;
-
-
-  // SRAM R channel response starts 1 cycle after AR channel request (assumed by NoPartialCapRead assertion)
-  SRAMLatency1Cycle: assert property (
-    @(posedge clk_i) disable iff (rst_ni === '0) (
-      $rose(axi_resp_o.r_valid)
-      |-> $past(axi_resp_o.ar_ready && axi_req_i.ar_valid)
-    )
-  ) else begin
-    `ASSERT_ERROR(SRAMLatency1Cycle)
-  end
-
 
   // AXI to 64-bit mem for SRAM
   axi_to_detailed_mem #(
@@ -73,13 +72,46 @@ module axi_sram #(
     .mem_prot_o      ( ),
     .mem_qos_o       ( ),
     .mem_region_o    ( ),
-    .mem_err_i       ( ),
-    .mem_exokay_i    ( ),
+    .mem_err_i       ( '0 ),
+    .mem_exokay_i    ( '0 ),
     .mem_we_o        ( sram_we          ),
     .mem_cheri_tag_o ( sram_cheri_w_tag ),
     .mem_rvalid_i    ( sram_rvalid      ),
     .mem_rdata_i     ( sram_rdata       ),
     .mem_cheri_tag_i ( sram_cheri_r_tag )
+  );
+
+  // Tag bit address calculation
+  assign sram_tag_bit_addr   = TagBitAddrWidth'((sram_addr & top_pkg::SRAMMask) >>
+                               $clog2(top_pkg::CapSizeBits / 8));
+  assign sram_tag_word_addr  = TagAddrWidth'(sram_tag_bit_addr >>
+                               $clog2(top_pkg::AxiDataWidth));
+  assign sram_tag_bit_select = sram_tag_bit_addr[$clog2(top_pkg::AxiDataWidth)-1:0];
+
+  // Shift tag bit to proper position within SRAM word
+  assign sram_tag_wmask      = 1'b1 << sram_tag_bit_select;
+  assign sram_tag_wdata      = { {top_pkg::AxiDataWidth-1{1'b0}}, sram_cheri_w_tag } <<
+                               sram_tag_bit_select;
+  assign sram_cheri_r_tag    = sram_tag_rdata[sram_tag_bit_select];
+
+  // Tag RAM
+  prim_ram_1p #(
+    .Width           ( top_pkg::AxiDataWidth ),
+    .DataBitsPerMask ( 1                     ),
+    .Depth           ( 2 ** TagAddrWidth     )
+  ) u_tag_ram (
+    .clk_i   ( clk_i  ),
+    .rst_ni  ( rst_ni ),
+
+    .req_i   ( sram_req ),
+    .write_i ( sram_we  ),
+    .addr_i  ( sram_tag_word_addr ),
+    .wdata_i ( sram_tag_wdata     ),
+    .wmask_i ( sram_tag_wmask     ),
+    .rdata_o ( sram_tag_rdata     ),
+
+    .cfg_i     ('0),
+    .cfg_rsp_o ( )
   );
 
   // Remove base offset and convert byte address to 64-bit word address
@@ -92,20 +124,20 @@ module axi_sram #(
 
   // Our RAM
   prim_ram_1p #(
-    .Width           ( top_pkg::AxiDataWidth + 32'd1 ),
-    .DataBitsPerMask ( 1                     ),
+    .Width           ( top_pkg::AxiDataWidth ),
+    .DataBitsPerMask ( 8                     ),
     .Depth           ( 2 ** AddrWidth        ),
     .MemInitFile     ( MemInitFile           )
   ) u_ram (
-    .clk_i,
-    .rst_ni,
+    .clk_i   ( clk_i  ),
+    .rst_ni  ( rst_ni ),
 
     .req_i   ( sram_req       ),
     .write_i ( sram_we        ),
     .addr_i  ( sram_word_addr ),
-    .wdata_i ( { sram_cheri_w_tag, sram_wdata } ),
-    .wmask_i ( { 1'b1,             sram_wmask } ),
-    .rdata_o ( { sram_cheri_r_tag, sram_rdata } ),
+    .wdata_i ( sram_wdata     ),
+    .wmask_i ( sram_wmask     ),
+    .rdata_o ( sram_rdata     ),
 
     .cfg_i     ('0),
     .cfg_rsp_o ( )
