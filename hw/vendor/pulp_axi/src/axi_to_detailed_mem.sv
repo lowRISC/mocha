@@ -132,6 +132,7 @@ module axi_to_detailed_mem #(
     logic             last;
     axi_pkg::qos_t    qos;
     axi_pkg::size_t   size;
+    axi_pkg::len_t    len;
     logic             write;
     mem_user_t        user;
     axi_pkg::cache_t  cache;
@@ -202,6 +203,7 @@ module axi_to_detailed_mem #(
         last:   (axi_req_i.ar.len == '0),
         qos:    axi_req_i.ar.qos,
         size:   axi_req_i.ar.size,
+        len:    axi_req_i.ar.len,
         write:  1'b0,
         user:   axi_req_i.ar.user,
         cache:  axi_req_i.ar.cache,
@@ -252,6 +254,7 @@ module axi_to_detailed_mem #(
         last:   (axi_req_i.aw.len == '0),
         qos:    axi_req_i.aw.qos,
         size:   axi_req_i.aw.size,
+        len:    axi_req_i.aw.len,
         write:  1'b1,
         user:   axi_req_i.aw.user,
         cache:  axi_req_i.aw.cache,
@@ -379,6 +382,21 @@ module axi_to_detailed_mem #(
     .err_o    ( /* unused */   )
   );
 
+  // Check that only a 128-bit and aligned access can write a capability
+  logic is_w_cap_sized;
+  logic is_w_cap_aligned;
+
+  if (DataWidth == 32'd64) begin : gen_DW64_w_cap_checks
+    assign is_w_cap_sized   = (meta.size == 3'd3) & (meta.len == 8'd1);
+    assign is_w_cap_aligned = meta.last ? meta.addr[3:0] == 4'd8 : meta.addr[3:0] == 4'd0;
+  end else if (DataWidth == 32'd128) begin : gen_DW128_w_cap_checks
+    assign is_w_cap_sized   = (meta.size == 3'd4) & (meta.len == 8'd0);
+    assign is_w_cap_aligned = meta.addr[3:0] == 4'd0;
+  end else begin : gen_unsupported_w_cap_checks
+    assign is_w_cap_sized   = 1'b0;
+    assign is_w_cap_aligned = 1'b0;
+  end
+
   // Assemble the actual memory request from meta information and write data.
   assign m2s_req = mem_req_t'{
     addr:        meta.addr,
@@ -393,7 +411,7 @@ module axi_to_detailed_mem #(
     prot:        meta.prot,
     qos:         meta.qos,
     region:      meta.region,
-    cheri_w_tag: axi_req_i.w.user
+    cheri_w_tag: axi_req_i.w.user & is_w_cap_sized & is_w_cap_aligned
   };
 
   typedef struct packed {
@@ -522,11 +540,29 @@ module axi_to_detailed_mem #(
     assign meta_buf_size_enable[i] = ((i*NumBytesPerBank + NumBytesPerBank) > (meta_buf.addr % DataWidth/8)) &&
                                      ((i*NumBytesPerBank) < ((meta_buf.addr % DataWidth/8) + 1<<meta_buf.size));
   end
+
+  // Check that only a 128-bit and aligned access can read a capability
+  logic is_r_cap_sized;
+  logic is_r_cap_aligned;
+
+  if (DataWidth == 32'd64) begin : gen_DW64_r_cap_checks
+    assign is_r_cap_sized   = (meta_buf.size == 3'd3) & (meta_buf.len == 8'd1);
+    assign is_r_cap_aligned = meta_buf.last ? meta_buf.addr[3:0] == 4'd8 :
+                              meta_buf.addr[3:0] == 4'd0;
+  end else if (DataWidth == 32'd128) begin : gen_DW128_r_cap_checks
+    assign is_r_cap_sized   = (meta_buf.size == 3'd4) & (meta_buf.len == 8'd0);
+    assign is_r_cap_aligned = meta_buf.addr[3:0] == 4'd0;
+  end else begin : gen_unsupported_r_cap_checks
+    assign is_r_cap_sized   = 1'b0;
+    assign is_r_cap_aligned = 1'b0;
+  end
+
   assign resp_b_err       = |(m2s_resp.err         &  meta_buf_bank_strb);   // Ensure only active banks are used (strobe)
   assign resp_b_exokay    = &(m2s_resp.exokay      | ~meta_buf_bank_strb) & meta_buf.lock;   // Ensure only active banks are used (strobe)
   assign resp_r_err       = |(m2s_resp.err         &  meta_buf_size_enable); // Ensure only active banks are used (size & addr offset)
   assign resp_r_exokay    = &(m2s_resp.exokay      | ~meta_buf_size_enable) & meta_buf.lock; // Ensure only active banks are used (size & addr offset)
-  assign resp_cheri_r_tag = &(m2s_resp.cheri_r_tag | ~meta_buf_size_enable);
+  assign resp_cheri_r_tag = &(m2s_resp.cheri_r_tag | ~meta_buf_size_enable) &
+                            is_r_cap_sized & is_r_cap_aligned; // Only full and aligned access can return capability
 
   logic collect_b_err_d, collect_b_err_q;
   logic collect_b_exokay_d, collect_b_exokay_q;
