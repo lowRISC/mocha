@@ -142,7 +142,7 @@
     }
     {
       name: gpio_smoke
-      uvm_test_seq: top_chip_dv_gpio_vseq
+      uvm_test_seq: top_chip_dv_gpio_smoke_vseq
       sw_images: ["gpio_smoketest_vanilla_bare:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_vanilla_bare.vmem"]
     }
