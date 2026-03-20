@@ -15,6 +15,9 @@ package top_pkg;
   localparam int TL_DBW = (TL_DW>>3);
   localparam int TL_SZW = $clog2($clog2(TL_DBW)+1);
 
+  // GPIO parameter
+  localparam int unsigned GPIO_DATA_WIDTH = 32;
+
   // AXI crossbar parameters
   localparam int AxiXbarHosts   = 1;
   localparam int AxiXbarDevices = 3;
