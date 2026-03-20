@@ -10,6 +10,7 @@ module tb;
   import mem_bkdr_util_pkg::mem_bkdr_util;
   import top_chip_dv_env_pkg::*;
   import top_chip_dv_test_pkg::*;
+  import gpio_env_pkg::NUM_GPIOS;
 
   import top_chip_dv_env_pkg::SW_DV_START_ADDR;
   import top_chip_dv_env_pkg::SW_DV_TEST_STATUS_ADDR;
@@ -26,6 +27,11 @@ module tb;
   wire peri_clk;
   wire peri_rst_n;
 
+  // GPIO connections
+  wire  [NUM_GPIOS-1:0] gpio_pads;    // A wire connected to bidirectional pads in pins_if
+  logic [NUM_GPIOS-1:0] dut_gpio_o;
+  logic [NUM_GPIOS-1:0] dut_gpio_en_o;
+
   logic [3:0] spi_host_sd;
   logic [3:0] spi_host_sd_en;
 
@@ -33,6 +39,7 @@ module tb;
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
   uart_if uart_if();
+  pins_if #(NUM_GPIOS) gpio_pins_if (.pins(gpio_pads));
 
   // ------ Mock DRAM ------
   top_pkg::axi_dram_req_t  dram_req;
@@ -55,6 +62,10 @@ module tb;
     // Clock and reset.
     .clk_i                (clk              ),
     .rst_ni               (rst_n            ),
+    // GPIO inputs and outputs with output enable
+    .gpio_i               (gpio_pads        ),
+    .gpio_o               (dut_gpio_o       ),
+    .gpio_en_o            (dut_gpio_en_o    ),
     // UART receive and transmit.
     .uart_rx_i            (uart_if.uart_rx  ),
     .uart_tx_o            (uart_if.uart_tx  ),
@@ -88,6 +99,12 @@ module tb;
     .dram_req_o           (dram_req         ),
     .dram_resp_i          (dram_resp        )
   );
+
+  // Assignment to the GPIO pads. If dut_gpio_en_o[i] is disabled, then let the gpio_pad[i] float so
+  // an external device / driver can drive it.
+  for (genvar i = 0; i < NUM_GPIOS; i++) begin : gen_gpio_pads
+    assign gpio_pads[i] = dut_gpio_en_o[i] ? dut_gpio_o[i] : 1'bz;
+  end
 
   // Signals to connect the sink
   top_pkg::axi_req_t  sim_sram_cpu_req;
@@ -204,6 +221,10 @@ module tb;
     `SIM_SRAM_IF.sw_dv_size                               = SW_DV_SIZE;
     `SIM_SRAM_IF.u_sw_test_status_if.sw_test_status_addr  = SW_DV_TEST_STATUS_ADDR;
     `SIM_SRAM_IF.u_sw_logger_if.sw_log_addr               = SW_DV_LOG_ADDR;
+
+    // Enable GPIO pull-ups to support the SW boot process. While only pin 8 is strictly required
+    // by the Boot ROM to determine the boot path, we enable pull-ups on all pins for consistency.
+    gpio_pins_if.set_pullup_en('1);
 
     // Start clock and reset generators
     sys_clk_if.set_active();
