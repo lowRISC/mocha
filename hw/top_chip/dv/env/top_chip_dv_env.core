@@ -12,6 +12,7 @@ filesets:
       - lowrisc:dv:mem_bkdr_util
       - lowrisc:dv:uart_agent
       - lowrisc:dv:common_ifs
+      - lowrisc:mocha_dv:gpio_env
     files:
       - top_chip_dv_env_pkg.sv
       - mem_clear_util.sv: {is_include_file: true}
