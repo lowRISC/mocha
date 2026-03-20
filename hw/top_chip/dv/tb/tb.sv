@@ -190,6 +190,10 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "sys_clk_if", sys_clk_if);
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "peri_clk_if", peri_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
+    uvm_config_db#(virtual pins_if#(GPIO_DATA_WIDTH))::set(uvm_root::get(),
+                                                           "uvm_test_top.env",
+                                                           "gpio_vif",
+                                                           gpio_if);
 
     // SW logger and test status interfaces.
     uvm_config_db#(virtual sw_test_status_if)::set(

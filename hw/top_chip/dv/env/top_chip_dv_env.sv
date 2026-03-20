@@ -44,6 +44,11 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
     `uvm_fatal(`gfn, "failed to get sw_logger_vif from uvm_config_db")
   end
 
+  // Get the GPIO VIF handle
+  if (!uvm_config_db#(virtual pins_if#(GPIO_DATA_WIDTH))::get(this, "", "gpio_vif", cfg.gpio_vif))
+    begin
+      `uvm_fatal(`gfn, "Failed to retrieve gpio_vif from uvm_config_db")
+    end
   // Initialize the sw logger interface.
   foreach (cfg.mem_image_files[i]) begin
     if (i inside {ChipMemSRAM}) begin
