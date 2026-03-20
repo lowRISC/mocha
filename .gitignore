@@ -13,6 +13,9 @@ scratch
 *.dasm
 *.csv
 
+# GTKWave save files
+*.gtkw
+
 # Python environment and cache
 __pycache__
 .venv
