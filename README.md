@@ -9,7 +9,7 @@ Specifically, any hardware that requires changes with respect to CHERI should be
 
 If you want to try out using Mocha, we currently support the [Genesys 2 FPGA board][] and simulation using Verilator or Xcelium.
 
-CHERI Mocha is part of the COSMIC project, which is a collaboration between lowRISC, Capabilities Limited and Oxford University Innovation.
+CHERI Mocha is part of the [COSMIC project](https://cosmic-project.lowrisc.org/), which is a collaboration between lowRISC, Capabilities Limited and Oxford University Innovation.
 It is work that is funded by Innovate UK and the Department for Science, Innovation and Technology (grant number 10168492).
 
 ## Architecture
