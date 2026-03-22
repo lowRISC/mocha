@@ -15,6 +15,8 @@ void rstmgr_software_reset_request(rstmgr_t rstmgr)
 bool rstmgr_software_reset_info_get(rstmgr_t rstmgr)
 {
     if (DEV_READ(rstmgr + RSTMGR_RESET_INFO_REG) & RSTMGR_RESET_INFO_SW_RESET) {
+        // Clear the info bit before returning.
+        DEV_WRITE(rstmgr + RSTMGR_RESET_INFO_REG, RSTMGR_RESET_INFO_SW_RESET);
         return true;
     }
     return false;
