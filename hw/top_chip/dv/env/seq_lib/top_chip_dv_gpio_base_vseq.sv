@@ -17,5 +17,7 @@ endfunction : new
 task top_chip_dv_gpio_base_vseq::body();
   super.body();
   `DV_WAIT(cfg.sw_test_status_vif.sw_test_status == SwTestStatusInTest);
+  cfg.gpio_vif.set_pulldown_en({32{1'b1}});
+
   // TODO
 endtask : body
