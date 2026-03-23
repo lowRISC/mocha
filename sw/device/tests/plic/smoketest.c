@@ -2,18 +2,16 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "hal/hart.h"
 #include "hal/mocha.h"
 #include "hal/plic.h"
 #include "hal/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-uint64_t csr_mip_get()
-{
-    uint64_t mip;
-    __asm__ volatile("csrr %0, mip\n\t" : "=r"(mip));
-    return mip;
-}
+enum {
+    mip_read_retry_count = 20u,
+};
 
 bool reg_test(plic_t plic)
 {
@@ -51,9 +49,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
 {
     uint8_t intr_id;
 
-    const int MIP_RD_RETRY_COUNT = 20;
     const int UART_INTR_ID = 8;
-    const uint64_t MEIP_MASK = (1 << 11);
 
     plic_init(plic);
     plic_interrupt_priority_set(plic, UART_INTR_ID, 3);
@@ -65,18 +61,20 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     plic_machine_interrupt_enable(plic, UART_INTR_ID);
 
     // Check that mip MEIP is clear
-    if ((csr_mip_get() & MEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_machine_external)) {
         return false;
     }
 
     uart_interrupt_trigger(uart, UART_INTR_RX_FRAME_ERR);
 
-    // Check that mip MEIP is set
-    // Retry to give time for mip to be updated
-    for (int i = 0; (csr_mip_get() & MEIP_MASK) == 0 && i < MIP_RD_RETRY_COUNT; ++i) {
+    // Check that mip MEIP is set following the triggered interrupt
+    for (size_t i = 0; i < mip_read_retry_count; i++) {
+        if (hart_interrupt_any_pending(interrupt_machine_external)) {
+            break;
+        }
     }
 
-    if ((csr_mip_get() & MEIP_MASK) == 0) {
+    if (!hart_interrupt_any_pending(interrupt_machine_external)) {
         return false;
     }
 
@@ -85,7 +83,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     plic_machine_interrupt_complete(plic, intr_id);
 
     // Check that mip MEIP is clear
-    if ((csr_mip_get() & MEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_machine_external)) {
         return false;
     }
 
@@ -96,9 +94,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
 {
     uint8_t intr_id;
 
-    const int MIP_RD_RETRY_COUNT = 20;
     const int UART_INTR_ID = 8;
-    const uint64_t SEIP_MASK = (1 << 9);
 
     plic_init(plic);
     plic_interrupt_priority_set(plic, UART_INTR_ID, 3);
@@ -110,18 +106,20 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     plic_supervisor_interrupt_enable(plic, UART_INTR_ID);
 
     // Check that mip SEIP is clear
-    if ((csr_mip_get() & SEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_software_external)) {
         return false;
     }
 
     uart_interrupt_trigger(uart, UART_INTR_RX_TIMEOUT);
 
-    // Check that mip SEIP is set
-    // Retry to give time for mip to be updated
-    for (int i = 0; (csr_mip_get() & SEIP_MASK) == 0 && i < MIP_RD_RETRY_COUNT; ++i) {
+    // Check for mip SEIP is set following the triggered interrupt
+    for (size_t i = 0; i < mip_read_retry_count; i++) {
+        if (hart_interrupt_any_pending(interrupt_software_external)) {
+            break;
+        }
     }
 
-    if ((csr_mip_get() & SEIP_MASK) == 0) {
+    if (!hart_interrupt_any_pending(interrupt_software_external)) {
         return false;
     }
 
@@ -130,7 +128,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     plic_supervisor_interrupt_complete(plic, intr_id);
 
     // Check that mip SEIP is clear
-    if ((csr_mip_get() & SEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_software_external)) {
         return false;
     }
 

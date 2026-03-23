@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "hal/hart.h"
 #include "hal/mocha.h"
 #include "hal/timer.h"
 #include <stdbool.h>
@@ -10,7 +11,6 @@
 bool accuracy_test(timer_t timer)
 {
     uint64_t start_cycle;
-    uint64_t current_cycle;
     uint64_t min_cycle;
     uint64_t max_cycle;
     bool has_intr_before_expire;
@@ -27,27 +27,19 @@ bool accuracy_test(timer_t timer)
     timer_set_compare(timer, timer_get_value(timer) + duration_steps);
     timer_clear_interrupt(timer);
 
-    __asm__ volatile("csrr %0, cycle\n\t" : "=r"(start_cycle));
+    start_cycle = hart_cycle_get();
 
     timer_enable(timer);
 
     min_cycle = min_cycle_diff + start_cycle;
     max_cycle = max_cycle_diff + start_cycle;
 
-    while (1) {
-        __asm__ volatile("csrr %0, cycle\n\t" : "=r"(current_cycle));
-        if (current_cycle > min_cycle) {
-            break;
-        }
+    while (hart_cycle_get() <= min_cycle) {
     }
 
     has_intr_before_expire = timer_has_interrupt(timer);
 
-    while (1) {
-        __asm__ volatile("csrr %0, cycle\n\t" : "=r"(current_cycle));
-        if (current_cycle > max_cycle) {
-            break;
-        }
+    while (hart_cycle_get() <= max_cycle) {
     }
 
     has_intr_after_expire = timer_has_interrupt(timer);
@@ -57,11 +49,9 @@ bool accuracy_test(timer_t timer)
 
 bool timer_irq_test(timer_t timer)
 {
-    uint64_t mip;
     bool has_mtip_before_expire;
     bool has_mtip_after_expire;
 
-    const uint64_t MTIP_MASK = (1 << 7);
     const uint64_t duration_steps = 5;
 
     timer_init(timer);
@@ -72,14 +62,12 @@ bool timer_irq_test(timer_t timer)
 
     timer_enable(timer);
 
-    __asm__ volatile("csrr %0, mip\n\t" : "=r"(mip));
-    has_mtip_before_expire = ((mip & MTIP_MASK) != 0);
+    has_mtip_before_expire = hart_interrupt_any_pending(interrupt_machine_timer);
 
     while (!timer_has_interrupt(timer)) {
     }
 
-    __asm__ volatile("csrr %0, mip\n\t" : "=r"(mip));
-    has_mtip_after_expire = ((mip & MTIP_MASK) != 0);
+    has_mtip_after_expire = hart_interrupt_any_pending(interrupt_machine_timer);
 
     return (!has_mtip_before_expire && has_mtip_after_expire);
 }

@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "hal/hart.h"
 #include "hal/mocha.h"
 #include "hal/timer.h"
 #include "hal/uart.h"
@@ -15,14 +16,10 @@ bool test_main(uart_t console)
     (void)console;
 
     /* globally disable all interrupts at the hart */
-    unsigned long mstatus;
-    __asm__ volatile("csrr %0, mstatus" : "=r"(mstatus)::);
-    mstatus &= ~(1 << 3);
-    __asm__ volatile("csrw mstatus, %0" ::"r"(mstatus) :);
+    hart_global_interrupt_enable_set(false);
 
     /* enable all interrupts at the hart */
-    unsigned long mie = ~(0);
-    __asm__ volatile("csrw mie, %0" ::"r"(mie) :);
+    hart_interrupt_enable(interrupt_machine_timer);
 
     /* initialise the timer */
     timer = mocha_system_timer();
@@ -35,34 +32,18 @@ bool test_main(uart_t console)
         /* schedule an interrupt 100us from now */
         interrupt_handled = false;
         timer_set_compare(timer, timer_get_value(timer) + 100);
-
-        do {
-            /* disable interrupts globally */
-            __asm__ volatile("csrr %0, mstatus" : "=r"(mstatus)::);
-            mstatus &= ~(1 << 3);
-            __asm__ volatile("csrw mstatus, %0" ::"r"(mstatus) :);
-
-            /* check the condition, and break if set */
-            if (interrupt_handled) {
-                break;
-            }
-            /* wfi to pause the hart until an interrupt is pending */
-            __asm__ volatile("wfi");
-            /* enable interrupts globally to possibly be pre-empted */
-            mstatus |= (1 << 3);
-            __asm__ volatile("csrw mstatus, %0" ::"r"(mstatus) :);
-        } while (true);
+        WAIT_FOR_CONDITION_PREEMPTABLE(interrupt_handled);
     }
 
     return true;
 }
 
-bool test_interrupt_handler(size_t irq)
+bool test_interrupt_handler(enum interrupt interrupt)
 {
-    if (irq == 7) {
+    if (interrupt == interrupt_machine_timer) {
         /* machine mode timer interrupt */
         /* set next timer interrupt to be infinitely far into the future */
-        timer_set_compare(timer, ~(0));
+        timer_set_compare(timer, UINT64_MAX);
         /* clear the timer interrupt */
         timer_clear_interrupt(timer);
         interrupt_handled = true;

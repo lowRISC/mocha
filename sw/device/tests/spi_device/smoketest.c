@@ -2,18 +2,16 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "hal/hart.h"
 #include "hal/mocha.h"
 #include "hal/plic.h"
 #include "hal/spi_device.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-uint64_t csr_mip_get()
-{
-    uint64_t mip;
-    __asm__ volatile("csrr %0, mip\n\t" : "=r"(mip));
-    return mip;
-}
+enum {
+    mip_read_retry_count = 20u,
+};
 
 bool cmd_filter_readback_test(spi_device_t spi_device, uint32_t offset)
 {
@@ -114,9 +112,7 @@ bool machine_irq_test(spi_device_t spi_device, plic_t plic)
 {
     uint8_t intr_id;
 
-    const int MIP_RD_RETRY_COUNT = 20;
     const int SPI_DEVICE_INTR_ID = 7;
-    const uint64_t MEIP_MASK = (1 << 11);
 
     plic_init(plic);
     plic_interrupt_priority_set(plic, SPI_DEVICE_INTR_ID, 3);
@@ -128,18 +124,20 @@ bool machine_irq_test(spi_device_t spi_device, plic_t plic)
     plic_machine_interrupt_enable(plic, SPI_DEVICE_INTR_ID);
 
     // Check that mip MEIP is clear
-    if ((csr_mip_get() & MEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_machine_external)) {
         return false;
     }
 
     spi_device_interrupt_trigger(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
 
-    // Check that mip MEIP is set
-    // Retry to give time for mip to be updated
-    for (int i = 0; (csr_mip_get() & MEIP_MASK) == 0 && i < MIP_RD_RETRY_COUNT; ++i) {
+    // Check that mip MEIP is set following the triggered interrupt
+    for (size_t i = 0; i < mip_read_retry_count; i++) {
+        if (hart_interrupt_any_pending(interrupt_machine_external)) {
+            break;
+        }
     }
 
-    if ((csr_mip_get() & MEIP_MASK) == 0) {
+    if (!hart_interrupt_any_pending(interrupt_machine_external)) {
         return false;
     }
 
@@ -148,7 +146,7 @@ bool machine_irq_test(spi_device_t spi_device, plic_t plic)
     plic_machine_interrupt_complete(plic, intr_id);
 
     // Check that mip MEIP is clear
-    if ((csr_mip_get() & MEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_machine_external)) {
         return false;
     }
 
@@ -159,9 +157,7 @@ bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
 {
     uint8_t intr_id;
 
-    const int MIP_RD_RETRY_COUNT = 20;
     const int SPI_DEVICE_INTR_ID = 7;
-    const uint64_t SEIP_MASK = (1 << 9);
 
     plic_init(plic);
     plic_interrupt_priority_set(plic, SPI_DEVICE_INTR_ID, 3);
@@ -173,18 +169,20 @@ bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
     plic_supervisor_interrupt_enable(plic, SPI_DEVICE_INTR_ID);
 
     // Check that mip SEIP is clear
-    if ((csr_mip_get() & SEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_software_external)) {
         return false;
     }
 
     spi_device_interrupt_trigger(spi_device, SPI_DEVICE_INTR_READBUF_FLIP);
 
-    // Check that mip SEIP is set
-    // Retry to give time for mip to be updated
-    for (int i = 0; (csr_mip_get() & SEIP_MASK) == 0 && i < MIP_RD_RETRY_COUNT; ++i) {
+    // Check that mip SEIP is set following the triggered interrupt
+    for (size_t i = 0; i < mip_read_retry_count; i++) {
+        if (hart_interrupt_any_pending(interrupt_software_external)) {
+            break;
+        }
     }
 
-    if ((csr_mip_get() & SEIP_MASK) == 0) {
+    if (!hart_interrupt_any_pending(interrupt_software_external)) {
         return false;
     }
 
@@ -193,7 +191,7 @@ bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
     plic_supervisor_interrupt_complete(plic, intr_id);
 
     // Check that mip SEIP is clear
-    if ((csr_mip_get() & SEIP_MASK) != 0) {
+    if (hart_interrupt_any_pending(interrupt_software_external)) {
         return false;
     }
 

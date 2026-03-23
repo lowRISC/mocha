@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "boot/trap.h"
+#include "builtin.h"
 #include "hal/uart.h"
 #include <stdbool.h>
 
@@ -10,17 +11,17 @@
  * them in the exception handler, to test the exception handling implementation */
 bool test_main(uart_t console)
 {
-    __asm__ volatile(".option push\n"
-                     ".option arch,-c\n"
-                     "unimp\n"
-                     ".option pop\n");
+    asm volatile(".option push\n"
+                 ".option arch,-c\n"
+                 "unimp\n"
+                 ".option pop\n");
 
     uart_puts(console, "skipped over 4-byte unimp!\n");
 
-    __asm__ volatile(".option push\n"
-                     ".option arch,+c\n"
-                     "unimp\n"
-                     ".option pop\n");
+    asm volatile(".option push\n"
+                 ".option arch,+c\n"
+                 "unimp\n"
+                 ".option pop\n");
 
     uart_puts(console, "skipped over 2-byte unimp!\n");
 

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "boot/trap.h"
+#include "hal/hart.h"
 #include "hal/mmio.h"
 #include "hal/mocha.h"
 #include "hal/uart.h"
@@ -30,9 +31,9 @@ static const char magic[] = "\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7";
 
 /* the test's interrupt handler. returns whether the interrupt was handled successfully.
  * the test is aborted if this function returns false. */
-[[gnu::weak]] bool test_interrupt_handler(size_t irq)
+[[gnu::weak]] bool test_interrupt_handler(enum interrupt interrupt)
 {
-    (void)irq;
+    (void)interrupt;
     /* by default, all interrupts are unhandled */
     return false;
 }
@@ -51,7 +52,7 @@ test_exception_handler(struct trap_registers *registers, struct trap_context *co
 void system_reset()
 {
     extern char BOOT_ROM_OFFSET[];
-    /* 
+    /*
      * We don't have a hardware system reset yet. So we workaround by jumping back to the bootROM.
      */
     enum { bootROM = 0x10000080 };
@@ -83,7 +84,7 @@ void system_reset()
     uart_puts(console, "Safe to exit simulator.");
     uart_puts(console, magic);
 
-    /* 
+    /*
      * Magic string should have terminated the verilator simulation.
      * If we got here, we might be running on the FPGA, so we need to go back to the bootROM for a
      * new test to be loaded.
@@ -164,8 +165,14 @@ void print_register_trace(struct trap_registers *registers, struct trap_context 
 void _interrupt_handler(struct trap_registers *registers, struct trap_context *context)
 {
     (void)registers;
+
+    /* clear interrupt bit as it is implied by interrupt handler function */
+    unsigned long cause = context->cause & ~(1ul << 63);
+    /* shift into place to get interrupt bit */
+    enum interrupt interrupt = (1ul << cause);
+
     /* call the test's provided interrupt handler */
-    bool handled = test_interrupt_handler(context->cause);
+    bool handled = test_interrupt_handler(interrupt);
     if (!handled) {
         uart_t console = mocha_system_uart();
         uart_puts(console, "unhandled interrupt!\n");
@@ -206,8 +213,6 @@ void _trap_handler(struct trap_registers *registers, struct trap_context *contex
 {
     if (context->cause & (1ul << 63)) {
         /* trap cause is interrupt */
-        /* clear interrupt bit as it is implied by interrupt handler function */
-        context->cause &= ~(1ul << 63);
         _interrupt_handler(registers, context);
     } else {
         /* trap cause is exception */
