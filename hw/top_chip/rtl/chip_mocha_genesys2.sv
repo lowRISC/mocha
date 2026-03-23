@@ -46,15 +46,51 @@ module chip_mocha_genesys2 #(
   output logic [ 0:0] ddr3_cke,
   output logic [ 0:0] ddr3_cs_n,
   output logic [ 3:0] ddr3_dm,
-  output logic [ 0:0] ddr3_odt
+  output logic [ 0:0] ddr3_odt,
+
+  // Ethernet
+  output wire        eth_rst_n       ,
+  input  wire        eth_rxck        ,
+  input  wire        eth_rxctl       ,
+  input  wire [3:0]  eth_rxd         ,
+  output wire        eth_txck        ,
+  output wire        eth_txctl       ,
+  output wire [3:0]  eth_txd         ,
+  inout  wire        eth_mdio        ,
+  output logic       eth_mdc
 );
   // Local parameters
   localparam int unsigned InitialResetCycles = 4;
 
+  // Rest of chip AXI crossbar configuration
+  localparam axi_pkg::xbar_cfg_t xbar_cfg = '{
+    NoSlvPorts:         int'(top_pkg::RestOfChipAxiXbarHosts),
+    NoMstPorts:         int'(top_pkg::RestOfChipAxiXbarDevices),
+    MaxMstTrans:        32'd10,
+    MaxSlvTrans:        32'd6,
+    FallThrough:        1'b0,
+    LatencyMode:        axi_pkg::CUT_ALL_AX,
+    PipelineStages:     32'd1,
+    AxiIdWidthSlvPorts: 32'd4,
+    AxiIdUsedSlvPorts:  32'd1,
+    UniqueIds:          1'b0,
+    AxiAddrWidth:       int'(top_pkg::AxiAddrWidth),
+    AxiDataWidth:       int'(top_pkg::AxiDataWidth / 8), // In bytes
+    NoAddrRules:        int'(top_pkg::RestOfChipAxiXbarDevices)
+  };
+
+  // Rest of chip AXI crossbar address mapping
+  axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
+  assign addr_map = '{
+    '{ idx: top_pkg::Ethernet, start_addr: top_pkg::EthernetBase, end_addr: top_pkg::EthernetBase + top_pkg::EthernetLength }
+  };
+
   // Internal clock signals
-  logic clk_cfg;  // Free-running configuration clock
-  logic clk_200m; // 200 MHz clock from MIG
-  logic clk_50m;  // 50 MHz mocha clock generated from clk_200m
+  logic clk_cfg;       // Free-running configuration clock
+  logic clk_200m;      // 200 MHz clock from MIG
+  logic clk_50m;       // 50 MHz mocha clock generated from clk_200m
+  logic clk_125m;      // 125 MHz ethernet clock generated from clk_200m
+  logic clk_125m_quad; // 125 MHz quadrature ethernet clock generated from clk_200m
 
   // Internal reset signals
   logic fpga_rst_n_sync_cfg;     // FPGA initial reset, initial assertion, deassertion sync to clk_cfg
@@ -85,13 +121,20 @@ module chip_mocha_genesys2 #(
   // CDC FIFO to MIG, synchronous to clk_200m
   top_pkg::axi_dram_req_t  mig_req;
   top_pkg::axi_dram_resp_t mig_resp;
+  // Rest of chip AXI crossbar host and devices
+  top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
+  top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
+  top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
+  top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
   // Clock generation
-  clkgen_xil7series clk_gen (
-    .clk_200m_i   (clk_200m),
-    .clk_cfg_o    (clk_cfg),
-    .pll_locked_o (pll_locked),
-    .clk_50m_o    (clk_50m)
+  clkgen_xil7series u_clk_gen (
+    .clk_200m_i      (clk_200m),
+    .clk_cfg_o       (clk_cfg),
+    .pll_locked_o    (pll_locked),
+    .clk_50m_o       (clk_50m),
+    .clk_125m_o      (clk_125m),
+    .clk_125m_quad_o (clk_125m_quad)
   );
 
   assign spien = 1;
@@ -183,9 +226,9 @@ module chip_mocha_genesys2 #(
     .dram_req_o  (dram_req),
     .dram_resp_i (dram_resp),
 
-    // Rest of chip AXI TODO
-    .rest_of_chip_req_o  ( ),
-    .rest_of_chip_resp_i ('0)
+    // Rest of chip AXI
+    .rest_of_chip_req_o  (xbar_host_req[top_pkg::MochaAXICrossbar]),
+    .rest_of_chip_resp_i (xbar_host_resp[top_pkg::MochaAXICrossbar])
   );
 
   // GPIO tri-state output drivers
@@ -346,5 +389,127 @@ module chip_mocha_genesys2 #(
   // AXI response fields not provided by the MIG are tied to 0
   assign mig_resp.b.user = '0;
   assign mig_resp.r.user = '0;
+
+  // Rest of chip AXI crossbar
+  axi_xbar #(
+    .Cfg          (xbar_cfg               ),
+    .ATOPs        (1'b0                   ),
+    .slv_aw_chan_t(top_pkg::axi_aw_chan_t ),
+    .mst_aw_chan_t(top_pkg::axi_aw_chan_t ),
+    .w_chan_t     (top_pkg::axi_w_chan_t  ),
+    .slv_b_chan_t (top_pkg::axi_b_chan_t  ),
+    .mst_b_chan_t (top_pkg::axi_b_chan_t  ),
+    .slv_ar_chan_t(top_pkg::axi_ar_chan_t ),
+    .mst_ar_chan_t(top_pkg::axi_ar_chan_t ),
+    .slv_r_chan_t (top_pkg::axi_r_chan_t  ),
+    .mst_r_chan_t (top_pkg::axi_r_chan_t  ),
+    .slv_req_t    (top_pkg::axi_req_t     ),
+    .slv_resp_t   (top_pkg::axi_resp_t    ),
+    .mst_req_t    (top_pkg::axi_req_t     ),
+    .mst_resp_t   (top_pkg::axi_resp_t    ),
+    .rule_t       (axi_pkg::xbar_rule_64_t)
+  ) u_rest_of_chip_axi_xbar (
+    .clk_i                (u_top_chip_system.clkmgr_clocks.clk_main_infra),
+    .rst_ni               (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .test_i               (1'b0),
+    .slv_ports_req_i      (xbar_host_req),
+    .slv_ports_resp_o     (xbar_host_resp),
+    .mst_ports_req_o      (xbar_device_req),
+    .mst_ports_resp_i     (xbar_device_resp),
+    .addr_map_i           (addr_map),
+    .en_default_mst_port_i('0),
+    .default_mst_port_i   ('0)
+  );
+
+  // Ethernet MAC
+  logic                    eth_en, eth_we, eth_int_n, eth_pme_n, eth_mdio_i, eth_mdio_o, eth_mdio_oe, eth_rvalid;
+  logic [top_pkg::AxiAddrWidth-1:0] eth_addr;
+  logic [top_pkg::AxiDataWidth-1:0] eth_wrdata, eth_rdata;
+  logic [top_pkg::AxiDataWidth/8-1:0] eth_be;
+
+  axi_to_mem #(
+    .axi_req_t  ( top_pkg::axi_req_t    ),
+    .axi_resp_t ( top_pkg::axi_resp_t   ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth ),
+    .DataWidth  ( top_pkg::AxiDataWidth ),
+    .IdWidth    ( top_pkg::AxiIdWidth   ),
+    .NumBanks   ( 1                     )
+  ) u_eth_axi_to_mem (
+    .clk_i  (u_top_chip_system.clkmgr_clocks.clk_main_infra),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+
+    // AXI interface.
+    .busy_o     ( ),
+    .axi_req_i  (xbar_device_req[top_pkg::Ethernet]),
+    .axi_resp_o (xbar_device_resp[top_pkg::Ethernet]),
+
+    // Memory interface.
+    .mem_req_o    (eth_en),
+    .mem_gnt_i    (1'b1),
+    .mem_addr_o   (eth_addr),
+    .mem_wdata_o  (eth_wrdata),
+    .mem_strb_o   (eth_be),
+    .mem_atop_o   ( ),
+    .mem_we_o     (eth_we),
+    .mem_rvalid_i (eth_rvalid),
+    .mem_rdata_i  (eth_rdata)
+  );
+
+  // Single-cycle read response.
+  always_ff @(posedge u_top_chip_system.clkmgr_clocks.clk_main_infra or negedge u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
+    if (!u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
+      eth_rvalid <= '0;
+    end else begin
+      eth_rvalid <= eth_en; // Generate rvalid strobes even for writes
+    end
+  end
+
+  framing_top u_eth_rgmii (
+    // Memory interface
+    .msoc_clk(u_top_chip_system.clkmgr_clocks.clk_main_infra),
+    .core_lsu_addr(eth_addr[14:0]),
+    .core_lsu_wdata(eth_wrdata),
+    .core_lsu_be(eth_be),
+    .ce_d(eth_en),
+    .we_d(eth_en & eth_we),
+    .framing_sel(eth_en),
+    .framing_rdata(eth_rdata),
+    .rst_int(!u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+
+    // Clocks
+    .clk_int(clk_125m), // 125 MHz in-phase
+    .clk90_int(clk_125m_quad),    // 125 MHz quadrature
+    .clk_200_int(clk_200m),
+
+    // 1000BASE-T RGMII PHY interface
+    .phy_rx_clk(eth_rxck),
+    .phy_rxd(eth_rxd),
+    .phy_rx_ctl(eth_rxctl),
+    .phy_tx_clk(eth_txck),
+    .phy_txd(eth_txd),
+    .phy_tx_ctl(eth_txctl),
+    .phy_reset_n(eth_rst_n),
+    .phy_int_n(eth_int_n),
+    .phy_pme_n(eth_pme_n),
+    .phy_mdc(eth_mdc),
+    .phy_mdio_i(eth_mdio_i),
+    .phy_mdio_o(eth_mdio_o),
+    .phy_mdio_oe(eth_mdio_oe),
+
+    // Interrupts out TODO
+    .eth_irq( )
+  );
+
+  IOBUF #(
+    .DRIVE(12), // Specify the output drive strength
+    .IBUF_LOW_PWR("TRUE"),  // Low Power - "TRUE", High Performance = "FALSE"
+    .IOSTANDARD("DEFAULT"), // Specify the I/O standard
+    .SLEW("SLOW") // Specify the output slew rate
+  ) IOBUF_inst (
+    .O(eth_mdio_i),     // Buffer output
+    .IO(eth_mdio),   // Buffer inout port (connect directly to top-level port)
+    .I(eth_mdio_o),     // Buffer input
+    .T(~eth_mdio_oe)      // 3-state enable input, high=input, low=output
+  );
 
 endmodule
