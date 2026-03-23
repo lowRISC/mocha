@@ -98,7 +98,9 @@ module tb;
     .dram_resp_i          (dram_resp        ),
     // Rest of chip AXI tie-off.
     .rest_of_chip_req_o   (                 ),
-    .rest_of_chip_resp_i  ('0               )
+    .rest_of_chip_resp_i  ('0               ),
+    // Ethernet interrupt in tie-off.
+    .ethernet_irq_i       ('0               )
   );
 
   // Assignment to the GPIO pads. If dut_gpio_en_o[i] is disabled, then let the gpio_pad[i] float so
