@@ -48,21 +48,58 @@ module chip_mocha_genesys2 #(
   output logic [ 0:0] ddr3_cke,
   output logic [ 0:0] ddr3_cs_n,
   output logic [ 3:0] ddr3_dm,
-  output logic [ 0:0] ddr3_odt
+  output logic [ 0:0] ddr3_odt,
+
+  // Ethernet RGMII
+  output logic       eth_rgmii_rst_no,
+  input  logic       eth_rgmii_rxck_i,
+  input  logic       eth_rgmii_rxctl_i,
+  input  logic [3:0] eth_rgmii_rxd_i,
+  output logic       eth_rgmii_txck_o,
+  output logic       eth_rgmii_txctl_o,
+  output logic [3:0] eth_rgmii_txd_o,
+  output logic       eth_rgmii_mdc_o,
+  inout  logic       eth_rgmii_mdio_io
 );
   // Local parameters
   localparam int unsigned InitialResetCycles = 4;
 
+  // Rest of chip AXI crossbar configuration
+  localparam axi_pkg::xbar_cfg_t xbar_cfg = '{
+    NoSlvPorts:         int'(top_pkg::RestOfChipAxiXbarHosts),
+    NoMstPorts:         int'(top_pkg::RestOfChipAxiXbarDevices),
+    MaxMstTrans:        32'd10,
+    MaxSlvTrans:        32'd6,
+    FallThrough:        1'b0,
+    LatencyMode:        axi_pkg::CUT_ALL_AX,
+    PipelineStages:     32'd1,
+    AxiIdWidthSlvPorts: 32'd4,
+    AxiIdUsedSlvPorts:  32'd1,
+    UniqueIds:          1'b0,
+    AxiAddrWidth:       int'(top_pkg::AxiAddrWidth),
+    AxiDataWidth:       int'(top_pkg::AxiDataWidth / 8), // In bytes
+    NoAddrRules:        int'(top_pkg::RestOfChipAxiXbarDevices)
+  };
+
+  // Rest of chip AXI crossbar address mapping
+  axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
+  assign addr_map = '{
+    '{ idx: top_pkg::Ethernet, start_addr: top_pkg::EthernetBase, end_addr: top_pkg::EthernetBase + top_pkg::EthernetLength }
+  };
+
   // Internal clock signals
-  logic clk_cfg;  // Free-running configuration clock
-  logic clk_200m; // 200 MHz clock from MIG
-  logic clk_50m;  // 50 MHz mocha clock generated from clk_200m
+  logic clk_cfg;       // Free-running configuration clock
+  logic clk_200m;      // 200 MHz clock from MIG
+  logic clk_50m;       // 50 MHz mocha clock generated from clk_200m
+  logic clk_125m;      // 125 MHz ethernet clock generated from clk_200m
+  logic clk_125m_quad; // 125 MHz quadrature ethernet clock generated from clk_200m
 
   // Internal reset signals
   logic fpga_rst_n_sync_cfg;     // FPGA initial reset, initial assertion, deassertion sync to clk_cfg
   logic mig_rst_n_sync_cfg;      // MIG system reset, async assertion, deassertion sync to clk_cfg
   logic mig_axi_rst_n_sync_200m; // MIG AXI reset, async assertion, deassertion sync to clk_200m
   logic rst_n_sync_50m;          // Mocha top reset, async assertion, deassertion sync to clk_50m
+  logic eth_rst_n_sync_125m;     // Ethernet MAC reset, async assertion, deassertion sync to clk_125m
 
   // Initial reset shift register
   (* srl_style = "srl_reg" *) logic [InitialResetCycles-1:0] fpga_rst_n_shreg;
@@ -90,13 +127,23 @@ module chip_mocha_genesys2 #(
   // CDC FIFO to MIG, synchronous to clk_200m
   top_pkg::axi_dram_req_t  mig_req;
   top_pkg::axi_dram_resp_t mig_resp;
+  // Rest of chip AXI crossbar host and devices
+  top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
+  top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
+  top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
+  top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
+
+  // Ethernet interrupt line
+  logic ethernet_irq;
 
   // Clock generation
-  clkgen_xil7series clk_gen (
-    .clk_200m_i   (clk_200m),
-    .clk_cfg_o    (clk_cfg),
-    .pll_locked_o (pll_locked),
-    .clk_50m_o    (clk_50m)
+  clkgen_xil7series u_clk_gen (
+    .clk_200m_i      (clk_200m),
+    .clk_cfg_o       (clk_cfg),
+    .pll_locked_o    (pll_locked),
+    .clk_50m_o       (clk_50m),
+    .clk_125m_o      (clk_125m),
+    .clk_125m_quad_o (clk_125m_quad)
   );
 
   assign spien = 1;
@@ -144,6 +191,16 @@ module chip_mocha_genesys2 #(
     .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
     .d_i    (1'b1),
     .q_o    (mig_axi_rst_n_sync_200m)
+  );
+
+  prim_flop_2sync #(
+    .Width      (1),
+    .ResetValue ('0)
+  ) u_eth_rst_sync_125m (
+    .clk_i  (clk_125m),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .d_i    (1'b1),
+    .q_o    (eth_rst_n_sync_125m)
   );
 
   // CHERI Mocha top
@@ -202,9 +259,12 @@ module chip_mocha_genesys2 #(
     .dram_req_o  (dram_req),
     .dram_resp_i (dram_resp),
 
-    // Rest of chip AXI TODO
-    .rest_of_chip_req_o  ( ),
-    .rest_of_chip_resp_i ('0)
+    // Rest of chip AXI
+    .rest_of_chip_req_o  (xbar_host_req[top_pkg::MochaAXICrossbar]),
+    .rest_of_chip_resp_i (xbar_host_resp[top_pkg::MochaAXICrossbar]),
+
+    // Ethernet IRQ
+    .ethernet_irq_i (ethernet_irq)
   );
 
   // GPIO tri-state output drivers
@@ -365,5 +425,68 @@ module chip_mocha_genesys2 #(
   // AXI response fields not provided by the MIG are tied to 0
   assign mig_resp.b.user = '0;
   assign mig_resp.r.user = '0;
+
+  // Rest of chip AXI crossbar
+  axi_xbar #(
+    .Cfg          (xbar_cfg               ),
+    .ATOPs        (1'b0                   ),
+    .slv_aw_chan_t(top_pkg::axi_aw_chan_t ),
+    .mst_aw_chan_t(top_pkg::axi_aw_chan_t ),
+    .w_chan_t     (top_pkg::axi_w_chan_t  ),
+    .slv_b_chan_t (top_pkg::axi_b_chan_t  ),
+    .mst_b_chan_t (top_pkg::axi_b_chan_t  ),
+    .slv_ar_chan_t(top_pkg::axi_ar_chan_t ),
+    .mst_ar_chan_t(top_pkg::axi_ar_chan_t ),
+    .slv_r_chan_t (top_pkg::axi_r_chan_t  ),
+    .mst_r_chan_t (top_pkg::axi_r_chan_t  ),
+    .slv_req_t    (top_pkg::axi_req_t     ),
+    .slv_resp_t   (top_pkg::axi_resp_t    ),
+    .mst_req_t    (top_pkg::axi_req_t     ),
+    .mst_resp_t   (top_pkg::axi_resp_t    ),
+    .rule_t       (axi_pkg::xbar_rule_64_t)
+  ) u_rest_of_chip_axi_xbar (
+    .clk_i                (u_top_chip_system.clkmgr_clocks.clk_main_infra),
+    .rst_ni               (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .test_i               (1'b0),
+    .slv_ports_req_i      (xbar_host_req),
+    .slv_ports_resp_o     (xbar_host_resp),
+    .mst_ports_req_o      (xbar_device_req),
+    .mst_ports_resp_i     (xbar_device_resp),
+    .addr_map_i           (addr_map),
+    .en_default_mst_port_i('0),
+    .default_mst_port_i   ('0)
+  );
+
+  // Async reset for ethernet PHY
+  // NOTE: Using eth_rst_n_sync_125m to reset the PHY breaks Tx
+  assign eth_rst_n = fpga_rst_n_sync_cfg;
+
+  // Ethernet MAC wrapper
+  ethernet_wrapper u_eth_wrapper (
+    // Clocking and reset
+    .clk_axi_i       (u_top_chip_system.clkmgr_clocks.clk_main_infra),
+    .rst_axi_ni      (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .clk_125m_i      (clk_125m),
+    .clk_125m_quad_i (clk_125m_quad),
+    .clk_200m_i      (clk_200m),
+    .rst_eth_ni      (eth_rst_n_sync_125m),
+
+    // AXI interface
+    .axi_req_i  (xbar_device_req[top_pkg::Ethernet]),
+    .axi_resp_o (xbar_device_resp[top_pkg::Ethernet]),
+
+    // Interrupt out
+    .ethernet_irq_o (ethernet_irq),
+
+    // RGMII interface to PHY
+    .eth_rgmii_rxck_i  (eth_rgmii_rxck_i),
+    .eth_rgmii_rxctl_i (eth_rgmii_rxctl_i),
+    .eth_rgmii_rxd_i   (eth_rgmii_rxd_i),
+    .eth_rgmii_txck_o  (eth_rgmii_txck_o),
+    .eth_rgmii_txctl_o (eth_rgmii_txctl_o),
+    .eth_rgmii_txd_o   (eth_rgmii_txd_o),
+    .eth_rgmii_mdio_io (eth_rgmii_mdio_io),
+    .eth_rgmii_mdc_o   (eth_rgmii_mdc_o)
+  );
 
 endmodule

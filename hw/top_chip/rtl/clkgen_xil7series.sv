@@ -6,12 +6,16 @@ module clkgen_xil7series (
   input  logic clk_200m_i,
   output logic clk_cfg_o,
   output logic pll_locked_o,
-  output logic clk_50m_o
+  output logic clk_50m_o,
+  output logic clk_125m_o,
+  output logic clk_125m_quad_o
 );
   // Internal signals
   logic clk_fb_unbuf;
   logic clk_fb_buf;
   logic clk_50m_unbuf;
+  logic clk_125m_unbuf;
+  logic clk_125m_quad_unbuf;
   logic clk_cfg_unbuf;
 
   // PLL
@@ -28,15 +32,23 @@ module clkgen_xil7series (
     .CLKOUT0_DIVIDE_F     (20.000), // f_CLKOUT0 = 50 MHz
     .CLKOUT0_PHASE        (0.000),
     .CLKOUT0_DUTY_CYCLE   (0.500),
-    .CLKOUT0_USE_FINE_PS  ("FALSE")
+    .CLKOUT0_USE_FINE_PS  ("FALSE"),
+    .CLKOUT1_DIVIDE       (8),      // f_CLKOUT1 = 125 MHz
+    .CLKOUT1_PHASE        (0.000),
+    .CLKOUT1_DUTY_CYCLE   (0.500),
+    .CLKOUT1_USE_FINE_PS  ("FALSE"),
+    .CLKOUT2_DIVIDE       (8),      // f_CLKOUT2 = 125 MHz
+    .CLKOUT2_PHASE        (90.000), // Quadrature (90 deg phase shift)
+    .CLKOUT2_DUTY_CYCLE   (0.500),
+    .CLKOUT2_USE_FINE_PS  ("FALSE")
   ) pll (
     .CLKFBOUT            (clk_fb_unbuf),
     .CLKFBOUTB           (),
     .CLKOUT0             (clk_50m_unbuf),
     .CLKOUT0B            (),
-    .CLKOUT1             (),
+    .CLKOUT1             (clk_125m_unbuf),
     .CLKOUT1B            (),
-    .CLKOUT2             (),
+    .CLKOUT2             (clk_125m_quad_unbuf),
     .CLKOUT2B            (),
     .CLKOUT3             (),
     .CLKOUT3B            (),
@@ -97,6 +109,16 @@ module clkgen_xil7series (
   BUFG clk_50m_bufg_inst (
     .I(clk_50m_unbuf),
     .O(clk_50m_o)
+  );
+
+  BUFG clk_125m_bufg_inst (
+    .I(clk_125m_unbuf),
+    .O(clk_125m_o)
+  );
+
+  BUFG clk_125m_quad_bufg_inst (
+    .I(clk_125m_quad_unbuf),
+    .O(clk_125m_quad_o)
   );
 
   BUFG clk_cfg_bufg_inst (

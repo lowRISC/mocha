@@ -51,6 +51,23 @@ set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [ge
 ## SPI (PMOD Header JD)
 set_property -dict { PACKAGE_PIN W28   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_o  }];
 set_property -dict { PACKAGE_PIN W27   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_i  }];
-set_property -dict { PACKAGE_PIN W29   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { spi_device_csb_i }];
+set_property -dict { PACKAGE_PIN W29   IOSTANDARD LVCMOS33 PULLTYPE PULLUP   } [get_ports { spi_device_csb_i }];
 set_property -dict { PACKAGE_PIN AD27  IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sck_i }];
-set_property -dict { PACKAGE_PIN AD29  IOSTANDARD LVCMOS33 } [get_ports { spien }];
+set_property -dict { PACKAGE_PIN AD29  IOSTANDARD LVCMOS33                   } [get_ports { spien            }];
+
+## Ethernet RGMII
+set_property -dict { PACKAGE_PIN AH24  IOSTANDARD LVCMOS33 } [get_ports { eth_rgmii_rst_no   }];
+set_property -dict { PACKAGE_PIN AG10  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_rxck_i   }];
+set_property -dict { PACKAGE_PIN AH11  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_rxctl_i  }];
+set_property -dict { PACKAGE_PIN AJ14  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_rxd_i[0] }];
+set_property -dict { PACKAGE_PIN AH14  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_rxd_i[1] }];
+set_property -dict { PACKAGE_PIN AK13  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_rxd_i[2] }];
+set_property -dict { PACKAGE_PIN AJ13  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_rxd_i[3] }];
+set_property -dict { PACKAGE_PIN AE10  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_txck_o   }];
+set_property -dict { PACKAGE_PIN AK14  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_txctl_o  }];
+set_property -dict { PACKAGE_PIN AJ12  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_txd_o[0] }];
+set_property -dict { PACKAGE_PIN AK11  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_txd_o[1] }];
+set_property -dict { PACKAGE_PIN AJ11  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_txd_o[2] }];
+set_property -dict { PACKAGE_PIN AK10  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_txd_o[3] }];
+set_property -dict { PACKAGE_PIN AF12  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_mdc_o    }];
+set_property -dict { PACKAGE_PIN AG12  IOSTANDARD LVCMOS15 } [get_ports { eth_rgmii_mdio_io  }];
