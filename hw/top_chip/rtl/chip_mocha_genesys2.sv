@@ -51,21 +51,19 @@ module chip_mocha_genesys2 #(
   // Local parameters
   localparam int unsigned InitialResetCycles = 4;
 
-  // Internal clock and reset signals
-  logic clk_cfg;            // Free-running configuration clock
-  logic clk_200m;           // 200 MHz clock from MIG
-  logic clk_50m;            // 50 MHz mocha clock generated from clk_200m
-  logic mig_rst_n;          // MIG system reset, deassertion synchronous to clk_cfg
-  logic mig_axi_rst_n;      // MIG AXI reset, deassertion synchronous to clk_200m
-  logic rst_n;              // Mocha top reset, deassertion synchronous to clk_50m
-  logic ext_rst_n_sync_cfg; // External reset synchronised to clk_cfg
-  logic ext_rst_n_sync_50m; // External reset synchronised to clk_50m
+  // Internal clock signals
+  logic clk_cfg;  // Free-running configuration clock
+  logic clk_200m; // 200 MHz clock from MIG
+  logic clk_50m;  // 50 MHz mocha clock generated from clk_200m
 
+  // Internal reset signals
+  logic fpga_rst_n_sync_cfg;     // FPGA initial reset, initial assertion, deassertion sync to clk_cfg
+  logic mig_rst_n_sync_cfg;      // MIG system reset, async assertion, deassertion sync to clk_cfg
+  logic mig_axi_rst_n_sync_200m; // MIG AXI reset, async assertion, deassertion sync to clk_200m
+  logic rst_n_sync_50m;          // Mocha top reset, async assertion, deassertion sync to clk_50m
 
-  // Internal reset shift registers
-  logic [InitialResetCycles-1:0] mig_rst_n_shreg;
-  logic [InitialResetCycles-1:0] mig_axi_rst_n_shreg;
-  logic [InitialResetCycles-1:0] rst_n_shreg;
+  // Initial reset shift register
+  (* srl_style = "srl_reg" *) logic [InitialResetCycles-1:0] fpga_rst_n_shreg;
 
   // PLL lock signal
   logic pll_locked;
@@ -98,55 +96,50 @@ module chip_mocha_genesys2 #(
 
   assign spien = 1;
 
+  // FPGA initial reset logic
+  // Provides an initial reset pulse for reset synchronisers even if
+  // external reset is never asserted.
+  initial fpga_rst_n_shreg = '0;
+
+  always_ff @(posedge clk_cfg) begin
+    fpga_rst_n_shreg <= {1'b1, fpga_rst_n_shreg[InitialResetCycles-1:1]};
+  end
+
+  assign fpga_rst_n_sync_cfg = fpga_rst_n_shreg[0];
+
   // External reset synchroniser
   // Synchronisation is required here because the external reset is used in logic here,
   // before it goes through the synchronisers in rstmgr.
   // Use asynchronous assertion with synchronous deassertion.
   prim_flop_2sync #(
-    .Width(1),
-    .ResetValue('0)
-  ) u_ext_rst_sync_cfg (
-    .clk_i(clk_cfg),
-    .rst_ni(ext_rst_ni),
-    .d_i(1'b1),
-    .q_o(ext_rst_n_sync_cfg)
+    .Width      (1),
+    .ResetValue ('0)
+  ) u_mig_rst_sync_cfg (
+    .clk_i  (clk_cfg),
+    .rst_ni (ext_rst_ni & fpga_rst_n_sync_cfg),
+    .d_i    (1'b1),
+    .q_o    (mig_rst_n_sync_cfg)
   );
+
   prim_flop_2sync #(
-    .Width(1),
-    .ResetValue('0)
-  ) u_ext_rst_sync_50m (
-    .clk_i(clk_50m),
-    .rst_ni(ext_rst_ni),
-    .d_i(1'b1),
-    .q_o(ext_rst_n_sync_50m)
+    .Width      (1),
+    .ResetValue ('0)
+  ) u_rst_sync_50m (
+    .clk_i  (clk_50m),
+    .rst_ni (ext_rst_ni & fpga_rst_n_sync_cfg),
+    .d_i    (1'b1),
+    .q_o    (rst_n_sync_50m)
   );
 
-  // Internal reset generation
-  initial mig_rst_n_shreg     = '0;
-  initial mig_axi_rst_n_shreg = '0;
-  initial rst_n_shreg         = '0;
-
-  always_ff @(posedge clk_cfg or negedge ext_rst_n_sync_cfg) begin
-    if (!ext_rst_n_sync_cfg) mig_rst_n_shreg <= '0;
-    else                     mig_rst_n_shreg <= {1'b1, mig_rst_n_shreg[InitialResetCycles-1:1]};
-  end
-
-  always_ff @(posedge clk_200m or negedge u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
-    if (!u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
-      mig_axi_rst_n_shreg <= '0;
-    end else begin
-      mig_axi_rst_n_shreg <= {1'b1, mig_axi_rst_n_shreg[InitialResetCycles-1:1]};
-    end
-  end
-
-  always_ff @(posedge clk_50m or negedge ext_rst_n_sync_50m) begin
-    if (!ext_rst_n_sync_50m) rst_n_shreg <= '0;
-    else                     rst_n_shreg <= {1'b1, rst_n_shreg[InitialResetCycles-1:1]};
-  end
-
-  assign mig_rst_n     = mig_rst_n_shreg[0];
-  assign mig_axi_rst_n = mig_axi_rst_n_shreg[0];
-  assign rst_n         = rst_n_shreg[0];
+  prim_flop_2sync #(
+    .Width      (1),
+    .ResetValue ('0)
+  ) u_mig_axi_rst_sync_200m (
+    .clk_i  (clk_200m),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .d_i    (1'b1),
+    .q_o    (mig_axi_rst_n_sync_200m)
+  );
 
   // CHERI Mocha top
   top_chip_system #(
@@ -154,7 +147,7 @@ module chip_mocha_genesys2 #(
   ) u_top_chip_system (
     // Clock and reset
     .clk_i    (clk_50m),
-    .rst_ni   (rst_n),
+    .rst_ni   (rst_n_sync_50m),
 
     // GPIO
     .gpio_i    ({24'd0, gpio_i}),
@@ -234,7 +227,7 @@ module chip_mocha_genesys2 #(
     .src_req_i  (dram_req),
     .src_resp_o (dram_resp),
     .dst_clk_i  (clk_200m),
-    .dst_rst_ni (mig_axi_rst_n),
+    .dst_rst_ni (mig_axi_rst_n_sync_200m),
     .dst_req_o  (mig_req),
     .dst_resp_i (mig_resp)
   );
@@ -251,11 +244,11 @@ module chip_mocha_genesys2 #(
 
     // System reset input
     // Asynchronous, at least 5ns
-    .sys_rst (mig_rst_n),
+    .sys_rst (mig_rst_n_sync_cfg),
 
     // AXI interface reset input
     // Synchronous to ui_clk
-    .aresetn (mig_axi_rst_n),
+    .aresetn (mig_axi_rst_n_sync_200m),
 
     // User interface clock and reset output
     .ui_clk          (clk_200m),
