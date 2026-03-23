@@ -200,7 +200,11 @@ module chip_mocha_genesys2 #(
 
     // DRAM
     .dram_req_o  (dram_req),
-    .dram_resp_i (dram_resp)
+    .dram_resp_i (dram_resp),
+
+    // Rest of chip AXI TODO
+    .rest_of_chip_req_o  ( ),
+    .rest_of_chip_resp_i ('0)
   );
 
   // GPIO tri-state output drivers

@@ -90,7 +90,10 @@ module top_chip_verilator (
     .spi_host_sd_i     ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
 
     .dram_req_o  (dram_req),
-    .dram_resp_i (dram_resp)
+    .dram_resp_i (dram_resp),
+
+    .rest_of_chip_req_o  ( ), // Rest of chip AXI tie-off
+    .rest_of_chip_resp_i ('0)
   );
 
   // No support for dual or quad SPI in loopback mode right now.
