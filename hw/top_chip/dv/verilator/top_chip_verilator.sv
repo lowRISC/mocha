@@ -93,7 +93,9 @@ module top_chip_verilator (
     .dram_resp_i (dram_resp),
 
     .rest_of_chip_req_o  ( ), // Rest of chip AXI tie-off
-    .rest_of_chip_resp_i ('0)
+    .rest_of_chip_resp_i ('0),
+
+    .ethernet_irq_i ('0) // Ethernet interrupt in tie-off.
   );
 
   // No support for dual or quad SPI in loopback mode right now.

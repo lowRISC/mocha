@@ -62,7 +62,10 @@ module top_chip_system #(
 
   // Rest of chip AXI interface.
   output top_pkg::axi_req_t  rest_of_chip_req_o,
-  input  top_pkg::axi_resp_t rest_of_chip_resp_i
+  input  top_pkg::axi_resp_t rest_of_chip_resp_i,
+
+  // Ethernet IRQ in
+  input  logic ethernet_irq_i
 );
 
   // Local parameters.
@@ -249,7 +252,8 @@ module top_chip_system #(
   // Interrupt vector
   logic [31:0] intr_vector;
 
-  assign intr_vector[31 : 12] = '0;  // Reserved for future use.
+  assign intr_vector[     31] = ethernet_irq_i;
+  assign intr_vector[30 : 12] = '0;  // Reserved for future use.
   assign intr_vector[     11] = mailbox_main_irq;
   assign intr_vector[     10] = pwrmgr_wakeup_irq;
   assign intr_vector[      9] = gpio_irq;
