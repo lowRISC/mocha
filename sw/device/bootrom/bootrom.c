@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "boot/trap.h"
+#include "hal/gpio.h"
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
 #include "hal/uart.h"
@@ -17,6 +18,8 @@ extern uint8_t _program_end[];
 static bool spi_boot_strap(uart_t console);
 static void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes);
 static void boot(uintptr_t addr);
+static void led_init(gpio_t gpio);
+static void led_animation_run(gpio_t gpio);
 
 // TODO: Add support to cheri mode
 int main(void)
@@ -45,17 +48,30 @@ void boot(uintptr_t addr)
 
 bool spi_boot_strap(uart_t console)
 {
+    gpio_t gpio = mocha_system_gpio();
+    led_init(gpio);
+
     spi_device_t spid = mocha_system_spi_device();
     spi_device_init(spid);
     spi_device_enable_set(spid, true);
     spi_device_flash_status_set(spid, 0);
+
     uint32_t received_resets = 0;
+    size_t count = 0;
 
     while (true) {
-        spi_device_cmd_t cmd = spi_device_cmd_get(spid);
-        if (cmd.status != 0) {
-            uprintf(console, "SPI payload overflow\n");
-            spi_device_flash_status_set(spid, 0);
+        // TODO: Use timer
+        if (count++ >= 1000) {
+            led_animation_run(gpio);
+            count = 0;
+        }
+
+        spi_device_cmd_t cmd = spi_device_cmd_get_non_blocking(spid);
+        if (cmd.status != spi_device_status_ready) {
+            if (cmd.status == spi_device_status_overflow) {
+                uprintf(console, "SPI payload overflow\n");
+                spi_device_flash_status_set(spid, 0);
+            }
             continue;
         }
 
@@ -117,6 +133,28 @@ void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t b
         ptr += sizeof(uint64_t);
         payload_offset += sizeof(uint64_t);
     }
+}
+
+enum { num_leds = 8 };
+
+void led_init(gpio_t gpio)
+{
+    for (size_t led = 0; led < num_leds; led++) {
+        gpio_set_oe_pin(gpio, led, true);
+    }
+}
+
+void led_animation_run(gpio_t gpio)
+{
+    static int current_led = 0;
+    static bool going_up = false;
+
+    gpio_write_pin(gpio, current_led, going_up);
+
+    int next_led = current_led + (going_up ? 1 : -1);
+    bool toggle = (next_led >= num_leds || next_led < 0);
+    current_led = toggle ? current_led : next_led;
+    going_up ^= toggle;
 }
 
 // TODO: Catch exceptions properly.

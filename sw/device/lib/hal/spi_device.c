@@ -596,15 +596,18 @@ void spi_device_init(spi_device_t spi_device)
     spi_device_cmd_info_write_disable_set(spi_device, SPI_DEVICE_OPCODE_WRITE_DISABLE);
 }
 
-spi_device_cmd_t spi_device_cmd_get(spi_device_t spi_device)
+spi_device_cmd_t spi_device_cmd_get_non_blocking(spi_device_t spi_device)
 {
     // Set return defaults
-    spi_device_cmd_t cmd = {
-        .status = 0, .opcode = 0x0, .address = UINT32_MAX, .payload_byte_count = 0
-    };
+    spi_device_cmd_t cmd = { .status = spi_device_status_ready,
+                             .opcode = 0x0,
+                             .address = UINT32_MAX,
+                             .payload_byte_count = 0 };
 
-    // Wait for software-handled command
-    while (!spi_device_interrupt_is_pending(spi_device, SPI_DEVICE_INTR_UPLOAD_CMDFIFO_NOT_EMPTY)) {
+    // Check for software-handled command
+    if (!spi_device_interrupt_is_pending(spi_device, SPI_DEVICE_INTR_UPLOAD_CMDFIFO_NOT_EMPTY)) {
+        cmd.status = spi_device_status_empty;
+        return cmd;
     }
 
     // Clear interrupt
@@ -612,7 +615,7 @@ spi_device_cmd_t spi_device_cmd_get(spi_device_t spi_device)
 
     // Check for payload overflow
     if (spi_device_interrupt_is_pending(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW)) {
-        cmd.status = 1;
+        cmd.status = spi_device_status_overflow;
         spi_device_interrupt_clear(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
         return cmd;
     }
@@ -633,4 +636,13 @@ spi_device_cmd_t spi_device_cmd_get(spi_device_t spi_device)
     cmd.payload_byte_count = (uint16_t)(spi_device_upload_status2_get(spi_device) &
                                         SPI_DEVICE_UPLOAD_STATUS2_PAYLOAD_DEPTH_MASK);
     return cmd;
+}
+
+spi_device_cmd_t spi_device_cmd_get(spi_device_t spi_device)
+{
+    // Wait for software-handled command
+    while (!spi_device_interrupt_is_pending(spi_device, SPI_DEVICE_INTR_UPLOAD_CMDFIFO_NOT_EMPTY)) {
+    }
+
+    return spi_device_cmd_get_non_blocking(spi_device);
 }

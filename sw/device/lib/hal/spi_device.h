@@ -153,8 +153,14 @@
 
 typedef void *spi_device_t;
 
+typedef enum spi_device_status {
+    spi_device_status_ready = 0,
+    spi_device_status_empty = 1,
+    spi_device_status_overflow = 2,
+} spi_device_status_t;
+
 typedef struct spi_device_cmd {
-    uint8_t status;
+    spi_device_status_t status;
     uint8_t opcode;
     uint16_t payload_byte_count;
     uint32_t address;
@@ -209,3 +215,4 @@ spi_device_flash_payload_buffer_read64(spi_device_t spi_device, uint32_t offset)
 void spi_device_sfdp_table_init(spi_device_t spi_device);
 void spi_device_init(spi_device_t spi_device);
 spi_device_cmd_t spi_device_cmd_get(spi_device_t spi_device);
+spi_device_cmd_t spi_device_cmd_get_non_blocking(spi_device_t spi_device);
