@@ -21,9 +21,7 @@ module dualmem_widen(clka, clkb, dina, dinb, addra, addrb, wea, web, douta, dout
 `endif
 */
    
-`ifdef GENESYSII
  `define RAMB16
-`endif
 
 `ifdef RAMB16
    

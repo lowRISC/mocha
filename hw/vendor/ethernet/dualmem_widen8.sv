@@ -28,9 +28,7 @@ module dualmem_widen8(clka, clkb, dina, dinb, addra, addrb, wea, web, douta, dou
 `endif
 */
    
-`ifdef GENESYSII
  `define RAMB16
-`endif
 
 `ifdef RAMB16
    
@@ -46,8 +44,11 @@ module dualmem_widen8(clka, clkb, dina, dinb, addra, addrb, wea, web, douta, dou
    always @(posedge clka)
      begin
 	addra_dly <= addra;
-	addrb_dly <= addrb;
      end
+
+  always @(posedge clkb) begin
+	  addrb_dly <= addrb;
+  end
    
    generate for (r = 0; r < 8; r=r+1)
      RAMB16_S9_S36
