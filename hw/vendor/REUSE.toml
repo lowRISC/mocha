@@ -3,9 +3,14 @@
 version = 1
 
 [[annotations]]
+path = ["ethernet/**"]
+SPDX-License-Identifier = "MIT"
+SPDX-FileCopyrightText = ["2015-2018 Alex Forencich."]
+
+[[annotations]]
 path = ["lowrisc_ibex/**", "lowrisc_ip/**"]
-SPDX-FileCopyrightText = "lowRISC Contributors."
 SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = ["lowRISC Contributors."]
 
 [[annotations]]
 path = ["pulp_axi/**"]
@@ -43,5 +48,5 @@ SPDX-FileCopyrightText = [
 
 [[annotations]]
 path = ["patches/**"]
-SPDX-FileCopyrightText = "lowRISC Contributors (COSMIC project)."
 SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = ["lowRISC Contributors (COSMIC project)."]

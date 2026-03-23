@@ -101,6 +101,7 @@ COMMANDS: list[list[str]] = [
     ],
     # vendored hardware dependencies
     ["util/vendor.py", "hw/vendor/cva6_cheri.vendor.hjson"],
+    ["util/vendor.py", "hw/vendor/ethernet.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/lowrisc_ip.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_axi.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_axi_llc.vendor.hjson"],

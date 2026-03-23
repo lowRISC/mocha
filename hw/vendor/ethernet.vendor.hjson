@@ -1,0 +1,15 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "ethernet",
+  target_dir: "ethernet",
+  patch_dir: "patches/ethernet",
+
+  upstream: {
+    url: "https://github.com/lowRISC/ariane-ethernet.git",
+    rev: "master",
+  },
+
+  exclude_from_upstream: []
+}
