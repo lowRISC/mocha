@@ -17,7 +17,7 @@ package top_pkg;
 
   // AXI crossbar parameters
   localparam int AxiXbarHosts   = 1;
-  localparam int AxiXbarDevices = 2;
+  localparam int AxiXbarDevices = 3;
 
   // AXI crossbar hosts and devices
   typedef enum int unsigned {
@@ -25,23 +25,27 @@ package top_pkg;
   } axi_hosts_t;
 
   typedef enum int unsigned {
-    SRAM       = 0,
-    TlCrossbar = 1
+    SRAM        = 0,
+    Tl0Crossbar = 1,
+    Tl1Crossbar = 2
   } axi_devices_t;
 
   typedef enum longint unsigned {
-    SRAMBase       = 64'h1000_0000,
-    TlCrossbarBase = 64'h4000_0000
+    Tl1CrossbarBase = 64'h0008_0000,
+    SRAMBase        = 64'h1000_0000,
+    Tl0CrossbarBase = 64'h4000_0000
   } axi_addr_start_t;
 
   typedef enum longint unsigned {
-    SRAMLength       = 64'h0002_0000,
-    TlCrossbarLength = 64'h1000_0000
+    SRAMLength        = 64'h0002_0000,
+    Tl0CrossbarLength = 64'h1000_0000,
+    Tl1CrossbarLength = 64'h0002_0000
   } axi_addr_length_t;
 
   typedef enum longint unsigned {
-    SRAMMask       = SRAMLength - 1,
-    TlCrossbarMask = TlCrossbarLength - 1
+    SRAMMask        = SRAMLength - 1,
+    Tl0CrossbarMask = Tl0CrossbarLength - 1
+    Tl0CrossbarMask = Tl1CrossbarLength - 1
   } axi_addr_mask_t;
 
   // AXI parameters

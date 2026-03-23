@@ -21,13 +21,25 @@
     // device
     { struct: "tl"
       type:   "req_rsp"
-      name:   "tl_rom_ctrl_rom"
+      name:   "tl_gpio"
       act:    "req"
       package: "tlul_pkg"
     }
     { struct: "tl"
       type:   "req_rsp"
-      name:   "tl_gpio"
+      name:   "tl_clkmgr"
+      act:    "req"
+      package: "tlul_pkg"
+    }
+    { struct: "tl"
+      type:   "req_rsp"
+      name:   "tl_rstmgr"
+      act:    "req"
+      package: "tlul_pkg"
+    }
+    { struct: "tl"
+      type:   "req_rsp"
+      name:   "tl_pwrmgr"
       act:    "req"
       package: "tlul_pkg"
     }
@@ -40,6 +52,12 @@
     { struct: "tl"
       type:   "req_rsp"
       name:   "tl_uart"
+      act:    "req"
+      package: "tlul_pkg"
+    }
+    { struct: "tl"
+      type:   "req_rsp"
+      name:   "tl_i2c"
       act:    "req"
       package: "tlul_pkg"
     }
