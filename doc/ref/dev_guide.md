@@ -30,27 +30,27 @@ Then follow the following steps to test on FPGA:
     You should press the RESET button on the Genesys 2 board (BTN1) to see bootloader message "Boot ROM!". To exit screen press `ctrl`-`a` then `k` and confirm with `y`.
 
 In simulation you can do the following:
-1. Make the simulator executable and run the UART smoke test by running the following command:
+1. Extract the example software:
+    ```sh
+    tar -xzvf examples.tar.gz
+    ```
+2. Make the simulator executable and run the UART smoke test by running the following command:
     ```sh
     chmod +x Vtop_chip_verilator
-    ./Vtop_chip_verilator -E hello_world_verilator
+    ./Vtop_chip_verilator -E release/hello_world_verilator
     ```
-2. Check the UART output:
+3. Check the UART output:
     ```sh
     cat uart0.log
     ```
     Which should contain content including "Hello CHERI Mocha!"
 
 Programming new software over SPI is also possible using the boot ROM. Here are the steps to run the hello world example:
-1. Extract the example software:
-    ```sh
-    tar -xzvf examples.tar.gz
-    ```
-2. Open up a screen terminal in parallel:
+1. Open up a screen terminal in parallel:
     ```sh
     screen $(ls /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_*-port0) 1000000
     ```
-3. In another terminal program the SPI (note you must run this command twice and it is expected that the second run reports "Fail":
+2. In another terminal program the SPI (note you must run this command twice and it is expected that the second run reports "Fail":
     ```sh
     openFPGALoader --spi --offset 0x4000 --write-flash release/hello_world.bin
     openFPGALoader --spi --offset 0x4000 --write-flash release/hello_world.bin
