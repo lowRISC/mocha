@@ -10,6 +10,7 @@ module tb;
   import mem_bkdr_util_pkg::mem_bkdr_util;
   import top_chip_dv_env_pkg::*;
   import top_chip_dv_test_pkg::*;
+  import axi4_vip_pkg::*;
 
   import top_chip_dv_env_pkg::SW_DV_START_ADDR;
   import top_chip_dv_env_pkg::SW_DV_TEST_STATUS_ADDR;
@@ -30,6 +31,192 @@ module tb;
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
   uart_if uart_if();
+  axi4_vip_if axi4_if[NUM_OF_AXI_IFS]();
+
+  // This AXI4 VIP shall be always UVM_PASSIVE on top level
+  // LHS is the VIP, RHS is the RTL
+  // =========================================================
+  // mst0 - Tapping the XBAR Slave Port 0 (Master VIP side)
+  // =========================================================
+  assign axi4_if[mst0].aclk    = clk;
+  assign axi4_if[mst0].aresetn = rst_n;
+  
+  always @(*) begin
+    // Request signals (Master -> XBAR)
+    axi4_if[mst0].awvalid  = `AXI_XBAR_HIER.slv_ports_req_i[0].aw_valid;
+    axi4_if[mst0].awid     = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.id;
+    axi4_if[mst0].awaddr   = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.addr;
+    axi4_if[mst0].awlen    = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.len;
+    axi4_if[mst0].awsize   = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.size;
+    axi4_if[mst0].awburst  = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.burst;
+    axi4_if[mst0].awlock   = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.lock;
+    axi4_if[mst0].awcache  = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.cache;
+    axi4_if[mst0].awprot   = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.prot;
+    axi4_if[mst0].awqos    = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.qos;
+    axi4_if[mst0].awregion = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.region;
+    axi4_if[mst0].awuser   = `AXI_XBAR_HIER.slv_ports_req_i[0].aw.user;
+
+    axi4_if[mst0].wvalid   = `AXI_XBAR_HIER.slv_ports_req_i[0].w_valid;
+    axi4_if[mst0].wdata    = `AXI_XBAR_HIER.slv_ports_req_i[0].w.data;
+    axi4_if[mst0].wstrb    = `AXI_XBAR_HIER.slv_ports_req_i[0].w.strb;
+    axi4_if[mst0].wlast    = `AXI_XBAR_HIER.slv_ports_req_i[0].w.last;
+    axi4_if[mst0].wuser    = `AXI_XBAR_HIER.slv_ports_req_i[0].w.user;
+
+    axi4_if[mst0].arvalid  = `AXI_XBAR_HIER.slv_ports_req_i[0].ar_valid;
+    axi4_if[mst0].arid     = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.id;
+    axi4_if[mst0].araddr   = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.addr;
+    axi4_if[mst0].arlen    = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.len;
+    axi4_if[mst0].arsize   = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.size;
+    axi4_if[mst0].arburst  = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.burst;
+    axi4_if[mst0].arlock   = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.lock;
+    axi4_if[mst0].arcache  = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.cache;
+    axi4_if[mst0].arprot   = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.prot;
+    axi4_if[mst0].arqos    = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.qos;
+    axi4_if[mst0].arregion = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.region;
+    axi4_if[mst0].aruser   = `AXI_XBAR_HIER.slv_ports_req_i[0].ar.user;
+
+    axi4_if[mst0].bready   = `AXI_XBAR_HIER.slv_ports_req_i[0].b_ready;
+    axi4_if[mst0].rready   = `AXI_XBAR_HIER.slv_ports_req_i[0].r_ready;
+
+    // Response signals (XBAR -> Master)
+    axi4_if[mst0].awready  = `AXI_XBAR_HIER.slv_ports_resp_o[0].aw_ready;
+    axi4_if[mst0].wready   = `AXI_XBAR_HIER.slv_ports_resp_o[0].w_ready;
+    axi4_if[mst0].arready  = `AXI_XBAR_HIER.slv_ports_resp_o[0].ar_ready;
+    
+    axi4_if[mst0].bvalid   = `AXI_XBAR_HIER.slv_ports_resp_o[0].b_valid;
+    axi4_if[mst0].bid      = `AXI_XBAR_HIER.slv_ports_resp_o[0].b.id;
+    axi4_if[mst0].bresp    = `AXI_XBAR_HIER.slv_ports_resp_o[0].b.resp;
+    axi4_if[mst0].buser    = `AXI_XBAR_HIER.slv_ports_resp_o[0].b.user;
+
+    axi4_if[mst0].rvalid   = `AXI_XBAR_HIER.slv_ports_resp_o[0].r_valid;
+    axi4_if[mst0].rid      = `AXI_XBAR_HIER.slv_ports_resp_o[0].r.id;
+    axi4_if[mst0].rdata    = `AXI_XBAR_HIER.slv_ports_resp_o[0].r.data;
+    axi4_if[mst0].rresp    = `AXI_XBAR_HIER.slv_ports_resp_o[0].r.resp;
+    axi4_if[mst0].rlast    = `AXI_XBAR_HIER.slv_ports_resp_o[0].r.last;
+    axi4_if[mst0].ruser    = `AXI_XBAR_HIER.slv_ports_resp_o[0].r.user;
+  end
+
+  // =========================================================
+  // slv0 - Tapping the XBAR Master Port 0 (Slave VIP side)
+  // =========================================================
+  assign axi4_if[slv0].aclk    = clk;
+  assign axi4_if[slv0].aresetn = rst_n;
+
+  always @(*) begin
+    // Request signals (XBAR -> Slave)
+    axi4_if[slv0].awvalid  = `AXI_XBAR_HIER.mst_ports_req_o[0].aw_valid;
+    axi4_if[slv0].awid     = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.id;
+    axi4_if[slv0].awaddr   = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.addr;
+    axi4_if[slv0].awlen    = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.len;
+    axi4_if[slv0].awsize   = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.size;
+    axi4_if[slv0].awburst  = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.burst;
+    axi4_if[slv0].awlock   = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.lock;
+    axi4_if[slv0].awcache  = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.cache;
+    axi4_if[slv0].awprot   = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.prot;
+    axi4_if[slv0].awqos    = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.qos;
+    axi4_if[slv0].awregion = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.region;
+    axi4_if[slv0].awuser   = `AXI_XBAR_HIER.mst_ports_req_o[0].aw.user;
+
+    axi4_if[slv0].wvalid   = `AXI_XBAR_HIER.mst_ports_req_o[0].w_valid;
+    axi4_if[slv0].wdata    = `AXI_XBAR_HIER.mst_ports_req_o[0].w.data;
+    axi4_if[slv0].wstrb    = `AXI_XBAR_HIER.mst_ports_req_o[0].w.strb;
+    axi4_if[slv0].wlast    = `AXI_XBAR_HIER.mst_ports_req_o[0].w.last;
+    axi4_if[slv0].wuser    = `AXI_XBAR_HIER.mst_ports_req_o[0].w.user;
+
+    axi4_if[slv0].arvalid  = `AXI_XBAR_HIER.mst_ports_req_o[0].ar_valid;
+    axi4_if[slv0].arid     = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.id;
+    axi4_if[slv0].araddr   = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.addr;
+    axi4_if[slv0].arlen    = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.len;
+    axi4_if[slv0].arsize   = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.size;
+    axi4_if[slv0].arburst  = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.burst;
+    axi4_if[slv0].arlock   = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.lock;
+    axi4_if[slv0].arcache  = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.cache;
+    axi4_if[slv0].arprot   = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.prot;
+    axi4_if[slv0].arqos    = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.qos;
+    axi4_if[slv0].arregion = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.region;
+    axi4_if[slv0].aruser   = `AXI_XBAR_HIER.mst_ports_req_o[0].ar.user;
+
+    axi4_if[slv0].bready   = `AXI_XBAR_HIER.mst_ports_req_o[0].b_ready;
+    axi4_if[slv0].rready   = `AXI_XBAR_HIER.mst_ports_req_o[0].r_ready;
+
+    // Response signals (Slave -> XBAR)
+    axi4_if[slv0].awready  = `AXI_XBAR_HIER.mst_ports_resp_i[0].aw_ready;
+    axi4_if[slv0].wready   = `AXI_XBAR_HIER.mst_ports_resp_i[0].w_ready;
+    axi4_if[slv0].arready  = `AXI_XBAR_HIER.mst_ports_resp_i[0].ar_ready;
+    
+    axi4_if[slv0].bvalid   = `AXI_XBAR_HIER.mst_ports_resp_i[0].b_valid;
+    axi4_if[slv0].bid      = `AXI_XBAR_HIER.mst_ports_resp_i[0].b.id;
+    axi4_if[slv0].bresp    = `AXI_XBAR_HIER.mst_ports_resp_i[0].b.resp;
+    axi4_if[slv0].buser    = `AXI_XBAR_HIER.mst_ports_resp_i[0].b.user;
+
+    axi4_if[slv0].rvalid   = `AXI_XBAR_HIER.mst_ports_resp_i[0].r_valid;
+    axi4_if[slv0].rid      = `AXI_XBAR_HIER.mst_ports_resp_i[0].r.id;
+    axi4_if[slv0].rdata    = `AXI_XBAR_HIER.mst_ports_resp_i[0].r.data;
+    axi4_if[slv0].rresp    = `AXI_XBAR_HIER.mst_ports_resp_i[0].r.resp;
+    axi4_if[slv0].rlast    = `AXI_XBAR_HIER.mst_ports_resp_i[0].r.last;
+    axi4_if[slv0].ruser    = `AXI_XBAR_HIER.mst_ports_resp_i[0].r.user;
+  end
+
+  // =========================================================
+  // slv1 - Tapping the XBAR Master Port 1 (Slave VIP side)
+  // =========================================================
+  assign axi4_if[slv1].aclk    = clk;
+  assign axi4_if[slv1].aresetn = rst_n;
+
+  always @(*) begin
+    // Request signals (XBAR -> Slave)
+    axi4_if[slv1].awvalid  = `AXI_XBAR_HIER.mst_ports_req_o[1].aw_valid;
+    axi4_if[slv1].awid     = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.id;
+    axi4_if[slv1].awaddr   = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.addr;
+    axi4_if[slv1].awlen    = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.len;
+    axi4_if[slv1].awsize   = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.size;
+    axi4_if[slv1].awburst  = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.burst;
+    axi4_if[slv1].awlock   = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.lock;
+    axi4_if[slv1].awcache  = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.cache;
+    axi4_if[slv1].awprot   = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.prot;
+    axi4_if[slv1].awqos    = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.qos;
+    axi4_if[slv1].awregion = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.region;
+    axi4_if[slv1].awuser   = `AXI_XBAR_HIER.mst_ports_req_o[1].aw.user;
+
+    axi4_if[slv1].wvalid   = `AXI_XBAR_HIER.mst_ports_req_o[1].w_valid;
+    axi4_if[slv1].wdata    = `AXI_XBAR_HIER.mst_ports_req_o[1].w.data;
+    axi4_if[slv1].wstrb    = `AXI_XBAR_HIER.mst_ports_req_o[1].w.strb;
+    axi4_if[slv1].wlast    = `AXI_XBAR_HIER.mst_ports_req_o[1].w.last;
+    axi4_if[slv1].wuser    = `AXI_XBAR_HIER.mst_ports_req_o[1].w.user;
+
+    axi4_if[slv1].arvalid  = `AXI_XBAR_HIER.mst_ports_req_o[1].ar_valid;
+    axi4_if[slv1].arid     = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.id;
+    axi4_if[slv1].araddr   = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.addr;
+    axi4_if[slv1].arlen    = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.len;
+    axi4_if[slv1].arsize   = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.size;
+    axi4_if[slv1].arburst  = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.burst;
+    axi4_if[slv1].arlock   = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.lock;
+    axi4_if[slv1].arcache  = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.cache;
+    axi4_if[slv1].arprot   = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.prot;
+    axi4_if[slv1].arqos    = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.qos;
+    axi4_if[slv1].arregion = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.region;
+    axi4_if[slv1].aruser   = `AXI_XBAR_HIER.mst_ports_req_o[1].ar.user;
+
+    axi4_if[slv1].bready   = `AXI_XBAR_HIER.mst_ports_req_o[1].b_ready;
+    axi4_if[slv1].rready   = `AXI_XBAR_HIER.mst_ports_req_o[1].r_ready;
+
+    // Response signals (Slave -> XBAR)
+    axi4_if[slv1].awready  = `AXI_XBAR_HIER.mst_ports_resp_i[1].aw_ready;
+    axi4_if[slv1].wready   = `AXI_XBAR_HIER.mst_ports_resp_i[1].w_ready;
+    axi4_if[slv1].arready  = `AXI_XBAR_HIER.mst_ports_resp_i[1].ar_ready;
+    
+    axi4_if[slv1].bvalid   = `AXI_XBAR_HIER.mst_ports_resp_i[1].b_valid;
+    axi4_if[slv1].bid      = `AXI_XBAR_HIER.mst_ports_resp_i[1].b.id;
+    axi4_if[slv1].bresp    = `AXI_XBAR_HIER.mst_ports_resp_i[1].b.resp;
+    axi4_if[slv1].buser    = `AXI_XBAR_HIER.mst_ports_resp_i[1].b.user;
+
+    axi4_if[slv1].rvalid   = `AXI_XBAR_HIER.mst_ports_resp_i[1].r_valid;
+    axi4_if[slv1].rid      = `AXI_XBAR_HIER.mst_ports_resp_i[1].r.id;
+    axi4_if[slv1].rdata    = `AXI_XBAR_HIER.mst_ports_resp_i[1].r.data;
+    axi4_if[slv1].rresp    = `AXI_XBAR_HIER.mst_ports_resp_i[1].r.resp;
+    axi4_if[slv1].rlast    = `AXI_XBAR_HIER.mst_ports_resp_i[1].r.last;
+    axi4_if[slv1].ruser    = `AXI_XBAR_HIER.mst_ports_resp_i[1].r.user;
+  end
 
   // ------ DUT ------
   top_chip_system #() dut (
@@ -161,6 +348,11 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "peri_clk_if", peri_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
 
+    // AXI VIFs
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_axi_mst0.*", "vif", axi4_if[mst0]);
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_axi_slv0.*", "vif", axi4_if[slv0]);
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_axi_slv1.*", "vif", axi4_if[slv1]);
+    
     // SW logger and test status interfaces.
     uvm_config_db#(virtual sw_test_status_if)::set(
         null, "*.env", "sw_test_status_vif", `SIM_SRAM_IF.u_sw_test_status_if);
