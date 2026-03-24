@@ -6,6 +6,7 @@ package top_chip_dv_test_pkg;
   import uvm_pkg::*;
   import dv_utils_pkg::*;
   import top_chip_dv_env_pkg::*;
+  import axi4_vip_pkg::*;
 
   `include "uvm_macros.svh"
   `include "dv_macros.svh"
