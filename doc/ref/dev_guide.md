@@ -34,7 +34,7 @@ In simulation you can do the following:
     ```sh
     tar -xzvf examples.tar.gz
     ```
-2. Make the simulator executable and run the UART smoke test by running the following command:
+2. Make the simulator executable and run the "hello world" by running the following command:
     ```sh
     chmod +x Vtop_chip_verilator
     ./Vtop_chip_verilator -E release/hello_world_verilator
