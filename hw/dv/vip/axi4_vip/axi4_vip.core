@@ -1,0 +1,28 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name : lowrisc:dv:axi4_vip:0.1
+
+filesets:
+  files_dv:
+    files:
+      - axi4_vip_if.sv
+      - axi4_vip_pkg.sv
+      - axi4_vip_defines.svh: {is_include_file: true}
+      - axi4_vip_types.svh: {is_include_file: true}
+      - axi4_vip_cfg.svh: {is_include_file: true}
+      - axi4_vip_item.svh: {is_include_file: true}
+      - axi4_vip_driver.svh: {is_include_file: true}
+      - axi4_vip_sequencer.svh: {is_include_file: true}
+      - axi4_vip_monitor.svh: {is_include_file: true}
+      - axi4_vip_master_agent.svh: {is_include_file: true}
+      - axi4_vip_slave_agent.svh: {is_include_file: true}
+      - axi4_vip_env.svh: {is_include_file: true}
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv
