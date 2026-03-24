@@ -17,7 +17,8 @@ jobs:
   bistream-release:
     runs-on: ["self-hosted", "nixos", "X64"]
     env:
-      ARTEFACT: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+      BITSTREAM: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+      UTILIZATION_FILE: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.runs/impl_1/chip_mocha_genesys2_utilization_placed.rpt
 
     steps:
     - uses: actions/checkout@v5
@@ -30,7 +31,9 @@ jobs:
     - uses: actions/cache@v5
       id: cache
       with:
-        path: ${{ env.ARTEFACT }}
+        path: |
+          ${{ env.BITSTREAM }}
+          ${{ env.UTILIZATION_FILE }}
         key: ${{ steps.hash-bitstream.outputs.hash }}
         fail-on-cache-miss: true
 
@@ -38,8 +41,9 @@ jobs:
       if: github.ref_type == 'tag'
       with:
         prerelease: true
-        files: ${{ env.ARTEFACT }}
-
+        files: |
+          ${{ env.BITSTREAM }}
+          ${{ env.UTILIZATION_FILE }}
 
   verilator-release:
     runs-on: ["self-hosted", "nixos", "X64"]
