@@ -3,6 +3,72 @@
 This page contains useful commands and tips on how to develop on the Mocha repository.
 It collects both design, software and verification instructions.
 
+## Quick start from release
+
+Firstly download all the artefacts from a particular [release](https://github.com/lowRISC/mocha/releases).
+Then follow the following steps to test on FPGA:
+
+1. Install dependencies:
+    - OpenFPGALoader, for example: `apt install openfpgaloader`
+    - Screen, for example: `apt install screen`
+2. Connect your Genesys 2 board with the POWER, UART and JTAG. Make sure to turn on the board using SW8.
+3. Configure udev rules:
+    ```sh
+    cp 99-openfpgaloader.rules /etc/udev/rules.d/99-openfpgaloader.rules
+    udevadm control --reload-rules
+    udevadm trigger
+    usermod -a $USER -G plugdev
+    ```
+4. Program the downloaded bitstream:
+    ```sh
+    openFPGALoader -b genesys2 lowrisc_mocha_chip_mocha_genesys2_0.bit
+    ```
+5. Look at UART output:
+    ```sh
+    screen $(ls /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_*-port0) 1000000
+    ```
+    You should press the RESET button on the Genesys 2 board (BTN1) to see bootloader message "Boot ROM!". To exit screen press `ctrl`-`a` then `k` and confirm with `y`.
+
+In simulation you can do the following:
+1. Make the simulator executable and run the UART smoke test by running the following command:
+    ```sh
+    chmod +x Vtop_chip_verilator
+    ./Vtop_chip_verilator -E hello_world_verilator
+    ```
+2. Check the UART output:
+    ```sh
+    cat uart0.log
+    ```
+    Which should contain content including "Hello CHERI Mocha!"
+
+Programming new software over SPI is also possible using the boot ROM. Here are the steps to run the hello world example:
+1. Extract the example software:
+    ```sh
+    tar -xzvf examples.tar.gz
+    ```
+2. Open up a screen terminal in parallel:
+    ```sh
+    screen $(ls /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_*-port0) 1000000
+    ```
+3. In another terminal program the SPI (note you must run this command twice and it is expected that the second run reports "Fail":
+    ```sh
+    openFPGALoader --spi --offset 0x4000 --write-flash release/hello_world.bin
+    openFPGALoader --spi --offset 0x4000 --write-flash release/hello_world.bin
+    ```
+    In the terminal where you opened screen you should see the following output:
+    ```
+
+    Boot ROM!
+
+    First reset
+    Jumping to: 0x%0x
+    Hello CHERI Mocha!
+    timer 100us
+    timer 100us
+    timer 100us
+    timer 100us
+    ```
+
 ## Setup Python virtual environment
 
 ### Using uv on macOS and Linux
@@ -66,7 +132,7 @@ We use Verilator to simulate our hardware design and use FuseSoC as a build syst
 # Build simulator.
 fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
 # Run simulator.
-build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -t -E build/sw/device/examples/hello_world
+build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -E build/sw/device/examples/hello_world_verilator
 ```
 
 One specific feature of our simulator is that you can exit the simulation by using the following magic string:

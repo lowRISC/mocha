@@ -30,9 +30,9 @@ As we launch this project, we expect the following release schedule:
 | 0.0.2 (MVP-2) | June 2026 | Second minimal viable product (MVP-2) with all blocks integrated, as well as support for CHERI-Linux or CheriBSD. |
 | 0.1.0 (RC-1) | Dec 2026 | First release candidate (RC-1) including initial design and verification sign-offs. |
 
-## Development
+## Quick start
 
-Please see our [development guide](doc/ref/dev_guide.md) to see how to run simulations, build software and create your own bitstreams.
+Please follow the [quick start guide](doc/ref/dev_guide.md#quick-start-from-release) to see how to run simulations and program your FPGA based on our latest release.
 To use our FPGA build you will need to order a [Genesys 2 FPGA board][].
 
 ## Verification
