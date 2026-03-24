@@ -92,8 +92,12 @@ jobs:
       - name: Generate artefacts
         run: |
           cmake -B build/sw -S sw
-          cmake --build build/sw -j $(nproc) --target hello_world
-          cmake --install build/sw/ --prefix release --component hello_world
+
+          for t in hello_world hello_world_verilator; do
+            cmake --build build/sw -j $(nproc) --target $t
+            cmake --install build/sw/ --prefix release --component $t
+          done
+
           tar -czvf ${{ env.ARTEFACT }} release
 
       - uses: softprops/action-gh-release@v2
