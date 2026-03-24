@@ -61,7 +61,7 @@ bool spi_boot_strap(uart_t console)
 
     while (true) {
         // TODO: Use timer
-        if (count++ >= 1000) {
+        if (count++ >= 10000) {
             led_animation_run(gpio);
             count = 0;
         }
