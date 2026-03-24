@@ -75,12 +75,12 @@ macro(mocha_add_test)
         foreach(LIB ${arg_LIBRARIES})
           target_link_libraries(${NAME} PUBLIC ${LIB}_${ARCH_NAME})
         endforeach()
-        target_link_options(${NAME} PUBLIC 
+        target_link_options(${NAME} PUBLIC
           "-Wl,--defsym,BOOT_ROM_OFFSET=${OFFSET}"
           "-T${LDS}" "-L${LDS_DIR}"
         )
 
-        # create artefacts 
+        # create artefacts
         mocha_add_executable_artefacts(${NAME})
 
         if(SIM)
