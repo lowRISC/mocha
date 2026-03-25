@@ -25,5 +25,11 @@ bool gpio_read_pin(gpio_t gpio, uint32_t pin);
 // Set the value of one output pin
 void gpio_write_pin(gpio_t gpio, uint32_t pin, bool state);
 
+// Set the value of all output pins
+void gpio_write(gpio_t gpio, uint32_t output_reg_addr, uint32_t value);
+
 // Set the output enable state of one pin
 void gpio_set_oe_pin(gpio_t gpio, uint32_t pin, bool output);
+
+// Set the output enable state of all pins
+void gpio_set_all_oe(gpio_t gpio, uint32_t value);
