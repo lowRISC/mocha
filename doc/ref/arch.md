@@ -31,7 +31,7 @@ Some of these are listed here:
 - Clock outputs from PLLs.
 - Rollback counter backed by OTP.
 - Debug and design for test enable pins.
-- True random noise source to drive the entorpy source.
+- True random noise source to drive the entropy source.
 - AXI subordinate port to connect to the mailbox.
 
 In terms of output, the top-level will need output signals:

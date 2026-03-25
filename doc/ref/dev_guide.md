@@ -50,7 +50,7 @@ Programming new software over SPI is also possible using the boot ROM. Here are 
     ```sh
     screen $(ls /dev/serial/by-id/usb-FTDI_FT232R_USB_UART_*-port0) 1000000
     ```
-2. In another terminal program the SPI (note you must run this command twice and it is expected that the second run reports "Fail":
+2. In another terminal program the SPI. Note you must run this command twice, and it is expected that the second run reports "Fail":
     ```sh
     openFPGALoader --spi --offset 0x4000 --write-flash release/hello_world.bin
     openFPGALoader --spi --offset 0x4000 --write-flash release/hello_world.bin
