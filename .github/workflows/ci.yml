@@ -85,9 +85,34 @@ jobs:
         run: |
           ctest --test-dir build/sw -R sim_verilator --output-on-failure
 
+  fpga-cache-check:
+    runs-on: ["self-hosted", "nixos", "X64"]
+    needs: lint-check
+    outputs:
+      bitstream-hash: ${{ steps.hash-bitstream.outputs.hash }}
+      cache-hit: ${{ steps.cache.outputs.cache-hit }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Hash Bitstream
+        id: hash-bitstream
+        run: |
+          echo "hash=$(nix run .#bitstream-hash)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v5
+        id: cache
+        with:
+          path: |
+            ${{ env.BITSTREAM }}
+            ${{ env.UTILIZATION_FILE }}
+          key: ${{ steps.hash-bitstream.outputs.hash }}
+          lookup-only: true
+
+
   fpga-build:
+    if: needs.fpga-cache-check.outputs.cache-hit != 'true'
     runs-on: ["ubuntu-22.04-bitstream"]
-    needs: verilator-test
+    needs: [verilator-test, fpga-cache-check]
     outputs:
       bitstream-hash: ${{ steps.hash-bitstream.outputs.hash }}
     steps:
@@ -106,19 +131,13 @@ jobs:
             substituters = https://nix-cache.lowrisc.org/public/ https://cache.nixos.org/
             trusted-public-keys = nix-cache.lowrisc.org-public-1:O6JLD0yXzaJDPiQW1meVu32JIDViuaPtGDfjlOopU7o= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
 
-      - name: Hash Bitstream
-        id: hash-bitstream
-        run: |
-          echo "hash=$(nix run .#bitstream-hash)" >> $GITHUB_OUTPUT
-
       - uses: actions/cache@v5
         id: cache
         with:
           path: |
             ${{ env.BITSTREAM }}
             ${{ env.UTILIZATION_FILE }}
-          key: ${{ steps.hash-bitstream.outputs.hash }}
-          lookup-only: true
+          key: ${{ needs.fpga-cache-check.outputs.bitstream-hash }}
 
       - name: Build bitstream
         if: steps.cache.outputs.cache-hit != 'true'
@@ -128,7 +147,8 @@ jobs:
 
   fpga-test:
     runs-on: ["self-hosted", "ubuntu-22.04-fpga", "genesys2"]
-    needs: fpga-build
+    if: always() && (needs.fpga-build.result == 'success' || needs.fpga-build.result == 'skipped')
+    needs: [fpga-cache-check, fpga-build]
     steps:
       - uses: actions/checkout@v5
 
@@ -150,7 +170,7 @@ jobs:
           path: |
             ${{ env.BITSTREAM }}
             ${{ env.UTILIZATION_FILE }}
-          key: ${{ needs.fpga-build.outputs.bitstream-hash }}
+          key: ${{ needs.fpga-cache-check.outputs.bitstream-hash }}
           fail-on-cache-miss: true
 
       - name: Build software
