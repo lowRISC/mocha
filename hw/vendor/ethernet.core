@@ -8,6 +8,8 @@ description: "1GbE ethernet MAC"
 
 filesets:
   files_rtl:
+    depend:
+      - lowrisc:prim_generic:flop_2sync
     files:
       - ethernet/axis_async_fifo.sv
       - ethernet/axis_gmii_rx.sv
