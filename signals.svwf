@@ -1,0 +1,36 @@
+
+#
+# Mnemonic Maps
+#
+mmap new  -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new  -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+
+array unset createdGroup
+array set createdGroup {}
+set id [waveform add -signals [subst  {
+	{[format {tb.dut.u_gpio.clk_i}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb.dut.u_gpio.rst_ni}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb.dut.u_gpio.cio_gpio_i[31:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb.dut.u_gpio.cio_gpio_en_o[31:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb.dut.u_gpio.cio_gpio_o[31:0]}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb.dut.u_gpio.tl_i}]}
+	} ]]
+set id [waveform add -signals [subst  {
+	{[format {tb.dut.u_gpio.tl_o}]}
+	} ]]
+
+waveform xview limits 0 501700.823ns
