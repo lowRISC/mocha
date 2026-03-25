@@ -127,11 +127,27 @@ always @(posedge rx_clk) begin
     rx_mii_select_3 <= rx_mii_select_2;
 end
 
+// rx_clk reset generation
+logic rx_rst_n_sync_rx_clk;
+prim_flop_2sync #(
+    .Width      (1),
+    .ResetValue ('0)
+) u_rx_rst_sync_rx_clk (
+    .clk_i  (rx_clk),
+    .rst_ni (!gtx_rst),
+    .d_i    (1'b1),
+    .q_o    (rx_rst_n_sync_rx_clk)
+);
+
 // PHY speed detection
 reg [2:0] rx_prescale;
 
-always @(posedge rx_clk) begin
-    rx_prescale <= rx_prescale + 3'd1;
+always @(posedge rx_clk or negedge rx_rst_n_sync_rx_clk) begin
+    if (!rx_rst_n_sync_rx_clk) begin
+        rx_prescale <= '0;
+    end else begin
+        rx_prescale <= rx_prescale + 3'd1;
+    end
 end
 
 reg rx_prescale_sync_1;
