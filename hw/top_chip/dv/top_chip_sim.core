@@ -25,6 +25,8 @@ filesets:
       - lowrisc:dv:xbar_macros
       - lowrisc:dv_dpi_c:uartdpi:0.1
       - lowrisc:dv_dpi_sv:uartdpi:0.1
+      - lowrisc:mocha_dv:gpio_if:0.1
+      - lowrisc:mocha_dv:gpio_env
     files:
       - tb/tb.sv
       - tb/chip_hier_macros.svh: {is_include_file: true}
