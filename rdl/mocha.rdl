@@ -26,6 +26,8 @@ addrmap top_mocha {
 
   reserved DV_SW_IFC @ 0x2002_0000;
 
+  ethernet ETHERNET[1] @ 0x3000_0000 += 0x10000;
+
   reserved GPIO @ 0x4000_0000;
 
   reserved CLOCK_MANAGER @ 0x4002_0000;

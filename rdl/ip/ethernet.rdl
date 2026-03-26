@@ -1,0 +1,263 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap ethernet {
+    reg {
+        desc = "MAC address low 32-bits.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x00890702;
+            desc = "MAC address lower 32 bits.";
+        } MAC_ADDR_LO[31:0];
+    } MACLO @ 0x800;
+
+    reg {
+        desc = "MAC address high 16-bits and MAC ctrl.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x2301;
+            desc = "MAC address upper 16 bits.";
+        } MAC_ADDR_HI[15:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Obsolete flag. Stored but not used.";
+        } COOKED[16:16];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Obsolete flag. Stored but not used.";
+        } LOOPBACK[17:17];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MAC spare. Obsolete. Stored but not used.";
+        } SPARE[21:18];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Rx all packets (promiscuous mode).";
+        } PROMISCUOUS[22:22];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Rx packet interrupt enable.";
+        } IRQ_EN[23:23];
+    } MACHI @ 0x808;
+
+    reg {
+        desc = "Transmit Status Register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Tx packet length. Write to send packet.";
+        } PACKET_LEN[10:0];
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "Tx frame address.";
+        } FRAME_ADDR[26:16];
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "Tx busy.";
+        } BUSY[31:31];
+    } TPLR @ 0x810;
+
+    external reg {
+        desc = "Tx frame check sequence register.";
+        field {
+            sw = rw;
+            hw = w;
+            reset = 0x0;
+            desc = "Tx frame check sequence (bit reversed). Write to stop transmit and reset TX packet length.";
+        } TX_FCS[31:0];
+    } TFCS @ 0x818;
+
+    reg {
+        desc = "MDIO Control Register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MDIO Clock.";
+        } MDIOCLK[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MDIO Output.";
+        } MDIOOUT[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MDIO Output Enable.";
+        } MDIOOEN[2:2];
+        field {
+            sw = r;
+            hw = w;
+            desc = "MDIO Input.";
+        } MDIOIN[3:3];
+    } MDIOCTRL @ 0x820;
+
+    reg {
+        desc = "Rx frame check sequence register(read) and last register(write).";
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx frame check sequence (bit reversed).";
+        } RX_FCS[31:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            desc = "Last available rx buffer (static).";
+        } LAST_BUF[3:0];
+    } RFCS @ 0x828;
+
+    reg {
+        desc = "Rx status and reset register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "First available rx buffer (static).";
+        } FIRST_BUF[3:0];
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "Current rx buffer (volatile).";
+        } NEXT_BUF[7:4];
+        field {
+            sw = r;
+            hw = r;
+            reset = 0x0;
+            desc = "Last available rx buffer (static).";
+        } LAST_BUF[11:8];
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "Rx complete.";
+        } RX_DONE[12:12];
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "Rx irq.";
+        } RX_IRQ[13:13];
+    } RSR @ 0x830;
+
+    reg {
+        desc = "Rx bad frame and bad fcs register arrays (not implemented)."
+    } RBAD @ 0x838;
+
+    reg {
+        desc = "Rx packet length register array element 0"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR0 @ 0x840;
+
+    reg {
+        desc = "Rx packet length register array element 1"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR1 @ 0x848;
+
+    reg {
+        desc = "Rx packet length register array element 2"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR2 @ 0x850;
+
+    reg {
+        desc = "Rx packet length register array element 3"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR3 @ 0x858;
+
+    reg {
+        desc = "Rx packet length register array element 4"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR4 @ 0x860;
+
+    reg {
+        desc = "Rx packet length register array element 5"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR5 @ 0x868;
+
+    reg {
+        desc = "Rx packet length register array element 6"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR6 @ 0x870;
+
+    reg {
+        desc = "Rx packet length register array element 7"
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Rx packet length.";
+        } PACKET_LEN[10:0];
+    } RPLR7 @ 0x878;
+
+    external mem {
+        memwidth = 0x40;
+        mementries = 0x100;
+        sw = rw;
+    } TX_BUFFER @ 0x1000;
+
+    external mem {
+        memwidth = 0x40;
+        mementries = 0x800;
+        sw = rw;
+    } RX_BUFFER @ 0x4000;
+};
