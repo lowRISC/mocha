@@ -198,7 +198,7 @@ always @(posedge msoc_clk)
             if (sync) nextbuf <= nextbuf + 1'b1;
             sync <= 1'b0;
          end
-       if (mac_gmii_tx_en && tx_enable_i)
+       if (tx_axis_tlast && tx_enable_i)
          begin
             tx_enable_dly <= 0;
          end
@@ -218,7 +218,7 @@ always @(posedge clk_int)
     end
   else
     begin
-       if (mac_gmii_tx_en && tx_axis_tlast)
+       if (tx_axis_tready && tx_axis_tvalid && tx_axis_tlast)
          begin
             tx_enable_i <= 1'b0;
          end
