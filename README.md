@@ -16,9 +16,9 @@ It is work that is funded by Innovate UK and the Department for Science, Innovat
 
 The planned block diagram of the Mocha SoC is depicted below.
 We are re-using a lot of [OpenTitan](https://opentitan.org/) blocks since they are open-source and commercial grade.
-For more detailed discussion on the architecture including clock domains and memory map, please look at the [architecture documentation](doc/ref/arch.md)
+For more detailed discussion on the architecture including clock domains and memory map, please look at the [architecture documentation](doc/ref/arch.md).
 
-![Mocha block diagram](doc/img/mocha.svg)
+![Mocha block diagram](doc/img/2026-03-26c_Mocha_PATHS_ONLY.svg)
 
 ## Release timeline
 
