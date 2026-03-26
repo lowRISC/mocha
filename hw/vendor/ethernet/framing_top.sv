@@ -275,7 +275,7 @@ always @(posedge clk_int)
 	    begin
 	       tx_frame_addr <= 'b0;
 	    end
-	  if (tx_axis_tready)
+	  if (tx_axis_tready && tx_axis_tvalid)
 	    begin
 	       tx_frame_addr <= tx_frame_addr + 1;
 	       tx_axis_tlast <= (tx_frame_addr == tx_packet_length-2) & tx_axis_tvalid_dly;
