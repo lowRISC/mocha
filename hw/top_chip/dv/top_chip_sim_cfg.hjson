@@ -176,6 +176,30 @@
       sw_images: ["mailbox_smoketest_cheri_bare:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_cheri_bare.vmem"]
     }
+    {
+      name: axi_sram_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: axi_sram_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_cheri_bare.vmem"]
+    }
+    {
+      name: axi_sram_tag_test
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_tag_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_vanilla_bare.vmem"]
+    }
+    {
+      name: axi_sram_tag_test_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_tag_test_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_cheri_bare.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -197,8 +221,9 @@
         "spi_device_smoke_cheri",
         "gpio_smoke",
         "mailbox_smoke",
-        //TODO currently broken.
-        // "mailbox_smoke_cheri"
+        "mailbox_smoke_cheri",
+        "axi_sram_smoke",
+        "axi_sram_smoke_cheri"
       ]
     }
     {
@@ -271,6 +296,15 @@
       tests: [
         "mailbox_smoke",
         "mailbox_smoke_cheri"
+      ]
+    }
+    {
+      name: axi_sram
+      tests: [
+        "axi_sram_smoke",
+        "axi_sram_smoke_cheri",
+        "axi_sram_tag_test",
+        "axi_sram_tag_test_cheri"
       ]
     }
   ]

@@ -6,6 +6,8 @@ set(LIBS hal runtime startup test_framework)
 
 mocha_add_test(NAME test_framework_test SOURCES test_framework/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME test_framework_exception_test SOURCES test_framework/exception.c LIBRARIES ${LIBS})
+mocha_add_test(NAME axi_sram_smoketest SOURCES axi_sram/smoketest.c LIBRARIES ${LIBS} FPGA)
+mocha_add_test(NAME axi_sram_tag_test SOURCES axi_sram/tag_test.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME gpio_smoketest SOURCES gpio/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME i2c_smoketest SOURCES i2c/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME mailbox_smoketest SOURCES mailbox/smoketest.c LIBRARIES ${LIBS} FPGA)
