@@ -28,6 +28,9 @@ function top_chip_dv_base_test::new(string name="", uvm_component parent=null);
 endfunction : new
 
 function void top_chip_dv_base_test::build_phase(uvm_phase phase);
+  axi4_vip_cfg axi_cfg[];
+  axi_if_t axi_name;
+
   dv_report_server m_dv_report_server = new();
   uvm_report_server::set_server(m_dv_report_server);
 
@@ -36,6 +39,67 @@ function void top_chip_dv_base_test::build_phase(uvm_phase phase);
   env = top_chip_dv_env::type_id::create("env", this);
   env.cfg = top_chip_dv_env_cfg::type_id::create("cfg", this);
   env.cfg.initialize();
+
+  // AXI VIP configuration
+  axi_cfg = new[NUM_OF_AXI_IFS];
+  foreach(axi_cfg[i]) begin
+    axi_name = axi_if_t'(i);
+    axi_cfg[i] = axi4_vip_cfg::type_id::create(.name($sformatf("m_axi_%s_cfg", axi_name.name())), .parent(this));
+    
+    case(axi_name) 
+      mst0: begin
+        axi_cfg[i].set_config(.inst_id          (axi_name.name()),
+                          .has_master           (1), 
+                          .master_active_passive(UVM_PASSIVE), 
+                          .has_slave            (0), 
+                          .slave_active_passive (UVM_PASSIVE), 
+                          .has_coverage         (0), 
+                          .has_checker          (0),
+                          .id_width             ( 4),
+                          .addr_width           (64),
+                          .data_width           (64),
+                          .user_width           ( 1),
+                          .region_width         ( 4),
+                          .qos_width            ( 4)
+        );
+      end
+      slv0: begin 
+        axi_cfg[i].set_config(.inst_id          (axi_name.name()),
+                          .has_master           (0), 
+                          .master_active_passive(UVM_PASSIVE), 
+                          .has_slave            (1), 
+                          .slave_active_passive (UVM_PASSIVE), 
+                          .has_coverage         (0), 
+                          .has_checker          (0),
+                          .id_width             ( 4),
+                          .addr_width           (64),
+                          .data_width           (64),
+                          .user_width           ( 1),
+                          .region_width         ( 4),
+                          .qos_width            ( 4)
+        );
+      end
+      slv1: begin
+        axi_cfg[i].set_config(.inst_id          (axi_name.name()),
+                          .has_master           (0), 
+                          .master_active_passive(UVM_PASSIVE), 
+                          .has_slave            (1), 
+                          .slave_active_passive (UVM_PASSIVE), 
+                          .has_coverage         (0), 
+                          .has_checker          (0),
+                          .id_width             ( 4),
+                          .addr_width           (64),
+                          .data_width           (64),
+                          .user_width           ( 1),
+                          .region_width         ( 4),
+                          .qos_width            ( 4)
+        );
+      end
+    endcase
+    
+    uvm_config_db#(axi4_vip_cfg)::set(this, $sformatf("env.m_axi_%s*", axi_name.name()), "m_cfg", axi_cfg[i]);
+  end
+
 endfunction : build_phase
 
 function void top_chip_dv_base_test::connect_phase(uvm_phase phase);

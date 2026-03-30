@@ -11,12 +11,14 @@ filesets:
       - lowrisc:dv:dv_utils
       - lowrisc:dv:mem_bkdr_util
       - lowrisc:dv:uart_agent
+      - lowrisc:dv:axi4_vip:0.1
       - lowrisc:dv:common_ifs
     files:
       - top_chip_dv_env_pkg.sv
       - mem_clear_util.sv: {is_include_file: true}
       - top_chip_dv_env_cfg.sv: {is_include_file: true}
       - top_chip_dv_env_cov.sv: {is_include_file: true}
+      - top_chip_dv_axi_scoreboard.sv: {is_include_file: true}
       - top_chip_dv_env.sv: {is_include_file: true}
       - top_chip_dv_virtual_sequencer.sv: {is_include_file: true}
       - seq_lib/top_chip_dv_vseq_list.sv: {is_include_file: true}

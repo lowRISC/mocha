@@ -25,6 +25,7 @@ filesets:
       - lowrisc:dv:xbar_macros
       - lowrisc:dv_dpi_c:uartdpi:0.1
       - lowrisc:dv_dpi_sv:uartdpi:0.1
+      - lowrisc:dv:axi4_vip:0.1
     files:
       - tb/tb.sv
       - tb/chip_hier_macros.svh: {is_include_file: true}
