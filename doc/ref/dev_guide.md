@@ -12,12 +12,12 @@ Then follow the following steps to test on FPGA:
     - OpenFPGALoader, for example: `apt install openfpgaloader`
     - Screen, for example: `apt install screen`
 2. Connect your Genesys 2 board with the POWER, UART and JTAG. Make sure to turn on the board using SW8.
-3. Configure udev rules:
+3. Configure udev rules (you might need admin rights for these):
     ```sh
     cp 99-openfpgaloader.rules /etc/udev/rules.d/99-openfpgaloader.rules
     udevadm control --reload-rules
     udevadm trigger
-    usermod -a $USER -G plugdev
+    usermod -a -G plugdev $USER
     ```
 4. Program the downloaded bitstream:
     ```sh
@@ -150,12 +150,12 @@ ctest --test-dir build/sw -R sim_verilator
 
 One way to program your FPGA is to use openFPGALoader.
 In Linux you must allow openFPGALoader to access your USB device.
-First copy the example rules file in this repository and execute some commands for the rules to take effect:
+First copy the example rules file in this repository and execute some commands for the rules to take effect (you may need admin rights for the `udevadm` and `usermod` commands):
 ```sh
 cp util/99-openfpgaloader.rules /etc/udev/rules.d/99-openfpgaloader.rules
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-sudo usermod -a $USER -G plugdev
+udevadm control --reload-rules
+udevadm trigger
+usermod -a -G plugdev $USER
 ```
 
 ### Build bitstream
