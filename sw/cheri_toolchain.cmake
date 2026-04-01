@@ -2,8 +2,8 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-set(CHERI_FLAGS -march=rv64imc_zcherihybrid -mabi=l64pc128 -mcmodel=medany)
-set(VANILLA_FLAGS -march=rv64imc -mabi=lp64 -mcmodel=medany)
+set(CHERI_FLAGS -march=rv64imac_zcherihybrid -mabi=l64pc128 -mcmodel=medany)
+set(VANILLA_FLAGS -march=rv64imac -mabi=lp64 -mcmodel=medany)
 
 set(CMAKE_SYSTEM_NAME Generic)
 
