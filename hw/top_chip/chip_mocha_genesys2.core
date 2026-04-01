@@ -48,12 +48,12 @@ targets:
 
   synth:
     <<: *default_target
-    default_tool: vivado
+    flow: synth
+    flow_options:
+      tool: vivado
+      part: "xc7k325tffg900-2" # Genesys 2 with K325T
     filesets_append:
       - files_constraints
     toplevel: chip_mocha_genesys2
     parameters:
       - BootRomInitFile
-    tools:
-      vivado:
-        part: "xc7k325tffg900-2" # Genesys 2 with K325T

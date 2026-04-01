@@ -45,34 +45,36 @@ targets:
     toplevel: top_chip_system
 
   sim:
-    default_tool: verilator
+    flow: sim
+    flow_options:
+      tool: verilator
     filesets:
       - files_rtl
     toplevel: top_chip_system
 
   lint:
     <<: *default_target
-    default_tool: verilator
+    flow: lint
+    flow_options:
+      tool: verilator
+      mode: lint-only
+      verilator_options:
+        # Disabling tracing reduces compile times but doesn't have a
+        # huge influence on runtime performance.
+        - '--trace'
+        - '--trace-fst' # this requires -DVM_TRACE_FMT_FST in CFLAGS below!
+        - '--trace-structs'
+        - '--trace-params'
+        - '--trace-max-array 1024'
+        - '-CFLAGS "-Wall -DVM_TRACE_FMT_FST -DTOPLEVEL_NAME=top_chip_verilator"'
+        - '-LDFLAGS "-pthread -lutil -lelf"'
+        - '--assert'
+        - '-Wall'
+        # RAM primitives wider than 64bit (required for ECC) fail to build in
+        # Verilator without increasing the unroll count (see Verilator#1266)
+        - "--unroll-count 72"
     parameters:
       - SYNTHESIS=true
-    tools:
-      verilator:
-        mode: lint-only
-        verilator_options:
-          # Disabling tracing reduces compile times but doesn't have a
-          # huge influence on runtime performance.
-          - '--trace'
-          - '--trace-fst' # this requires -DVM_TRACE_FMT_FST in CFLAGS below!
-          - '--trace-structs'
-          - '--trace-params'
-          - '--trace-max-array 1024'
-          - '-CFLAGS "-Wall -DVM_TRACE_FMT_FST -DTOPLEVEL_NAME=top_chip_verilator"'
-          - '-LDFLAGS "-pthread -lutil -lelf"'
-          - '--assert'
-          - '-Wall'
-          # RAM primitives wider than 64bit (required for ECC) fail to build in
-          # Verilator without increasing the unroll count (see Verilator#1266)
-          - "--unroll-count 72"
 
 parameters:
   SYNTHESIS:
