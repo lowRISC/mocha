@@ -150,7 +150,22 @@
       name: rom_ctrl_integrity_check
       uvm_test_seq: top_chip_dv_rom_ctrl_integrity_check_vseq
       sw_images: ["rom_ctrl_integrity_check_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_integrity_check_test_vanilla_bare.vmem"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_integrity_check_test_vanilla_bare.vmem",
+                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
+    }
+    {
+      name: rom_ctrl_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["rom_ctrl_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_vanilla_bare.vmem",
+                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
+    }
+    {
+      name: rom_ctrl_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["rom_ctrl_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_cheri_bare.vmem",
+                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
     }
     {
       name: rv_dm_ndm_reset_req
@@ -238,6 +253,8 @@
         "mailbox_smoke_cheri",
         "axi_sram_smoke",
         "axi_sram_smoke_cheri",
+        "rom_ctrl_smoke",
+        "rom_ctrl_smoke_cheri",
       ]
     }
     {
@@ -293,7 +310,9 @@
     {
       name: rom_ctrl
       tests: [
-        "rom_ctrl_integrity_check"
+        "rom_ctrl_integrity_check",
+        "rom_ctrl_smoke",
+        "rom_ctrl_smoke_cheri"
       ]
     }
     {

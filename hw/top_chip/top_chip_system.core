@@ -14,6 +14,7 @@ filesets:
       - lowrisc:ip:spi_device
       - lowrisc:ip:spi_host
       - lowrisc:ip:xbar_peri
+      - lowrisc:ip:rom_ctrl
       - lowrisc:mocha_ip:clkmgr
       - lowrisc:mocha_ip:gpio
       - lowrisc:mocha_ip:pwrmgr

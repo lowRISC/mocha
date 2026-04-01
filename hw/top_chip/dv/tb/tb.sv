@@ -48,7 +48,10 @@ module tb;
   );
 
   // ------ DUT ------
-  top_chip_system #() dut (
+  top_chip_system #(
+    .SramInitFile(""),
+    .RomInitFile("")
+  ) dut (
     // Clock and reset.
     .clk_i                (clk              ),
     .rst_ni               (rst_n            ),
@@ -135,6 +138,18 @@ module tb;
       // Zero-initialising the SRAM ensures valid BSS.
       m_mem_bkdr_util[ChipMemSRAM].clear_mem();
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemSRAM], `SRAM_MEM_HIER)
+
+      m_mem_bkdr_util[ChipMemROM] = new(
+        .name                 ("mem_bkdr_util[ChipMemROM]"        ),
+        .path                 (`DV_STRINGIFY(`ROM_MEM_HIER)        ),
+        .depth                ($size(`ROM_MEM_HIER)                ),
+        .n_bits               ($bits(`ROM_MEM_HIER)                ),
+        .err_detection_scheme (mem_bkdr_util_pkg::ErrDetectionNone),
+        .system_base_addr     (top_pkg::RomCtrlMemBase             )
+      );
+      
+      `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemROM], `ROM_MEM_HIER)
+
 
       // TODO MVy, see if required
       // Zero-initialise the SRAM Capability tags, otherwise TL-UL FIFO assertions will fire;

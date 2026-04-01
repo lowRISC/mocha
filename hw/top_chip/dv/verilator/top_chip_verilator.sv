@@ -43,6 +43,8 @@ module top_chip_verilator (input logic clk_i, rst_ni);
 
   // CHERI Mocha top
   top_chip_system #(
+    .SramInitFile(""),
+    .RomInitFile("")
   ) u_top_chip_system (
     .clk_i,
     .rst_ni,

@@ -283,3 +283,15 @@ lint_off -rule UNUSEDPARAM -file "*/axi_riscv_atomics/src/axi_riscv_atomics_wrap
 lint_off -rule UNUSEDSIGNAL -file "*/axi_riscv_atomics/src/axi_riscv_lrsc.sv" -match "*rd_clr_gnt*"
 lint_off -rule UNSIGNED -file "*/axi_riscv_atomics/src/axi_riscv_lrsc.sv"
 lint_off -rule CMPCONST -file "*/axi_riscv_atomics/src/axi_riscv_lrsc.sv"
+
+// prim_count.sv
+lint_off -rule WIDTHTRUNC -file "*/lowrisc_prim_count_0/rtl/prim_count.sv"
+
+// rom_ctrl.sv
+lint_off -rule UNDRIVEN     -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*checker_rom_rdata_outer*"
+lint_off -rule UNDRIVEN     -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_rdy*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*checker_rom_rdata*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_rdy_outer*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_vld_outer*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_last_outer*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_err*"

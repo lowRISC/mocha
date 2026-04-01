@@ -15,7 +15,8 @@ package top_chip_dv_env_pkg;
   `include "dv_macros.svh"
 
   typedef enum {
-    ChipMemSRAM
+    ChipMemSRAM,
+    ChipMemROM
   } chip_mem_e;
 
   typedef chip_mem_e chip_mem_list_t[$];
