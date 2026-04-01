@@ -13,6 +13,7 @@ filesets:
       - lowrisc:ip:rv_timer
       - lowrisc:ip:spi_device
       - lowrisc:ip:xbar_peri
+      - lowrisc:ip:rom_ctrl
       - lowrisc:mocha_ip:clkmgr
       - lowrisc:mocha_ip:gpio
       - lowrisc:mocha_ip:pwrmgr
