@@ -30,7 +30,8 @@
     // Hardware IP blocks.
     {from: "hw/ip/i2c",          to: "ip/i2c", patch_dir: "i2c"}, // I^2C controller/target
     {from: "hw/ip/lc_ctrl",      to: "ip/lc_ctrl"}, // Dependency of crossbar and power manager.
-    {from: "hw/ip/rom_ctrl",     to: "ip/rom_ctrl"}, // Read-only memory.
+    {from: "hw/ip/rom_ctrl",     to: "ip/rom_ctrl", patch_dir: "rom_ctrl"}, // ROM Control.
+    {from: "hw/ip/kmac",         to: "ip/kmac", patch_dir: "kmac"}, // kmac.
     {from: "hw/ip/rv_core_ibex", to: "ip/rv_core_pkg", patch_dir: "rv_core_pkg"}, // RISC-V core package.
     {from: "hw/ip/rv_timer",     to: "ip/rv_timer", patch_dir: "rv_timer"}, // Timer.
     {from: "hw/ip/spi_device",   to: "ip/spi_device", patch_dir: "spi_device"}, // SPI device.
