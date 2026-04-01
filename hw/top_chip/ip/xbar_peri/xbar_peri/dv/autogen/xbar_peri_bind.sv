@@ -38,6 +38,12 @@ module xbar_peri_bind;
     .h2d    (tl_pwrmgr_o),
     .d2h    (tl_pwrmgr_i)
   );
+  bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_rom_ctrl_regs (
+    .clk_i  (clk_main_i),
+    .rst_ni (rst_main_ni),
+    .h2d    (tl_rom_ctrl_regs_o),
+    .d2h    (tl_rom_ctrl_regs_i)
+  );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_uart (
     .clk_i  (clk_io_i),
     .rst_ni (rst_io_ni),
