@@ -71,6 +71,18 @@
         size_byte: "0x00010000",
       }],
     },
+    { name:  "rom_ctrl_regs", // Rom_ctrl_regs
+      type:  "device",
+      clock: "clk_main_i",
+      reset: "rst_main_ni",
+      xbar:  false,
+      addr_range: [{
+        base_addrs: {
+          hart: "0x40050000",
+        },
+        size_byte: "0x00010000",
+      }],
+    },
     { name:  "uart", // UART
       type:  "device",
       clock: "clk_io_i",
@@ -150,6 +162,7 @@
       "clkmgr",
       "rstmgr",
       "pwrmgr",
+      "rom_ctrl_regs",
       "uart",
       "i2c",
       "spi_device",
@@ -159,4 +172,3 @@
     ],
   },
 }
-
