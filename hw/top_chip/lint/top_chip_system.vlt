@@ -93,6 +93,7 @@ lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "
 lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
 lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*gnt_nodes*"
 lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/id_queue.sv" -match "*match_in_id_valid*"
+lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/onehot_to_bin.sv" -match "*onehot_to_bin.bin*"
 
 // Mute RTL style warning from lowRISC UART IP
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_uart*/rtl/uart_core.sv" -match "*uart_fifo_rxilvl*"
@@ -211,6 +212,7 @@ lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_llc_tag_store.sv" -match "*evi
 lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_llc_tag_store.sv" -match "*evict_valid*"
 lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_llc_tag_store.sv" -match "*bin_ind*"
 lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_tagctrl_w.sv" -match "*b_chan_mst_ready_o*"
+lint_off -rule UNOPTFLAT -file "*/pulp_axi_llc/src/hit_miss_detect/axi_llc_evict_box.sv" -match "*valid_o*"
 
 // Output ds of the following prim_subreg instances are not used
 lint_off -rule PINMISSING -file "*/pulp_axi_llc/src/axi_llc_reg_top.sv" -match "*u_cfg_spm_low*"
