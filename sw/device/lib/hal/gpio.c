@@ -30,3 +30,13 @@ void gpio_set_oe_pin(gpio_t gpio, uint32_t pin, bool output)
     uint32_t mask = 1u << (pin & 0xFu);
     DEV_WRITE(gpio + reg, (mask << 16) | (output ? mask : 0u));
 }
+
+void gpio_write(gpio_t gpio, uint32_t output_reg_addr, uint32_t value)
+{
+    DEV_WRITE(gpio + output_reg_addr, value);
+}
+
+void gpio_set_all_oe(gpio_t gpio, uint32_t value)
+{
+    DEV_WRITE(gpio + GPIO_REG_DIRECT_OE, value);
+}

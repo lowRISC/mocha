@@ -10,6 +10,7 @@ module tb;
   import mem_bkdr_util_pkg::mem_bkdr_util;
   import top_chip_dv_env_pkg::*;
   import top_chip_dv_test_pkg::*;
+  import gpio_env_pkg::NUM_GPIOS;
 
   import top_chip_dv_env_pkg::SW_DV_START_ADDR;
   import top_chip_dv_env_pkg::SW_DV_TEST_STATUS_ADDR;
@@ -25,11 +26,15 @@ module tb;
   wire rst_n;
   wire peri_clk;
   wire peri_rst_n;
+  wire  [NUM_GPIOS-1:0] gpio_pads;    // A wire connected to bidirectional pads in pins_if
+  logic [NUM_GPIOS-1:0] dut_gpio_o;
+  logic [NUM_GPIOS-1:0] dut_gpio_en_o;
 
   // ------ Interfaces ------
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
   uart_if uart_if();
+  pins_if #(NUM_GPIOS) gpio_if (.pins(gpio_pads));
 
   // ------ Mock DRAM ------
   top_pkg::axi_dram_req_t  dram_req;
@@ -49,6 +54,10 @@ module tb;
     // Clock and reset.
     .clk_i                (clk              ),
     .rst_ni               (rst_n            ),
+    // GPIO inputs and outputs with output enable
+    .gpio_i               (gpio_pads        ),
+    .gpio_o               (dut_gpio_o       ),
+    .gpio_en_o            (dut_gpio_en_o    ),
     // UART receive and transmit.
     .uart_rx_i            (uart_if.uart_rx  ),
     .uart_tx_o            (uart_if.uart_tx  ),
@@ -68,6 +77,12 @@ module tb;
     .dram_req_o           (dram_req         ),
     .dram_resp_i          (dram_resp        )
   );
+
+  // Assignment to the GPIO pads. If dut_gpio_en_o[i] is disabled, the let the gpio_pad[i] floating
+  // so an external device/driver can drive it.
+  for (genvar i = 0; i < NUM_GPIOS; i++) begin : gen_gpio_pads
+    assign gpio_pads[i] = dut_gpio_en_o[i] ? dut_gpio_o[i] : 1'bz;
+  end
 
   // Signals to connect the sink
   top_pkg::axi_req_t  sim_sram_cpu_req;
@@ -180,6 +195,7 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "sys_clk_if", sys_clk_if);
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "peri_clk_if", peri_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
+    uvm_config_db#(virtual pins_if #(NUM_GPIOS))::set(null, "*.env", "gpio_vif", gpio_if);
 
     // SW logger and test status interfaces.
     uvm_config_db#(virtual sw_test_status_if)::set(
