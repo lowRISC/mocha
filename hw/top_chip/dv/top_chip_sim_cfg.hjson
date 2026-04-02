@@ -176,6 +176,12 @@
       sw_images: ["mailbox_smoketest_cheri_bare:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_cheri_bare.vmem"]
     }
+    {
+      name: rom_ctrl_smoke
+      uvm_test_seq: top_chip_dv_uart_base_vseq
+      sw_images: ["rom_ctrl_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_vanilla_bare.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -199,6 +205,7 @@
         "mailbox_smoke",
         //TODO currently broken.
         // "mailbox_smoke_cheri"
+        "rom_ctrl_smoke"
       ]
     }
     {
@@ -254,7 +261,8 @@
     {
       name: rom_ctrl
       tests: [
-        "rom_ctrl_integrity_check"
+        "rom_ctrl_integrity_check",
+        "rom_ctrl_smoke"
       ]
     }
     {

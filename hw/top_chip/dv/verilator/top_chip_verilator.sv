@@ -39,7 +39,8 @@ module top_chip_verilator (input logic clk_i, rst_ni);
   top_pkg::axi_dram_resp_t dram_resp;
 
   // CHERI Mocha top
-  top_chip_system #(
+  top_chip_system # (
+    .RomInitFile("sw/device/tests/rom_ctrl/mem_init_file.vmem")
   ) u_top_chip_system (
     .clk_i,
     .rst_ni,

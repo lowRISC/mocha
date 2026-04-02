@@ -7,7 +7,8 @@
 `include "register_interface/typedef.svh"
 
 module top_chip_system #(
-  SramInitFile = ""
+  SramInitFile = "",
+  RomInitFile = ""
 ) (
   // Clock and reset.
   input  logic clk_i,
@@ -49,6 +50,7 @@ module top_chip_system #(
   output top_pkg::axi_dram_req_t  dram_req_o,
   input  top_pkg::axi_dram_resp_t dram_resp_i
 );
+
   // Local parameters.
   localparam int unsigned SramMemSize   = 128 * 1024; // 128 KiB
   localparam int unsigned TlDataWidth   = top_pkg::TL_DW;
@@ -58,6 +60,7 @@ module top_chip_system #(
   localparam int unsigned UartIrqs      = 9;
   localparam int unsigned I2cIrqs       = 15;
   localparam int unsigned SPIDeviceIrqs = 8;
+  localparam int unsigned KmacNumAppIntf = 1;
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
@@ -98,6 +101,7 @@ module top_chip_system #(
   // AXI crossbar address mapping
   axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
   assign addr_map = '{
+    '{ idx: top_pkg::RomCtrlMem, start_addr: top_pkg::RomCtrlMemBase, end_addr: top_pkg::RomCtrlMemBase + top_pkg::RomCtrlMemLength },
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
     '{ idx: top_pkg::Mailbox,    start_addr: top_pkg::MailboxBase,    end_addr: top_pkg::MailboxBase    + top_pkg::MailboxLength    },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
@@ -105,6 +109,7 @@ module top_chip_system #(
   };
 
   // TileLink signals.
+  // TL Xbar
   tlul_pkg::tl_h2d_t tl_axi_xbar_h2d;
   tlul_pkg::tl_d2h_t tl_axi_xbar_d2h;
   tlul_pkg::tl_h2d_t tl_gpio_h2d;
@@ -115,16 +120,21 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_rstmgr_d2h;
   tlul_pkg::tl_h2d_t tl_pwrmgr_h2d;
   tlul_pkg::tl_d2h_t tl_pwrmgr_d2h;
+  tlul_pkg::tl_h2d_t tl_rom_ctrl_regs_h2d;
+  tlul_pkg::tl_d2h_t tl_rom_ctrl_regs_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
   tlul_pkg::tl_h2d_t tl_i2c_h2d;
   tlul_pkg::tl_d2h_t tl_i2c_d2h;
+  tlul_pkg::tl_h2d_t tl_spi_device_h2d;
+  tlul_pkg::tl_d2h_t tl_spi_device_d2h;
   tlul_pkg::tl_h2d_t tl_timer_h2d;
   tlul_pkg::tl_d2h_t tl_timer_d2h;
   tlul_pkg::tl_h2d_t tl_plic_h2d;
   tlul_pkg::tl_d2h_t tl_plic_d2h;
-  tlul_pkg::tl_h2d_t tl_spi_device_h2d;
-  tlul_pkg::tl_d2h_t tl_spi_device_d2h;
+  // TL ROM
+  tlul_pkg::tl_h2d_t tl_rom_ctrl_mem_h2d;
+  tlul_pkg::tl_d2h_t tl_rom_ctrl_mem_d2h;
 
   // 64-bit memory format signals
   logic                                 mem64_tl_xbar_req;
@@ -136,6 +146,15 @@ module top_chip_system #(
   logic                                 mem64_tl_xbar_rvalid;
   logic [top_pkg::AxiDataWidth-1:0]     mem64_tl_xbar_rdata;
 
+  logic                                 mem64_tl_rom_mem_req;
+  logic                                 mem64_tl_rom_mem_gnt;
+  logic                                 mem64_tl_rom_mem_we;
+  logic [(top_pkg::AxiDataWidth/8)-1:0] mem64_tl_rom_mem_be;
+  logic [top_pkg::AxiAddrWidth-1:0]     mem64_tl_rom_mem_addr;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_tl_rom_mem_wdata;
+  logic                                 mem64_tl_rom_mem_rvalid;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_tl_rom_mem_rdata;
+
   // 32-bit memory format signals
   logic                       mem32_tl_xbar_req;
   logic                       mem32_tl_xbar_gnt;
@@ -145,6 +164,15 @@ module top_chip_system #(
   logic [TlDataWidth-1:0]     mem32_tl_xbar_wdata;
   logic                       mem32_tl_xbar_rvalid;
   logic [TlDataWidth-1:0]     mem32_tl_xbar_rdata;
+
+  logic                       mem32_tl_rom_mem_req;
+  logic                       mem32_tl_rom_mem_gnt;
+  logic                       mem32_tl_rom_mem_we;
+  logic [(TlDataWidth/8)-1:0] mem32_tl_rom_mem_be;
+  logic [top_pkg::TL_AW-1:0]  mem32_tl_rom_mem_addr;
+  logic [TlDataWidth-1:0]     mem32_tl_rom_mem_wdata;
+  logic                       mem32_tl_rom_mem_rvalid;
+  logic [TlDataWidth-1:0]     mem32_tl_rom_mem_rdata;
 
   // AXI signals
   top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
@@ -220,6 +248,20 @@ module top_chip_system #(
   top_pkg::axi_lite_resp_t mailbox_main_resp;
   top_pkg::axi_lite_req_t  mailbox_ext_req;
   top_pkg::axi_lite_resp_t mailbox_ext_resp;
+
+  // rom_ctrl related signals
+  prim_rom_pkg::rom_cfg_t                  rom_cfg;
+  rom_ctrl_pkg::pwrmgr_data_t              rom_ctrl_pwrmgr_data;
+  rom_ctrl_pkg::keymgr_data_t              rom_ctrl_keymgr_data;
+  kmac_pkg::app_req_t [KmacNumAppIntf-1:0] kmac_app_req;
+  kmac_pkg::app_rsp_t [KmacNumAppIntf-1:0] kmac_app_rsp;
+
+  // Assigning default values
+  assign    rom_cfg         = '0;
+
+  for (genvar i = 0; i < KmacNumAppIntf; i++) begin : g_kmac_app_rsp
+    assign kmac_app_rsp[i] = '0;
+  end
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -304,7 +346,6 @@ module top_chip_system #(
     .default_mst_port_i   ('0)
   );
 
-
   // Mailbox: main AXI to AXI Lite adapter
   axi_to_axi_lite #(
     .AxiAddrWidth   ( top_pkg::AxiAddrWidth ),
@@ -380,50 +421,50 @@ module top_chip_system #(
     .IdWidth    ( top_pkg::AxiIdWidth   ),
     .NumBanks   ( 1                     )
   ) u_tl_xbar_axi_to_mem (
-    .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .clk_i  ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
 
     // AXI interface.
     .busy_o     ( ),
-    .axi_req_i  (xbar_device_req[top_pkg::TlCrossbar]),
-    .axi_resp_o (xbar_device_resp[top_pkg::TlCrossbar]),
+    .axi_req_i  ( xbar_device_req[top_pkg::TlCrossbar] ),
+    .axi_resp_o ( xbar_device_resp[top_pkg::TlCrossbar] ),
 
     // Memory interface.
-    .mem_req_o    (mem64_tl_xbar_req),
-    .mem_gnt_i    (mem64_tl_xbar_gnt),
-    .mem_addr_o   (mem64_tl_xbar_addr),
-    .mem_wdata_o  (mem64_tl_xbar_wdata),
-    .mem_strb_o   (mem64_tl_xbar_be),
+    .mem_req_o    ( mem64_tl_xbar_req ),
+    .mem_gnt_i    ( mem64_tl_xbar_gnt ),
+    .mem_addr_o   ( mem64_tl_xbar_addr ),
+    .mem_wdata_o  ( mem64_tl_xbar_wdata ),
+    .mem_strb_o   ( mem64_tl_xbar_be ),
     .mem_atop_o   ( ),
-    .mem_we_o     (mem64_tl_xbar_we),
-    .mem_rvalid_i (mem64_tl_xbar_rvalid),
-    .mem_rdata_i  (mem64_tl_xbar_rdata)
+    .mem_we_o     ( mem64_tl_xbar_we ),
+    .mem_rvalid_i ( mem64_tl_xbar_rvalid ),
+    .mem_rdata_i  ( mem64_tl_xbar_rdata )
   );
 
   // 64-bit mem to 32-bit mem for TLUL crossbar
   mem_downsizer u_tl_xbar_mem_downsizer (
-    .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .clk_i  ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
 
     // 64-bit memory request in
-    .mem64_req_i   (mem64_tl_xbar_req),
-    .mem64_gnt_o   (mem64_tl_xbar_gnt),
-    .mem64_we_i    (mem64_tl_xbar_we),
-    .mem64_be_i    (mem64_tl_xbar_be),
-    .mem64_addr_i  (mem64_tl_xbar_addr),
-    .mem64_wdata_i (mem64_tl_xbar_wdata),
-    .mem64_rvalid_o(mem64_tl_xbar_rvalid),
-    .mem64_rdata_o (mem64_tl_xbar_rdata),
+    .mem64_req_i   ( mem64_tl_xbar_req ),
+    .mem64_gnt_o   ( mem64_tl_xbar_gnt ),
+    .mem64_we_i    ( mem64_tl_xbar_we ),
+    .mem64_be_i    ( mem64_tl_xbar_be ),
+    .mem64_addr_i  ( mem64_tl_xbar_addr ),
+    .mem64_wdata_i ( mem64_tl_xbar_wdata ),
+    .mem64_rvalid_o( mem64_tl_xbar_rvalid ),
+    .mem64_rdata_o ( mem64_tl_xbar_rdata ),
 
     // 32-bit memory request out
-    .mem32_req_o   (mem32_tl_xbar_req),
-    .mem32_gnt_i   (mem32_tl_xbar_gnt),
-    .mem32_we_o    (mem32_tl_xbar_we),
-    .mem32_be_o    (mem32_tl_xbar_be),
-    .mem32_addr_o  (mem32_tl_xbar_addr),
-    .mem32_wdata_o (mem32_tl_xbar_wdata),
-    .mem32_rvalid_i(mem32_tl_xbar_rvalid),
-    .mem32_rdata_i (mem32_tl_xbar_rdata)
+    .mem32_req_o   ( mem32_tl_xbar_req ),
+    .mem32_gnt_i   ( mem32_tl_xbar_gnt ),
+    .mem32_we_o    ( mem32_tl_xbar_we ),
+    .mem32_be_o    ( mem32_tl_xbar_be ),
+    .mem32_addr_o  ( mem32_tl_xbar_addr ),
+    .mem32_wdata_o ( mem32_tl_xbar_wdata ),
+    .mem32_rvalid_i( mem32_tl_xbar_rvalid ),
+    .mem32_rdata_i ( mem32_tl_xbar_rdata )
   );
 
   // 32-bit mem to TLUL for TLUL crossbar
@@ -431,62 +472,64 @@ module top_chip_system #(
     .EnableDataIntgGen      ( 1 ),
     .EnableRspDataIntgCheck ( 1 )
   ) u_tl_xbar_tlul_host_adapter (
-    .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .clk_i  ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
 
-    .req_i        (mem32_tl_xbar_req),
-    .gnt_o        (mem32_tl_xbar_gnt),
-    .addr_i       (mem32_tl_xbar_addr),
-    .we_i         (mem32_tl_xbar_we),
-    .wdata_i      (mem32_tl_xbar_wdata),
-    .wdata_intg_i ('0),
-    .be_i         (mem32_tl_xbar_be),
-    .instr_type_i (prim_mubi_pkg::MuBi4False),
-    .user_rsvd_i  ('0),
+    .req_i        ( mem32_tl_xbar_req ),
+    .gnt_o        ( mem32_tl_xbar_gnt ),
+    .addr_i       ( mem32_tl_xbar_addr ),
+    .we_i         ( mem32_tl_xbar_we ),
+    .wdata_i      ( mem32_tl_xbar_wdata ),
+    .wdata_intg_i ( '0 ),
+    .be_i         ( mem32_tl_xbar_be ),
+    .instr_type_i ( prim_mubi_pkg::MuBi4False ),
+    .user_rsvd_i  ( '0 ),
 
-    .valid_o      (mem32_tl_xbar_rvalid),
-    .rdata_o      (mem32_tl_xbar_rdata),
+    .valid_o      ( mem32_tl_xbar_rvalid ),
+    .rdata_o      ( mem32_tl_xbar_rdata ),
     .rdata_intg_o ( ),
     .err_o        ( ),
     .intg_err_o   ( ),
 
-    .tl_o         (tl_axi_xbar_h2d),
-    .tl_i         (tl_axi_xbar_d2h)
+    .tl_o         ( tl_axi_xbar_h2d ),
+    .tl_i         ( tl_axi_xbar_d2h )
   );
 
   // TileLink peripheral crossbar
-  xbar_peri u_tl_xbar (
+  xbar_peri u_xbar_peri (
     // Clock and reset.
-    .clk_main_i  (clkmgr_clocks.clk_main_infra),
-    .clk_io_i    (clkmgr_clocks.clk_io_infra),
-    .rst_main_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
-    .rst_io_ni   (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .clk_main_i  ( clkmgr_clocks.clk_main_infra ),
+    .clk_io_i    ( clkmgr_clocks.clk_io_infra ),
+    .rst_main_ni ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+    .rst_io_ni   ( rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel] ),
 
     // Host interfaces.
-    .tl_axi_xbar_i(tl_axi_xbar_h2d),
-    .tl_axi_xbar_o(tl_axi_xbar_d2h),
+    .tl_axi_xbar_i      ( tl_axi_xbar_h2d ),
+    .tl_axi_xbar_o      ( tl_axi_xbar_d2h ),
 
     // Device interfaces.
-    .tl_gpio_o       (tl_gpio_h2d),
-    .tl_gpio_i       (tl_gpio_d2h),
-    .tl_clkmgr_o     (tl_clkmgr_h2d),
-    .tl_clkmgr_i     (tl_clkmgr_d2h),
-    .tl_rstmgr_o     (tl_rstmgr_h2d),
-    .tl_rstmgr_i     (tl_rstmgr_d2h),
-    .tl_pwrmgr_o     (tl_pwrmgr_h2d),
-    .tl_pwrmgr_i     (tl_pwrmgr_d2h),
-    .tl_uart_o       (tl_uart_h2d),
-    .tl_uart_i       (tl_uart_d2h),
-    .tl_i2c_o        (tl_i2c_h2d),
-    .tl_i2c_i        (tl_i2c_d2h),
-    .tl_spi_device_o (tl_spi_device_h2d),
-    .tl_spi_device_i (tl_spi_device_d2h),
-    .tl_timer_o      (tl_timer_h2d),
-    .tl_timer_i      (tl_timer_d2h),
-    .tl_plic_o       (tl_plic_h2d),
-    .tl_plic_i       (tl_plic_d2h),
+    .tl_gpio_o          ( tl_gpio_h2d ),
+    .tl_gpio_i          ( tl_gpio_d2h ),
+    .tl_clkmgr_o        ( tl_clkmgr_h2d ),
+    .tl_clkmgr_i        ( tl_clkmgr_d2h ),
+    .tl_rstmgr_o        ( tl_rstmgr_h2d ),
+    .tl_rstmgr_i        ( tl_rstmgr_d2h ),
+    .tl_pwrmgr_o        ( tl_pwrmgr_h2d ),
+    .tl_pwrmgr_i        ( tl_pwrmgr_d2h ),
+    .tl_rom_ctrl_regs_o ( tl_rom_ctrl_regs_h2d ),
+    .tl_rom_ctrl_regs_i ( tl_rom_ctrl_regs_d2h ),
+    .tl_uart_o          ( tl_uart_h2d ),
+    .tl_uart_i          ( tl_uart_d2h ),
+    .tl_i2c_o           ( tl_i2c_h2d ),
+    .tl_i2c_i           ( tl_i2c_d2h ),
+    .tl_spi_device_o    ( tl_spi_device_h2d ),
+    .tl_spi_device_i    ( tl_spi_device_d2h ),
+    .tl_timer_o         ( tl_timer_h2d ),
+    .tl_timer_i         ( tl_timer_d2h ),
+    .tl_plic_o          ( tl_plic_h2d ),
+    .tl_plic_i          ( tl_plic_d2h ),
 
-    .scanmode_i (prim_mubi_pkg::MuBi4False)
+    .scanmode_i ( prim_mubi_pkg::MuBi4False )
   );
 
   // Instantiate GPIO block from IP template
@@ -759,7 +802,7 @@ module top_chip_system #(
     .ndmreset_req_i   ('0), // No debug module yet.
     .strap_o          (pwrmgr_strap_en),
     .low_power_o      ( ), // Low power not yet supported.
-    .rom_ctrl_i       (rom_ctrl_pkg::PWRMGR_DATA_DEFAULT),
+    .rom_ctrl_i       (rom_ctrl_pwrmgr_data),
     .lc_dft_en_i      (lc_ctrl_pkg::Off),
     .lc_hw_debug_en_i (lc_ctrl_pkg::On),
     .sw_rst_req_i     (rstmgr_sw_rst_req),
@@ -881,4 +924,119 @@ module top_chip_system #(
     .cached_start_addr_i (top_pkg::DRAMBase),
     .cached_end_addr_i   (top_pkg::TagCacheMemBase)
   );
+
+  // TL ROM
+  // AXI to 64-bit mem for TLUL crossbar
+  axi_to_mem #(
+    .axi_req_t  ( top_pkg::axi_req_t    ),
+    .axi_resp_t ( top_pkg::axi_resp_t   ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth ),
+    .DataWidth  ( top_pkg::AxiDataWidth ),
+    .IdWidth    ( top_pkg::AxiIdWidth   ),
+    .NumBanks   ( 1                     )
+  ) u_tl_rom_xbar_axi_to_mem (
+    .clk_i      ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+
+    // AXI interface.
+    .busy_o     ( ),
+    .axi_req_i  ( xbar_device_req[top_pkg::RomCtrlMem] ),
+    .axi_resp_o ( xbar_device_resp[top_pkg::RomCtrlMem] ),
+
+    // Memory interface.
+    .mem_req_o    ( mem64_tl_rom_mem_req ),
+    .mem_gnt_i    ( mem64_tl_rom_mem_gnt ),
+    .mem_addr_o   ( mem64_tl_rom_mem_addr ),
+    .mem_wdata_o  ( mem64_tl_rom_mem_wdata ),
+    .mem_strb_o   ( mem64_tl_rom_mem_be ),
+    .mem_atop_o   ( ),
+    .mem_we_o     ( mem64_tl_rom_mem_we ),
+    .mem_rvalid_i ( mem64_tl_rom_mem_rvalid ),
+    .mem_rdata_i  ( mem64_tl_rom_mem_rdata )
+  );
+
+  // 64-bit mem to 32-bit mem for TLUL crossbar
+  mem_downsizer u_tl_rom_xbar_mem_downsizer (
+    .clk_i      ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+
+    // 64-bit memory request in
+    .mem64_req_i    ( mem64_tl_rom_mem_req ),
+    .mem64_gnt_o    ( mem64_tl_rom_mem_gnt ),
+    .mem64_we_i     ( mem64_tl_rom_mem_we ),
+    .mem64_be_i     ( mem64_tl_rom_mem_be ),
+    .mem64_addr_i   ( mem64_tl_rom_mem_addr ),
+    .mem64_wdata_i  ( mem64_tl_rom_mem_wdata ),
+    .mem64_rvalid_o ( mem64_tl_rom_mem_rvalid ),
+    .mem64_rdata_o  ( mem64_tl_rom_mem_rdata ),
+
+    // 32-bit memory request out
+    .mem32_req_o    ( mem32_tl_rom_mem_req ),
+    .mem32_gnt_i    ( mem32_tl_rom_mem_gnt ),
+    .mem32_we_o     ( mem32_tl_rom_mem_we ),
+    .mem32_be_o     ( mem32_tl_rom_mem_be ),
+    .mem32_addr_o   ( mem32_tl_rom_mem_addr ),
+    .mem32_wdata_o  ( mem32_tl_rom_mem_wdata ),
+    .mem32_rvalid_i ( mem32_tl_rom_mem_rvalid ),
+    .mem32_rdata_i  ( mem32_tl_rom_mem_rdata )
+  );
+
+  // 32-bit mem to TLUL for TLUL crossbar
+  tlul_adapter_host #(
+    .EnableDataIntgGen      (1),
+    .EnableRspDataIntgCheck (1)
+  ) u_tl_rom_xbar_tlul_host_adapter (
+    .clk_i      ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+
+    .req_i        ( mem32_tl_rom_mem_req ),
+    .gnt_o        ( mem32_tl_rom_mem_gnt ),
+    .addr_i       ( mem32_tl_rom_mem_addr ),
+    .we_i         ( mem32_tl_rom_mem_we ),
+    .wdata_i      ( mem32_tl_rom_mem_wdata ),
+    .wdata_intg_i ( '0 ),
+    .be_i         ( mem32_tl_rom_mem_be ),
+    .instr_type_i ( prim_mubi_pkg::MuBi4False ),
+    .user_rsvd_i  ( '0 ),
+
+    .valid_o      ( mem32_tl_rom_mem_rvalid ),
+    .rdata_o      ( mem32_tl_rom_mem_rdata ),
+    .rdata_intg_o ( ),
+    .err_o        ( ),
+    .intg_err_o   ( ),
+
+    .tl_o         ( tl_rom_ctrl_mem_h2d ),
+    .tl_i         ( tl_rom_ctrl_mem_d2h )
+  );
+
+  rom_ctrl # (
+    .BootRomInitFile      ( RomInitFile ),
+    .AlertAsyncOn         ( 1'b1 ),
+    .AlertSkewCycles      ( 1 ),
+    .FlopToKmac           ( 1'b0 ),
+    .RndCnstScrNonce      ( '0 ),
+    .RndCnstScrKey        ( '0 ),
+    .SecDisableScrambling ( 1'b1 ),
+    .MemSizeRom           ( 32768 )
+  ) u_rom_ctrl (
+    // Clock and reset connections
+    .clk_i  ( clkmgr_clocks.clk_main_infra ),
+    .rst_ni ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+
+    // Allert Signals
+    .alert_tx_o  ( ),
+    .alert_rx_i  ( prim_alert_pkg::ALERT_RX_DEFAULT ),
+
+    // Inter-module signals
+    .rom_cfg_i      ( rom_cfg ),
+    .pwrmgr_data_o  ( rom_ctrl_pwrmgr_data ),
+    .keymgr_data_o  ( rom_ctrl_keymgr_data ),
+    .kmac_data_o    ( kmac_app_req[0]      ),
+    .kmac_data_i    ( kmac_app_rsp[0]      ),
+    .rom_tl_i       ( tl_rom_ctrl_mem_h2d  ),
+    .rom_tl_o       ( tl_rom_ctrl_mem_d2h  ),
+    .regs_tl_i      ( tl_rom_ctrl_regs_h2d ),
+    .regs_tl_o      ( tl_rom_ctrl_regs_d2h )
+  );
+
 endmodule

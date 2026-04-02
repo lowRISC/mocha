@@ -23,9 +23,9 @@ COMMANDS: list[list[str]] = [
     [
         "hw/vendor/lowrisc_ip/util/tlgen.py",
         "-t",
-        "hw/top_chip/ip/xbar_peri/data/xbar_peri.hjson",
+        "hw/top_chip/ip/xbar_peri/xbar_peri.hjson",
         "-o",
-        "hw/top_chip/ip/xbar_peri",
+        "hw/top_chip/ip/xbar_peri/xbar_peri",
     ],
     # gpio generator
     [

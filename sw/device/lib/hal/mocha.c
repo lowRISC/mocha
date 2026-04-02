@@ -11,11 +11,13 @@
 #include <cheriintrin.h>
 #endif /* defined(__riscv_zcherihybrid) */
 
+static const uintptr_t rom_base = 0x80000ul;
 static const uintptr_t mailbox_base = 0x20010000ul;
 static const uintptr_t dv_test_status_base = 0x20020000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
 static const uintptr_t rstmgr_base = 0x40030000ul;
+static const uintptr_t rom_ctrl_base = 0x40050000ul;
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t i2c_base = 0x42000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
@@ -41,6 +43,15 @@ static void *create_mmio_capability(uintptr_t address, size_t length)
     return cap;
 }
 #endif /* defined(__riscv_zcherihybrid) */
+
+rom_t mocha_system_rom(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (rom_t)create_mmio_capability(rom_base, 0x8000u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (rom_t)rom_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
 
 mailbox_t mocha_system_mailbox(void)
 {
@@ -75,6 +86,15 @@ rstmgr_t mocha_system_rstmgr(void)
     return (rstmgr_t)create_mmio_capability(rstmgr_base, 0x48u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (rstmgr_t)rstmgr_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+rom_ctrl_t mocha_system_rom_ctrl(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (rom_ctrl_t)create_mmio_capability(rom_ctrl_base, 0x48u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (rom_ctrl_t)rom_ctrl_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 

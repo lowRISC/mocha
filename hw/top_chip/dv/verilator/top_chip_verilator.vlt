@@ -30,3 +30,13 @@ lint_off -rule WIDTHEXPAND -file "*/lowrisc_dv_dpi_sv_uartdpi*/uartdpi.sv" -matc
 
 // Spidpi in Verilator top has single SPI interface, some QSPI signals are therefore unused
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/dv/verilator/top_chip_verilator.sv" -match "*qspi_device_sdo*"
+
+// prim_count.sv
+lint_off -rule WIDTHTRUNC -file "*/lowrisc_prim_count_0/rtl/prim_count.sv"
+
+// top_chip_system.sv
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system_0/rtl/top_chip_system.sv"
+
+// rom_ctrl.sv
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl_0.1/rtl/rom_ctrl.sv"
+lint_off -rule UNDRIVEN     -file "*/lowrisc_ip_rom_ctrl_0.1/rtl/rom_ctrl.sv"

@@ -45,7 +45,10 @@ module tb;
   );
 
   // ------ DUT ------
-  top_chip_system #() dut (
+  top_chip_system # (
+    .SramInitFile(""),
+    .RomInitFile("sw/device/tests/rom_ctrl/mem_init_file.vmem")
+  ) dut (
     // Clock and reset.
     .clk_i                (clk              ),
     .rst_ni               (rst_n            ),

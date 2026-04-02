@@ -18,3 +18,4 @@ mocha_add_test(NAME tag_controller_tag_test SOURCES tag_controller/tag_test.c LI
 mocha_add_test(NAME timer_smoketest SOURCES timer/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME timer_interrupt_test SOURCES timer/interrupt.c LIBRARIES ${LIBS})
 mocha_add_test(NAME uart_smoketest SOURCES uart/smoketest.c LIBRARIES ${LIBS})
+mocha_add_test(NAME rom_ctrl_smoketest SOURCES rom_ctrl/smoketest.c LIBRARIES ${LIBS})
