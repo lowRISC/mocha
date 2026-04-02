@@ -749,7 +749,7 @@ module top_chip_system #(
     .pwr_otp_o        ( ),
     .pwr_lc_o         ( ),
     .pwr_lc_i         (lc_ctrl_pkg::PWR_LC_RSP_DEFAULT), // Default to initialised and done.
-    .pwr_flash_i      (pwrmgr_pkg::PWR_FLASH_DEFAULT), // Default to idle.
+    .pwr_nvm_i        (pwrmgr_pkg::PWR_NVM_DEFAULT), // Default to idle.
     .esc_rst_tx_i     (prim_esc_pkg::ESC_RX_DEFAULT),
     .esc_rst_rx_o     ( ),
     .pwr_cpu_i        ('0), // Core is not sleeping.
