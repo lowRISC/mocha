@@ -10,6 +10,7 @@ module tb;
   import mem_bkdr_util_pkg::mem_bkdr_util;
   import top_chip_dv_env_pkg::*;
   import top_chip_dv_test_pkg::*;
+  import axi4_vip_pkg::*;
 
   import top_chip_dv_env_pkg::SW_DV_START_ADDR;
   import top_chip_dv_env_pkg::SW_DV_TEST_STATUS_ADDR;
@@ -30,6 +31,11 @@ module tb;
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
   uart_if uart_if();
+  axi4_vip_if axi4_mgr_if[NUM_OF_MGR_AXI_IFS]();
+  axi4_vip_if axi4_sub_if[NUM_OF_SUB_AXI_IFS]();
+
+  // AXI VIP connections are included from a separate file for better reading
+  `include "axi_vip_connections.sv"
 
   // ------ Mock DRAM ------
   top_pkg::axi_dram_req_t  dram_req;
@@ -181,6 +187,13 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "peri_clk_if", peri_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
 
+    // AXI VIFs
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_mgr_axi_CVA6.*",       "vif", axi4_mgr_if[top_pkg::CVA6]);
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_sub_axi_SRAM.*",       "vif", axi4_sub_if[top_pkg::SRAM]);
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_sub_axi_Mailbox.*",    "vif", axi4_sub_if[top_pkg::Mailbox]);
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_sub_axi_TlCrossbar.*", "vif", axi4_sub_if[top_pkg::TlCrossbar]);
+    uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_sub_axi_DRAM.*",       "vif", axi4_sub_if[top_pkg::DRAM]);
+    
     // SW logger and test status interfaces.
     uvm_config_db#(virtual sw_test_status_if)::set(
         null, "*.env", "sw_test_status_vif", `SIM_SRAM_IF.u_sw_test_status_if);
