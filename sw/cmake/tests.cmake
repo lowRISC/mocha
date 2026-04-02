@@ -35,7 +35,7 @@ endmacro()
 macro(mocha_add_verilator_test NAME)
     add_test(
         NAME ${NAME}_sim_verilator
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh ${NAME}
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E ${NAME}
     )
 endmacro()
 
@@ -121,4 +121,3 @@ macro(mocha_add_library)
 
     endforeach() # ARCH
 endmacro()
-

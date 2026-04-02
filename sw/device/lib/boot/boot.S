@@ -187,7 +187,7 @@ zero_bss_end:
     /* derive a stack pointer from the infinite capability */
     /* limit stack size */
     llc csp, _stack_bottom
-    llc ct0, _stack_len
+    lgc ct0, _stack_len
     scaddr csp, ca0, sp
     scbnds csp, csp, t0
     /* stack grows downwards, so adjust address to top */
@@ -225,7 +225,7 @@ setup_scratchpad:
 
     /* set up a known-good stack capability in the scratchpad area */
     llc ct0, _stack_bottom
-    llc ct1, _stack_len
+    lgc ct1, _stack_len
     scaddr ct0, ca0, t0
     scbnds ct0, ct0, t1
     add ct0, ct0, t1
