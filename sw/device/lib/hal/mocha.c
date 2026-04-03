@@ -108,7 +108,7 @@ spi_device_t mocha_system_spi_device(void)
 timer_t mocha_system_timer(void)
 {
 #if defined(__riscv_zcherihybrid)
-    return (timer_t)create_mmio_capability(timer_base, 0x120u);
+    return (timer_t)create_mmio_capability(timer_base, sizeof(struct timer_memory_layout));
 #else /* !defined(__riscv_zcherihybrid) */
     return (timer_t)timer_base;
 #endif /* defined(__riscv_zcherihybrid) */
