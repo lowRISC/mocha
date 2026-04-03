@@ -110,18 +110,16 @@ bool reg_test(spi_device_t spi_device)
 
 bool machine_irq_test(spi_device_t spi_device, plic_t plic)
 {
-    uint8_t intr_id;
-
-    const int SPI_DEVICE_INTR_ID = 7;
+    uint32_t intr_id;
 
     plic_init(plic);
-    plic_interrupt_priority_set(plic, SPI_DEVICE_INTR_ID, 3);
-    plic_machine_priority_threshold_set(plic, 0);
+    plic_interrupt_priority_write(plic, mocha_system_irq_spi_device, 3);
+    plic_machine_priority_threshold_write(plic, 0);
 
     spi_device_interrupt_disable_all(spi_device);
     spi_device_interrupt_enable(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
 
-    plic_machine_interrupt_enable(plic, SPI_DEVICE_INTR_ID);
+    plic_machine_interrupt_enable_set(plic, mocha_system_irq_spi_device);
 
     // Check that mip MEIP is clear
     if (hart_interrupt_any_pending(interrupt_machine_external)) {
@@ -155,18 +153,16 @@ bool machine_irq_test(spi_device_t spi_device, plic_t plic)
 
 bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
 {
-    uint8_t intr_id;
-
-    const int SPI_DEVICE_INTR_ID = 7;
+    uint32_t intr_id;
 
     plic_init(plic);
-    plic_interrupt_priority_set(plic, SPI_DEVICE_INTR_ID, 3);
-    plic_supervisor_priority_threshold_set(plic, 0);
+    plic_interrupt_priority_write(plic, mocha_system_irq_spi_device, 3);
+    plic_supervisor_priority_threshold_write(plic, 0);
 
     spi_device_interrupt_disable_all(spi_device);
     spi_device_interrupt_enable(spi_device, SPI_DEVICE_INTR_READBUF_FLIP);
 
-    plic_supervisor_interrupt_enable(plic, SPI_DEVICE_INTR_ID);
+    plic_supervisor_interrupt_enable_set(plic, mocha_system_irq_spi_device);
 
     // Check that mip SEIP is clear
     if (hart_interrupt_any_pending(interrupt_software_external)) {
