@@ -15,4 +15,8 @@ enable_testing()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+include(ExternalProject)
+
 add_subdirectory(device)
+
+include(cmake/opensbi.cmake)
