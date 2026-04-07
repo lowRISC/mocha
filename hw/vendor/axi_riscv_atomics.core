@@ -1,0 +1,26 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "cosmic:pulp:axi_riscv_atomics"
+description: "Wrapper for RISC-V atomics over AXI."
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:common_cells:all # stream_arbiter for lrsc
+      - pulp-platform.org::axi # axi_pkg
+    files:
+      - axi_riscv_atomics/src/axi_res_tbl.sv # for lrsc
+      - axi_riscv_atomics/src/axi_riscv_amos.sv # for atomics
+      - axi_riscv_atomics/src/axi_riscv_amos_alu.sv # for amos
+      - axi_riscv_atomics/src/axi_riscv_atomics.sv # for atomics_wrap
+      - axi_riscv_atomics/src/axi_riscv_atomics_wrap.sv
+      - axi_riscv_atomics/src/axi_riscv_lrsc.sv # for atomics
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

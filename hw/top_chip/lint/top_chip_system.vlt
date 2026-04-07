@@ -272,3 +272,12 @@ lint_off -rule MULTIDRIVEN -file "*/pulp_axi_llc/src/eviction_refill/axi_llc_w_m
 lint_off -rule MULTIDRIVEN -file "*/pulp_axi_llc/src/eviction_refill/axi_llc_w_master.sv" -match "*load_cnt*"
 lint_off -rule MULTIDRIVEN -file "*/pulp_axi_llc/src/eviction_refill/axi_llc_w_master.sv" -match "*send_d*"
 lint_off -rule MULTIDRIVEN -file "*/pulp_axi_llc/src/eviction_refill/axi_llc_w_master.sv" -match "*load_send*"
+
+// Lints that are imported from AXI RISC-V atomics
+lint_off -rule GENUNNAMED -file "*/axi_riscv_atomics/src/axi_riscv_amos.sv"
+lint_off -rule WIDTHEXPAND -file "*/axi_riscv_atomics/src/axi_riscv_amos*.sv"
+lint_off -rule WIDTHTRUNC -file "*/axi_riscv_atomics/src/axi_riscv_amos*.sv"
+lint_off -rule UNUSEDPARAM -file "*/axi_riscv_atomics/src/axi_riscv_atomics_wrap.sv" -match "*AXI_STRB_WIDTH*"
+lint_off -rule UNUSEDSIGNAL -file "*/axi_riscv_atomics/src/axi_riscv_lrsc.sv" -match "*rd_clr_gnt*"
+lint_off -rule UNSIGNED -file "*/axi_riscv_atomics/src/axi_riscv_lrsc.sv"
+lint_off -rule CMPCONST -file "*/axi_riscv_atomics/src/axi_riscv_lrsc.sv"
