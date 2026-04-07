@@ -20,6 +20,8 @@ static void page_program(uart_t console, spi_device_t spid, uint32_t offset, uin
 static void boot(uintptr_t addr);
 static void led_init(gpio_t gpio);
 static void led_animation_run(gpio_t gpio);
+static bool bootstrap_requested(gpio_t gpio, timer_t timer);
+
 
 // TODO: Add support to cheri mode
 int main(void)
@@ -28,11 +30,19 @@ int main(void)
     uart_init(console);
     uprintf(console, "\nBoot ROM!\n");
 
-    // Spin polling the spi_dev and processng incoming data until a reset command is received.
-    spi_boot_strap(console);
+    timer_t timer = mocha_system_timer();
+    timer_init(timer);
+    timer_enable_write(timer, true);
+
+    gpio_t gpio = mocha_system_gpio();
+    if (bootstrap_requested(gpio, timer)) {
+        uprintf(console, "Entering spi bootstrap\n");
+        // Spin polling the spi_dev and processing incoming data until a reset command is received.
+        spi_boot_strap(console);
+    }
 
     enum { BootAddress = 0x10004080 };
-    uprintf(console, "\nJumping to: 0x%0x\n", BootAddress);
+    uprintf(console, "\nJumping to: 0x%x\n", BootAddress);
 
     boot(BootAddress);
     uprintf(console, "\nFailed to boot?\n");
@@ -61,7 +71,7 @@ bool spi_boot_strap(uart_t console)
 
     while (true) {
         // TODO: Use timer
-        if (count++ >= 10000) {
+        if (count++ >= 20000) {
             led_animation_run(gpio);
             count = 0;
         }
@@ -155,6 +165,21 @@ void led_animation_run(gpio_t gpio)
     bool toggle = (next_led >= num_leds || next_led < 0);
     current_led = toggle ? current_led : next_led;
     going_up ^= toggle;
+}
+
+bool bootstrap_requested(gpio_t gpio, timer_t timer)
+{
+    enum { bootstrap_pin = 8, debaunce_us = 20000 };
+    timer_schedule_in_us(timer, debaunce_us);
+    if (!gpio_read_pin(gpio, bootstrap_pin)) {
+        while (!timer_interrupt_pending(timer)) {
+            if (gpio_read_pin(gpio, bootstrap_pin)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 // TODO: Catch exceptions properly.
