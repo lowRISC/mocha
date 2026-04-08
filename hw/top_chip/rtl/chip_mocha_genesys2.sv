@@ -14,7 +14,7 @@ module chip_mocha_genesys2 #(
   input  logic ftdi_rst_ni,
 
   // GPIO - enough for the user switches and LEDs as a starting point
-  input  logic [7:0] gpio_i,
+  input  logic [8:0] gpio_i,
   output logic [7:0] gpio_o,
 
   // UART
@@ -151,7 +151,7 @@ module chip_mocha_genesys2 #(
     .rst_ni   (rst_n_sync_50m),
 
     // GPIO
-    .gpio_i    ({24'd0, gpio_i}),
+    .gpio_i    ({23'd0, gpio_i}),
     .gpio_o    (gpio_outputs),
     .gpio_en_o (gpio_en_outputs),
 
