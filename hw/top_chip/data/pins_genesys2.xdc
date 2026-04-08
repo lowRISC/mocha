@@ -8,6 +8,7 @@ set_property -dict { PACKAGE_PIN AD12  IOSTANDARD LVDS     } [get_ports { sysclk
 
 ## External Reset
 set_property -dict { PACKAGE_PIN R19   IOSTANDARD LVCMOS33 } [get_ports { ext_rst_ni }];
+set_property -dict { PACKAGE_PIN AB25  IOSTANDARD LVCMOS33 } [get_ports { ftdi_rst_ni }];
 
 ## GPIO
 # Inputs

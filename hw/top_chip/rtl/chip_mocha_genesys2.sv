@@ -11,6 +11,7 @@ module chip_mocha_genesys2 #(
 
   // External reset
   input  logic ext_rst_ni,
+  input  logic ftdi_rst_ni,
 
   // GPIO - enough for the user switches and LEDs as a starting point
   input  logic [7:0] gpio_i,
@@ -116,7 +117,7 @@ module chip_mocha_genesys2 #(
     .ResetValue ('0)
   ) u_mig_rst_sync_cfg (
     .clk_i  (clk_cfg),
-    .rst_ni (ext_rst_ni & fpga_rst_n_sync_cfg),
+    .rst_ni (ext_rst_ni & ftdi_rst_ni & fpga_rst_n_sync_cfg),
     .d_i    (1'b1),
     .q_o    (mig_rst_n_sync_cfg)
   );
@@ -126,7 +127,7 @@ module chip_mocha_genesys2 #(
     .ResetValue ('0)
   ) u_rst_sync_50m (
     .clk_i  (clk_50m),
-    .rst_ni (ext_rst_ni & fpga_rst_n_sync_cfg),
+    .rst_ni (ext_rst_ni & ftdi_rst_ni & fpga_rst_n_sync_cfg),
     .d_i    (1'b1),
     .q_o    (rst_n_sync_50m)
   );
