@@ -16,28 +16,54 @@ import serial.tools.list_ports
 BOOT_ROM_OFFSET: int = 0x4000
 BAUD_RATE: int = 1_000_000
 TIMEOUT: int = 60
+FTDI_DEVICE_DESC = "Digilent"
+MOCHA_BOOTROM_BOOSTRAP_STR = "Entering SPI bootstrap"
 
 RUNNER: str = Path(__file__).name
 
 
-async def load_fpga_test(test: Path) -> None:
-    command = ["openFPGALoader", "--spi", "--offset", str(BOOT_ROM_OFFSET), "--write-flash"]
+async def set_pin(pin: int, val: int) -> None:
+    command = ["ftditool", "gpio-write", str(pin), str(val), "--ftdi", FTDI_DEVICE_DESC]
+    p = await asyncio.create_subprocess_exec(*command)
+    if await p.wait() != 0:
+        print(f"[{RUNNER}] gpio-write command exited with non-zero exit code {p.returncode}")
+        sys.exit(1)
+
+
+async def reset_core() -> None:
+    """
+    Pull the reset pin down for 100ms.
+    """
+    await set_pin(2, 0)
+    time.sleep(0.1)
+    await set_pin(2, 1)
+
+
+async def bootstrap(uart: serial.Serial) -> bool:
+    """
+    Pull down the bootstrap pin, reset the core, wait for the bootstrap string over uart,
+    then release the pin the bootstrap pin.
+    """
+    await set_pin(0, 0)
+    await reset_core()
+    result = await poll_uart_checking_for(uart, MOCHA_BOOTROM_BOOSTRAP_STR)
+    await set_pin(0, 1)
+    return result is not None
+
+
+async def load_fpga_test(test: Path, uart) -> None:
+    await bootstrap(uart)
+    command = ["ftditool", "bootstrap", "--addr", hex(BOOT_ROM_OFFSET), "--ftdi", FTDI_DEVICE_DESC]
     command.append(str(test.with_suffix(".bin")))
     p = await asyncio.create_subprocess_exec(*command)
     if await p.wait() != 0:
         print(f"[{RUNNER}] SPI load command exited with non-zero exit code {p.returncode}")
         sys.exit(1)
-    # TODO: This is a workaround to send a reset and start the test, should be removed when we
-    # are able to reset the SoC with the external reset.
-    # The first invocation resets and load the binary, the second resets and the load is
-    # ignored by the bootROM, thus we don't check the return error.
-    p = await asyncio.create_subprocess_exec(*command)
-    await p.wait()
 
 
 async def run_fpga_test(tty: str, test: Path) -> bool:
     with serial.Serial(tty, BAUD_RATE, timeout=0) as uart:
-        load = asyncio.create_task(load_fpga_test(test))
+        await load_fpga_test(test, uart)
         poll = asyncio.create_task(poll_uart_checking_for(uart, r"TEST RESULT: (PASSED|FAILED)"))
         result = await poll
         return result and "PASSED" in result
