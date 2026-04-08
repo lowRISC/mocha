@@ -18,10 +18,73 @@
         "type": "github"
       }
     },
+    "flake-utils_2": {
+      "inputs": {
+        "systems": "systems_2"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "ftditool": {
+      "inputs": {
+        "flake-utils": [
+          "ftditool",
+          "lowrisc-nix",
+          "flake-utils"
+        ],
+        "lowrisc-nix": "lowrisc-nix",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775649568,
+        "narHash": "sha256-KWN4tBnYxOL8CKKQdfmshhBro8NSqOYaO+8wr1tbA7E=",
+        "ref": "refs/heads/main",
+        "rev": "c7402bb1fa89beea2c829d0a34fedfc2e8a183f2",
+        "revCount": 51,
+        "type": "git",
+        "url": "ssh://git@github.com/lowRISC/ftditool"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/lowRISC/ftditool"
+      }
+    },
     "lowrisc-nix": {
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1765996918,
+        "narHash": "sha256-ITu86FBJ1moDYdDSOXPXQTHX8V7Wz+Ab3Y6h4lUmlJY=",
+        "owner": "lowRISC",
+        "repo": "lowrisc-nix",
+        "rev": "f091644699bd07bafe2492d0c0648b4ba495f683",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lowRISC",
+        "repo": "lowrisc-nix",
+        "type": "github"
+      }
+    },
+    "lowrisc-nix_2": {
+      "inputs": {
+        "flake-utils": "flake-utils_2",
+        "nixpkgs": "nixpkgs_2"
       },
       "locked": {
         "lastModified": 1773161454,
@@ -38,6 +101,22 @@
       }
     },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1765838191,
+        "narHash": "sha256-m5KWt1nOm76ILk/JSCxBM4MfK3rYY7Wq9/TZIIeGnT8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "c6f52ebd45e5925c188d1a20119978aa4ffd5ef6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-25.11",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1770770419,
         "narHash": "sha256-iKZMkr6Cm9JzWlRYW/VPoL0A9jVKtZYiU4zSrVeetIs=",
@@ -105,7 +184,8 @@
           "lowrisc-nix",
           "flake-utils"
         ],
-        "lowrisc-nix": "lowrisc-nix",
+        "ftditool": "ftditool",
+        "lowrisc-nix": "lowrisc-nix_2",
         "nixpkgs": [
           "lowrisc-nix",
           "nixpkgs"
@@ -116,6 +196,21 @@
       }
     },
     "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_2": {
       "locked": {
         "lastModified": 1681028828,
         "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",

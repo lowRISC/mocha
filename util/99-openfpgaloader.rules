@@ -14,8 +14,8 @@ SUBSYSTEM!="usb|tty|hidraw", GOTO="openfpgaloader_rules_end"
 # Original FT232/FT245 VID:PID
 ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6001", MODE="664", GROUP="plugdev", TAG+="uaccess"
 
-# Original FT2232 VID:PID
-ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010", MODE="664", GROUP="plugdev", TAG+="uaccess"
+# Original FT2232 VID:PID, we need to unbind the default driver so that we can use the ftdi as spi.
+ACTION=="add", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6010", MODE="0666", RUN+="/usr/bin/bash -c 'echo -n $kernel > /sys/bus/usb/drivers/ftdi_sio/unbind'
 
 # Original FT4232 VID:PID
 ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6011", MODE="664", GROUP="plugdev", TAG+="uaccess"
