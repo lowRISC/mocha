@@ -26,7 +26,7 @@
     "{proj_root}/hw/vendor/lowrisc_ip/ip/prim/dv/prim_alert/prim_alert_sim_cfg.hjson",
     "{proj_root}/hw/vendor/lowrisc_ip/ip/prim/dv/prim_esc/prim_esc_sim_cfg.hjson",
     "{proj_root}/hw/vendor/lowrisc_ip/ip/prim/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson",
-    "{proj_root}/hw/top_chip/ip/i2c/dv/i2c_sim_cfg.hjson",
+    "{proj_root}/hw/vendor/lowrisc_ip/ip/i2c/dv/i2c_sim_cfg.hjson",
     "{proj_root}/hw/top_chip/tmp_sim_cfg/gpio_sim_cfg.hjson",
     "{proj_root}/hw/top_chip/tmp_sim_cfg/rom_ctrl_32kB_sim_cfg.hjson",
     "{proj_root}/hw/top_chip/tmp_sim_cfg/rv_dm_use_jtag_interface_sim_cfg.hjson",
