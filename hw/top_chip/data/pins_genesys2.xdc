@@ -20,6 +20,10 @@ set_property -dict { PACKAGE_PIN N19   IOSTANDARD LVCMOS18 } [get_ports { gpio_i
 set_property -dict { PACKAGE_PIN P19   IOSTANDARD LVCMOS18 } [get_ports { gpio_i[5] }]; # SW5 (VADJ)
 set_property -dict { PACKAGE_PIN P26   IOSTANDARD LVCMOS33 } [get_ports { gpio_i[6] }]; # SW6 (VCC3V3)
 set_property -dict { PACKAGE_PIN P27   IOSTANDARD LVCMOS33 } [get_ports { gpio_i[7] }]; # SW7 (VCC3V3)
+
+# Bootstrap pin, should be pulled down during boot to enter bootstrap mode.
+set_property -dict { PACKAGE_PIN AB29  IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { gpio_i[8] }];
+
 # Outputs
 set_property -dict { PACKAGE_PIN T28   IOSTANDARD LVCMOS33 } [get_ports { gpio_o[0] }]; # LED0
 set_property -dict { PACKAGE_PIN V19   IOSTANDARD LVCMOS33 } [get_ports { gpio_o[1] }]; # LED1
