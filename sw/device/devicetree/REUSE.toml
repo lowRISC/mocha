@@ -1,0 +1,6 @@
+version = 1
+
+[[annotations]]
+path = ["mocha.S"]
+SPDX-FileCopyrightText = "lowRISC Contributors (COSMIC project)."
+SPDX-License-Identifier = "Apache-2.0"
