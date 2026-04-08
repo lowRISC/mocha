@@ -301,7 +301,7 @@ always @(posedge clk_int)
             if (rx_addr_axis < 6)
               rx_dest_mac <= {rx_dest_mac[39:0],rx_axis_tdata};
             end
-	  if (rx_axis_tlast)
+	  if (rx_axis_tvalid && rx_axis_tlast)
             begin
 	        rx_length_axis[nextbuf[2:0]] <= rx_addr_axis + 1;
 	        rx_addr_axis <= 'b0;
