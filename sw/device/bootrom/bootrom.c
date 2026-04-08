@@ -66,7 +66,6 @@ bool spi_boot_strap(uart_t console)
     spi_device_enable_set(spid, true);
     spi_device_flash_status_set(spid, 0);
 
-    uint32_t received_resets = 0;
     size_t count = 0;
 
     while (true) {
@@ -95,14 +94,8 @@ bool spi_boot_strap(uart_t console)
             }
             break;
         case SPI_DEVICE_OPCODE_RESET:
-            // This is a workaround to openFPGALoader that starts with a reset.
-            if (received_resets++ > 0) {
-                // Exit boot strap
-                spi_device_enable_set(spid, false);
-                return true;
-            }
-            uprintf(console, "\nFirst reset");
-            break;
+            // Exit boot strap
+            return true;
         default:
             uprintf(console, "\nUnsupported command: 0x%0x", cmd.opcode);
             break;
