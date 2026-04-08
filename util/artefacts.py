@@ -132,6 +132,19 @@ COMMANDS: list[list[str]] = [
         "build/rdl/rdl.json",
         "doc/img/memmap.svg",
     ],
+    # generate devicetree
+    [
+        "dtc",
+        "-I",
+        "dts",
+        "sw/device/devicetree/mocha.dts",
+        "-O",
+        "asm",
+        "-o",
+        "sw/device/devicetree/mocha.S",
+        "--align",
+        "64",
+    ],
     # documentation
     ["d2", "doc/img/mocha.d2"],
 ]

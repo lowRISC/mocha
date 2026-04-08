@@ -7,3 +7,4 @@ doc/img/memmap.svg linguist-generated=true
 doc/img/mocha.svg linguist-generated=true
 hw/top_chip/ip/xbar_peri/*/autogen/* linguist-generated=true
 hw/top_chip/ip_autogen/* linguist-generated=true
+sw/device/devicetree/mocha.S linguist-generated=true
