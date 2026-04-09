@@ -5,6 +5,7 @@
 
 import argparse
 import asyncio
+import re
 import sys
 import time
 from pathlib import Path
@@ -37,23 +38,25 @@ async def load_fpga_test(test: Path) -> None:
 async def run_fpga_test(tty: str, test: Path) -> bool:
     with serial.Serial(tty, BAUD_RATE, timeout=0) as uart:
         load = asyncio.create_task(load_fpga_test(test))
-        poll = asyncio.create_task(poll_uart(uart))
-        success = await poll
         await load
-        return success
+        poll = asyncio.create_task(poll_uart_checking_for(uart, r"TEST RESULT: (PASSED|FAILED)"))
+        result = await poll
+        return result and "PASSED" in result
 
 
-async def poll_uart(uart: serial.Serial) -> bool:
+async def poll_uart_checking_for(uart: serial.Serial, pattern: str) -> str | None:
+    pattern = re.compile(pattern, re.IGNORECASE)
     start = time.time()
     while time.time() - start < TIMEOUT:
         line = await asyncio.to_thread(uart.readline)
         line = line.decode("utf-8", errors="ignore")
         print(line, end="")
-        if not line or "TEST RESULT" not in line:
+        if not line:
             continue
-        return "PASSED" in line
+        if match := pattern.search(line):
+            return match.group()
     print(f"[{RUNNER}] Test timeout")
-    return False
+    return None
 
 
 def find_uart(vid: int = 0x0403, pid: int = 0x6001) -> str | None:
