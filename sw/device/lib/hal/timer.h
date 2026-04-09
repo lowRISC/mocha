@@ -24,3 +24,4 @@ uint64_t timer_value_read(timer_t timer);
 void timer_schedule_in_ticks(timer_t timer, uint64_t ticks);
 void timer_schedule_in_us(timer_t timer, uint64_t us);
 void timer_busy_sleep_us(timer_t timer, uint64_t us);
+uint64_t timer_value_read_us(timer_t timer);

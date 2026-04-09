@@ -132,3 +132,8 @@ void timer_busy_sleep_us(timer_t timer, uint64_t us)
     while (!timer_interrupt_pending(timer)) {
     }
 }
+
+uint64_t timer_value_read_us(timer_t timer)
+{
+    return timer_value_read(timer) / timer_ticks_per_us(timer);
+}
