@@ -8,6 +8,7 @@
 }: let
   bitstream_path = "build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado";
   bootrom_path = "build/sw/device/bootrom";
+  rom_init_path = "sw/device/tests/rom_ctrl";
 in {
   bitstream-hash = pkgs.writeShellApplication {
     name = "bitstream-hash";
@@ -15,7 +16,7 @@ in {
     text = ''
       # Ask fusesoc to evaluate and generate the dependencies list.
       fusesoc --cores-root=. run --target=synth --setup lowrisc:mocha:chip_mocha_genesys2 > /dev/null 2>&1
-      
+
       # Build the bootROM because it's cheap, and copy the vmem to the src to be hashed.
       cmake -DCMAKE_BUILD_TYPE=Release -B build/sw -S sw  > /dev/null 2>&1
       cmake --build build/sw --target bootrom > /dev/null 2>&1
@@ -35,7 +36,8 @@ in {
 
       fusesoc --cores-root=. run --target=synth --setup \
         --build lowrisc:mocha:chip_mocha_genesys2 \
-        --BootRomInitFile="$PWD/${bootrom_path}/bootrom.vmem"
+        --BootRomInitFile="$PWD/${bootrom_path}/bootrom.vmem" \
+        --RomInitFile="$PWD/${rom_init_path}/mem_init_file.vmem"
     '';
   };
 

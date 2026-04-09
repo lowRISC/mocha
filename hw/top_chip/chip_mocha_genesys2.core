@@ -40,6 +40,12 @@ parameters:
     default: ""
     paramtype: vlogparam
 
+  RomInitFile:
+    datatype: str
+    description: ROM initialization file in 32 bit vmem hex format
+    default: ""
+    paramtype: vlogparam
+
 targets:
   default: &default_target
     filesets:
@@ -54,6 +60,7 @@ targets:
     toplevel: chip_mocha_genesys2
     parameters:
       - BootRomInitFile
+      - RomInitFile
     tools:
       vivado:
         part: "xc7k325tffg900-2" # Genesys 2 with K325T
