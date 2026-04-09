@@ -25,7 +25,7 @@ static bool spi_boot_strap(struct boot_context *ctx);
 static void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes);
 static void boot(uintptr_t addr);
 static void led_init(gpio_t gpio);
-static void led_animation_run(gpio_t gpio);
+static void led_animation_run(struct boot_context *ctx);
 static bool bootstrap_requested(struct boot_context *ctx);
 
 
@@ -73,14 +73,8 @@ bool spi_boot_strap(struct boot_context *ctx)
     spi_device_enable_set(spid, true);
     spi_device_flash_status_set(spid, 0);
 
-    size_t count = 0;
-
     while (true) {
-        // TODO: Use timer
-        if (count++ >= 20000) {
-            led_animation_run(ctx->gpio);
-            count = 0;
-        }
+        led_animation_run(ctx);
 
         spi_device_cmd_t cmd = spi_device_cmd_get_non_blocking(spid);
         if (cmd.status != spi_device_status_ready) {
@@ -145,7 +139,7 @@ void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t b
     }
 }
 
-enum { num_leds = 8 };
+enum { num_leds = 8, led_animation_period_us = 1 * 1000 * 1000 };
 
 void led_init(gpio_t gpio)
 {
@@ -154,12 +148,19 @@ void led_init(gpio_t gpio)
     }
 }
 
-void led_animation_run(gpio_t gpio)
+void led_animation_run(struct boot_context *ctx)
 {
     static int current_led = 0;
     static bool going_up = false;
+    static uint64_t timeout = 0;
 
-    gpio_write_pin(gpio, current_led, going_up);
+    uint64_t now = timer_value_read_us(ctx->timer);
+    if (timeout > now) {
+        return;
+    }
+    timeout = (led_animation_period_us / num_leds) + now;
+
+    gpio_write_pin(ctx->gpio, current_led, going_up);
 
     int next_led = current_led + (going_up ? 1 : -1);
     bool toggle = (next_led >= num_leds || next_led < 0);
@@ -169,8 +170,8 @@ void led_animation_run(gpio_t gpio)
 
 bool bootstrap_requested(struct boot_context *ctx)
 {
-    enum { bootstrap_pin = 8, debaunce_us = 20 * 1000 };
-    timer_schedule_in_us(ctx->timer, debaunce_us);
+    enum { bootstrap_pin = 8, debounce_us = 20 * 1000 };
+    timer_schedule_in_us(ctx->timer, debounce_us);
     if (!gpio_read_pin(ctx->gpio, bootstrap_pin)) {
         while (!timer_interrupt_pending(ctx->timer)) {
             if (gpio_read_pin(ctx->gpio, bootstrap_pin)) {
