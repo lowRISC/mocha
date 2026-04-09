@@ -28,7 +28,7 @@ enum : uint64_t {
 
 static const uintptr_t dram_base = 0x80000000ul;
 
-// In order of memory map.
+/* In order of memory map */
 mailbox_t mocha_system_mailbox(void);
 gpio_t mocha_system_gpio(void);
 clkmgr_t mocha_system_clkmgr(void);
