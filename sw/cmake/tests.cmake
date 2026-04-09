@@ -110,7 +110,7 @@ macro(mocha_add_library)
       set(NAME ${arg_NAME}_${ARCH_NAME})
 
       add_library(${NAME} OBJECT ${arg_SOURCES})
-      target_compile_options(${NAME} PUBLIC ${FLAGS})
+      target_compile_options(${NAME} PUBLIC "-O1" ${FLAGS})
       target_include_directories(${NAME} PUBLIC "${CMAKE_CURRENT_LIST_DIR}/..")
 
       get_target_property(VAR ${NAME} INCLUDE_DIRECTORIES)
