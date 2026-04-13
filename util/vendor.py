@@ -538,7 +538,7 @@ def ignore_patterns(base_dir, *patterns):
     return _ignore_patterns
 
 
-def clone_git_repo(repo_url, clone_dir, rev='master'):
+def clone_git_repo(repo_url, clone_dir, rev='main'):
     log.info('Cloning upstream repository %s @ %s', repo_url, rev)
 
     # Clone the whole repository
