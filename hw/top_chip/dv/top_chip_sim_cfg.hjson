@@ -147,6 +147,12 @@
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_vanilla_bare.vmem"]
     }
     {
+      name: gpio_smoke_cheri
+      uvm_test_seq: top_chip_dv_gpio_smoke_vseq
+      sw_images: ["gpio_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_cheri_bare.vmem"]
+    }
+    {
       name: rom_ctrl_integrity_check
       uvm_test_seq: top_chip_dv_rom_ctrl_integrity_check_vseq
       sw_images: ["rom_ctrl_integrity_check_test_vanilla_bare:5"]
@@ -249,6 +255,7 @@
         "spi_host_smoke",
         "spi_host_smoke_cheri",
         "gpio_smoke",
+        "gpio_smoke_cheri",
         "mailbox_smoke",
         "mailbox_smoke_cheri",
         "axi_sram_smoke",
@@ -304,7 +311,8 @@
     {
       name: gpio
       tests: [
-        "gpio_smoke"
+        "gpio_smoke",
+        "gpio_smoke_cheri"
       ]
     }
     {
