@@ -66,6 +66,7 @@ reg        byte_sync, sync, irq_en, tx_busy;
         */
         reg         tx_axis_tvalid;
         reg         tx_axis_tvalid_dly;
+        wire        tx_axis_tvalid_gated;
         reg 	    tx_axis_tlast;
         wire [7:0]  tx_axis_tdata;
         wire        tx_axis_tready;
@@ -286,7 +287,7 @@ always @(posedge clk_int)
 	  else if (~tx_axis_tlast)
 	      tx_axis_tvalid_dly <= 1'b0;
       end
- 
+   assign tx_axis_tvalid_gated = tx_axis_tvalid & tx_enable_i;
    always @(posedge clk_int)
      if (rst_int)
        begin
@@ -328,7 +329,7 @@ rgmii_soc rgmii_soc1
    .phy_pme_n(phy_pme_n),
    .mac_gmii_tx_en(mac_gmii_tx_en),
    .tx_axis_tdata(tx_axis_tdata),
-   .tx_axis_tvalid(tx_axis_tvalid),
+   .tx_axis_tvalid(tx_axis_tvalid_gated),
    .tx_axis_tready(tx_axis_tready),
    .tx_axis_tlast(tx_axis_tlast),
    .tx_axis_tuser(tx_axis_tuser),
