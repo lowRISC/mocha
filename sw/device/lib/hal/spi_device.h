@@ -105,6 +105,7 @@
 #define SPI_DEVICE_CMD_BUSY                    (25)
 #define SPI_DEVICE_CMD_VALID                   (31)
 
+#define SPI_DEVICE_CMD_INFO_EN4B_REG (0xDC)
 #define SPI_DEVICE_CMD_INFO_WREN_REG (0xE4)
 #define SPI_DEVICE_CMD_INFO_WRDI_REG (0xE8)
 
@@ -131,16 +132,19 @@
 #define SPI_DEVICE_BFPT_PARAM_ID_MSB   (0xFF)
 #define SPI_DEVICE_BFPT_NUM_WORDS      (23)
 
-#define SPI_DEVICE_OPCODE_PAGE_PROGRAM  (0x02)
-#define SPI_DEVICE_OPCODE_READ_DATA     (0x03)
-#define SPI_DEVICE_OPCODE_WRITE_DISABLE (0x04)
-#define SPI_DEVICE_OPCODE_READ_STATUS   (0x05)
-#define SPI_DEVICE_OPCODE_WRITE_ENABLE  (0x06)
-#define SPI_DEVICE_OPCODE_SECTOR_ERASE  (0x20)
-#define SPI_DEVICE_OPCODE_READ_SFDP     (0x5A)
-#define SPI_DEVICE_OPCODE_RESET         (0x99)
-#define SPI_DEVICE_OPCODE_READ_JEDEC_ID (0x9F)
-#define SPI_DEVICE_OPCODE_CHIP_ERASE    (0xC7)
+#define SPI_DEVICE_OPCODE_PAGE_PROGRAM   (0x02)
+#define SPI_DEVICE_OPCODE_PAGE_PROGRAM4B (0x12)
+#define SPI_DEVICE_OPCODE_READ_DATA      (0x03)
+#define SPI_DEVICE_OPCODE_WRITE_DISABLE  (0x04)
+#define SPI_DEVICE_OPCODE_READ_STATUS    (0x05)
+#define SPI_DEVICE_OPCODE_WRITE_ENABLE   (0x06)
+#define SPI_DEVICE_OPCODE_SECTOR_ERASE   (0x20)
+#define SPI_DEVICE_OPCODE_SECTOR_ERASE4B (0x21)
+#define SPI_DEVICE_OPCODE_READ_SFDP      (0x5A)
+#define SPI_DEVICE_OPCODE_RESET          (0x99)
+#define SPI_DEVICE_OPCODE_READ_JEDEC_ID  (0x9F)
+#define SPI_DEVICE_OPCODE_ENTER_4B_ADDR  (0xB7)
+#define SPI_DEVICE_OPCODE_CHIP_ERASE     (0xC7)
 
 #define MOCHA_SPI_DEVICE_JEDEC_CC           (0x7F)
 #define MOCHA_SPI_DEVICE_JEDEC_CC_COUNT     (0)
@@ -192,8 +196,8 @@ uint32_t spi_device_upload_addrfifo_read(spi_device_t spi_device);
 void spi_device_cmd_filter_set(spi_device_t spi_device, uint32_t offset, uint32_t data);
 uint32_t spi_device_cmd_filter_get(spi_device_t spi_device, uint32_t offset);
 void spi_device_cmd_info_set_raw(spi_device_t spi_device, uint32_t offset, uint32_t data);
-void spi_device_cmd_info_set(spi_device_t spi_device, uint32_t offset, uint8_t opcode, bool address,
-                             uint8_t dummy_cycles, bool handled_in_sw);
+void spi_device_cmd_info_set(spi_device_t spi_device, uint32_t offset, uint8_t opcode,
+                             uint8_t addr_mode, uint8_t dummy_cycles, bool handled_in_sw);
 uint32_t spi_device_cmd_info_get(spi_device_t spi_device, uint32_t offset);
 void spi_device_cmd_info_write_enable_set_raw(spi_device_t spi_device, uint32_t data);
 void spi_device_cmd_info_write_enable_set(spi_device_t spi_device, uint8_t opcode);
