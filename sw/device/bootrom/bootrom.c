@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "boot/trap.h"
+#include "builtin.h"
+#include "constants.h"
 #include "hal/gpio.h"
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
@@ -11,6 +13,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+
+const uintptr_t boot_slots[] = { 0x10004000, 0x80000000 };
 struct boot_context {
     uart_t console;
     gpio_t gpio;
@@ -27,6 +31,7 @@ static void boot(uintptr_t addr);
 static void led_init(gpio_t gpio);
 static void led_animation_run(struct boot_context *ctx);
 static bool bootstrap_requested(struct boot_context *ctx);
+static bool get_boot_addr(uint32_t *addr);
 
 
 // TODO: Add support to cheri mode
@@ -49,10 +54,15 @@ int main(void)
         spi_boot_strap(&boot_ctx);
     }
 
-    enum { BootAddress = 0x10004080 };
-    uprintf(boot_ctx.console, "\nJumping to: 0x%x\n", BootAddress);
+    uint32_t boot_addr = 0;
+    while (!get_boot_addr(&boot_addr)) {
+        uprintf(boot_ctx.console, "Entering SPI bootstrap\n");
+        // Spin polling the spi_dev and processing incoming data until a reset command is received.
+        spi_boot_strap(&boot_ctx);
+    }
 
-    boot(BootAddress);
+    uprintf(boot_ctx.console, "\nJumping to: 0x%x\n", boot_addr);
+    boot(boot_addr);
     uprintf(boot_ctx.console, "\nFailed to boot?\n");
     return 0;
 }
@@ -62,6 +72,19 @@ void boot(uintptr_t addr)
     typedef void (*reset_handler_t)(void);
     reset_handler_t reset = (reset_handler_t)addr;
     reset();
+}
+
+bool get_boot_addr(uint32_t *addr)
+{
+    for (size_t i = 0; i < ARRAY_LEN(boot_slots); i++) {
+        uintptr_t slot = boot_slots[i];
+        if (DEV_READ(slot) == BOOT_MAGIC_NUMBER) {
+            slot += sizeof(uint32_t);
+            *addr = DEV_READ(slot);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool spi_boot_strap(struct boot_context *ctx)
@@ -86,9 +109,11 @@ bool spi_boot_strap(struct boot_context *ctx)
         }
 
         switch (cmd.opcode) {
+        case SPI_DEVICE_OPCODE_SECTOR_ERASE4B:
         case SPI_DEVICE_OPCODE_SECTOR_ERASE:
             // No need to erase SRAM.
             break;
+        case SPI_DEVICE_OPCODE_PAGE_PROGRAM4B:
         case SPI_DEVICE_OPCODE_PAGE_PROGRAM:
             if (cmd.payload_byte_count > 0) {
                 page_program(ctx->console, spid, cmd.address, cmd.payload_byte_count);
@@ -115,9 +140,7 @@ static inline bool is_overriding_me(uintptr_t addr)
 
 void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes)
 {
-    // TODO: Enable the spi flash 4 bytes addressing.
-    enum { SramOffset = 0x10000000 };
-    uintptr_t ptr = SramOffset + offset;
+    uintptr_t ptr = offset;
     uint32_t payload_offset = 0;
 
     if (bytes > SPI_DEVICE_PAYLOAD_AREA_NUM_BYTES) {
