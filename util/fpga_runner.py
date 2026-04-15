@@ -12,9 +12,9 @@ from pathlib import Path
 
 import serial
 import serial.tools.list_ports
+from elftools.elf.elffile import ELFFile
 
 FTDI_PID: int = 0x6010
-BOOT_ROM_OFFSET: int = 0x4000
 BAUD_RATE: int = 1_000_000
 TIMEOUT: int = 60
 FTDITOOL_WAIT_TIME: int = 60
@@ -68,6 +68,24 @@ async def bootstrap(uart: serial.Serial) -> bool:
     return result is not None
 
 
+def get_load_addr(elf: Path) -> int:
+    try:
+        with elf.open("rb") as f:
+            elf = ELFFile(f)
+            load_addrs = [
+                seg["p_paddr"] for seg in elf.iter_segments() if seg["p_type"] == "PT_LOAD"
+            ]
+            if not load_addrs:
+                print(f"[{RUNNER}] no `PT_LOAD` segments found in elf {elf}")
+                sys.exit(1)
+
+            first_address = min(load_addrs)
+            return first_address
+    except OSError as e:
+        print(f"[{RUNNER}] error opening elf {elf}: {e}")
+        sys.exit(1)
+
+
 async def load_fpga_test(test: Path, uart) -> None:
     await bootstrap(uart)
     command = [
@@ -76,7 +94,7 @@ async def load_fpga_test(test: Path, uart) -> None:
         hex(FTDI_PID),
         "bootstrap",
         "--addr",
-        hex(BOOT_ROM_OFFSET),
+        hex(get_load_addr(test)),
         "--ftdi",
         FTDI_DEVICE_DESC,
     ]
