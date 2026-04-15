@@ -13,6 +13,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MAJOR "00"
+#define MINOR "01"
+#define PATCH "00"
 
 const uintptr_t boot_slots[] = { 0x10004000, 0x80000000 };
 struct boot_context {
@@ -44,7 +47,7 @@ int main(void)
     };
 
     uart_init(boot_ctx.console);
-    uprintf(boot_ctx.console, "\nBoot ROM!\n");
+    uprintf(boot_ctx.console, "\nBoot ROM: v%s.%s.%s\n", MAJOR, MINOR, PATCH);
 
     timer_init(boot_ctx.timer);
     timer_enable_write(boot_ctx.timer, true);
