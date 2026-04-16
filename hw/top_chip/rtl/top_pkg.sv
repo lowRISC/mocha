@@ -34,13 +34,13 @@ package top_pkg;
   typedef enum longint unsigned {
     SRAMBase       = 64'h1000_0000,
     TlCrossbarBase = 64'h4000_0000,
-    DebugBase      = 64'h0000_0000
+    DebugBase      = 64'h2000_0000
   } axi_addr_start_t;
 
   typedef enum longint unsigned {
     SRAMLength       = 64'h0002_0000,
     TlCrossbarLength = 64'h1000_0000,
-    DebugLength      = 64'h0000_1000
+    DebugLength      = 64'h0001_0000
   } axi_addr_length_t;
 
   typedef enum longint unsigned {

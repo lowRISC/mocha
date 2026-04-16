@@ -2,6 +2,15 @@ diff --git a/core/include/cv64a6_imafdchzcheri_sv39_config_pkg.sv b/core/include
 index 683329b..dfe479a 100644
 --- a/core/include/cv64a6_imafdchzcheri_sv39_config_pkg.sv
 +++ b/core/include/cv64a6_imafdchzcheri_sv39_config_pkg.sv
+@@ -128,7 +128,7 @@ package cva6_config_pkg;
+       BPType: config_pkg::BHT,
+       BHTEntries: unsigned'(CVA6ConfigBHTEntries),
+       BHTHist: unsigned'(3),
+-      DmBaseAddress: 64'h0,
++      DmBaseAddress: 64'h2000_0000,
+       TvalEn: bit'(CVA6ConfigTvalEn),
+       DirectVecOnly: bit'(0),
+       NrPMPEntries: unsigned'(CVA6ConfigNrPMPEntries),
 @@ -141,11 +141,11 @@ package cva6_config_pkg;
        NonIdempotentAddrBase: 1024'({64'b0, 64'b0}),
        NonIdempotentLength: 1024'({64'b0, 64'b0}),
