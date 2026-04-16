@@ -56,7 +56,7 @@
     {from: "hw/lint", to: "lint", patch_dir: "lint"},
 
     // Simulation.
-    {from: "hw/dv/dpi/gpiodpi", to: "dv/dpi/gpiodpi"},
+    {from: "hw/dv/dpi/gpiodpi", to: "dv/dpi/gpiodpi", patch_dir: "gpiodpi"},
     {from: "hw/dv/dpi/spidpi",  to: "dv/dpi/spidpi"},
     {from: "hw/dv/dpi/uartdpi", to: "dv/dpi/uartdpi"},
     {from: "hw/dv/sv",          to: "dv/sv", patch_dir: "dv_sv"},

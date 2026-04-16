@@ -107,8 +107,8 @@ module top_chip_verilator (
     .gpio_p2d      (gpio_inputs),
     .gpio_d2p      (gpio_outputs),
     .gpio_en_d2p   (gpio_en_outputs),
-    .gpio_pull_en  ('0), // no pull-ups in simple SoC
-    .gpio_pull_sel ('0)  // no pull-ups in simple SoC
+    .gpio_pull_en  (32'hFFFF_FFFF), // pull-ups for all GPIOs
+    .gpio_pull_sel (32'hFFFF_FFFF)  // pull-ups for all GPIOs
   );
 
   // I2C DPI - model an AS621x temperature sensor
