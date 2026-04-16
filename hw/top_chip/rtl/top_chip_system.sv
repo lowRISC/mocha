@@ -98,7 +98,7 @@ module top_chip_system #(
   cva6_cheri_pkg::cap_pcc_t boot_cap;
   always_comb begin : gen_boot_cap
     boot_cap                = cva6_cheri_pkg::PCC_ROOT_CAP;
-    boot_cap.addr           = top_pkg::SRAMBase + 'h80;
+    boot_cap.addr           = top_pkg::RomCtrlMemBase + 'h80;
     boot_cap.flags.int_mode = 1'b1;
   end
 

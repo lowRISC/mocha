@@ -35,12 +35,13 @@ endfunction()
 
 # for a given executable, add a test that runs the executable
 # in the Verilator simulation.
-function(mocha_add_verilator_test NAME)
+function(mocha_add_verilator_test NAME BOOTROM)
+  # Warning: If the BootROM and the test are compiled to the same memory address, the test will 
+  # effectively replace the BootROM. Because the BootROM is listed first in the arguments, it is
+  # overwritten by the subsequent test image; the simulation will behave as if no BootROM is present
     add_test(
         NAME ${NAME}_sim_verilator
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh
-          -E ${NAME}
-          --rominit ${PROJECT_SOURCE_DIR}/../sw/device/tests/rom_ctrl/mem_init_file.vmem
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E $<TARGET_FILE:${BOOTROM}> -E ${NAME}
     )
 endfunction()
 
@@ -89,7 +90,7 @@ function(mocha_add_test)
         mocha_add_executable_artefacts(NAME ${NAME})
 
         if(SIM AND NOT arg_SKIP_VERILATOR)
-          mocha_add_verilator_test(${NAME})
+          mocha_add_verilator_test(${NAME} bootrom)
         endif()
 
         if(FPGA AND arg_FPGA)

@@ -30,11 +30,11 @@ filesets:
 parameters:
   # XXX: This parameter needs to be absolute, or relative to the *.runs/synth_1
   # directory. It's best to pass it as absolute path when invoking fusesoc, e.g.
-  # --BootRomInitFile=$PWD/sw/device/examples/hello_world/hello_world.vmem
+  # --RomInitFile=$PWD/sw/device/examples/hello_world/hello_world.vmem
   # XXX: The VMEM file should be added to the sources of the Vivado project to
   # make the Vivado dependency tracking work. However this requires changes to
   # fusesoc first.
-  BootRomInitFile:
+  RomInitFile:
     datatype: str
     description: Boot ROM initialization file in 64 bit vmem hex format
     default: ""
@@ -59,7 +59,7 @@ targets:
       - files_constraints
     toplevel: chip_mocha_genesys2
     parameters:
-      - BootRomInitFile
+      - RomInitFile
       - RomInitFile
     tools:
       vivado:

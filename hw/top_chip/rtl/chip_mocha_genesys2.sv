@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module chip_mocha_genesys2 #(
-  parameter BootRomInitFile = "",
-  parameter RomInitFile     = ""
+  parameter RomInitFile  = "",
+  parameter SramInitFile = ""
 ) (
   // Onboard 200MHz oscillator
   input  logic sysclk_200m_ni,
@@ -148,7 +148,7 @@ module chip_mocha_genesys2 #(
 
   // CHERI Mocha top
   top_chip_system #(
-    .SramInitFile(BootRomInitFile),
+    .SramInitFile(SramInitFile),
     .RomInitFile (RomInitFile)
   ) u_top_chip_system (
     // Clock and reset

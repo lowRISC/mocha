@@ -18,7 +18,7 @@
 #define MINOR "01"
 #define PATCH "00"
 
-const uintptr_t boot_slots[] = { 0x10008000, 0x80000000 };
+const uintptr_t boot_slots[] = { 0x10000000, 0x80000000 };
 struct boot_context {
     uart_t console;
     gpio_t gpio;
@@ -26,8 +26,8 @@ struct boot_context {
 };
 
 // These are defined by the linker script.
-extern uint8_t _program_start[];
-extern uint8_t _program_end[];
+extern uint8_t _ram_start[];
+extern uint8_t _ram_end[];
 
 // Pointer to devicetree blob, defined in devicetree/mocha.S
 extern char dt_blob_start[];
@@ -43,7 +43,7 @@ static void clear_slots();
 
 
 // TODO: Add support to cheri mode
-int main(void)
+int boot_main(void)
 {
     struct boot_context boot_ctx = (struct boot_context){
         .console = mocha_system_uart(),
@@ -153,7 +153,7 @@ bool spi_boot_strap(struct boot_context *ctx)
 
 static inline bool is_overriding_me(uintptr_t addr)
 {
-    return addr >= (uintptr_t)_program_start && addr < (uintptr_t)_program_end;
+    return addr >= (uintptr_t)_ram_start && addr < (uintptr_t)_ram_end;
 }
 
 void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes)
@@ -166,10 +166,9 @@ void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t b
         return;
     }
 
-    // TODO: Now only SRAM is supported, but when 4 bytes addressing is enabled and the HW supports
-    // DRAM and ROM, then we need to check that the offset is valid within a memory address space.
+    // TODO: we need to check that the offset is valid within a memory address space.
     if (is_overriding_me(ptr) || is_overriding_me(ptr + bytes)) {
-        uprintf(console, "\nPlease don't override the bootROM.");
+        uprintf(console, "\nPlease don't override the bootrom's ram.");
         return;
     }
 
