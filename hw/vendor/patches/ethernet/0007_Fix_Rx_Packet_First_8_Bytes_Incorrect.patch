@@ -1,0 +1,26 @@
+diff --git a/framing_top.sv b/framing_top.sv
+index 93c87c0..7aa4697 100644
+--- a/framing_top.sv
++++ b/framing_top.sv
+@@ -116,11 +116,20 @@ reg        byte_sync, sync, irq_en, tx_busy;
+    assign tx_axis_tdata = douta >> {tx_frame_addr[2],3'b000};
+    assign phy_mdc = phy_mdclk;
+    
++    logic       rx_use_incr_buf_offset;
++    logic [2:0] rx_buf_offset;
++
++    always_ff @(posedge clk_int) begin
++      rx_use_incr_buf_offset <= (rx_addr_axis < 7);
++    end
++
++    assign rx_buf_offset = rx_use_incr_buf_offset ? (nextbuf[2:0] + 3'b1) : nextbuf[2:0];
++
+    dualmem_widen8 RAMB16_inst_rx (
+                                     .clka(clk_int),                // Port A Clock
+                                     .clkb(msoc_clk),              // Port A Clock
+                                     .douta(),                     // Port A 8-bit Data Output
+-                                    .addra({nextbuf[2:0],rx_addr_axis[10:3],rx_addr_axis[1:0]}),    // Port A 11-bit Address Input
++                                    .addra({rx_buf_offset,rx_addr_axis[10:3],rx_addr_axis[1:0]}),    // Port A 11-bit Address Input
+                                     .dina({rx_axis_tdata,rx_axis_tdata}), // Port A 8-bit Data Input
+                                     .ena(rx_axis_tvalid),         // Port A RAM Enable Input
+                                     .wea(rx_wr),                  // Port A Write Enable Input
