@@ -1,0 +1,35 @@
+diff --git a/framing_top.sv b/framing_top.sv
+index f0f84a0..539fb48 100644
+--- a/framing_top.sv
++++ b/framing_top.sv
+@@ -85,10 +85,20 @@ reg        byte_sync, sync, irq_en, tx_busy;
+         */
+          wire [31:0] tx_fcs_reg_rev, rx_fcs_reg_rev;
+    
++  logic last_override;
++
++  always_ff @(posedge clk_int) begin
++    if (rst_int) begin
++      last_override <= 1'b1;
++    end else if (rx_axis_tvalid) begin
++      last_override <= 1'b0;
++    end
++  end
++
+    always @(posedge clk_int)
+      if (rst_int == 1'b1)
+        begin
+-	  byte_sync <= 1'b0;
++	  byte_sync <= 1'b1;
+        end
+      else
+        begin
+@@ -96,7 +106,7 @@ reg        byte_sync, sync, irq_en, tx_busy;
+             begin
+                byte_sync <= 1'b1;
+             end
+-	  if (rx_axis_tlast && byte_sync)
++	  if ((rx_axis_tlast || (last_override && !rx_axis_tvalid)) && byte_sync)
+             begin
+                last <= 1'b1;
+             end
