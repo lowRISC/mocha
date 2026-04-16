@@ -1,0 +1,13 @@
+diff --git a/framing_top.sv b/framing_top.sv
+index 7aa4697..f0f84a0 100644
+--- a/framing_top.sv
++++ b/framing_top.sv
+@@ -185,7 +185,7 @@ always @(posedge msoc_clk)
+     begin
+     core_lsu_addr_dly <= core_lsu_addr;
+     ce_d_dly <= ce_d;
+-    avail = nextbuf != firstbuf;
++    avail = (nextbuf == firstbuf + 1 && !rx_use_incr_buf_offset) ? !rx_axis_tvalid : (nextbuf != firstbuf);
+     eth_irq <= avail & irq_en; // make eth_irq go away immediately if irq_en is low
+     if (framing_sel&we_d&(&core_lsu_be[3:0])&(core_lsu_addr[14:11]==4'b0001))
+       case(core_lsu_addr[6:3])
