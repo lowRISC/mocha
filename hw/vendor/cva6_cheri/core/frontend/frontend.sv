@@ -381,8 +381,8 @@ module frontend
       fetch_address = boot_addr_i;
 `ifdef DII
       if (CVA6Cfg.RVFI_DII) begin
-        ndii_id_d    = test_dii_start();
-        fetch_dii_id = test_dii_start();
+        ndii_id_d    = '0;
+        fetch_dii_id = '0;
       end
 `endif
     end else begin

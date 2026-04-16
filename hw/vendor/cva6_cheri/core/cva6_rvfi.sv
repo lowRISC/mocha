@@ -343,6 +343,7 @@ module cva6_rvfi
       end
 
       rvfi_instr_o[i].intr <= rvfi_intr[i];
+      rvfi_instr_o[i].order <= csr.instret_q;
 
       rvfi_instr_o[i].cause <= ex_commit_cause;
       rvfi_instr_o[i].mode <= (CVA6Cfg.DebugEn && debug_mode) ? 2'b10 : priv_lvl;
