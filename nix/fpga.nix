@@ -36,8 +36,7 @@ in {
 
       fusesoc --cores-root=. run --target=synth --setup \
         --build lowrisc:mocha:chip_mocha_genesys2 \
-        --BootRomInitFile="$PWD/${bootrom_path}/bootrom.vmem" \
-        --RomInitFile="$PWD/${rom_init_path}/mem_init_file.vmem"
+        --RomInitFile="$PWD/${bootrom_path}/bootrom.vmem"
     '';
   };
 

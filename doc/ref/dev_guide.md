@@ -162,7 +162,7 @@ usermod -a -G plugdev $USER
 
 Make sure that Vivado is on your path, then run:
 ```sh
-fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --BootRomInitFile=$PWD/build/sw/device/examples/hello_world.vmem
+fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --RomInitFile=$PWD/build/sw/device/examples/hello_world.vmem
 ```
 
 ### Test on Genesys2
