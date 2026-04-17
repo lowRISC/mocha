@@ -15,7 +15,8 @@ mocha_add_test(NAME plic_smoketest SOURCES plic/smoketest.c LIBRARIES ${LIBS} FP
 # Cannot currently run this on FPGA because the boot ROM expects the test to be provided on the SPI again.
 mocha_add_test(NAME rstmgr_software_reset SOURCES rstmgr/software_reset.c LIBRARIES ${LIBS})
 mocha_add_test(NAME spi_device_smoketest SOURCES spi_device/smoketest.c LIBRARIES ${LIBS} FPGA)
-mocha_add_test(NAME spi_host_smoketest SOURCES spi_host/smoketest.c LIBRARIES ${LIBS} FPGA)
+# SPI Host currently has no working smoketest following switch from loopback to SD card connections
+# mocha_add_test(NAME spi_host_smoketest SOURCES spi_host/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME tag_controller_smoketest SOURCES tag_controller/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME tag_controller_tag_test SOURCES tag_controller/tag_test.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME timer_smoketest SOURCES timer/smoketest.c LIBRARIES ${LIBS} FPGA)
