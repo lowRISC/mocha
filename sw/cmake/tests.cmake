@@ -13,21 +13,24 @@ set(
 
 # for a given executable, create a raw binary (.bin), verilog memory (.vmem),
 # and disassembly output for debugging (.dump).
-function(mocha_add_executable_artefacts NAME)
+function(mocha_add_executable_artefacts)
+    set(one_value_args NAME)
+    cmake_parse_arguments(arg "" "${one_value_args}" "" ${ARGN})
+
     add_custom_command(
-        TARGET ${NAME} POST_BUILD
-        COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS} "$<TARGET_FILE:${NAME}>"
-                > "$<TARGET_FILE:${NAME}>.dump"
-        COMMAND ${CMAKE_OBJCOPY} -O binary "$<TARGET_FILE:${NAME}>"
-                "$<TARGET_FILE:${NAME}>.bin"
-        COMMAND srec_cat "$<TARGET_FILE:${NAME}>.bin" -binary -byte-swap 8
-                -o "$<TARGET_FILE:${NAME}>.vmem" -vmem 64
+        TARGET ${arg_NAME} POST_BUILD
+        COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS} "$<TARGET_FILE:${arg_NAME}>"
+                > "$<TARGET_FILE:${arg_NAME}>.dump"
+        COMMAND ${CMAKE_OBJCOPY} -O binary "$<TARGET_FILE:${arg_NAME}>"
+                "$<TARGET_FILE:${arg_NAME}>.bin"
+        COMMAND srec_cat "$<TARGET_FILE:${arg_NAME}>.bin" -binary -byte-swap 8
+                -o "$<TARGET_FILE:${arg_NAME}>.vmem" -vmem 64
         VERBATIM
     )
 
-    install(TARGETS ${NAME} DESTINATION . COMPONENT ${NAME})
-    install(FILES "$<TARGET_FILE:${NAME}>.vmem" DESTINATION . COMPONENT ${NAME})
-    install(FILES "$<TARGET_FILE:${NAME}>.bin" DESTINATION . COMPONENT ${NAME})
+    install(TARGETS ${arg_NAME} DESTINATION . COMPONENT ${arg_NAME})
+    install(FILES "$<TARGET_FILE:${arg_NAME}>.vmem" DESTINATION . COMPONENT ${arg_NAME})
+    install(FILES "$<TARGET_FILE:${arg_NAME}>.bin" DESTINATION . COMPONENT ${arg_NAME})
 endfunction()
 
 # for a given executable, add a test that runs the executable
@@ -83,7 +86,7 @@ function(mocha_add_test)
         )
 
         # create artefacts
-        mocha_add_executable_artefacts(${NAME})
+        mocha_add_executable_artefacts(NAME ${NAME})
 
         if(SIM AND NOT arg_SKIP_VERILATOR)
           mocha_add_verilator_test(${NAME})
