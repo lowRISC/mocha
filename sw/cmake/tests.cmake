@@ -13,7 +13,7 @@ set(
 
 # for a given executable, create a raw binary (.bin), verilog memory (.vmem),
 # and disassembly output for debugging (.dump).
-macro(mocha_add_executable_artefacts NAME)
+function(mocha_add_executable_artefacts NAME)
     add_custom_command(
         TARGET ${NAME} POST_BUILD
         COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS} "$<TARGET_FILE:${NAME}>"
@@ -28,25 +28,25 @@ macro(mocha_add_executable_artefacts NAME)
     install(TARGETS ${NAME} DESTINATION . COMPONENT ${NAME})
     install(FILES "$<TARGET_FILE:${NAME}>.vmem" DESTINATION . COMPONENT ${NAME})
     install(FILES "$<TARGET_FILE:${NAME}>.bin" DESTINATION . COMPONENT ${NAME})
-endmacro()
+endfunction()
 
 # for a given executable, add a test that runs the executable
 # in the Verilator simulation.
-macro(mocha_add_verilator_test NAME)
+function(mocha_add_verilator_test NAME)
     add_test(
         NAME ${NAME}_sim_verilator
         COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh
           -E ${NAME}
           --rominit ${PROJECT_SOURCE_DIR}/../sw/device/tests/rom_ctrl/mem_init_file.vmem
     )
-endmacro()
+endfunction()
 
-macro(mocha_add_fpga_test NAME)
+function(mocha_add_fpga_test NAME)
     add_test(
         NAME ${NAME}_fpga_genesys2
         COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${NAME}
     )
-endmacro()
+endfunction()
 
 set(BOOT_CFG              rom                 bare        ) # Config Name
 set(BOOT_CFG_OFFSET       0x8000              0x00        ) # Offset
@@ -56,10 +56,10 @@ set(BOOT_CFG_VERILATOR    NO                  YES         ) # Verilator supporte
 set(ARCHS                 vanilla             cheri       ) # Config Name
 set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
 
-# wrapper macro to create a CHERI and non-CHERI software test.
-# this macro automatically handles CHERI libraries by appending "_cheri" to
+# wrapper function to create a CHERI and non-CHERI software test.
+# this function automatically handles CHERI libraries by appending "_cheri" to
 # the output executable name and all of the libraries it is linked against.
-macro(mocha_add_test)
+function(mocha_add_test)
     # parse arguments
     set(options FPGA SKIP_VERILATOR)
     set(one_value_args NAME)
@@ -95,12 +95,12 @@ macro(mocha_add_test)
 
       endforeach() # BOOT_CFG
     endforeach() # ARCH
-endmacro()
+endfunction()
 
-# wrapper macro to create a CHERI and Vanilla library.
-# this macro automatically handles CHERI libraries by appending "_cheri" to
+# wrapper function to create a CHERI and Vanilla library.
+# this function automatically handles CHERI libraries by appending "_cheri" to
 # the output library name and all of the libraries it is linked against.
-macro(mocha_add_library)
+function(mocha_add_library)
     # parse arguments
     set(one_value_args NAME)
     set(multi_value_args SOURCES LIBRARIES)
@@ -122,4 +122,4 @@ macro(mocha_add_library)
       endforeach()
 
     endforeach() # ARCH
-endmacro()
+endfunction()
