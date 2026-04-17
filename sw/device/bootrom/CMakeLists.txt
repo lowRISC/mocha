@@ -13,4 +13,4 @@ target_link_options(${NAME} PUBLIC
   "-L${LDS_DIR}"
 )
 install(TARGETS ${NAME})
-mocha_add_executable_artefacts(${NAME})
+mocha_add_executable_artefacts(NAME ${NAME})
