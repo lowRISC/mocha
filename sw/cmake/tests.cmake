@@ -35,21 +35,43 @@ endfunction()
 
 # for a given executable, add a test that runs the executable
 # in the Verilator simulation.
-function(mocha_add_verilator_test NAME BOOTROM)
-  # Warning: If the BootROM and the test are compiled to the same memory address, the test will 
-  # effectively replace the BootROM. Because the BootROM is listed first in the arguments, it is
-  # overwritten by the subsequent test image; the simulation will behave as if no BootROM is present
+function(mocha_add_verilator_test)
+    # Warning: If the BootROM and the test are compiled to the same memory address, the test will 
+    # effectively replace the BootROM. Because the BootROM is listed first in the arguments, it is
+    # overwritten by the subsequent test image; the simulation will behave as if no BootROM is present
+
+    set(one_value_args NAME ROM TIMEOUT)
+    cmake_parse_arguments(arg "" "${one_value_args}" "" ${ARGN})
+
+    if(NOT arg_TIMEOUT)
+        set(arg_TIMEOUT 60)  # default
+    endif()
+
+    set(TEST ${arg_NAME}_sim_verilator)
+
     add_test(
         NAME ${NAME}_sim_verilator
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E $<TARGET_FILE:${BOOTROM}> -E ${NAME}
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E $<TARGET_FILE:${arg_ROM}> -E ${arg_NAME}
     )
+    set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
+
 endfunction()
 
-function(mocha_add_fpga_test NAME)
+function(mocha_add_fpga_test)
+    set(one_value_args NAME TIMEOUT)
+    cmake_parse_arguments(arg "" "${one_value_args}" "" ${ARGN})
+
+
+    if(NOT arg_TIMEOUT)
+        set(arg_TIMEOUT 15)  # default
+    endif()
+
+    set(TEST ${arg_NAME}_fpga_genesys2)
     add_test(
-        NAME ${NAME}_fpga_genesys2
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${NAME}
+        NAME ${TEST} 
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${arg_NAME}
     )
+    set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
 endfunction()
 
 set(BOOT_CFG              rom                 bare        ) # Config Name
@@ -66,7 +88,7 @@ set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
 function(mocha_add_test)
     # parse arguments
     set(options FPGA SKIP_VERILATOR)
-    set(one_value_args NAME)
+    set(one_value_args NAME TIMEOUT)
     set(multi_value_args SOURCES LIBRARIES)
     cmake_parse_arguments(arg "${options}"
         "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -90,11 +112,11 @@ function(mocha_add_test)
         mocha_add_executable_artefacts(NAME ${NAME})
 
         if(SIM AND NOT arg_SKIP_VERILATOR)
-          mocha_add_verilator_test(${NAME} bootrom)
+          mocha_add_verilator_test(NAME ${NAME} ROM bootrom TIMEOUT ${arg_TIMEOUT})
         endif()
 
         if(FPGA AND arg_FPGA)
-          mocha_add_fpga_test(${NAME})
+          mocha_add_fpga_test(NAME ${NAME} TIMEOUT ${arg_TIMEOUT})
         endif()
 
       endforeach() # BOOT_CFG

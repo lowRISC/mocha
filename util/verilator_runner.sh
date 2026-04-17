@@ -5,5 +5,5 @@
 
 ROOT_DIR=$(dirname "$0")/..
 
-timeout 5m $ROOT_DIR/build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator \
+$ROOT_DIR/build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator \
   $@ > /dev/null 2>&1
