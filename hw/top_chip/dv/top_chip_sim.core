@@ -46,7 +46,9 @@ targets:
     toplevel: tb
     # This is required as DVSim always expects a scr file, but in practice we are only running
     # fusesoc up to the point it generates the filelist file.
-    default_tool: vcs
+    flow: sim
+    flow_options:
+      tool: vcs
 
 parameters:
   INST_SIM_SRAM:
