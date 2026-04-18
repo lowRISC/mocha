@@ -87,7 +87,7 @@ jobs:
 
       - name: Run verilator software tests
         run: |
-          ctest --test-dir build/sw -R sim_verilator --output-on-failure
+          ctest --test-dir build/sw -R sim_verilator --output-on-failure -j $(nproc)
 
   fpga-cache-check:
     runs-on: ["self-hosted", "nixos", "X64"]
