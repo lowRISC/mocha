@@ -2,31 +2,13 @@
 /* Licensed under the Apache License, Version 2.0, see LICENSE for details. */
 /* SPDX-License-Identifier: Apache-2.0 */
 
-OUTPUT_ARCH(riscv)
-
-INCLUDE memory.ld
-
-_stack_len = 0x1000; /* 4 KiB */
-
-/* TODO: Remove this when we implement a ROM. */
-/* This should be provided by the build system, otherwise the default is 0x0000*/
-PROVIDE(BOOT_ROM_OFFSET=0x0000);
-_offset_ = BOOT_ROM_OFFSET; 
-
-MEMORY {
-    ram   (RWX) : ORIGIN = ORIGIN(SRAM) + _offset_, LENGTH = (LENGTH(SRAM) - _stack_len - _offset_)
-    stack (ARW) : ORIGIN = ORIGIN(ram) + LENGTH(ram), LENGTH = _stack_len 
-}
-
-/* Stack */
-_stack_bottom = ORIGIN(stack);
-_stack_top = _stack_bottom + _stack_len;
 
 /* Provided in init_vectors.S, immediately jumps into _start. */
 ENTRY(_init_vector)
 
 SECTIONS {
     _program_start = ORIGIN(ram);
+
     .init_vectors ORIGIN(ram) : {
         *(.init_vectors)
     } > ram
@@ -86,5 +68,15 @@ SECTIONS {
         *(.got.*)
         . = ALIGN(8);
     } > ram
+
+    . = ALIGN(1024);
+    .stack : {
+        . = ALIGN(1024);
+        _stack_bottom = .;
+        . = . + _stack_len;
+        _stack_top = .;
+    } > ram
+
+    . = ALIGN(8);
     _program_end = .;
 }
