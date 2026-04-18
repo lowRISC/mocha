@@ -30,7 +30,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 # linkerscript to use
 set(LDS_DIR "${CMAKE_SOURCE_DIR}/device/lib/boot")
-set(LDS "${LDS_DIR}/mocha.ld")
 
 string(CONCAT CMAKE_CXX_FLAGS_INIT
   "-std=c++20 -O0 -g"
