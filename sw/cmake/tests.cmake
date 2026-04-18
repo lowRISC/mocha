@@ -74,10 +74,6 @@ function(mocha_add_fpga_test)
     set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
 endfunction()
 
-set(BOOT_CFG              rom                 bare        ) # Config Name
-set(BOOT_CFG_OFFSET       0x8000              0x00        ) # Offset
-set(BOOT_CFG_FPGA         YES                 NO          ) # Fpga supported?
-set(BOOT_CFG_VERILATOR    NO                  YES         ) # Verilator supported?
 
 set(ARCHS                 vanilla             cheri       ) # Config Name
 set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
@@ -94,32 +90,28 @@ function(mocha_add_test)
         "${one_value_args}" "${multi_value_args}" ${ARGN})
 
     foreach(ARCH_NAME FLAGS_VAR IN ZIP_LISTS ARCHS ARCHS_FLAGS)
-      set(FLAGS ${${FLAGS_VAR}})
+        set(FLAGS ${${FLAGS_VAR}})
+        set(NAME ${arg_NAME}_${ARCH_NAME})
 
-      foreach(CONFIG OFFSET FPGA SIM IN ZIP_LISTS BOOT_CFG BOOT_CFG_OFFSET BOOT_CFG_FPGA BOOT_CFG_VERILATOR)
-        set(NAME ${arg_NAME}_${ARCH_NAME}_${CONFIG})
         add_executable(${NAME} ${arg_SOURCES})
         target_compile_options(${NAME} PUBLIC ${FLAGS})
         foreach(LIB ${arg_LIBRARIES})
           target_link_libraries(${NAME} PUBLIC ${LIB}_${ARCH_NAME})
         endforeach()
         target_link_options(${NAME} PUBLIC
-          "-Wl,--defsym,BOOT_ROM_OFFSET=${OFFSET}"
-          "-T${LDS}" "-L${LDS_DIR}"
+          "-Tmocha_dram.ld" "-L${LDS_DIR}"
         )
 
         # create artefacts
         mocha_add_executable_artefacts(NAME ${NAME})
 
-        if(SIM AND NOT arg_SKIP_VERILATOR)
+        if(NOT arg_SKIP_VERILATOR)
           mocha_add_verilator_test(NAME ${NAME} ROM bootrom TIMEOUT ${arg_TIMEOUT})
         endif()
 
-        if(FPGA AND arg_FPGA)
+        if(arg_FPGA)
           mocha_add_fpga_test(NAME ${NAME} TIMEOUT ${arg_TIMEOUT})
         endif()
-
-      endforeach() # BOOT_CFG
     endforeach() # ARCH
 endfunction()
 

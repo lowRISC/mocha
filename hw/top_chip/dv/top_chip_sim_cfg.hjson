@@ -47,191 +47,191 @@
     {
       name: uart_smoke
       uvm_test_seq: top_chip_dv_uart_base_vseq
-      sw_images: ["uart_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_vanilla_bare.vmem"]
+      sw_images: ["uart_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_vanilla.vmem"]
     }
     {
       name: uart_smoke_cheri
       uvm_test_seq: top_chip_dv_uart_base_vseq
-      sw_images: ["uart_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_cheri_bare.vmem"]
+      sw_images: ["uart_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_cheri.vmem"]
     }
     {
       name: rv_plic_smoke
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["plic_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_vanilla_bare.vmem"]
+      sw_images: ["plic_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_vanilla.vmem"]
     }
     {
       name: rv_plic_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["plic_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_cheri_bare.vmem"]
+      sw_images: ["plic_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_cheri.vmem"]
     }
     {
       name: rv_timer_smoke
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["timer_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_vanilla_bare.vmem"]
+      sw_images: ["timer_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_vanilla.vmem"]
     }
     {
       name: rv_timer_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["timer_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_cheri_bare.vmem"]
+      sw_images: ["timer_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_cheri.vmem"]
     }
     {
       name: rv_timer_irq
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["timer_interrupt_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_vanilla_bare.vmem"]
+      sw_images: ["timer_interrupt_test_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_vanilla.vmem"]
     }
     {
       name: rv_timer_irq_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["timer_interrupt_test_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_cheri_bare.vmem"]
+      sw_images: ["timer_interrupt_test_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_cheri.vmem"]
     }
     {
       name: test_framework_exception_test
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["test_framework_exception_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_vanilla_bare.vmem"]
+      sw_images: ["test_framework_exception_test_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_vanilla.vmem"]
     }
     {
       name: test_framework_exception_test_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["test_framework_exception_test_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_cheri_bare.vmem"]
+      sw_images: ["test_framework_exception_test_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_cheri.vmem"]
     }
     {
       name: spi_device_smoke
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["spi_device_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_vanilla_bare.vmem"]
+      sw_images: ["spi_device_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_vanilla.vmem"]
     }
     {
       name: spi_device_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["spi_device_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_cheri_bare.vmem"]
+      sw_images: ["spi_device_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_cheri.vmem"]
     }
     {
       name: spi_host_smoke
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["spi_host_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_vanilla_bare.vmem"]
+      sw_images: ["spi_host_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_vanilla.vmem"]
     }
     {
       name: spi_host_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["spi_host_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_cheri_bare.vmem"]
+      sw_images: ["spi_host_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_cheri.vmem"]
     }
     {
       name: i2c_host_tx_rx
       uvm_test_seq: top_chip_dv_i2c_host_tx_rx_vseq
-      sw_images: ["i2c_host_tx_rx_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_host_tx_rx_test_vanilla_bare.vmem"]
+      sw_images: ["i2c_host_tx_rx_test_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_host_tx_rx_test_vanilla.vmem"]
       }
     {
       name: i2c_device_tx_rx
       uvm_test_seq: top_chip_dv_i2c_device_tx_rx_vseq
-      sw_images: ["i2c_device_tx_rx_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_device_tx_rx_test_vanilla_bare.vmem"]
+      sw_images: ["i2c_device_tx_rx_test_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_device_tx_rx_test_vanilla.vmem"]
     }
     {
       name: gpio_smoke
       uvm_test_seq: top_chip_dv_gpio_smoke_vseq
-      sw_images: ["gpio_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_vanilla_bare.vmem"]
+      sw_images: ["gpio_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_vanilla.vmem"]
     }
     {
       name: gpio_smoke_cheri
       uvm_test_seq: top_chip_dv_gpio_smoke_vseq
-      sw_images: ["gpio_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_cheri_bare.vmem"]
+      sw_images: ["gpio_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_cheri.vmem"]
     }
     {
       name: rom_ctrl_integrity_check
       uvm_test_seq: top_chip_dv_rom_ctrl_integrity_check_vseq
-      sw_images: ["rom_ctrl_integrity_check_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_integrity_check_test_vanilla_bare.vmem",
+      sw_images: ["rom_ctrl_integrity_check_test_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_integrity_check_test_vanilla.vmem",
                  "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
     }
     {
       name: rom_ctrl_smoke
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["rom_ctrl_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_vanilla_bare.vmem",
+      sw_images: ["rom_ctrl_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_vanilla.vmem",
                  "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
     }
     {
       name: rom_ctrl_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["rom_ctrl_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_cheri_bare.vmem",
+      sw_images: ["rom_ctrl_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_cheri.vmem",
                  "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
     }
     {
       name: rv_dm_ndm_reset_req
       uvm_test_seq: "top_chip_dv_rv_dm_ndm_reset_req_vseq"
-      sw_images: ["rv_dm_ndm_reset_req_test_vanilla_bare:5"]
-      run_opts: ["+en_scb_tl_err_chk=0", "+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_test_vanilla_bare.vmem"]
+      sw_images: ["rv_dm_ndm_reset_req_test_vanilla:5"]
+      run_opts: ["+en_scb_tl_err_chk=0", "+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_test_vanilla.vmem"]
     }
     {
       name: rv_dm_ndm_reset_req_when_cpu_halted
       uvm_test_seq: "top_chip_dv_rv_dm_ndm_reset_req_when_cpu_halted_vseq"
-      sw_images: ["rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla_bare:5"]
-      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla_bare.vmem"]
+      sw_images: ["rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla:5"]
+      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla.vmem"]
     }
     {
       name: rv_dm_access_after_wakeup
       uvm_test_seq: top_chip_dv_rv_dm_access_after_wakeup_vseq
-      sw_images: ["rv_dm_access_after_wakeup_test_vanilla_bare:5"]
-      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_wakeup_test_vanilla_bare.vmem"]
+      sw_images: ["rv_dm_access_after_wakeup_test_vanilla:5"]
+      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_wakeup_test_vanilla.vmem"]
     }
     {
       name: rv_dm_access_after_escalation_reset
       uvm_test_seq: "top_chip_dv_rv_dm_access_after_escalation_reset_vseq"
-      sw_images: ["rv_dm_access_after_escalation_reset_test_vanilla_bare:5"]
-      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_escalation_reset_test_vanilla_bare.vmem"]
+      sw_images: ["rv_dm_access_after_escalation_reset_test_vanilla:5"]
+      run_opts: ["+use_jtag_dmi=1", "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_escalation_reset_test_vanilla.vmem"]
     }
     {
       name: mailbox_smoke
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["mailbox_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_vanilla_bare.vmem"]
+      sw_images: ["mailbox_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_vanilla.vmem"]
     }
     {
       name: mailbox_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["mailbox_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_cheri_bare.vmem"]
+      sw_images: ["mailbox_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_cheri.vmem"]
     }
     {
       name: axi_sram_smoke
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["axi_sram_smoketest_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_vanilla_bare.vmem"]
+      sw_images: ["axi_sram_smoketest_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_vanilla.vmem"]
     }
     {
       name: axi_sram_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["axi_sram_smoketest_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_cheri_bare.vmem"]
+      sw_images: ["axi_sram_smoketest_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_cheri.vmem"]
     }
     {
       name: axi_sram_tag_test
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["axi_sram_tag_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_vanilla_bare.vmem"]
+      sw_images: ["axi_sram_tag_test_vanilla:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_vanilla.vmem"]
     }
     {
       name: axi_sram_tag_test_cheri
       uvm_test_seq: top_chip_dv_base_vseq
-      sw_images: ["axi_sram_tag_test_cheri_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_cheri_bare.vmem"]
+      sw_images: ["axi_sram_tag_test_cheri:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_cheri.vmem"]
     }
   ]
 
