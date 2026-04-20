@@ -18,7 +18,11 @@ puts "Output directory for merged coverage:"
 set cov_merge_db_dir [string trim $::env(cov_merge_db_dir) " \"'"]
 
 # Run the merge command.
-merge $cov_db_dirs -out $cov_merge_db_dir -overwrite -initial_model union_all
+if { [info exists ::env(cov_db_runfile)] } {
+  merge -runfile $::env(cov_db_runfile) -out $cov_merge_db_dir -overwrite -initial_model union_all
+} else {
+  merge $cov_db_dirs -out $cov_merge_db_dir -overwrite -initial_model union_all
+}
 
 # Create a file with the path to the cover dirs
 # Replace spaces with newlines so each run is on its own line for the 'rank' command
