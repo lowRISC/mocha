@@ -23,7 +23,7 @@
     {from: "util/reggen",          to: "util/reggen"}, // Dependency of crossbar generator.
     {from: "util/regtool.py",      to: "util/regtool.py", patch_dir: "util_regtool"},
     {from: "util/tlgen.py",        to: "util/tlgen.py"}, // Crossbar generator.
-    {from: "util/tlgen",           to: "util/tlgen"},
+    {from: "util/tlgen",           to: "util/tlgen", patch_dir: "util_tlgen"},
     {from: "util/topgen",          to: "util/topgen"}, // Dependency of IP generator.
     {from: "util/version_file.py", to: "util/version_file.py"}, // Dependency of top generator.
 
