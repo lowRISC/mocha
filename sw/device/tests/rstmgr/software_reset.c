@@ -10,15 +10,21 @@
 bool test_main()
 {
     rstmgr_t rstmgr = mocha_system_rstmgr();
+    uint32_t reason = rstmgr_reset_reason_get(rstmgr);
 
-    if (rstmgr_software_reset_info_get(rstmgr)) {
+    if (reason & RSTMGR_RESET_INFO_POR) {
+        rstmgr_reset_reason_clear(rstmgr, RSTMGR_RESET_INFO_POR);
+        rstmgr_software_reset_request(rstmgr);
+
+        // Must wait here for reset to happen.
+        while (1) {
+        }
+    }
+
+    if (reason & RSTMGR_RESET_INFO_SW_RESET) {
+        rstmgr_reset_reason_clear(rstmgr, RSTMGR_RESET_INFO_SW_RESET);
         return true;
     }
-    // Request a reset of the system.
-    rstmgr_software_reset_request(rstmgr);
 
-    // Must wait here for reset to happen.
-    while (1) {
-    }
     return false;
 }
