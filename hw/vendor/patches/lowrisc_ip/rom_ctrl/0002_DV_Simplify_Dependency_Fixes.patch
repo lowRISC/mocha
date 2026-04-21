@@ -1,0 +1,15 @@
+diff --git a/dv/env/rom_ctrl_bkdr_util.core b/dv/env/rom_ctrl_bkdr_util.core
+index 70a2dd6..6cfdfbc 100644
+--- a/dv/env/rom_ctrl_bkdr_util.core
++++ b/dv/env/rom_ctrl_bkdr_util.core
+@@ -15,8 +15,9 @@ filesets:
+       - lowrisc:prim:secded:0.1
+       - lowrisc:dv:digestpp_dpi:0.1
+       - lowrisc:ip:kmac_pkg
+-      - lowrisc:dv:sram_ctrl_bkdr_util
++      - lowrisc:dv:mem_bkdr_util
+     files:
++      - sram_scrambler_pkg.sv
+       - rom_ctrl_bkdr_util_pkg.sv
+       - rom_ctrl_bkdr_util.sv: {is_include_file: true}
+     file_type: systemVerilogSource
