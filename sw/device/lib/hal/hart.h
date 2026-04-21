@@ -39,6 +39,8 @@ static inline bool hart_interrupt_any_pending(enum interrupt interrupts);
 
 /* cycle counter */
 static inline uint64_t hart_cycle_get(void);
+/* hartid */
+static inline unsigned long hart_hartid_get(void);
 
 static inline bool hart_global_interrupt_enable_set(bool enable)
 {
@@ -89,6 +91,13 @@ static inline uint64_t hart_cycle_get(void)
     uint64_t cycle;
     asm volatile("csrr %0, cycle" : "=r"(cycle)::);
     return cycle;
+}
+
+static inline unsigned long hart_hartid_get(void)
+{
+    unsigned long hartid;
+    asm volatile("csrr %0, mhartid" : "=r"(hartid)::);
+    return hartid;
 }
 
 /* wait for a condition to be true, allowing preemption by interrupts */

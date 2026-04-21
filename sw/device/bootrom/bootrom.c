@@ -6,6 +6,7 @@
 #include "builtin.h"
 #include "constants.h"
 #include "hal/gpio.h"
+#include "hal/hart.h"
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
 #include "hal/uart.h"
@@ -27,6 +28,9 @@ struct boot_context {
 // These are defined by the linker script.
 extern uint8_t _program_start[];
 extern uint8_t _program_end[];
+
+// Pointer to devicetree blob, defined in devicetree/mocha.S
+extern char dt_blob_start[];
 
 static bool spi_boot_strap(struct boot_context *ctx);
 static void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes);
@@ -71,9 +75,12 @@ int main(void)
 
 void boot(uintptr_t addr)
 {
-    typedef void (*reset_handler_t)(void);
-    reset_handler_t reset = (reset_handler_t)addr;
-    reset();
+    /* next boot stages (OpenSBI, Linux, etc..) expect:
+     * - hart's hartid stored in the a0 register.
+     * - pointer to devicetree blob in the a1 register. */
+    unsigned long hartid = hart_hartid_get();
+    void (*next_stage)(unsigned long hartid, char *dtb) = (void *)addr;
+    next_stage(hartid, dt_blob_start);
 }
 
 bool get_boot_addr(uint32_t *addr)
