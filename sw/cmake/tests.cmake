@@ -49,7 +49,7 @@ macro(mocha_add_fpga_test NAME)
 endmacro()
 
 set(BOOT_CFG              rom                 bare        ) # Config Name
-set(BOOT_CFG_OFFSET       0x4000              0x00        ) # Offset
+set(BOOT_CFG_OFFSET       0x8000              0x00        ) # Offset
 set(BOOT_CFG_FPGA         YES                 NO          ) # Fpga supported?
 set(BOOT_CFG_VERILATOR    NO                  YES         ) # Verilator supported?
 

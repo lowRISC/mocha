@@ -17,7 +17,7 @@
 #define MINOR "01"
 #define PATCH "00"
 
-const uintptr_t boot_slots[] = { 0x10004000, 0x80000000 };
+const uintptr_t boot_slots[] = { 0x10008000, 0x80000000 };
 struct boot_context {
     uart_t console;
     gpio_t gpio;
