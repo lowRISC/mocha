@@ -13,6 +13,7 @@ mocha_add_test(NAME gpio_reg_access_test SOURCES gpio/reg_access_test.c LIBRARIE
 mocha_add_test(NAME i2c_smoketest SOURCES i2c/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME mailbox_smoketest SOURCES mailbox/smoketest.c LIBRARIES ${LIBS} FPGA)
 mocha_add_test(NAME plic_smoketest SOURCES plic/smoketest.c LIBRARIES ${LIBS} FPGA)
+mocha_add_test(NAME pwrmgr_smoketest SOURCES pwrmgr/pwrmgr_smoke_test.c LIBRARIES ${LIBS})
 mocha_add_test(NAME rom_ctrl_smoketest SOURCES rom_ctrl/smoketest.c LIBRARIES ${LIBS} FPGA)
 # Cannot currently run this on FPGA because the boot ROM expects the test to be provided on the SPI again.
 mocha_add_test(NAME rstmgr_software_reset SOURCES rstmgr/software_reset.c LIBRARIES ${LIBS})
