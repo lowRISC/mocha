@@ -14,6 +14,7 @@
 static const uintptr_t rom_base = 0x80000ul;
 static const uintptr_t mailbox_base = 0x20010000ul;
 static const uintptr_t dv_test_status_base = 0x20020000ul;
+static const uintptr_t ethernet_base = 0x30000000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
 static const uintptr_t rstmgr_base = 0x40030000ul;
@@ -60,6 +61,15 @@ mailbox_t mocha_system_mailbox(void)
     return (mailbox_t)create_mmio_capability(mailbox_base, 0x50u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (mailbox_t)mailbox_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+ethernet_t mocha_system_ethernet(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (ethernet_t)create_mmio_capability(ethernet_base, 0x8000u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (ethernet_t)ethernet_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
