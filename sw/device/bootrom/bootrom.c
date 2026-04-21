@@ -57,11 +57,10 @@ int main(void)
         spi_boot_strap(&boot_ctx);
     }
 
-    uint32_t boot_addr = 0;
-    while (!get_boot_addr(&boot_addr)) {
-        uprintf(boot_ctx.console, "Entering SPI bootstrap\n");
-        // Spin polling the spi_dev and processing incoming data until a reset command is received.
-        spi_boot_strap(&boot_ctx);
+    uint32_t boot_addr;
+    if (!get_boot_addr(&boot_addr)) {
+        uprintf(boot_ctx.console, "No valid slot found, default to DRAM\n");
+        boot_addr = dram_base;
     }
 
     uprintf(boot_ctx.console, "\nJumping to: 0x%x\n", boot_addr);
