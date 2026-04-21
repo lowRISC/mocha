@@ -10,6 +10,7 @@ mocha_add_test(NAME axi_sram_smoketest SOURCES axi_sram/smoketest.c LIBRARIES ${
 mocha_add_test(NAME axi_sram_tag_test SOURCES axi_sram/tag_test.c LIBRARIES ${LIBS})
 # Cannot run this on verilator as the ethernet MAC is not in the verilator top
 mocha_add_test(NAME ethernet_smoketest SOURCES ethernet/smoketest.c LIBRARIES ${LIBS} SKIP_VERILATOR)
+mocha_add_test(NAME clkmgr_smoketest SOURCES clkmgr/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME gpio_reg_access_test SOURCES gpio/reg_access_test.c LIBRARIES ${LIBS})
 # Can't run this test on FPGA or verilator tops and this test thinks that the GPIO inputs can be
 # driven externally
