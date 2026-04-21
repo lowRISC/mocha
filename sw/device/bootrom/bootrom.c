@@ -28,6 +28,9 @@ struct boot_context {
 extern uint8_t _program_start[];
 extern uint8_t _program_end[];
 
+/* Pointer to devicetree blob, defined in devicetree/mocha.S */
+extern char dt_blob_start[];
+
 static bool spi_boot_strap(struct boot_context *ctx);
 static void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes);
 static void boot(uintptr_t addr);
@@ -71,9 +74,12 @@ int main(void)
 
 void boot(uintptr_t addr)
 {
-    typedef void (*reset_handler_t)(void);
-    reset_handler_t reset = (reset_handler_t)addr;
-    reset();
+    asm volatile("mv a0, zero\n" /* a0 = hart id */
+                 "mv a1, %[dtb]\n" /* a1 = pointer to devicetree blob */
+                 "jr %[addr]\n"
+                 :
+                 : [dtb] "r"(dt_blob_start), [addr] "r"(addr)
+                 : "a0", "a1", "memory");
 }
 
 bool get_boot_addr(uint32_t *addr)

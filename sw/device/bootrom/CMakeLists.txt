@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(NAME bootrom)
-add_executable(${NAME} bootrom.c)
+add_executable(${NAME} bootrom.c ../devicetree/mocha.S)
 target_link_libraries(${NAME} hal_vanilla runtime_vanilla startup_vanilla)
 target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
 target_link_options(${NAME} PUBLIC 
