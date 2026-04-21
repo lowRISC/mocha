@@ -11,6 +11,7 @@
 #include "hal/i2c.h"
 #include "hal/mailbox.h"
 #include "hal/plic.h"
+#include "hal/pwrmgr.h"
 #include "hal/rom_ctrl.h"
 #include "hal/rstmgr.h"
 #include "hal/spi_device.h"
@@ -36,6 +37,7 @@ mailbox_t mocha_system_mailbox(void);
 gpio_t mocha_system_gpio(void);
 clkmgr_t mocha_system_clkmgr(void);
 rstmgr_t mocha_system_rstmgr(void);
+pwrmgr_t mocha_system_pwrmgr(void);
 rom_ctrl_t mocha_system_rom_ctrl(void);
 uart_t mocha_system_uart(void);
 i2c_t mocha_system_i2c(void);
