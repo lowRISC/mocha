@@ -85,7 +85,7 @@ gpio_t mocha_system_gpio(void)
 clkmgr_t mocha_system_clkmgr(void)
 {
 #if defined(__riscv_zcherihybrid)
-    return (clkmgr_t)create_mmio_capability(clkmgr_base, 0x38u);
+    return (clkmgr_t)create_mmio_capability(clkmgr_base, sizeof(struct clkmgr_memory_layout));
 #else /* !defined(__riscv_zcherihybrid) */
     return (clkmgr_t)clkmgr_base;
 #endif /* defined(__riscv_zcherihybrid) */
