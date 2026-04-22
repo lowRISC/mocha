@@ -93,11 +93,11 @@ bool MochaSim::Finish() {
 int main(int argc, char **argv) {
   MochaSim mocha_sim(
       "TOP.top_chip_verilator.u_top_chip_system.u_axi_sram.u_ram",
-      16 * 1024, // 16k 64-bit words = 128 KiB
+      16 * 1024, // 16K 64-bit words = 128 KiB
       "TOP.top_chip_verilator.u_dram_wrapper.u_ext_mem",
-      2 * 1024 * 1024, // = 2 GiB
+      256 * 1024 * 1024, // 256M 64-bit words = 2 GiB
       "TOP.top_chip_verilator.u_top_chip_system.u_rom_ctrl.gen_rom_scramble_disabled.u_rom.u_prim_rom",
-      8 * 1024 // = 8KiB
+      8 * 1024 // 8K 32-bit words = 32 KiB
   );
 
   return mocha_sim.Main(argc, argv);
