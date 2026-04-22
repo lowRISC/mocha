@@ -1,0 +1,69 @@
+diff --git a/data/spi_host_testplan.hjson b/data/spi_host_testplan.hjson
+index 70d3420..d5f35e2 100644
+--- a/data/spi_host_testplan.hjson
++++ b/data/spi_host_testplan.hjson
+@@ -3,12 +3,12 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name: "spi_host"
+-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/mem_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
++  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/mem_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+                      "spi_host_sec_cm_testplan.hjson"],
+   testpoints: [
+     {
+diff --git a/dv/spi_host_sim_cfg.hjson b/dv/spi_host_sim_cfg.hjson
+index c27bc3f..d8df8d1 100644
+--- a/dv/spi_host_sim_cfg.hjson
++++ b/dv/spi_host_sim_cfg.hjson
+@@ -18,29 +18,29 @@
+   fusesoc_core: lowrisc:dv:spi_host_sim:1.0
+
+   // Testplan hjson file.
+-  testplan: "{proj_root}/hw/ip/spi_host/data/spi_host_testplan.hjson"
++  testplan: "{proj_root}/hw/vendor/lowrisc_ip/ip/spi_host/data/spi_host_testplan.hjson"
+
+   // RAL spec - used to generate the RAL model.
+-  ral_spec: "{proj_root}/hw/ip/spi_host/data/spi_host.hjson"
++  ral_spec: "{proj_root}/hw/vendor/lowrisc_ip/ip/spi_host/data/spi_host.hjson"
+
+   // Import additional common sim cfg files.
+   import_cfgs: [// Project wide common sim cfg file
+-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
+                 // Common CIP test lists
+-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/intr_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/mem_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/alert_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/intr_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+-                //"{proj_root}/hw/dv/tools/dvsim/tests/stress_tests.hjson", // TODO(#18886): enable for V3
+-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson"]
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/intr_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/mem_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/alert_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/intr_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
++                //"{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_tests.hjson", // TODO(#18886): enable for V3
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson"]
+
+   // Add additional tops for simulation.
+   sim_tops: ["spi_host_bind", "sec_cm_prim_onehot_check_bind"]
+
+   // Coverage exclusion
+-  xcelium_cov_refine_files: ["{proj_root}/hw/ip/spi_host/dv/cov/spi_host_unr_excl.vRefine"]
++  xcelium_cov_refine_files: ["{proj_root}/hw/vendor/lowrisc_ip/ip/spi_host/dv/cov/spi_host_unr_excl.vRefine"]
+
+   // Default iterations for all tests - each test entry can override this.
+   reseed: 50
