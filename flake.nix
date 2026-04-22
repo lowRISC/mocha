@@ -80,12 +80,14 @@
         gtkwave
         openfpgaloader
         openocd
+        nodejs
         picocom
         pythonEnv
         screen
         srecord
         uv
         verilator
+        wget
       ];
     in {
       formatter = pkgs.alejandra;

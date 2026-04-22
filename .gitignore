@@ -27,3 +27,7 @@ __pycache__
 scratch/
 # clangd
 .cache
+
+# JSON schema
+node_modules/
+tool_schema.json
