@@ -86,8 +86,9 @@ jobs:
           MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
 
       - name: Run verilator software tests
+        # Exclude tests marked 'slow' from quick CI runs.
         run: |
-          ctest --test-dir build/sw -R sim_verilator --output-on-failure
+          ctest --test-dir build/sw -R sim_verilator -LE slow --output-on-failure
 
   fpga-cache-check:
     runs-on: ["self-hosted", "nixos", "X64"]
@@ -188,6 +189,7 @@ jobs:
           nix run .#bitstream-load
 
       - name: Run FPGA tests
+        # Exclude tests marked 'slow' from quick CI runs.
         shell: "nix develop -c bash -e {0}"
         run: |
-          ctest --test-dir build/sw -R fpga --output-on-failure
+          ctest --test-dir build/sw -R fpga -LE slow --output-on-failure
