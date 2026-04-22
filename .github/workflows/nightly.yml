@@ -1,0 +1,44 @@
+# Copyright lowRISC Contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Nightly
+
+on:
+  schedule:
+    - cron: "00 02 * * *"
+
+jobs:
+  slow-verilator-test:
+    runs-on: ["self-hosted", "nixos", "X64"]
+
+    defaults:
+      run:
+        shell: "nix develop -c bash -e {0}"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare Nix environment
+        run: |
+          true
+
+      - name: Generate software buildsystem
+        run: |
+          cmake -B build/sw -S sw
+
+      - name: Build software
+        run: |
+          cmake --build build/sw -j $(nproc)
+
+      - name: Build verilator
+        run: |
+          JOBS=$(($(nproc) / 4))
+          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
+
+      - name: Run Slow Verilator tests
+        # Display the tests that are about to be ran with '--show-only' first.
+        run: |
+          ctest --test-dir build/sw -R sim_verilator -L slow --show-only
+
+          ctest --test-dir build/sw -R sim_verilator -L slow --output-on-failure
