@@ -77,4 +77,29 @@ function(mocha_opensbi_with_payload PAYLOAD_TARGET)
   )
 endfunction()
 
-mocha_opensbi_with_payload(opensbi_test_payload)
+# Like mocha_opensbi_with_payload, but also adds a test for
+# Verilator and FPGA environments.
+# TODO: Integrate this with the build system better.
+function(mocha_opensbi_with_payload_test PAYLOAD_TARGET)
+  # name of the target OpenSBI build.
+  set(NAME opensbi_with_${PAYLOAD_TARGET})
+
+  mocha_opensbi_with_payload(${PAYLOAD_TARGET})
+
+  add_test(
+      NAME ${NAME}_sim_verilator
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E $<TARGET_FILE:bootrom> -E ${NAME}/fw_payload.elf
+  )
+
+  add_test(
+      NAME ${NAME}_fpga_genesys2
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${NAME}/fw_payload.elf
+  )
+
+  set_property(TEST ${NAME}_sim_verilator PROPERTY TIMEOUT 7200)
+  set_property(TEST ${NAME}_sim_verilator PROPERTY LABELS opensbi verilator slow)
+  set_property(TEST ${NAME}_fpga_genesys2 PROPERTY TIMEOUT 60)
+  set_property(TEST ${NAME}_fpga_genesys2 PROPERTY LABELS opensbi fpga)
+endfunction()
+
+mocha_opensbi_with_payload_test(opensbi_test_payload)
