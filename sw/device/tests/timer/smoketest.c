@@ -10,7 +10,7 @@
 
 enum : uint64_t {
     accuracy_test_duration_us = 100ul,
-    irq_test_duration_us = 5ul,
+    irq_test_duration_us = 50ul,
     tolerance_us = 10ul,
 
     min_cycle_diff = cycles_per_us * (accuracy_test_duration_us - tolerance_us),
