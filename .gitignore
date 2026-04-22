@@ -30,3 +30,6 @@ scratch/
 
 # SD card image file
 sd.img
+
+# JSON schema
+tool_schema.json
