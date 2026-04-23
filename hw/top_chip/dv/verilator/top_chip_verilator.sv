@@ -4,7 +4,7 @@
 
 module top_chip_verilator (
   input logic clk_i,
-  rst_ni
+  input logic rst_ni
 );
   // GPIO signals
   logic [31:0] gpio_inputs;
