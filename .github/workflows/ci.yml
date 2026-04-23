@@ -57,6 +57,10 @@ jobs:
         run: |
           util/clang_tidy.py
 
+      - name: Tool schema validation
+        run: |
+          util/tool_schema_check.sh
+
   verilator-test:
     runs-on: ["self-hosted", "nixos", "X64"]
     needs: lint-check

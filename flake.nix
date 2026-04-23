@@ -74,18 +74,20 @@
 
       commonPackages = with pkgs; [
         cmake
+        d2
+        ftditool-cli
         gnumake
-        screen
-        picocom
         gtkwave
         openfpgaloader
-        ftditool-cli
         openocd
-        uv
+        nodejs
+        picocom
         pythonEnv
-        verilator
+        screen
         srecord
-        d2
+        uv
+        verilator
+        wget
       ];
     in {
       formatter = pkgs.alejandra;

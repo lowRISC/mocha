@@ -1,0 +1,34 @@
+[
+    {
+        "name": "FuseSoC",
+        "vendor": "olofk",
+        "version": "2.4.3",
+        "source-url": "https://github.com/olofk/fusesoc",
+        "doc-url": "https://fusesoc.readthedocs.io/en/stable/index.html",
+        "comment": "FuseSoC is a build system for digital hardware."
+    },
+    {
+        "name": "Jasper",
+        "vendor": "Cadence",
+        "version": "2025.09p002",
+        "comment": "Formal verification."
+    },
+    {
+        "name": "Verilator",
+        "vendor": "Veripool",
+        "version": "v5.0.40",
+        "comment": "Open source simulation tool."
+    },
+    {
+        "name": "Vivado",
+        "vendor": "Xilinx",
+        "version": "v2021.1",
+        "comment": "Used to build bitstreams for Genesys 2."
+    },
+    {
+        "name": "Xcelium",
+        "vendor": "Cadence",
+        "version": "24.03-s007",
+        "comment": "Provides xrun for simulations and is used to run our full DV environment."
+    }
+]
