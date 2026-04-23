@@ -52,9 +52,9 @@ module top_chip_system #(
   output logic                    spi_host_sck_en_o,
   output logic [SPIHostNumCS-1:0] spi_host_csb_o,
   output logic [SPIHostNumCS-1:0] spi_host_csb_en_o,
-  output logic [3:0]              spi_host_sd_o,
-  output logic [3:0]              spi_host_sd_en_o,
-  input  logic [3:0]              spi_host_sd_i,
+  output logic [             3:0] spi_host_sd_o,
+  output logic [             3:0] spi_host_sd_en_o,
+  input  logic [             3:0] spi_host_sd_i,
 
   // DRAM AXI interface.
   output top_pkg::axi_dram_req_t  dram_req_o,
@@ -76,19 +76,19 @@ module top_chip_system #(
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
     config_pkg::cva6_user_cfg_t cfg = CVA6UserCfg;
-    cfg.RVZiCond = bit'(0);
-    cfg.CvxifEn = bit'(0);
-    cfg.NrNonIdempotentRules = unsigned'(1);
+    cfg.RVZiCond              = bit'(0);
+    cfg.CvxifEn               = bit'(0);
+    cfg.NrNonIdempotentRules  = unsigned'(1);
     cfg.NonIdempotentAddrBase = 1024'({64'b0});
-    cfg.NonIdempotentLength = 1024'({top_pkg::SRAMBase});
+    cfg.NonIdempotentLength   = 1024'({top_pkg::SRAMBase});
     return build_config_pkg::build_config(cfg);
   endfunction
 
   localparam config_pkg::cva6_cfg_t CVA6Cfg = build_cva6_config(cva6_config_pkg::cva6_cfg);
   cva6_cheri_pkg::cap_pcc_t boot_cap;
   always_comb begin : gen_boot_cap
-    boot_cap = cva6_cheri_pkg::PCC_ROOT_CAP;
-    boot_cap.addr = top_pkg::SRAMBase + 'h80;
+    boot_cap                = cva6_cheri_pkg::PCC_ROOT_CAP;
+    boot_cap.addr           = top_pkg::SRAMBase + 'h80;
     boot_cap.flags.int_mode = 1'b1;
   end
 
@@ -224,25 +224,25 @@ module top_chip_system #(
 
   always_comb begin
     // Single interrupt line per IP block.
-    gpio_irq = |gpio_interrupts;
-    uart_irq = |uart_interrupts;
-    i2c_irq = |i2c_interrupts;
+    gpio_irq       = |gpio_interrupts;
+    uart_irq       = |uart_interrupts;
+    i2c_irq        = |i2c_interrupts;
     spi_device_irq = |spi_device_interrupts;
-    spi_host_irq = |spi_host_interrupts;
+    spi_host_irq   = |spi_host_interrupts;
   end
 
   // Interrupt vector
   logic [31:0] intr_vector;
 
-  assign intr_vector[31 :12] = '0; // Reserved for future use.
-  assign intr_vector[11    ] = mailbox_main_irq;
-  assign intr_vector[10    ] = pwrmgr_wakeup_irq;
-  assign intr_vector[ 9    ] = gpio_irq;
-  assign intr_vector[ 8    ] = uart_irq;
-  assign intr_vector[ 7    ] = spi_device_irq;
-  assign intr_vector[ 6    ] = i2c_irq;
-  assign intr_vector[ 5    ] = spi_host_irq;
-  assign intr_vector[ 4 : 0] = '0; // Reserved for future use.
+  assign intr_vector[31 : 12] = '0;  // Reserved for future use.
+  assign intr_vector[     11] = mailbox_main_irq;
+  assign intr_vector[     10] = pwrmgr_wakeup_irq;
+  assign intr_vector[      9] = gpio_irq;
+  assign intr_vector[      8] = uart_irq;
+  assign intr_vector[      7] = spi_device_irq;
+  assign intr_vector[      6] = i2c_irq;
+  assign intr_vector[      5] = spi_host_irq;
+  assign intr_vector[ 4 :  0] = '0;  // Reserved for future use.
 
   // Interrupts to the CVA6
   logic       intr_timer;
@@ -320,7 +320,7 @@ module top_chip_system #(
 `ifdef INST_SIM_SRAM
 `ifdef SYNTHESIS
   // Induce a compilation error by instantiating a non-existent module.
-  illegal_preprocessor_branch_taken u_illegal_preprocessor_branch_taken();
+  illegal_preprocessor_branch_taken u_illegal_preprocessor_branch_taken ();
 `endif
 `else
   assign xbar_host_req[top_pkg::CVA6] = cva6_to_sim_req;

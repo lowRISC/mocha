@@ -15,7 +15,7 @@ class top_chip_dv_env extends uvm_env;
   uart_agent m_uart_agent;
 
   // Standard SV/UVM methods
-  extern function new(string name="", uvm_component parent=null);
+  extern function new(string name = "", uvm_component parent = null);
   extern function void build_phase(uvm_phase phase);
   extern function void connect_phase(uvm_phase phase);
 
@@ -24,7 +24,7 @@ class top_chip_dv_env extends uvm_env;
 endclass : top_chip_dv_env
 
 
-function top_chip_dv_env::new(string name="", uvm_component parent=null);
+function top_chip_dv_env::new(string name = "", uvm_component parent = null);
   super.new(name, parent);
 endfunction : new
 
@@ -72,8 +72,8 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
 
   uvm_config_db#(top_chip_dv_env_cfg)::set(this, "", "cfg", cfg);
 
-  top_vsqr = top_chip_dv_virtual_sequencer::type_id::create("top_vsqr", this);
-  top_vsqr.cfg = cfg;
+  top_vsqr                 = top_chip_dv_virtual_sequencer::type_id::create("top_vsqr", this);
+  top_vsqr.cfg             = cfg;
   top_vsqr.mem_bkdr_util_h = mem_bkdr_util_h;
 endfunction : build_phase
 
@@ -91,8 +91,7 @@ endfunction : connect_phase
 task top_chip_dv_env::load_memories();
   foreach (cfg.mem_image_files[m]) begin
     if (cfg.mem_image_files[m] != "") begin
-      `uvm_info(`gfn, $sformatf("Initializing memory %s with image %s", m.name(),
-        cfg.mem_image_files[m]), UVM_LOW)
+      `uvm_info(`gfn, $sformatf("Initializing memory %s with image %s", m.name(), cfg.mem_image_files[m]), UVM_LOW)
 
       mem_bkdr_util_h[m].load_mem_from_file(cfg.mem_image_files[m]);
     end

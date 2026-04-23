@@ -38,7 +38,7 @@ module tb;
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;
 
-  dram_wrapper_sim u_dram_wrapper(
+  dram_wrapper_sim u_dram_wrapper (
     // Clock and reset.
     .clk_i      (dut.clkmgr_clocks.clk_main_infra),
     .rst_ni     (dut.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
@@ -50,7 +50,7 @@ module tb;
   // ------ DUT ------
   top_chip_system #(
     .SramInitFile(""),
-    .RomInitFile("")
+    .RomInitFile ("")
   ) dut (
     // Clock and reset.
     .clk_i                (clk              ),
@@ -81,9 +81,7 @@ module tb;
     // bi-directional wires.
     // This only works in standard mode where sd_o[0]=COPI and
     // sd_i[1]=CIPO.
-    .spi_host_sd_i        ({2'b0,
-                            spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0,
-                            1'b0           }),
+    .spi_host_sd_i        ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
     // DRAM.
     .dram_req_o           (dram_req         ),
     .dram_resp_i          (dram_resp        )
@@ -122,8 +120,8 @@ module tb;
   // ------ Memory backdoor accesses ------
   if (prim_pkg::PrimTechName == "Generic") begin : gen_mem_bkdr_utils
     initial begin
-      chip_mem_e    mem;
-      mem_bkdr_util m_mem_bkdr_util[chip_mem_e];
+      chip_mem_e     mem;
+      mem_bkdr_util  m_mem_bkdr_util[chip_mem_e];
       mem_clear_util tag_mem_clear;
 
       m_mem_bkdr_util[ChipMemSRAM] = new(
@@ -147,7 +145,7 @@ module tb;
         .err_detection_scheme (mem_bkdr_util_pkg::ErrDetectionNone),
         .system_base_addr     (top_pkg::RomCtrlMemBase             )
       );
-      
+
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemROM], `ROM_MEM_HIER)
 
 
@@ -200,10 +198,10 @@ module tb;
   // ------ Initialisation ------
   initial begin
     // Set base of SW DV special write locations
-    `SIM_SRAM_IF.start_addr                               = SW_DV_START_ADDR;
-    `SIM_SRAM_IF.sw_dv_size                               = SW_DV_SIZE;
-    `SIM_SRAM_IF.u_sw_test_status_if.sw_test_status_addr  = SW_DV_TEST_STATUS_ADDR;
-    `SIM_SRAM_IF.u_sw_logger_if.sw_log_addr               = SW_DV_LOG_ADDR;
+    `SIM_SRAM_IF.start_addr                              = SW_DV_START_ADDR;
+    `SIM_SRAM_IF.sw_dv_size                              = SW_DV_SIZE;
+    `SIM_SRAM_IF.u_sw_test_status_if.sw_test_status_addr = SW_DV_TEST_STATUS_ADDR;
+    `SIM_SRAM_IF.u_sw_logger_if.sw_log_addr              = SW_DV_LOG_ADDR;
 
     // Start clock and reset generators
     sys_clk_if.set_active();

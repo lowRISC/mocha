@@ -2,7 +2,10 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-module top_chip_verilator (input logic clk_i, rst_ni);
+module top_chip_verilator (
+  input logic clk_i,
+  rst_ni
+);
   // GPIO signals
   logic [31:0] gpio_inputs;
   logic [31:0] gpio_outputs;
@@ -44,7 +47,7 @@ module top_chip_verilator (input logic clk_i, rst_ni);
   // CHERI Mocha top
   top_chip_system #(
     .SramInitFile(""),
-    .RomInitFile("")
+    .RomInitFile ("")
   ) u_top_chip_system (
     .clk_i,
     .rst_ni,

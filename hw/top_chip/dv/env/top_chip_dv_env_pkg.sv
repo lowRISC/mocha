@@ -31,8 +31,7 @@ package top_chip_dv_env_pkg;
     do begin
       list.push_back(tmp);
       tmp = tmp.next;
-    end
-    while (tmp  != tmp.first);
+    end while (tmp != tmp.first);
     return list;
   endfunction : chip_mem_values
 

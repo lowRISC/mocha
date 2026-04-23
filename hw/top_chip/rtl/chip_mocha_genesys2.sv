@@ -149,7 +149,7 @@ module chip_mocha_genesys2 #(
   // CHERI Mocha top
   top_chip_system #(
     .SramInitFile(BootRomInitFile),
-    .RomInitFile(RomInitFile)
+    .RomInitFile (RomInitFile)
   ) u_top_chip_system (
     // Clock and reset
     .clk_i    (clk_50m),
@@ -215,16 +215,16 @@ module chip_mocha_genesys2 #(
 
   // I^2C bi-directional buffers
   IOBUF i2c_scl_iobuf (
-    .I(i2c_scl_output),     // system output / buffer internal input
-    .T(~i2c_scl_en_output), // system output enable / buffer tri-state enable
-    .IO(i2c_scl_io),        // external FPGA pin / buffer external connection
-    .O(i2c_scl_input)       // system input / buffer internal output
+    .I (i2c_scl_output),      // system output / buffer internal input
+    .T (~i2c_scl_en_output),  // system output enable / buffer tri-state enable
+    .IO(i2c_scl_io),          // external FPGA pin / buffer external connection
+    .O (i2c_scl_input)        // system input / buffer internal output
   );
   IOBUF i2c_sda_iobuf (
-    .I(i2c_sda_output),
-    .T(~i2c_sda_en_output),
+    .I (i2c_sda_output),
+    .T (~i2c_sda_en_output),
     .IO(i2c_sda_io),
-    .O(i2c_sda_input)
+    .O (i2c_sda_input)
   );
 
   // SPI tri-state output driver

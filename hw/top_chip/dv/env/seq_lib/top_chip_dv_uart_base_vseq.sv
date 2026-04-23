@@ -11,7 +11,7 @@ class top_chip_dv_uart_base_vseq extends top_chip_dv_base_vseq;
   byte uart_tx_data_q[$];
 
   // Standard SV/UVM methods
-  extern function new(string name="");
+  extern function new(string name = "");
   extern task body();
 
   // Class specific methods
@@ -25,7 +25,7 @@ class top_chip_dv_uart_base_vseq extends top_chip_dv_base_vseq;
 endclass : top_chip_dv_uart_base_vseq
 
 
-function top_chip_dv_uart_base_vseq::new(string name="");
+function top_chip_dv_uart_base_vseq::new(string name = "");
   super.new(name);
 endfunction : new
 

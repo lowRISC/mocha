@@ -11,7 +11,7 @@ class top_chip_dv_base_test extends uvm_test;
   uint64 test_timeout_ns = 200_000_000; // 200ms
 
   // Standard SV/UVM methods
-  extern function new(string name="", uvm_component parent=null);
+  extern function new(string name = "", uvm_component parent = null);
   extern function void build_phase(uvm_phase phase);
   extern function void connect_phase(uvm_phase phase);
   extern function void end_of_elaboration_phase(uvm_phase phase);
@@ -23,7 +23,7 @@ class top_chip_dv_base_test extends uvm_test;
 endclass : top_chip_dv_base_test
 
 
-function top_chip_dv_base_test::new(string name="", uvm_component parent=null);
+function top_chip_dv_base_test::new(string name = "", uvm_component parent = null);
   super.new(name, parent);
 endfunction : new
 
@@ -33,7 +33,7 @@ function void top_chip_dv_base_test::build_phase(uvm_phase phase);
 
   super.build_phase(phase);
 
-  env = top_chip_dv_env::type_id::create("env", this);
+  env     = top_chip_dv_env::type_id::create("env", this);
   env.cfg = top_chip_dv_env_cfg::type_id::create("cfg", this);
   env.cfg.initialize();
 endfunction : build_phase
@@ -60,7 +60,7 @@ endtask : run_phase
 task top_chip_dv_base_test::run_test();
   string test_seq_s;
 
-  if(!$value$plusargs("UVM_TEST_SEQ=%0s", test_seq_s)) begin
+  if (!$value$plusargs("UVM_TEST_SEQ=%0s", test_seq_s)) begin
     `uvm_fatal(`gfn, "Sequence name was not provided via +UVM_TEST_SEQ, cannot run test")
   end
 

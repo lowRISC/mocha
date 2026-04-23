@@ -8,9 +8,9 @@ class top_chip_dv_env_cov extends uvm_component;
   top_chip_dv_env_cfg cfg;
 
   // Standard SV/UVM methods
-  extern function new(string name="", uvm_component parent=null);
+  extern function new(string name = "", uvm_component parent = null);
 endclass
 
-function top_chip_dv_env_cov::new(string name="", uvm_component parent=null);
+function top_chip_dv_env_cov::new(string name = "", uvm_component parent = null);
   super.new(name, parent);
 endfunction : new

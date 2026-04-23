@@ -26,18 +26,18 @@ module axi_sram #(
   logic                                 sram_req;
   logic                                 sram_we;
   logic [(top_pkg::AxiDataWidth/8)-1:0] sram_be;
-  logic [top_pkg::AxiAddrWidth-1:0]     sram_addr;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_wdata;
+  logic [    top_pkg::AxiAddrWidth-1:0] sram_addr;
+  logic [    top_pkg::AxiDataWidth-1:0] sram_wdata;
   logic                                 sram_rvalid;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_rdata;
-  logic [AddrWidth-1:0]                 sram_word_addr;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_wmask;
-  logic [TagBitAddrWidth-1:0]           sram_tag_bit_addr;
-  logic [TagAddrWidth-1:0]              sram_tag_word_addr;
-  logic [TagBitWith-1:0]                sram_tag_bit_select;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_tag_wmask;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_tag_wdata;
-  logic [top_pkg::AxiDataWidth-1:0]     sram_tag_rdata;
+  logic [    top_pkg::AxiDataWidth-1:0] sram_rdata;
+  logic [                AddrWidth-1:0] sram_word_addr;
+  logic [    top_pkg::AxiDataWidth-1:0] sram_wmask;
+  logic [          TagBitAddrWidth-1:0] sram_tag_bit_addr;
+  logic [             TagAddrWidth-1:0] sram_tag_word_addr;
+  logic [               TagBitWith-1:0] sram_tag_bit_select;
+  logic [    top_pkg::AxiDataWidth-1:0] sram_tag_wmask;
+  logic [    top_pkg::AxiDataWidth-1:0] sram_tag_wdata;
+  logic [    top_pkg::AxiDataWidth-1:0] sram_tag_rdata;
   logic                                 sram_cheri_w_tag;
   logic                                 sram_cheri_r_tag;
 
@@ -117,7 +117,7 @@ module axi_sram #(
   // Remove base offset and convert byte address to 64-bit word address
   assign sram_word_addr = AddrWidth'((sram_addr & top_pkg::SRAMMask) >> $clog2(top_pkg::AxiDataWidth / 8));
   always_comb begin
-    for (int i=0; i < (top_pkg::AxiDataWidth / 8); ++i) begin
+    for (int i = 0; i < (top_pkg::AxiDataWidth / 8); ++i) begin
       sram_wmask[i*8 +: 8] = {8{sram_be[i]}};
     end
   end
