@@ -49,27 +49,6 @@ test_exception_handler(struct trap_registers *registers, struct trap_context *co
     return false;
 }
 
-void system_reset()
-{
-    extern char BOOT_ROM_OFFSET[];
-    /*
-     * We don't have a hardware system reset yet. So we workaround by jumping back to the bootROM.
-     */
-    enum { bootROM = 0x10000080 };
-    bool is_dv = ((uintptr_t)BOOT_ROM_OFFSET == 0x0);
-    if (is_dv) {
-        return;
-    }
-
-    typedef void (*reset_handler_t)(void);
-    reset_handler_t reset = (reset_handler_t)bootROM;
-#if defined(__riscv_zcherihybrid)
-    // Disable cheri because in a normal system reset cheri is disabled by default.
-    __asm__ volatile("modesw.int");
-#endif
-    reset();
-}
-
 /* exit the test with a pass or fail */
 [[noreturn]] void test_exit(bool success)
 {
@@ -89,8 +68,6 @@ void system_reset()
      * If we got here, we might be running on the FPGA, so we need to go back to the bootROM for a
      * new test to be loaded.
      */
-    uprintf(console, "Jumping back to loader.");
-    system_reset();
     while (true) {
     }
 }

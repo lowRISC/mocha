@@ -35,7 +35,9 @@ endmacro()
 macro(mocha_add_verilator_test NAME)
     add_test(
         NAME ${NAME}_sim_verilator
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh ${NAME}
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh
+          -E ${NAME}
+          --rominit ${PROJECT_SOURCE_DIR}/../sw/device/tests/rom_ctrl/mem_init_file.vmem
     )
 endmacro()
 
@@ -59,7 +61,7 @@ set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
 # the output executable name and all of the libraries it is linked against.
 macro(mocha_add_test)
     # parse arguments
-    set(options FPGA)
+    set(options FPGA SKIP_VERILATOR)
     set(one_value_args NAME)
     set(multi_value_args SOURCES LIBRARIES)
     cmake_parse_arguments(arg "${options}"
@@ -83,7 +85,7 @@ macro(mocha_add_test)
         # create artefacts
         mocha_add_executable_artefacts(${NAME})
 
-        if(SIM)
+        if(SIM AND NOT arg_SKIP_VERILATOR)
           mocha_add_verilator_test(${NAME})
         endif()
 
@@ -121,4 +123,3 @@ macro(mocha_add_library)
 
     endforeach() # ARCH
 endmacro()
-

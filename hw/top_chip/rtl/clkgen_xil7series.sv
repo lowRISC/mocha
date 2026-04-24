@@ -71,7 +71,7 @@ module clkgen_xil7series (
   );
 
   // Feedback clock buffering
-  BUFG clk_fb_bufg_inst(
+  BUFG clk_fb_bufg_inst (
     .I(clk_fb_unbuf),
     .O(clk_fb_buf)
   );
@@ -94,12 +94,12 @@ module clkgen_xil7series (
   );
 
   // Output buffering
-  BUFG clk_50m_bufg_inst(
+  BUFG clk_50m_bufg_inst (
     .I(clk_50m_unbuf),
     .O(clk_50m_o)
   );
 
-  BUFG clk_cfg_bufg_inst(
+  BUFG clk_cfg_bufg_inst (
     .I(clk_cfg_unbuf),
     .O(clk_cfg_o)
   );

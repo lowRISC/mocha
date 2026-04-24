@@ -8,7 +8,7 @@
 {
   upstream:
   {
-    url: https://github.com/Capabilities-Limited/cheri-cva6.git
-    rev: 8eae97cc21158bf5403f0984ef26318042285c54
+    url: https://github.com/lowRISC/cva6-cheri.git
+    rev: 94a9d6f4eb2f7d59d9e66db7c39b522224312768
   }
 }

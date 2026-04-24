@@ -8,42 +8,31 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Check that we can write and read some GPIO registers
-static bool reg_test(gpio_t gpio)
+static bool gpio_test(gpio_t gpio)
 {
-    uint32_t hal_val;
+    uint8_t timeout = 0;
 
-    // Inputs
-    hal_val = 0;
-    for (int ii = 0; ii < GPIO_NUM_PINS; ii++) {
-        hal_val |= (gpio_read_pin(gpio, ii) << ii);
-    }
-    if (hal_val != DEV_READ(gpio + GPIO_REG_DATA_IN)) {
-        return false;
+    // Enable the GPIOs in output mode
+    DEV_WRITE(gpio + GPIO_REG_DIRECT_OE, 0xFFFFFFFF);
+
+    // Set each pin in walking 1's fashion
+    for (int i = 0; i < GPIO_NUM_PINS; i++) {
+        DEV_WRITE(gpio + GPIO_REG_DIRECT_OUT, 1 << i);
     }
 
-    // Outputs
-    hal_val = 0xC1A0; // Ciao!
-    for (int nn = 0; nn < 2; nn++) {
-        for (int ii = 0; ii < GPIO_NUM_PINS; ii++) {
-            gpio_write_pin(gpio, ii, ((hal_val >> ii) & 0x1));
-        }
-        if (hal_val != DEV_READ(gpio + GPIO_REG_DIRECT_OUT)) {
+    // Once the SW finishes driving the walking 1's pattern on the last GPIO pin, it should disable
+    // the output enables so that the GPIO pads can safely be driven as inputs
+    DEV_WRITE(gpio + GPIO_REG_DIRECT_OE, 0x0);
+
+    // Wait for the pattern of 1's on odd pins and 0's on even pins to be driven externally.
+    while (DEV_READ(gpio + GPIO_REG_DATA_IN) != 0x55555555) {
+        // The expected pattern is driven externally on the inputs by toggling the wires. Since this
+        // occurs without delay in simulation, a timeout of 10 read requests is sufficient to detect
+        // a failure.
+        if (timeout == 0xA) {
             return false;
         }
-        hal_val = ~hal_val; // invert to check for constant bits
-    }
-
-    // Output enables
-    hal_val = 0xB7EE; // Byee!
-    for (int nn = 0; nn < 2; nn++) {
-        for (int ii = 0; ii < GPIO_NUM_PINS; ii++) {
-            gpio_set_oe_pin(gpio, ii, ((hal_val >> ii) & 0x1));
-        }
-        if (hal_val != DEV_READ(gpio + GPIO_REG_DIRECT_OE)) {
-            return false;
-        }
-        hal_val = ~hal_val; // invert to check for constant bits
+        timeout++;
     }
 
     return true;
@@ -52,5 +41,5 @@ static bool reg_test(gpio_t gpio)
 bool test_main()
 {
     gpio_t gpio = mocha_system_gpio();
-    return reg_test(gpio);
+    return gpio_test(gpio);
 }

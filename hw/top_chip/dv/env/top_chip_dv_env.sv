@@ -19,7 +19,7 @@ class top_chip_dv_env extends uvm_env;
   top_chip_dv_axi_scoreboard m_axi_scb;
 
   // Standard SV/UVM methods
-  extern function new(string name="", uvm_component parent=null);
+  extern function new(string name = "", uvm_component parent = null);
   extern function void build_phase(uvm_phase phase);
   extern function void connect_phase(uvm_phase phase);
 
@@ -28,7 +28,7 @@ class top_chip_dv_env extends uvm_env;
 endclass : top_chip_dv_env
 
 
-function top_chip_dv_env::new(string name="", uvm_component parent=null);
+function top_chip_dv_env::new(string name = "", uvm_component parent = null);
   super.new(name, parent);
 endfunction : new
 
@@ -49,6 +49,11 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   // Get the handle to the SW log monitor (for compatible SW images)
   if (!uvm_config_db#(virtual sw_logger_if)::get(this, "", "sw_logger_vif", cfg.sw_logger_vif)) begin
     `uvm_fatal(`gfn, "failed to get sw_logger_vif from uvm_config_db")
+  end
+
+  // Get the GPIO VIF handle
+  if (!uvm_config_db#(virtual pins_if #(NUM_GPIOS))::get(this, "", "gpio_vif", cfg.gpio_vif)) begin
+    `uvm_fatal(`gfn, "Failed to retrieve gpio_vif from uvm_config_db")
   end
 
   // Initialize the sw logger interface.
@@ -93,8 +98,8 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   
   uvm_config_db#(top_chip_dv_env_cfg)::set(this, "", "cfg", cfg);
 
-  top_vsqr = top_chip_dv_virtual_sequencer::type_id::create("top_vsqr", this);
-  top_vsqr.cfg = cfg;
+  top_vsqr                 = top_chip_dv_virtual_sequencer::type_id::create("top_vsqr", this);
+  top_vsqr.cfg             = cfg;
   top_vsqr.mem_bkdr_util_h = mem_bkdr_util_h;
 endfunction : build_phase
 
@@ -118,8 +123,7 @@ endfunction : connect_phase
 task top_chip_dv_env::load_memories();
   foreach (cfg.mem_image_files[m]) begin
     if (cfg.mem_image_files[m] != "") begin
-      `uvm_info(`gfn, $sformatf("Initializing memory %s with image %s", m.name(),
-        cfg.mem_image_files[m]), UVM_LOW)
+      `uvm_info(`gfn, $sformatf("Initializing memory %s with image %s", m.name(), cfg.mem_image_files[m]), UVM_LOW)
 
       mem_bkdr_util_h[m].load_mem_from_file(cfg.mem_image_files[m]);
     end

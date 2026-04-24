@@ -23,6 +23,10 @@
       inputs.pyproject-nix.follows = "pyproject-nix";
       inputs.uv2nix.follows = "uv2nix";
     };
+    ftditool = {
+      url = "github:lowRISC/ftditool?ref=v0.2.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   nixConfig = {
@@ -66,6 +70,7 @@
           pythonEnv;
           llvm = lrPkgs.llvm_cheri;
       };
+      ftditool-cli = inputs.ftditool.packages.${system}.default;
 
       commonPackages = with pkgs; [
         cmake
@@ -74,10 +79,12 @@
         picocom
         gtkwave
         openfpgaloader
+        ftditool-cli
         openocd
         uv
         pythonEnv
         verilator
+        verible
         srecord
         d2
       ];

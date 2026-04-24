@@ -19,12 +19,12 @@ module dram_wrapper_sim (
   logic                                 ext_mem_req;
   logic                                 ext_mem_we;
   logic [(top_pkg::AxiDataWidth/8)-1:0] ext_mem_be;
-  logic [top_pkg::AxiAddrWidth-1:0]     ext_mem_addr;
-  logic [top_pkg::AxiDataWidth-1:0]     ext_mem_wdata;
+  logic [    top_pkg::AxiAddrWidth-1:0] ext_mem_addr;
+  logic [    top_pkg::AxiDataWidth-1:0] ext_mem_wdata;
   logic                                 ext_mem_rvalid;
-  logic [top_pkg::AxiDataWidth-1:0]     ext_mem_rdata;
-  logic [ExtMemAddrWidth-1:0]           ext_mem_word_addr;
-  logic [top_pkg::AxiDataWidth-1:0]     ext_mem_wmask;
+  logic [    top_pkg::AxiDataWidth-1:0] ext_mem_rdata;
+  logic [          ExtMemAddrWidth-1:0] ext_mem_word_addr;
+  logic [    top_pkg::AxiDataWidth-1:0] ext_mem_wmask;
 
   // AXI to 64-bit mem for mock external memory
   axi_to_mem #(

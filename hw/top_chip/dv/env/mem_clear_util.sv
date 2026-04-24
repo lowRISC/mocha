@@ -13,12 +13,11 @@ class mem_clear_util extends uvm_object;
   // The width of the memory.
   protected int unsigned width;
 
-  extern function new(string name="", string path, int unsigned depth, longint unsigned n_bits);
+  extern function new(string name = "", string path, int unsigned depth, longint unsigned n_bits);
   extern function void clear_mem();
 endclass : mem_clear_util
 
-function mem_clear_util::new(string name="", string path, int unsigned depth,
-                             longint unsigned n_bits);
+function mem_clear_util::new(string name = "", string path, int unsigned depth, longint unsigned n_bits);
   this.path  = path;
   this.depth = depth;
   this.width = n_bits / depth;

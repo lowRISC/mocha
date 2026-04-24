@@ -626,8 +626,15 @@ task cip_base_vseq::tl_access_sub(
 
         // Now wait a bounded time to check that the bus hasn't locked up for some reason.
         #(tl_access_timeout_ns * 1ns);
+
+        `uvm_fatal(get_name(),
+                   $sformatf("Timeout (%0d ns) when trying to access address 0x%0h.",
+                              tl_access_timeout_ns, addr))
       end
     join_any
+    // This disable will only kill the timeout process. That process can never complete first
+    // (because it will die with a uvm_fatal instead). As a result, there is no danger of killing
+    // the sequence that is being run.
     disable fork;
   end join
   csr_utils_pkg::decrement_outstanding_access();
@@ -1010,9 +1017,9 @@ task cip_base_vseq::wait_alert_trigger(string alert_name,
                                        int    max_wait_cycle = 7,
                                        bit    wait_complete = 0);
   // wait until ping finishes before the dv_spinwait in case
-  // m_alert_agent_cfgs[alert_name].vif.is_alert_handshaking() is true due to a ping
+  // m_alert_agent_cfgs[alert_name].vif.is_alert_handshaking is true due to a ping
   wait_until_ping_is_finished(cfg.m_alert_agent_cfgs[alert_name]);
-  `DV_SPINWAIT_EXIT(while (!cfg.m_alert_agent_cfgs[alert_name].vif.is_alert_handshaking()) begin
+  `DV_SPINWAIT_EXIT(while (!cfg.m_alert_agent_cfgs[alert_name].vif.is_alert_handshaking) begin
                       cfg.clk_rst_vif.wait_clks(1);
                       wait_until_ping_is_finished(cfg.m_alert_agent_cfgs[alert_name]);
                     end,

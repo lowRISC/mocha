@@ -18,14 +18,12 @@ int main(void)
     i2c_init(i2c);
     uart_init(uart);
     timer_init(timer);
-
-    timer_set_prescale_step(timer, (SYSCLK_FREQ / 1000000) - 1, 1); // 1 tick/us
-    timer_enable(timer);
+    timer_enable_write(timer, true);
 
     uprintf(uart, "Hello i2c Mocha!\n");
 
     while (true) {
-        timer_busy_sleep(timer, 1000);
+        timer_busy_sleep_us(timer, 1000u);
 
         // Read current temperature from an AS6212 I^2C-bus sensor and print the value
         if (i2c_write_byte(i2c, 0x48u, 0u)) { // select TVAL reg; also a presence check

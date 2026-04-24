@@ -13,7 +13,6 @@ filesets:
     depend:
       - lowrisc:mocha_dv:gpio_test
       - lowrisc:mocha_dv:gpio_sva
-      - lowrisc:mocha_dv:gpio_if
     files:
       - tb/tb.sv
     file_type: systemVerilogSource

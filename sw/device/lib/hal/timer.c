@@ -3,153 +3,137 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "hal/timer.h"
+#include "builtin.h"
 #include "hal/mmio.h"
+#include "hal/mocha.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-void timer_disable(timer_t timer)
-{
-    DEV_WRITE(timer + TIMER_CTRL_REG, 0x0);
-}
-
-void timer_enable(timer_t timer)
-{
-    DEV_WRITE(timer + TIMER_CTRL_REG, 0x1);
-}
-
-bool timer_get_enable(timer_t timer)
-{
-    return ((DEV_READ(timer + TIMER_CTRL_REG) & 0x1) == 0x1);
-}
-
-void timer_set_prescale_step(timer_t timer, uint16_t prescale, uint8_t step)
-{
-    DEV_WRITE(timer + TIMER_CFG0_REG,
-              (step << TIMER_STEP) | ((prescale & TIMER_PRESCALE_MASK) << TIMER_PRESCALE));
-}
-
-uint16_t timer_get_prescale(timer_t timer)
-{
-    return (uint16_t)(DEV_READ(timer + TIMER_CFG0_REG) & TIMER_PRESCALE_MASK);
-}
-
-uint8_t timer_get_step(timer_t timer)
-{
-    return (uint8_t)(DEV_READ(timer + TIMER_CFG0_REG) >> TIMER_STEP);
-}
-
-void timer_set_compare_lower(timer_t timer, uint32_t compare_lower)
-{
-    DEV_WRITE(timer + TIMER_COMPARE_LOWER0_0_REG, compare_lower);
-}
-
-void timer_set_compare_upper(timer_t timer, uint32_t compare_upper)
-{
-    DEV_WRITE(timer + TIMER_COMPARE_UPPER0_0_REG, compare_upper);
-}
-
-void timer_set_compare(timer_t timer, uint64_t compare)
-{
-    timer_set_compare_lower(timer, (uint32_t)(compare & 0xFFFFFFFF));
-    timer_set_compare_upper(timer, (uint32_t)(compare >> 32));
-}
-
-uint32_t timer_get_compare_lower(timer_t timer)
-{
-    return DEV_READ(timer + TIMER_COMPARE_LOWER0_0_REG);
-}
-
-uint32_t timer_get_compare_upper(timer_t timer)
-{
-    return DEV_READ(timer + TIMER_COMPARE_UPPER0_0_REG);
-}
-
-uint64_t timer_get_compare(timer_t timer)
-{
-    return (((uint64_t)timer_get_compare_upper(timer)) << 32) |
-           ((uint64_t)timer_get_compare_lower(timer));
-}
-
-void timer_set_value_lower(timer_t timer, uint32_t value_lower)
-{
-    DEV_WRITE(timer + TIMER_V_LOWER0_REG, value_lower);
-}
-
-void timer_set_value_upper(timer_t timer, uint32_t value_upper)
-{
-    DEV_WRITE(timer + TIMER_V_UPPER0_REG, value_upper);
-}
-
-void timer_set_value(timer_t timer, uint64_t value)
-{
-    timer_set_value_lower(timer, (uint32_t)(value & 0xFFFFFFFF));
-    timer_set_value_upper(timer, (uint32_t)(value >> 32));
-}
-
-uint32_t timer_get_value_lower(timer_t timer)
-{
-    return DEV_READ(timer + TIMER_V_LOWER0_REG);
-}
-
-uint32_t timer_get_value_upper(timer_t timer)
-{
-    return DEV_READ(timer + TIMER_V_UPPER0_REG);
-}
-
-uint64_t timer_get_value(timer_t timer)
-{
-    return (((uint64_t)timer_get_value_upper(timer)) << 32) |
-           ((uint64_t)timer_get_value_lower(timer));
-}
-
-void timer_disable_interrupt(timer_t timer)
-{
-    DEV_WRITE(timer + TIMER_INTR_ENABLE0_REG, 0x0);
-}
-
-void timer_enable_interrupt(timer_t timer)
-{
-    DEV_WRITE(timer + TIMER_INTR_ENABLE0_REG, 0x1);
-}
-
-bool timer_get_interrupt_enable(timer_t timer)
-{
-    return ((DEV_READ(timer + TIMER_INTR_ENABLE0_REG) & 0x1) == 0x1);
-}
-
-bool timer_has_interrupt(timer_t timer)
-{
-    return ((DEV_READ(timer + TIMER_INTR_STATE0_REG) & 0x1) == 0x1);
-}
-
-void timer_clear_interrupt(timer_t timer)
-{
-    DEV_WRITE(timer + TIMER_INTR_STATE0_REG, 0x1);
-}
-
-void timer_trigger_alert(timer_t timer)
-{
-    DEV_WRITE(timer + TIMER_ALERT_TEST_REG, 0x1);
-}
-
-void timer_trigger_interrupt(timer_t timer)
-{
-    DEV_WRITE(timer + TIMER_INTR_TEST0_REG, 0x1);
-}
+static void timer_compare_write(timer_t timer, uint64_t compare);
 
 void timer_init(timer_t timer)
 {
-    timer_disable(timer);
-    timer_disable_interrupt(timer);
+    timer_enable_write(timer, false);
+    timer_interrupt_enable_write(timer, false);
+    timer_interrupt_clear(timer);
+    /* lowest prescale value gives the most accurate timing */
+    timer_cfg0 cfg = {
+        .prescale = 0,
+        .step = 1u,
+    };
+    VOLATILE_WRITE(timer->cfg0, cfg);
 }
 
-void timer_busy_sleep(timer_t timer, uint64_t duration_steps)
+bool timer_interrupt_enable_read(timer_t timer)
 {
-    timer_set_compare(timer, timer_get_value(timer) + duration_steps);
-    timer_clear_interrupt(timer);
+    timer_intr_enable0 intr_enable = VOLATILE_READ(timer->intr_enable0);
+    return intr_enable.ie;
+}
 
-    // Poll for interrupt
-    while (!timer_has_interrupt(timer)) {
+void timer_interrupt_enable_write(timer_t timer, bool enable)
+{
+    timer_intr_enable0 intr_enable = { .ie = enable };
+    VOLATILE_WRITE(timer->intr_enable0, intr_enable);
+}
+
+void timer_interrupt_force(timer_t timer)
+{
+    timer_intr_test0 intr_test = { .t = true };
+    VOLATILE_WRITE(timer->intr_test0, intr_test);
+}
+
+void timer_interrupt_clear(timer_t timer)
+{
+    /* the rv_timer is effectively a level-triggered interrupt, so to
+     * clear it we can schedule an interrupt infinitely far away... */
+    timer_compare_write(timer, UINT64_MAX);
+    /* ...then clear the latched interrupt bit */
+    timer_intr_state0 intr_state = { .is = true };
+    VOLATILE_WRITE(timer->intr_state0, intr_state);
+}
+
+bool timer_interrupt_pending(timer_t timer)
+{
+    timer_intr_state0 intr_state = VOLATILE_READ(timer->intr_state0);
+    return intr_state.is;
+}
+
+void timer_enable_write(timer_t timer, bool enable)
+{
+    timer_ctrl ctrl = { .active = enable };
+    VOLATILE_WRITE(timer->ctrl, ctrl);
+}
+
+uint64_t timer_value_read(timer_t timer)
+{
+    uint32_t timer_lower, timer_upper, timer_upper_again;
+    do {
+        /* make sure the lower half of the timer value does
+         * not overflow while reading the two halves, see
+         * Unprivileged Spec Chapter 7.1 */
+        timer_upper = VOLATILE_READ(timer->timer_v_upper0);
+        timer_lower = VOLATILE_READ(timer->timer_v_lower0);
+        timer_upper_again = VOLATILE_READ(timer->timer_v_upper0);
+    } while (timer_upper != timer_upper_again);
+
+    return (((uint64_t)timer_upper) << 32u) | timer_lower;
+}
+
+static void timer_compare_write(timer_t timer, uint64_t compare)
+{
+    uint32_t compare_lower = (uint32_t)compare;
+    uint32_t compare_upper = (uint32_t)(compare >> 32u);
+
+    /* write all 1s to the bottom half first, then the top and
+     * bottom to not cause a spurious interrupt from writing an
+     * intermediate value, see Privileged Spec Chapter 3.2.1 */
+    VOLATILE_WRITE(timer->compare_lower0_0, UINT32_MAX);
+    VOLATILE_WRITE(timer->compare_upper0_0, compare_upper);
+    VOLATILE_WRITE(timer->compare_lower0_0, compare_lower);
+}
+
+static inline uint64_t timer_ticks_per_us(timer_t timer)
+{
+    timer_cfg0 cfg = VOLATILE_READ(timer->cfg0);
+    /* ticks     cycles     ticks      steps
+     * ------ =  ------  x  ------  x  -----
+     *   us        us        step      cycle
+     *
+     *           cycles     ticks      cycles
+     *        =  ------  x  ------  /  ------
+     *             us        step       step
+     *
+     *        = cycles/us x cfg.step / (cfg.prescale + 1) */
+    return (cycles_per_us * cfg.step) / ((uint64_t)cfg.prescale + 1u);
+}
+
+void timer_schedule_in_ticks(timer_t timer, uint64_t ticks)
+{
+    uint64_t next;
+    if (uaddl_overflow(timer_value_read(timer), ticks, &next)) {
+        next = UINT64_MAX;
     }
+    timer_compare_write(timer, next);
+}
+
+void timer_schedule_in_us(timer_t timer, uint64_t us)
+{
+    uint64_t ticks;
+    if (umull_overflow(us, timer_ticks_per_us(timer), &ticks)) {
+        ticks = UINT64_MAX;
+    }
+    timer_schedule_in_ticks(timer, ticks);
+}
+
+void timer_busy_sleep_us(timer_t timer, uint64_t us)
+{
+    timer_schedule_in_us(timer, us);
+    while (!timer_interrupt_pending(timer)) {
+    }
+}
+
+uint64_t timer_value_read_us(timer_t timer)
+{
+    return timer_value_read(timer) / timer_ticks_per_us(timer);
 }

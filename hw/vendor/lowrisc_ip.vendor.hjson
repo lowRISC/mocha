@@ -23,7 +23,7 @@
     {from: "util/reggen",          to: "util/reggen"}, // Dependency of crossbar generator.
     {from: "util/regtool.py",      to: "util/regtool.py", patch_dir: "util_regtool"},
     {from: "util/tlgen.py",        to: "util/tlgen.py"}, // Crossbar generator.
-    {from: "util/tlgen",           to: "util/tlgen"},
+    {from: "util/tlgen",           to: "util/tlgen", patch_dir: "util_tlgen"},
     {from: "util/topgen",          to: "util/topgen"}, // Dependency of IP generator.
     {from: "util/version_file.py", to: "util/version_file.py"}, // Dependency of top generator.
 
@@ -31,16 +31,18 @@
     {from: "hw/ip/i2c",          to: "ip/i2c", patch_dir: "i2c"}, // I^2C controller/target
     {from: "hw/ip/lc_ctrl",      to: "ip/lc_ctrl"}, // Dependency of crossbar and power manager.
     {from: "hw/ip/rom_ctrl",     to: "ip/rom_ctrl"}, // Read-only memory.
+    {from: "hw/ip/kmac",         to: "ip/kmac"}, // kmac.
     {from: "hw/ip/rv_core_ibex", to: "ip/rv_core_pkg", patch_dir: "rv_core_pkg"}, // RISC-V core package.
     {from: "hw/ip/rv_timer",     to: "ip/rv_timer", patch_dir: "rv_timer"}, // Timer.
     {from: "hw/ip/spi_device",   to: "ip/spi_device", patch_dir: "spi_device"}, // SPI device.
+    {from: "hw/ip/spi_host",     to: "ip/spi_host"}, // SPI host.
     {from: "hw/ip/tlul",         to: "ip/tlul", patch_dir: "tlul"}, // Memory bus.
     {from: "hw/ip/uart",         to: "ip/uart", patch_dir: "uart"}, // Serial input and output.
 
     // Hardware IP templates.
     {from: "hw/ip_templates/alert_handler", to: "ip_templates/alert_handler"}, // Dependency of reset manager.
     {from: "hw/ip_templates/clkmgr",        to: "ip_templates/clkmgr"},
-    {from: "hw/ip_templates/gpio",          to: "ip_templates/gpio"}, // General purpose I/O
+    {from: "hw/ip_templates/gpio",          to: "ip_templates/gpio", patch_dir: "gpio"}, // General purpose I/O
     {from: "hw/ip_templates/pwrmgr",        to: "ip_templates/pwrmgr", patch_dir: "pwrmgr"},
     {from: "hw/ip_templates/rstmgr",        to: "ip_templates/rstmgr"},
     {from: "hw/ip_templates/rv_plic",       to: "ip_templates/rv_plic"},
@@ -48,7 +50,7 @@
     // Primitives.
     {from: "hw/ip/prim",         to: "ip/prim", patch_dir: "prim"},
     {from: "hw/ip/prim_generic", to: "ip/prim_generic"},
-    {from: "hw/ip/prim_xilinx",  to: "ip/prim_xilinx"},
+    {from: "hw/ip/prim_xilinx",  to: "ip/prim_xilinx", patch_dir: "prim_xilinx"},
 
     // Lint.
     {from: "hw/lint", to: "lint", patch_dir: "lint"},

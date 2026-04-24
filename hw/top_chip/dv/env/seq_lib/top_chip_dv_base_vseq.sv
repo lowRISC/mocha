@@ -15,7 +15,7 @@ class top_chip_dv_base_vseq extends uvm_sequence;
   bit do_apply_reset    = 1'b1;
 
   // Standard SV/UVM methods
-  extern function new(string name="");
+  extern function new(string name = "");
   extern task body();
   extern task pre_start();
   extern task post_start();
@@ -55,7 +55,7 @@ class top_chip_dv_base_vseq extends uvm_sequence;
 endclass : top_chip_dv_base_vseq
 
 
-function top_chip_dv_base_vseq::new(string name="");
+function top_chip_dv_base_vseq::new(string name = "");
   super.new(name);
 endfunction : new
 
@@ -103,16 +103,16 @@ endtask : apply_reset
 task top_chip_dv_base_vseq::wait_for_sw_test_done();
   `uvm_info(`gfn, "Waiting for software to signal test end", UVM_LOW);
   fork
-    begin: isolation_thread
+    begin : isolation_thread
       fork
         begin
           // Nice case - test status interface completion signal
-          wait(p_sequencer.cfg.sw_test_status_vif.sw_test_done);
+          wait (p_sequencer.cfg.sw_test_status_vif.sw_test_done);
           // Pass/Fail message output by sw_test_status_vif
         end
       join_any
       disable fork;
-    end: isolation_thread
+    end : isolation_thread
   join
 endtask : wait_for_sw_test_done
 
@@ -124,12 +124,12 @@ function void top_chip_dv_base_vseq::sw_symbol_backdoor_access(
   input bit is_write = 0);
 
   bit [bus_params_pkg::BUS_AW-1:0] addr, mem_addr;
-  uint size;
-  uint addr_mask;
+  uint   size;
+  uint   addr_mask;
   string sw_dir;
   string sw_basename;
   string image;
-  bit ret;
+  bit    ret;
 
   `DV_CHECK_FATAL(mem inside {CHIP_MEM_LIST},
       $sformatf("SW symbol %0s is not expected to appear in %0s mem", symbol, mem))
@@ -139,10 +139,10 @@ function void top_chip_dv_base_vseq::sw_symbol_backdoor_access(
   `DV_CHECK_STRNE_FATAL(p_sequencer.cfg.mem_image_files[mem], "")
 
   // Find the symbol in the sw elf file.
-  sw_dir = str_utils_pkg::str_path_dirname(.filename(p_sequencer.cfg.mem_image_files[mem]));
+  sw_dir      = str_utils_pkg::str_path_dirname(.filename(p_sequencer.cfg.mem_image_files[mem]));
   sw_basename = str_utils_pkg::str_path_basename(.filename(p_sequencer.cfg.mem_image_files[mem]), .drop_extn(1'b1));
-  image = {sw_dir, "/", sw_basename};
-  ret = dv_utils_pkg::sw_symbol_get_addr_size(image, symbol, does_not_exist_ok, addr, size);
+  image       = {sw_dir, "/", sw_basename};
+  ret         = dv_utils_pkg::sw_symbol_get_addr_size(image, symbol, does_not_exist_ok, addr, size);
   if (!ret) begin
     string msg = $sformatf("Failed to find symbol %0s in %0s", symbol, image);
     if (does_not_exist_ok) begin
@@ -158,18 +158,20 @@ function void top_chip_dv_base_vseq::sw_symbol_backdoor_access(
   mem_addr = addr & addr_mask;
 
   if (is_write) begin
-    `uvm_info(`gfn, $sformatf({"Overwriting symbol \"%s\" via backdoor in %0s: ",
-                               "abs addr = 0x%0h, mem addr = 0x%0h, size = %0d, ",
-                               "addr_mask = 0x%0h"},
-                              symbol, mem, addr, mem_addr, size, addr_mask), UVM_LOW)
+    `uvm_info(`gfn, $sformatf({
+                                "Overwriting symbol \"%s\" via backdoor in %0s: ",
+                                "abs addr = 0x%0h, mem addr = 0x%0h, size = %0d, ",
+                                "addr_mask = 0x%0h"
+                              }, symbol, mem, addr, mem_addr, size, addr_mask), UVM_LOW)
     for (int i = 0; i < size; i++) begin
       mem_bkdr_write8(mem, mem_addr + i, data[i]);
     end
   end else begin
-    `uvm_info(`gfn, $sformatf({"Reading symbol \"%s\" via backdoor in %0s: ",
-                           "abs addr = 0x%0h, mem addr = 0x%0h, size = %0d, ",
-                           "addr_mask = 0x%0h"},
-                          symbol, mem, addr, mem_addr, size, addr_mask), UVM_LOW)
+    `uvm_info(`gfn, $sformatf({
+                                "Reading symbol \"%s\" via backdoor in %0s: ",
+                                "abs addr = 0x%0h, mem addr = 0x%0h, size = %0d, ",
+                                "addr_mask = 0x%0h"
+                              }, symbol, mem, addr, mem_addr, size, addr_mask), UVM_LOW)
     for (int i = 0; i < size; i++) begin
       mem_bkdr_read8(mem, mem_addr + i, data[i]);
     end

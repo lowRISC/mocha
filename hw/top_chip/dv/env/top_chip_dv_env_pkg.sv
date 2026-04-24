@@ -10,13 +10,15 @@ package top_chip_dv_env_pkg;
   import sw_test_status_pkg::*;
   import uart_agent_pkg::*;
   import axi4_vip_pkg::*;
+  import gpio_env_pkg::NUM_GPIOS;
 
   // Macro includes
   `include "uvm_macros.svh"
   `include "dv_macros.svh"
 
   typedef enum {
-    ChipMemSRAM
+    ChipMemSRAM,
+    ChipMemROM
   } chip_mem_e;
 
   typedef chip_mem_e chip_mem_list_t[$];
@@ -46,8 +48,7 @@ package top_chip_dv_env_pkg;
     do begin
       list.push_back(tmp);
       tmp = tmp.next;
-    end
-    while (tmp  != tmp.first);
+    end while (tmp != tmp.first);
     return list;
   endfunction : chip_mem_values
 

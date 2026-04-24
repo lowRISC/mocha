@@ -22,14 +22,13 @@ int main(void)
     uart_init(uart);
     timer_init(timer);
 
-    timer_set_prescale_step(timer, (SYSCLK_FREQ / 1000000) - 1, 1); // 1 tick/us
-    timer_enable(timer);
+    timer_enable_write(timer, true);
 
     uprintf(uart, "Hello CHERI Mocha!\n");
 
     // Print every 100us
     for (int i = 0; i < 4; ++i) {
-        timer_busy_sleep(timer, 100);
+        timer_busy_sleep_us(timer, 100u);
 
         uprintf(uart, "timer 100us\n");
         gpio_write_pin(gpio, i, 1); // turn on LEDs in sequence

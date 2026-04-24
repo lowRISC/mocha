@@ -20,12 +20,12 @@ class top_chip_dv_virtual_sequencer extends uvm_sequencer;
   uvm_tlm_analysis_fifo #(uart_item) uart_tx_fifo;
 
   // Standard SV/UVM methods
-  extern function new(string name="", uvm_component parent=null);
+  extern function new(string name = "", uvm_component parent = null);
   extern function void build_phase(uvm_phase phase);
 endclass : top_chip_dv_virtual_sequencer
 
 
-function top_chip_dv_virtual_sequencer::new(string name="", uvm_component parent=null);
+function top_chip_dv_virtual_sequencer::new(string name = "", uvm_component parent = null);
   super.new(name, parent);
 endfunction : new
 

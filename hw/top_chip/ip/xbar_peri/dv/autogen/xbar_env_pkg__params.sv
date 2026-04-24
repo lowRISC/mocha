@@ -19,6 +19,9 @@ tl_device_t xbar_devices[$] = '{
     '{"pwrmgr", '{
         '{32'h40040000, 32'h4004ffff}
     }},
+    '{"rom_ctrl_regs", '{
+        '{32'h40050000, 32'h4005ffff}
+    }},
     '{"uart", '{
         '{32'h41000000, 32'h4100ffff}
     }},
@@ -31,6 +34,9 @@ tl_device_t xbar_devices[$] = '{
     '{"timer", '{
         '{32'h44000000, 32'h4400ffff}
     }},
+    '{"spi_host", '{
+        '{32'h45000000, 32'h4500ffff}
+    }},
     '{"plic", '{
         '{32'h48000000, 32'h4bffffff}
 }}};
@@ -42,9 +48,11 @@ tl_host_t xbar_hosts[$] = '{
         "clkmgr",
         "rstmgr",
         "pwrmgr",
+        "rom_ctrl_regs",
         "uart",
         "i2c",
         "spi_device",
         "timer",
+        "spi_host",
         "plic"}}
 };

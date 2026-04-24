@@ -171,8 +171,8 @@ void spi_device_cmd_info_set_raw(spi_device_t spi_device, uint32_t offset, uint3
     DEV_WRITE(spi_device + offset, data);
 }
 
-void spi_device_cmd_info_set(spi_device_t spi_device, uint32_t offset, uint8_t opcode, bool address,
-                             uint8_t dummy_cycles, bool handled_in_sw)
+void spi_device_cmd_info_set(spi_device_t spi_device, uint32_t offset, uint8_t opcode,
+                             uint8_t addr_mode, uint8_t dummy_cycles, bool handled_in_sw)
 {
     if (offset < SPI_DEVICE_CMD_INFO_0_REG || offset > SPI_DEVICE_CMD_INFO_23_REG) {
         return;
@@ -181,13 +181,7 @@ void spi_device_cmd_info_set(spi_device_t spi_device, uint32_t offset, uint8_t o
     uint32_t reg = 0;
     reg = reg | (opcode << SPI_DEVICE_CMD_OPCODE);
 
-    if (address) {
-        reg = reg | ((SPI_DEVICE_CMD_ADDR_MODE_ADDR_3B & SPI_DEVICE_CMD_ADDR_MODE_MASK)
-                     << SPI_DEVICE_CMD_ADDR_MODE);
-    } else {
-        reg = reg | ((SPI_DEVICE_CMD_ADDR_MODE_ADDR_DISABLED & SPI_DEVICE_CMD_ADDR_MODE_MASK)
-                     << SPI_DEVICE_CMD_ADDR_MODE);
-    }
+    reg = reg | ((addr_mode & SPI_DEVICE_CMD_ADDR_MODE_MASK) << SPI_DEVICE_CMD_ADDR_MODE);
 
     if (dummy_cycles > 0) {
         reg = reg |
@@ -212,6 +206,20 @@ uint32_t spi_device_cmd_info_get(spi_device_t spi_device, uint32_t offset)
     }
 
     return DEV_READ(spi_device + offset);
+}
+
+void spi_device_cmd_info_4b_enable_set_raw(spi_device_t spi_device, uint32_t data)
+{
+    DEV_WRITE(spi_device + SPI_DEVICE_CMD_INFO_EN4B_REG, data);
+}
+
+void spi_device_cmd_info_4b_enable_set(spi_device_t spi_device, uint8_t opcode)
+{
+    uint32_t reg = 0;
+    reg = reg | (opcode << SPI_DEVICE_CMD_OPCODE);
+    reg = reg | (1 << SPI_DEVICE_CMD_VALID);
+
+    spi_device_cmd_info_4b_enable_set_raw(spi_device, reg);
 }
 
 void spi_device_cmd_info_write_enable_set_raw(spi_device_t spi_device, uint32_t data)
@@ -566,7 +574,7 @@ void spi_device_sfdp_table_init(spi_device_t spi_device)
 
 void spi_device_init(spi_device_t spi_device)
 {
-    spi_device_4b_addr_mode_enable_set(spi_device, false);
+    spi_device_4b_addr_mode_enable_set(spi_device, true);
     spi_device_jedec_cc_set(spi_device, MOCHA_SPI_DEVICE_JEDEC_CC, MOCHA_SPI_DEVICE_JEDEC_CC_COUNT);
     spi_device_jedec_id_set(spi_device, MOCHA_SPI_DEVICE_ROM_BOOTSTRAP, MOCHA_SPI_DEVICE_CHIP_REV,
                             MOCHA_SPI_DEVICE_CHIP_GEN, MOCHA_SPI_DEVICE_DENSITY_BYTES_LOG2,
@@ -575,25 +583,29 @@ void spi_device_init(spi_device_t spi_device)
     spi_device_flash_status_set(spi_device, 0);
 
     // Configure commands
-    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_0_REG, SPI_DEVICE_OPCODE_READ_STATUS,
-                            false, 0, false);
+    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_0_REG, SPI_DEVICE_OPCODE_READ_STATUS, 0,
+                            0, false);
     spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_3_REG, SPI_DEVICE_OPCODE_READ_JEDEC_ID,
-                            false, 0, false);
+                            0, 0, false);
     spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_4_REG, SPI_DEVICE_OPCODE_READ_SFDP,
-                            true, 8, false);
+                            SPI_DEVICE_CMD_ADDR_MODE_ADDR_3B, 8, false);
     spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_5_REG, SPI_DEVICE_OPCODE_READ_DATA,
-                            true, 0, false);
-    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_11_REG, SPI_DEVICE_OPCODE_CHIP_ERASE,
-                            false, 0, true);
-    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_12_REG, SPI_DEVICE_OPCODE_SECTOR_ERASE,
-                            true, 0, true);
-    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_13_REG, SPI_DEVICE_OPCODE_PAGE_PROGRAM,
-                            true, 0, true);
-    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_14_REG, SPI_DEVICE_OPCODE_RESET, false,
+                            SPI_DEVICE_CMD_ADDR_MODE_ADDR_3B, 0, false);
+    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_11_REG, SPI_DEVICE_OPCODE_CHIP_ERASE, 0,
                             0, true);
+    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_12_REG, SPI_DEVICE_OPCODE_SECTOR_ERASE,
+                            SPI_DEVICE_CMD_ADDR_MODE_ADDR_3B, 0, true);
+    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_13_REG, SPI_DEVICE_OPCODE_PAGE_PROGRAM,
+                            SPI_DEVICE_CMD_ADDR_MODE_ADDR_3B, 0, true);
+    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_14_REG, SPI_DEVICE_OPCODE_RESET, 0, 0,
+                            true);
+    spi_device_cmd_info_set(spi_device, SPI_DEVICE_CMD_INFO_15_REG,
+                            SPI_DEVICE_OPCODE_PAGE_PROGRAM4B, SPI_DEVICE_CMD_ADDR_MODE_ADDR_4B, 0,
+                            true);
     // Configure WRITE_ENABLE and WRITE_DISABLE commands
     spi_device_cmd_info_write_enable_set(spi_device, SPI_DEVICE_OPCODE_WRITE_ENABLE);
     spi_device_cmd_info_write_disable_set(spi_device, SPI_DEVICE_OPCODE_WRITE_DISABLE);
+    spi_device_cmd_info_4b_enable_set(spi_device, SPI_DEVICE_OPCODE_ENTER_4B_ADDR);
 }
 
 spi_device_cmd_t spi_device_cmd_get_non_blocking(spi_device_t spi_device)

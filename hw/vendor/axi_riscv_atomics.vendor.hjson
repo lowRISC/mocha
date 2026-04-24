@@ -1,0 +1,14 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "axi_riscv_atomics",
+  target_dir: "axi_riscv_atomics",
+
+  upstream: {
+    // Eventually move to upstream:
+    // https://github.com/pulp-platform/axi_riscv_atomics.git
+    url: "https://github.com/marnovandermaas/axi_riscv_atomics.git",
+    rev: "fix/cheri-cap-supp",
+  },
+}

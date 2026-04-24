@@ -13,11 +13,11 @@ addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;}
 
 addrmap top_mocha {
   external mem {
-    mementries = 0x20000; memwidth=8; // 128KiB
+    mementries = 0x2000; memwidth=32; // 32 KiB
   } ROM @ 0x0008_0000;
 
   external mem {
-    mementries = 0x20000; memwidth=8; // 128KiB
+    mementries = 0x4000; memwidth=64; // 128 KiB
   } SRAM @ 0x1000_0000;
 
   reserved DEBUG_MODULE @ 0x2000_0000;
@@ -49,7 +49,7 @@ addrmap top_mocha {
   rv_plic PLIC @ 0x4800_0000;
 
   external mem {
-    mementries = 0x80000000; memwidth=8; // 2GiB
+    mementries = 0x7F00000; memwidth=64; // 1 GiB (excluding tag storage)
   } DRAM @ 0x8000_0000;
 };
 

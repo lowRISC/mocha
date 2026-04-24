@@ -36,6 +36,7 @@ dependencies = [
     # Design verification runner.
     "dvsim>=1.16",
     "svgwrite>=1.4.3",
+    "pyelftools>=0.32",
 ]
 
 [tool.setuptools]

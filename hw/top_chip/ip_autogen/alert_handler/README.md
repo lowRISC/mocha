@@ -1,10 +1,6 @@
 # Alert Handler Technical Specification
-
-[`alert_handler`](https://reports.opentitan.org/hw/top_earlgrey/ip_autogen/alert_handler/dv/latest/report.html):
-![](https://dashboards.lowrisc.org/badges/dv/alert_handler/test.svg)
-![](https://dashboards.lowrisc.org/badges/dv/alert_handler/passing.svg)
-![](https://dashboards.lowrisc.org/badges/dv/alert_handler/functional.svg)
-![](https://dashboards.lowrisc.org/badges/dv/alert_handler/code.svg)
+<!-- BEGIN CMDGEN util/mdbook_regression_links.py --hjson hw/top_mocha/ip_autogen/alert_handler/data/alert_handler.hjson --top mocha -->
+<!-- END CMDGEN -->
 
 # Overview
 

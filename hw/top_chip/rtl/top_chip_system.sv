@@ -7,7 +7,9 @@
 `include "register_interface/typedef.svh"
 
 module top_chip_system #(
-  SramInitFile = ""
+  parameter int unsigned SPIHostNumCS = 1,
+  parameter              SramInitFile = "",
+  parameter              RomInitFile  = ""
 ) (
   // Clock and reset.
   input  logic clk_i,
@@ -45,36 +47,48 @@ module top_chip_system #(
   input  logic [3:0] spi_device_sd_i,
   input  logic       spi_device_tpm_csb_i,
 
+  // SPI host receive and transmit.
+  output logic                    spi_host_sck_o,
+  output logic                    spi_host_sck_en_o,
+  output logic [SPIHostNumCS-1:0] spi_host_csb_o,
+  output logic [SPIHostNumCS-1:0] spi_host_csb_en_o,
+  output logic [             3:0] spi_host_sd_o,
+  output logic [             3:0] spi_host_sd_en_o,
+  input  logic [             3:0] spi_host_sd_i,
+
   // DRAM AXI interface.
   output top_pkg::axi_dram_req_t  dram_req_o,
   input  top_pkg::axi_dram_resp_t dram_resp_i
 );
+
   // Local parameters.
-  localparam int unsigned SramMemSize   = 128 * 1024; // 128 KiB
-  localparam int unsigned TlDataWidth   = top_pkg::TL_DW;
-  localparam int unsigned AxiAddrOffset = $clog2(top_pkg::AxiDataWidth / 8);
-  localparam int unsigned SramAddrWidth = $clog2(SramMemSize) - AxiAddrOffset;
-  localparam int unsigned GpioIrqs      = 32;
-  localparam int unsigned UartIrqs      = 9;
-  localparam int unsigned I2cIrqs       = 15;
-  localparam int unsigned SPIDeviceIrqs = 8;
+  localparam int unsigned SramMemSize    = 128 * 1024; // 128 KiB
+  localparam int unsigned TlDataWidth    = top_pkg::TL_DW;
+  localparam int unsigned AxiAddrOffset  = $clog2(top_pkg::AxiDataWidth / 8);
+  localparam int unsigned SramAddrWidth  = $clog2(SramMemSize) - AxiAddrOffset;
+  localparam int unsigned GpioIrqs       = 32;
+  localparam int unsigned UartIrqs       = 9;
+  localparam int unsigned I2cIrqs        = 15;
+  localparam int unsigned SPIDeviceIrqs  = 8;
+  localparam int unsigned SPIHostIrqs    = 2;
+  localparam int unsigned KmacNumAppIntf = 1;
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
     config_pkg::cva6_user_cfg_t cfg = CVA6UserCfg;
-    cfg.RVZiCond = bit'(0);
-    cfg.CvxifEn = bit'(0);
-    cfg.NrNonIdempotentRules = unsigned'(1);
+    cfg.RVZiCond              = bit'(0);
+    cfg.CvxifEn               = bit'(0);
+    cfg.NrNonIdempotentRules  = unsigned'(1);
     cfg.NonIdempotentAddrBase = 1024'({64'b0});
-    cfg.NonIdempotentLength = 1024'({top_pkg::SRAMBase});
+    cfg.NonIdempotentLength   = 1024'({top_pkg::SRAMBase});
     return build_config_pkg::build_config(cfg);
   endfunction
 
   localparam config_pkg::cva6_cfg_t CVA6Cfg = build_cva6_config(cva6_config_pkg::cva6_cfg);
   cva6_cheri_pkg::cap_pcc_t boot_cap;
   always_comb begin : gen_boot_cap
-    boot_cap = cva6_cheri_pkg::PCC_ROOT_CAP;
-    boot_cap.addr = top_pkg::SRAMBase + 'h80;
+    boot_cap                = cva6_cheri_pkg::PCC_ROOT_CAP;
+    boot_cap.addr           = top_pkg::SRAMBase + 'h80;
     boot_cap.flags.int_mode = 1'b1;
   end
 
@@ -98,6 +112,7 @@ module top_chip_system #(
   // AXI crossbar address mapping
   axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
   assign addr_map = '{
+    '{ idx: top_pkg::RomCtrlMem, start_addr: top_pkg::RomCtrlMemBase, end_addr: top_pkg::RomCtrlMemBase + top_pkg::RomCtrlMemLength },
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
     '{ idx: top_pkg::Mailbox,    start_addr: top_pkg::MailboxBase,    end_addr: top_pkg::MailboxBase    + top_pkg::MailboxLength    },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
@@ -105,6 +120,7 @@ module top_chip_system #(
   };
 
   // TileLink signals.
+  // TL Xbar
   tlul_pkg::tl_h2d_t tl_axi_xbar_h2d;
   tlul_pkg::tl_d2h_t tl_axi_xbar_d2h;
   tlul_pkg::tl_h2d_t tl_gpio_h2d;
@@ -115,6 +131,8 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_rstmgr_d2h;
   tlul_pkg::tl_h2d_t tl_pwrmgr_h2d;
   tlul_pkg::tl_d2h_t tl_pwrmgr_d2h;
+  tlul_pkg::tl_h2d_t tl_rom_ctrl_regs_h2d;
+  tlul_pkg::tl_d2h_t tl_rom_ctrl_regs_d2h;
   tlul_pkg::tl_h2d_t tl_uart_h2d;
   tlul_pkg::tl_d2h_t tl_uart_d2h;
   tlul_pkg::tl_h2d_t tl_i2c_h2d;
@@ -125,6 +143,11 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_plic_d2h;
   tlul_pkg::tl_h2d_t tl_spi_device_h2d;
   tlul_pkg::tl_d2h_t tl_spi_device_d2h;
+  tlul_pkg::tl_h2d_t tl_spi_host_h2d;
+  tlul_pkg::tl_d2h_t tl_spi_host_d2h;
+  // TL ROM
+  tlul_pkg::tl_h2d_t tl_rom_ctrl_mem_h2d;
+  tlul_pkg::tl_d2h_t tl_rom_ctrl_mem_d2h;
 
   // 64-bit memory format signals
   logic                                 mem64_tl_xbar_req;
@@ -136,6 +159,15 @@ module top_chip_system #(
   logic                                 mem64_tl_xbar_rvalid;
   logic [top_pkg::AxiDataWidth-1:0]     mem64_tl_xbar_rdata;
 
+  logic                                 mem64_tl_rom_mem_req;
+  logic                                 mem64_tl_rom_mem_gnt;
+  logic                                 mem64_tl_rom_mem_we;
+  logic [(top_pkg::AxiDataWidth/8)-1:0] mem64_tl_rom_mem_be;
+  logic [top_pkg::AxiAddrWidth-1:0]     mem64_tl_rom_mem_addr;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_tl_rom_mem_wdata;
+  logic                                 mem64_tl_rom_mem_rvalid;
+  logic [top_pkg::AxiDataWidth-1:0]     mem64_tl_rom_mem_rdata;
+
   // 32-bit memory format signals
   logic                       mem32_tl_xbar_req;
   logic                       mem32_tl_xbar_gnt;
@@ -146,11 +178,24 @@ module top_chip_system #(
   logic                       mem32_tl_xbar_rvalid;
   logic [TlDataWidth-1:0]     mem32_tl_xbar_rdata;
 
+  logic                       mem32_tl_rom_mem_req;
+  logic                       mem32_tl_rom_mem_gnt;
+  logic                       mem32_tl_rom_mem_we;
+  logic [(TlDataWidth/8)-1:0] mem32_tl_rom_mem_be;
+  logic [top_pkg::TL_AW-1:0]  mem32_tl_rom_mem_addr;
+  logic [TlDataWidth-1:0]     mem32_tl_rom_mem_wdata;
+  logic                       mem32_tl_rom_mem_rvalid;
+  logic [TlDataWidth-1:0]     mem32_tl_rom_mem_rdata;
+
   // AXI signals
   top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
   top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
   top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
   top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
+  top_pkg::axi_req_t                            dram_post_atomics_req;
+  top_pkg::axi_resp_t                           dram_post_atomics_resp;
+  top_pkg::axi_req_t                            dram_cut_req;
+  top_pkg::axi_resp_t                           dram_cut_resp;
   top_pkg::axi_req_t                            tag_controller_isolated_req;
   top_pkg::axi_resp_t                           tag_controller_isolated_resp;
 
@@ -164,6 +209,7 @@ module top_chip_system #(
   logic [UartIrqs-1:0]      uart_interrupts;
   logic [I2cIrqs-1:0]       i2c_interrupts;
   logic [SPIDeviceIrqs-1:0] spi_device_interrupts;
+  logic [SPIHostIrqs-1:0]   spi_host_interrupts;
 
   // Interrupt lines to PLIC
   // Each IP block has a single interrupt line to the PLIC and software shall consult the intr_state
@@ -173,27 +219,30 @@ module top_chip_system #(
   logic uart_irq;
   logic i2c_irq;
   logic spi_device_irq;
+  logic spi_host_irq;
   logic pwrmgr_wakeup_irq;
 
   always_comb begin
     // Single interrupt line per IP block.
-    gpio_irq = |gpio_interrupts;
-    uart_irq = |uart_interrupts;
-    i2c_irq = |i2c_interrupts;
+    gpio_irq       = |gpio_interrupts;
+    uart_irq       = |uart_interrupts;
+    i2c_irq        = |i2c_interrupts;
     spi_device_irq = |spi_device_interrupts;
+    spi_host_irq   = |spi_host_interrupts;
   end
 
   // Interrupt vector
   logic [31:0] intr_vector;
 
-  assign intr_vector[31 :12] = '0;      // Reserved for future use.
-  assign intr_vector[11    ] = mailbox_main_irq;
-  assign intr_vector[10    ] = pwrmgr_wakeup_irq;
-  assign intr_vector[ 9    ] = gpio_irq;
-  assign intr_vector[ 8    ] = uart_irq;
-  assign intr_vector[ 7    ] = spi_device_irq;
-  assign intr_vector[ 6    ] = i2c_irq;
-  assign intr_vector[ 5 : 0] = '0;      // Reserved for future use.
+  assign intr_vector[31 : 12] = '0;  // Reserved for future use.
+  assign intr_vector[     11] = mailbox_main_irq;
+  assign intr_vector[     10] = pwrmgr_wakeup_irq;
+  assign intr_vector[      9] = gpio_irq;
+  assign intr_vector[      8] = uart_irq;
+  assign intr_vector[      7] = spi_device_irq;
+  assign intr_vector[      6] = i2c_irq;
+  assign intr_vector[      5] = spi_host_irq;
+  assign intr_vector[ 4 :  0] = '0;  // Reserved for future use.
 
   // Interrupts to the CVA6
   logic       intr_timer;
@@ -220,6 +269,24 @@ module top_chip_system #(
   top_pkg::axi_lite_resp_t mailbox_main_resp;
   top_pkg::axi_lite_req_t  mailbox_ext_req;
   top_pkg::axi_lite_resp_t mailbox_ext_resp;
+
+  // rom_ctrl related signals
+  prim_rom_pkg::rom_cfg_t                  rom_cfg;
+  rom_ctrl_pkg::pwrmgr_data_t              rom_ctrl_pwrmgr_data;
+  rom_ctrl_pkg::keymgr_data_t              rom_ctrl_keymgr_data;
+  kmac_pkg::app_req_t [KmacNumAppIntf-1:0] kmac_app_req;
+  kmac_pkg::app_rsp_t [KmacNumAppIntf-1:0] kmac_app_rsp;
+
+  // Unused rom_ctrl signals
+  logic unused_rom_ctrl_output;
+  assign unused_rom_ctrl_output = (|rom_ctrl_keymgr_data) | (|kmac_app_req) | (|kmac_app_rsp);
+
+  // Assigning default values
+  assign rom_cfg = prim_rom_pkg::ROM_CFG_DEFAULT;
+  for (genvar i = 0; i < KmacNumAppIntf; i++) begin : g_kmac_app_default
+    assign kmac_app_req[i] = kmac_pkg::APP_REQ_DEFAULT;
+    assign kmac_app_rsp[i] = kmac_pkg::APP_RSP_DEFAULT;
+  end
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -253,7 +320,7 @@ module top_chip_system #(
 `ifdef INST_SIM_SRAM
 `ifdef SYNTHESIS
   // Induce a compilation error by instantiating a non-existent module.
-  illegal_preprocessor_branch_taken u_illegal_preprocessor_branch_taken();
+  illegal_preprocessor_branch_taken u_illegal_preprocessor_branch_taken ();
 `endif
 `else
   assign xbar_host_req[top_pkg::CVA6] = cva6_to_sim_req;
@@ -303,7 +370,6 @@ module top_chip_system #(
     .en_default_mst_port_i('0),
     .default_mst_port_i   ('0)
   );
-
 
   // Mailbox: main AXI to AXI Lite adapter
   axi_to_axi_lite #(
@@ -455,7 +521,7 @@ module top_chip_system #(
   );
 
   // TileLink peripheral crossbar
-  xbar_peri u_tl_xbar (
+  xbar_peri u_xbar_peri (
     // Clock and reset.
     .clk_main_i  (clkmgr_clocks.clk_main_infra),
     .clk_io_i    (clkmgr_clocks.clk_io_infra),
@@ -463,28 +529,32 @@ module top_chip_system #(
     .rst_io_ni   (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
 
     // Host interfaces.
-    .tl_axi_xbar_i(tl_axi_xbar_h2d),
-    .tl_axi_xbar_o(tl_axi_xbar_d2h),
+    .tl_axi_xbar_i (tl_axi_xbar_h2d),
+    .tl_axi_xbar_o (tl_axi_xbar_d2h),
 
     // Device interfaces.
-    .tl_gpio_o       (tl_gpio_h2d),
-    .tl_gpio_i       (tl_gpio_d2h),
-    .tl_clkmgr_o     (tl_clkmgr_h2d),
-    .tl_clkmgr_i     (tl_clkmgr_d2h),
-    .tl_rstmgr_o     (tl_rstmgr_h2d),
-    .tl_rstmgr_i     (tl_rstmgr_d2h),
-    .tl_pwrmgr_o     (tl_pwrmgr_h2d),
-    .tl_pwrmgr_i     (tl_pwrmgr_d2h),
-    .tl_uart_o       (tl_uart_h2d),
-    .tl_uart_i       (tl_uart_d2h),
-    .tl_i2c_o        (tl_i2c_h2d),
-    .tl_i2c_i        (tl_i2c_d2h),
-    .tl_spi_device_o (tl_spi_device_h2d),
-    .tl_spi_device_i (tl_spi_device_d2h),
-    .tl_timer_o      (tl_timer_h2d),
-    .tl_timer_i      (tl_timer_d2h),
-    .tl_plic_o       (tl_plic_h2d),
-    .tl_plic_i       (tl_plic_d2h),
+    .tl_gpio_o          (tl_gpio_h2d),
+    .tl_gpio_i          (tl_gpio_d2h),
+    .tl_clkmgr_o        (tl_clkmgr_h2d),
+    .tl_clkmgr_i        (tl_clkmgr_d2h),
+    .tl_rstmgr_o        (tl_rstmgr_h2d),
+    .tl_rstmgr_i        (tl_rstmgr_d2h),
+    .tl_pwrmgr_o        (tl_pwrmgr_h2d),
+    .tl_pwrmgr_i        (tl_pwrmgr_d2h),
+    .tl_rom_ctrl_regs_o (tl_rom_ctrl_regs_h2d),
+    .tl_rom_ctrl_regs_i (tl_rom_ctrl_regs_d2h),
+    .tl_uart_o          (tl_uart_h2d),
+    .tl_uart_i          (tl_uart_d2h),
+    .tl_i2c_o           (tl_i2c_h2d),
+    .tl_i2c_i           (tl_i2c_d2h),
+    .tl_spi_device_o    (tl_spi_device_h2d),
+    .tl_spi_device_i    (tl_spi_device_d2h),
+    .tl_timer_o         (tl_timer_h2d),
+    .tl_timer_i         (tl_timer_d2h),
+    .tl_spi_host_o      (tl_spi_host_h2d),
+    .tl_spi_host_i      (tl_spi_host_d2h),
+    .tl_plic_o          (tl_plic_h2d),
+    .tl_plic_i          (tl_plic_d2h),
 
     .scanmode_i (prim_mubi_pkg::MuBi4False)
   );
@@ -692,6 +762,43 @@ module top_chip_system #(
     .scanmode_i  (prim_mubi_pkg::MuBi4False)
   );
 
+  // Instantiate SPI host to talk to external flash or SD card.
+  spi_host #(
+    .NumCS ( SPIHostNumCS )
+  ) u_spi_host (
+    // Clock and reset.
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+
+    // TileLink bus connections.
+    .tl_i (tl_spi_host_h2d),
+    .tl_o (tl_spi_host_d2h),
+
+    // Alerts and RACL.
+    .alert_rx_i      (prim_alert_pkg::ALERT_RX_DEFAULT),
+    .alert_tx_o      ( ),
+    .racl_policies_i (top_racl_pkg::RACL_POLICY_VEC_DEFAULT),
+    .racl_error_o    ( ),
+
+    // SPI top-level signals.
+    .cio_sck_o    (spi_host_sck_o),
+    .cio_sck_en_o (spi_host_sck_en_o),
+    .cio_csb_o    (spi_host_csb_o),
+    .cio_csb_en_o (spi_host_csb_en_o),
+    .cio_sd_o     (spi_host_sd_o),
+    .cio_sd_en_o  (spi_host_sd_en_o),
+    .cio_sd_i     (spi_host_sd_i),
+
+    // Passthrough and interrupt interfaces.
+    .passthrough_i  (spi_device_pkg::PASSTHROUGH_REQ_DEFAULT),
+    .passthrough_o  ( ),
+    .lsio_trigger_o ( ),
+
+    // Interrupts.
+    .intr_error_o     (spi_host_interrupts[0]),
+    .intr_spi_event_o (spi_host_interrupts[1])
+  );
+
   ///////////////
   // Managers. //
   ///////////////
@@ -749,7 +856,7 @@ module top_chip_system #(
     .pwr_otp_o        ( ),
     .pwr_lc_o         ( ),
     .pwr_lc_i         (lc_ctrl_pkg::PWR_LC_RSP_DEFAULT), // Default to initialised and done.
-    .pwr_flash_i      (pwrmgr_pkg::PWR_FLASH_DEFAULT), // Default to idle.
+    .pwr_nvm_i        (pwrmgr_pkg::PWR_NVM_DEFAULT), // Default to idle.
     .esc_rst_tx_i     (prim_esc_pkg::ESC_RX_DEFAULT),
     .esc_rst_rx_o     ( ),
     .pwr_cpu_i        ('0), // Core is not sleeping.
@@ -759,7 +866,7 @@ module top_chip_system #(
     .ndmreset_req_i   ('0), // No debug module yet.
     .strap_o          (pwrmgr_strap_en),
     .low_power_o      ( ), // Low power not yet supported.
-    .rom_ctrl_i       (rom_ctrl_pkg::PWRMGR_DATA_DEFAULT),
+    .rom_ctrl_i       (rom_ctrl_pwrmgr_data),
     .lc_dft_en_i      (lc_ctrl_pkg::Off),
     .lc_hw_debug_en_i (lc_ctrl_pkg::On),
     .sw_rst_req_i     (rstmgr_sw_rst_req),
@@ -814,6 +921,59 @@ module top_chip_system #(
     (|rstmgr_resets.rst_por_n) | (|rstmgr_resets.rst_spi_device_n) | (|rstmgr_resets.rst_spi_host_n) | (|rstmgr_resets.rst_i2c_n) |
     (|rstmgr_rst_en);
 
+  // Combine response and request between crossbar and atomics wrapper.
+  AXI_BUS #(
+    .AXI_ADDR_WIDTH ( top_pkg::AxiAddrWidth ),
+    .AXI_DATA_WIDTH ( top_pkg::AxiDataWidth ),
+    .AXI_ID_WIDTH   ( top_pkg::AxiIdWidth   ),
+    .AXI_USER_WIDTH ( top_pkg::AxiUserWidth )
+  ) xbar_device_dram();
+  `AXI_ASSIGN_FROM_REQ(xbar_device_dram, xbar_device_req[top_pkg::DRAM])
+  `AXI_ASSIGN_TO_RESP(xbar_device_resp[top_pkg::DRAM], xbar_device_dram)
+
+  // Split response and request between atomics wrapper and cut.
+  AXI_BUS #(
+    .AXI_ADDR_WIDTH ( top_pkg::AxiAddrWidth ),
+    .AXI_DATA_WIDTH ( top_pkg::AxiDataWidth ),
+    .AXI_ID_WIDTH   ( top_pkg::AxiIdWidth   ),
+    .AXI_USER_WIDTH ( top_pkg::AxiUserWidth )
+  ) dram_post_atomics();
+  `AXI_ASSIGN_TO_REQ(dram_post_atomics_req, dram_post_atomics)
+  `AXI_ASSIGN_FROM_RESP(dram_post_atomics, dram_post_atomics_resp)
+
+  // AXI atomics wrapper to handle swaps before going to the tag controller.
+  axi_riscv_atomics_wrap #(
+    .AXI_ADDR_WIDTH     ( top_pkg::AxiAddrWidth ),
+    .AXI_DATA_WIDTH     ( top_pkg::AxiDataWidth ),
+    .AXI_ID_WIDTH       ( top_pkg::AxiIdWidth   ),
+    .AXI_USER_WIDTH     ( top_pkg::AxiUserWidth ),
+    .AXI_MAX_WRITE_TXNS ( 1                     ),
+    .RISCV_WORD_WIDTH   ( 64                    )
+  ) u_axi_riscv_atomics (
+    .clk_i  (clkmgr_clocks.clk_main_infra),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .slv    (xbar_device_dram),
+    .mst    (dram_post_atomics)
+  );
+
+  // Cut combinatorial path between atomics and isolation.
+  axi_cut #(
+    .aw_chan_t  ( top_pkg::axi_aw_chan_t ),
+    .w_chan_t   ( top_pkg::axi_w_chan_t  ),
+    .b_chan_t   ( top_pkg::axi_b_chan_t  ),
+    .ar_chan_t  ( top_pkg::axi_ar_chan_t ),
+    .r_chan_t   ( top_pkg::axi_r_chan_t  ),
+    .axi_req_t  ( top_pkg::axi_req_t     ),
+    .axi_resp_t ( top_pkg::axi_resp_t    )
+  ) u_axi_cut (
+    .clk_i      (clkmgr_clocks.clk_main_infra),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .slv_req_i  (dram_post_atomics_req),
+    .slv_resp_o (dram_post_atomics_resp),
+    .mst_req_o  (dram_cut_req),
+    .mst_resp_i (dram_cut_resp)
+  );
+
   // AXI Isolator for tag controller
   axi_isolate #(
     .TerminateTransaction ( 1'b0                  ),
@@ -827,8 +987,8 @@ module top_chip_system #(
   ) u_tag_controller_isolate (
     .clk_i      (clkmgr_clocks.clk_main_infra),
     .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
-    .slv_req_i  (xbar_device_req[top_pkg::DRAM]),
-    .slv_resp_o (xbar_device_resp[top_pkg::DRAM]),
+    .slv_req_i  (dram_cut_req),
+    .slv_resp_o (dram_cut_resp),
     .mst_req_o  (tag_controller_isolated_req),
     .mst_resp_i (tag_controller_isolated_resp),
     .isolate_i  (tag_controller_isolate | tag_controller_isolate_reg),
@@ -836,8 +996,8 @@ module top_chip_system #(
   );
 
   // Tag controller isolation logic
-  assign tag_controller_isolate = (xbar_device_req[top_pkg::DRAM].ar_valid && xbar_device_resp[top_pkg::DRAM].ar_ready) ||
-                                  (xbar_device_req[top_pkg::DRAM].aw_valid && xbar_device_resp[top_pkg::DRAM].aw_ready);
+  assign tag_controller_isolate = (dram_cut_req.ar_valid && dram_cut_resp.ar_ready) ||
+                                  (dram_cut_req.aw_valid && dram_cut_resp.aw_ready);
 
   always_ff @(posedge clkmgr_clocks.clk_main_infra or negedge rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
     if (!rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) tag_controller_isolate_reg <= 1'b0;
@@ -881,4 +1041,119 @@ module top_chip_system #(
     .cached_start_addr_i (top_pkg::DRAMBase),
     .cached_end_addr_i   (top_pkg::TagCacheMemBase)
   );
+
+  // TL ROM
+  // AXI to 64-bit mem for TLUL ROM
+  axi_to_mem #(
+    .axi_req_t  ( top_pkg::axi_req_t    ),
+    .axi_resp_t ( top_pkg::axi_resp_t   ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth ),
+    .DataWidth  ( top_pkg::AxiDataWidth ),
+    .IdWidth    ( top_pkg::AxiIdWidth   ),
+    .NumBanks   ( 1                     )
+  ) u_tl_rom_axi_to_mem (
+    .clk_i      (clkmgr_clocks.clk_main_infra),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+
+    // AXI interface.
+    .busy_o     ( ),
+    .axi_req_i  (xbar_device_req[top_pkg::RomCtrlMem]),
+    .axi_resp_o (xbar_device_resp[top_pkg::RomCtrlMem]),
+
+    // Memory interface.
+    .mem_req_o    (mem64_tl_rom_mem_req),
+    .mem_gnt_i    (mem64_tl_rom_mem_gnt),
+    .mem_addr_o   (mem64_tl_rom_mem_addr),
+    .mem_wdata_o  (mem64_tl_rom_mem_wdata),
+    .mem_strb_o   (mem64_tl_rom_mem_be),
+    .mem_atop_o   ( ),
+    .mem_we_o     (mem64_tl_rom_mem_we),
+    .mem_rvalid_i (mem64_tl_rom_mem_rvalid),
+    .mem_rdata_i  (mem64_tl_rom_mem_rdata)
+  );
+
+  // 64-bit mem to 32-bit mem for TLUL ROM
+  mem_downsizer u_tl_rom_mem_downsizer (
+    .clk_i      (clkmgr_clocks.clk_main_infra),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+
+    // 64-bit memory request in
+    .mem64_req_i    (mem64_tl_rom_mem_req),
+    .mem64_gnt_o    (mem64_tl_rom_mem_gnt),
+    .mem64_we_i     (mem64_tl_rom_mem_we),
+    .mem64_be_i     (mem64_tl_rom_mem_be),
+    .mem64_addr_i   (mem64_tl_rom_mem_addr),
+    .mem64_wdata_i  (mem64_tl_rom_mem_wdata),
+    .mem64_rvalid_o (mem64_tl_rom_mem_rvalid),
+    .mem64_rdata_o  (mem64_tl_rom_mem_rdata),
+
+    // 32-bit memory request out
+    .mem32_req_o    (mem32_tl_rom_mem_req),
+    .mem32_gnt_i    (mem32_tl_rom_mem_gnt),
+    .mem32_we_o     (mem32_tl_rom_mem_we),
+    .mem32_be_o     (mem32_tl_rom_mem_be),
+    .mem32_addr_o   (mem32_tl_rom_mem_addr),
+    .mem32_wdata_o  (mem32_tl_rom_mem_wdata),
+    .mem32_rvalid_i (mem32_tl_rom_mem_rvalid),
+    .mem32_rdata_i  (mem32_tl_rom_mem_rdata)
+  );
+
+  // 32-bit mem to TLUL for TLUL ROM
+  tlul_adapter_host #(
+    .EnableDataIntgGen      ( 1 ),
+    .EnableRspDataIntgCheck ( 1 )
+  ) u_tl_rom_tlul_host_adapter (
+    .clk_i      (clkmgr_clocks.clk_main_infra),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+
+    .req_i        (mem32_tl_rom_mem_req),
+    .gnt_o        (mem32_tl_rom_mem_gnt),
+    .addr_i       (mem32_tl_rom_mem_addr),
+    .we_i         (mem32_tl_rom_mem_we),
+    .wdata_i      (mem32_tl_rom_mem_wdata),
+    .wdata_intg_i ('0),
+    .be_i         (mem32_tl_rom_mem_be),
+    .instr_type_i (prim_mubi_pkg::MuBi4True),
+    .user_rsvd_i  ('0),
+
+    .valid_o      (mem32_tl_rom_mem_rvalid),
+    .rdata_o      (mem32_tl_rom_mem_rdata),
+    .rdata_intg_o ( ),
+    .err_o        ( ),
+    .intg_err_o   ( ),
+
+    .tl_o         (tl_rom_ctrl_mem_h2d),
+    .tl_i         (tl_rom_ctrl_mem_d2h)
+  );
+
+  rom_ctrl # (
+    .BootRomInitFile      ( RomInitFile ),
+    .AlertAsyncOn         ( 1'b1        ),
+    .AlertSkewCycles      ( 1           ),
+    .FlopToKmac           ( 1'b0        ),
+    .RndCnstScrNonce      ( '0          ),
+    .RndCnstScrKey        ( '0          ),
+    .SecDisableScrambling ( 1'b1        ),
+    .MemSizeRom           ( 32'(top_pkg::RomCtrlMemLength) )
+  ) u_rom_ctrl (
+    // Clock and reset connections
+    .clk_i  (clkmgr_clocks.clk_main_infra),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+
+    // Allert Signals
+    .alert_tx_o  ( ),
+    .alert_rx_i  (prim_alert_pkg::ALERT_RX_DEFAULT),
+
+    // Inter-module signals
+    .rom_cfg_i      (rom_cfg),
+    .pwrmgr_data_o  (rom_ctrl_pwrmgr_data),
+    .keymgr_data_o  (rom_ctrl_keymgr_data),
+    .kmac_data_o    (),
+    .kmac_data_i    (),
+    .rom_tl_i       (tl_rom_ctrl_mem_h2d),
+    .rom_tl_o       (tl_rom_ctrl_mem_d2h),
+    .regs_tl_i      (tl_rom_ctrl_regs_h2d),
+    .regs_tl_o      (tl_rom_ctrl_regs_d2h)
+  );
+
 endmodule

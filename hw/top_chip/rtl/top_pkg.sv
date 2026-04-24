@@ -19,7 +19,7 @@ package top_pkg;
 
   // AXI crossbar parameters
   localparam int AxiXbarHosts   = 1;
-  localparam int AxiXbarDevices = 4;
+  localparam int AxiXbarDevices = 5;
 
   // AXI crossbar hosts and devices
   typedef enum int unsigned {
@@ -27,32 +27,32 @@ package top_pkg;
   } axi_hosts_t;
 
   typedef enum int unsigned {
-    SRAM       = 0,
-    Mailbox    = 1,
-    TlCrossbar = 2,
-    DRAM       = 3
+    RomCtrlMem = 0,
+    SRAM       = 1,
+    Mailbox    = 2,
+    TlCrossbar = 3,
+    DRAM       = 4
   } axi_devices_t;
 
   typedef enum longint unsigned {
+    RomCtrlMemBase = 64'h0008_0000,
     SRAMBase       = 64'h1000_0000,
     MailboxBase    = 64'h2001_0000,
     TlCrossbarBase = 64'h4000_0000,
     DRAMBase       = 64'h8000_0000
   } axi_addr_start_t;
 
-  typedef enum longint unsigned {
-    SRAMLength       = 64'h0002_0000,
-    MailboxLength    = 64'h0001_0000,
-    TlCrossbarLength = 64'h1000_0000,
-    DRAMLength       = 64'h3F80_0000
-  } axi_addr_length_t;
+  localparam longint unsigned RomCtrlMemLength  = 64'h0000_8000;
+  localparam longint unsigned SRAMLength        = 64'h0002_0000;
+  localparam longint unsigned MailboxLength     = 64'h0001_0000;
+  localparam longint unsigned TlCrossbarLength  = 64'h1000_0000;
+  localparam longint unsigned DRAMLength        = 64'h3F80_0000;
 
-  typedef enum longint unsigned {
-    SRAMMask       = SRAMLength - 1,
-    MailboxMask    = MailboxLength - 1,
-    TlCrossbarMask = TlCrossbarLength - 1,
-    DRAMMask       = DRAMLength - 1
-  } axi_addr_mask_t;
+  localparam longint unsigned RomCtrlMemMask    = RomCtrlMemLength - 1;
+  localparam longint unsigned SRAMMask          = SRAMLength - 1;
+  localparam longint unsigned MailboxMask       = MailboxLength - 1;
+  localparam longint unsigned TlCrossbarMask    = TlCrossbarLength - 1;
+  localparam longint unsigned DRAMMask          = DRAMLength - 1;
 
   // Tag controller parameters
   localparam int     unsigned CapSizeBits              = 128;

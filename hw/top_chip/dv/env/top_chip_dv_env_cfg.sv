@@ -9,6 +9,10 @@ class top_chip_dv_env_cfg extends uvm_object;
   // External interfaces
   virtual clk_rst_if        sys_clk_vif;
   virtual clk_rst_if        peri_clk_vif;
+
+  // GPIO Pads interface
+  virtual pins_if #(NUM_GPIOS) gpio_vif;
+
   // Software logging & status interfaces
   virtual sw_logger_if      sw_logger_vif;
   virtual sw_test_status_if sw_test_status_vif;
@@ -22,7 +26,7 @@ class top_chip_dv_env_cfg extends uvm_object;
   `uvm_object_utils_end
 
   // Standard SV/UVM methods
-  extern function new(string name="");
+  extern function new(string name = "");
 
   // Class specific methods
   extern function void initialize();
@@ -30,7 +34,7 @@ class top_chip_dv_env_cfg extends uvm_object;
 endclass : top_chip_dv_env_cfg
 
 
-function top_chip_dv_env_cfg::new(string name="");
+function top_chip_dv_env_cfg::new(string name = "");
   super.new(name);
 endfunction : new
 
@@ -38,9 +42,9 @@ function void top_chip_dv_env_cfg::initialize();
   get_mem_image_files_from_plusargs();
 
   // Create UART agent config obj
-  m_uart_agent_cfg = uart_agent_cfg::type_id::create("m_uart_agent_cfg");
+  m_uart_agent_cfg               = uart_agent_cfg::type_id::create("m_uart_agent_cfg");
   // Do not create UART agent fcov in chip level test
-  m_uart_agent_cfg.en_cov = 0;
+  m_uart_agent_cfg.en_cov        = 0;
   // Configuration is required to perform meaningful monitoring
   m_uart_agent_cfg.en_tx_monitor = 0;
   m_uart_agent_cfg.en_rx_monitor = 0;

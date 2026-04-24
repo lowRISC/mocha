@@ -8,6 +8,8 @@
 `define SRAM_MEM_HIER `SYSTEM_HIER.u_axi_sram.u_ram.mem
 `define TAG_MEM_HIER `SYSTEM_HIER.u_axi_sram.u_tag_mem_prim.mem
 `define AXI_XBAR_HIER `SYSTEM_HIER.u_axi_xbar
+`define TAG_MEM_HIER `SYSTEM_HIER.u_axi_sram.u_tag_ram.mem
+`define ROM_MEM_HIER `SYSTEM_HIER.u_rom_ctrl.gen_rom_scramble_disabled.u_rom.u_prim_rom.mem
 
 // Testbench related
 `define SIM_SRAM_IF u_sim_sram.u_sim_sram_if

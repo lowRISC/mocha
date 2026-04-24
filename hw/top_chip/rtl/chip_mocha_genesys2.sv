@@ -3,7 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 module chip_mocha_genesys2 #(
-  parameter BootRomInitFile = ""
+  parameter BootRomInitFile = "",
+  parameter RomInitFile     = ""
 ) (
   // Onboard 200MHz oscillator
   input  logic sysclk_200m_ni,
@@ -11,9 +12,10 @@ module chip_mocha_genesys2 #(
 
   // External reset
   input  logic ext_rst_ni,
+  input  logic ftdi_rst_ni,
 
   // GPIO - enough for the user switches and LEDs as a starting point
-  input  logic [7:0] gpio_i,
+  input  logic [8:0] gpio_i,
   output logic [7:0] gpio_o,
 
   // UART
@@ -78,6 +80,9 @@ module chip_mocha_genesys2 #(
   logic [3:0]  qspi_device_sdo;
   logic [3:0]  qspi_device_sdo_en;
 
+  logic [3:0] spi_host_sd;
+  logic [3:0] spi_host_sd_en;
+
   // AXI signals
   // Tag controller to CDC FIFO, synchronous to u_top_chip_system.clkmgr_clocks.clk_main_infra
   top_pkg::axi_dram_req_t  dram_req;
@@ -116,7 +121,7 @@ module chip_mocha_genesys2 #(
     .ResetValue ('0)
   ) u_mig_rst_sync_cfg (
     .clk_i  (clk_cfg),
-    .rst_ni (ext_rst_ni & fpga_rst_n_sync_cfg),
+    .rst_ni (ext_rst_ni & ftdi_rst_ni & fpga_rst_n_sync_cfg),
     .d_i    (1'b1),
     .q_o    (mig_rst_n_sync_cfg)
   );
@@ -126,7 +131,7 @@ module chip_mocha_genesys2 #(
     .ResetValue ('0)
   ) u_rst_sync_50m (
     .clk_i  (clk_50m),
-    .rst_ni (ext_rst_ni & fpga_rst_n_sync_cfg),
+    .rst_ni (ext_rst_ni & ftdi_rst_ni & fpga_rst_n_sync_cfg),
     .d_i    (1'b1),
     .q_o    (rst_n_sync_50m)
   );
@@ -143,14 +148,15 @@ module chip_mocha_genesys2 #(
 
   // CHERI Mocha top
   top_chip_system #(
-    .SramInitFile(BootRomInitFile)
+    .SramInitFile(BootRomInitFile),
+    .RomInitFile (RomInitFile)
   ) u_top_chip_system (
     // Clock and reset
     .clk_i    (clk_50m),
     .rst_ni   (rst_n_sync_50m),
 
     // GPIO
-    .gpio_i    ({24'd0, gpio_i}),
+    .gpio_i    ({23'd0, gpio_i}),
     .gpio_o    (gpio_outputs),
     .gpio_en_o (gpio_en_outputs),
 
@@ -179,6 +185,19 @@ module chip_mocha_genesys2 #(
     .spi_device_sd_i      ({3'h0, spi_device_sd_i}), // SPI MOSI = QSPI DQ0
     .spi_device_tpm_csb_i ('0),
 
+    // SPI host
+    .spi_host_sck_o    ( ),
+    .spi_host_sck_en_o ( ),
+    .spi_host_csb_o    ( ),
+    .spi_host_csb_en_o ( ),
+    .spi_host_sd_o     (spi_host_sd),
+    .spi_host_sd_en_o  (spi_host_sd_en),
+    // Mapping output 0 to input 1 because legacy SPI does not allow
+    // bi-directional wires.
+    // This only works in standard mode where sd_o[0]=COPI and
+    // sd_i[1]=CIPO.
+    .spi_host_sd_i     ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
+
     // DRAM
     .dram_req_o  (dram_req),
     .dram_resp_i (dram_resp)
@@ -196,16 +215,16 @@ module chip_mocha_genesys2 #(
 
   // I^2C bi-directional buffers
   IOBUF i2c_scl_iobuf (
-    .I(i2c_scl_output),     // system output / buffer internal input
-    .T(~i2c_scl_en_output), // system output enable / buffer tri-state enable
-    .IO(i2c_scl_io),        // external FPGA pin / buffer external connection
-    .O(i2c_scl_input)       // system input / buffer internal output
+    .I (i2c_scl_output),      // system output / buffer internal input
+    .T (~i2c_scl_en_output),  // system output enable / buffer tri-state enable
+    .IO(i2c_scl_io),          // external FPGA pin / buffer external connection
+    .O (i2c_scl_input)        // system input / buffer internal output
   );
   IOBUF i2c_sda_iobuf (
-    .I(i2c_sda_output),
-    .T(~i2c_sda_en_output),
+    .I (i2c_sda_output),
+    .T (~i2c_sda_en_output),
     .IO(i2c_sda_io),
-    .O(i2c_sda_input)
+    .O (i2c_sda_input)
   );
 
   // SPI tri-state output driver

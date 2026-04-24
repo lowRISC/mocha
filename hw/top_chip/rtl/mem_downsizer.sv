@@ -14,26 +14,26 @@ module mem_downsizer (
   output logic                                 mem64_gnt_o,
   input  logic                                 mem64_we_i,
   input  logic [(top_pkg::AxiDataWidth/8)-1:0] mem64_be_i,
-  input  logic [top_pkg::AxiAddrWidth-1:0]     mem64_addr_i,
-  input  logic [top_pkg::AxiDataWidth-1:0]     mem64_wdata_i,
+  input  logic [    top_pkg::AxiAddrWidth-1:0] mem64_addr_i,
+  input  logic [    top_pkg::AxiDataWidth-1:0] mem64_wdata_i,
   output logic                                 mem64_rvalid_o,
-  output logic [top_pkg::AxiDataWidth-1:0]     mem64_rdata_o,
+  output logic [    top_pkg::AxiDataWidth-1:0] mem64_rdata_o,
 
   // 32-bit memory request out
   output logic                          mem32_req_o,
   input  logic                          mem32_gnt_i,
   output logic                          mem32_we_o,
   output logic [(top_pkg::TL_DW/8)-1:0] mem32_be_o,
-  output logic [top_pkg::TL_AW-1:0]     mem32_addr_o,
-  output logic [top_pkg::TL_DW-1:0]     mem32_wdata_o,
+  output logic [    top_pkg::TL_AW-1:0] mem32_addr_o,
+  output logic [    top_pkg::TL_DW-1:0] mem32_wdata_o,
   input  logic                          mem32_rvalid_i,
-  input  logic [top_pkg::TL_DW-1:0]     mem32_rdata_i
+  input  logic [    top_pkg::TL_DW-1:0] mem32_rdata_i
 );
   // Send side downsizer signals
-  logic                                 dw_valid;     // Has valid transaction
+  logic                                 dw_valid;  // Has valid transaction
   logic                                 dw_first_done;
-  logic            [top_pkg::TL_AW-1:0] dw_store_addr;
-  logic     [top_pkg::AxiDataWidth-1:0] dw_store_wdata;
+  logic [           top_pkg::TL_AW-1:0] dw_store_addr;
+  logic [    top_pkg::AxiDataWidth-1:0] dw_store_wdata;
   logic                                 dw_store_we;
   logic [(top_pkg::AxiDataWidth/8)-1:0] dw_store_be;
 

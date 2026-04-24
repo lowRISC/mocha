@@ -11,6 +11,7 @@ module tb;
   import top_chip_dv_env_pkg::*;
   import top_chip_dv_test_pkg::*;
   import axi4_vip_pkg::*;
+  import gpio_env_pkg::NUM_GPIOS;
 
   import top_chip_dv_env_pkg::SW_DV_START_ADDR;
   import top_chip_dv_env_pkg::SW_DV_TEST_STATUS_ADDR;
@@ -27,6 +28,14 @@ module tb;
   wire peri_clk;
   wire peri_rst_n;
 
+  // GPIO connections
+  wire  [NUM_GPIOS-1:0] gpio_pads;    // A wire connected to bidirectional pads in pins_if
+  logic [NUM_GPIOS-1:0] dut_gpio_o;
+  logic [NUM_GPIOS-1:0] dut_gpio_en_o;
+
+  logic [3:0] spi_host_sd;
+  logic [3:0] spi_host_sd_en;
+
   // ------ Interfaces ------
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
@@ -36,12 +45,13 @@ module tb;
 
   // AXI VIP connections are included from a separate file for better reading
   `include "axi_vip_connections.sv"
+  pins_if #(NUM_GPIOS) gpio_pins_if (.pins(gpio_pads));
 
   // ------ Mock DRAM ------
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;
 
-  dram_wrapper_sim u_dram_wrapper(
+  dram_wrapper_sim u_dram_wrapper (
     // Clock and reset.
     .clk_i      (dut.clkmgr_clocks.clk_main_infra),
     .rst_ni     (dut.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
@@ -51,10 +61,17 @@ module tb;
   );
 
   // ------ DUT ------
-  top_chip_system #() dut (
+  top_chip_system #(
+    .SramInitFile(""),
+    .RomInitFile ("")
+  ) dut (
     // Clock and reset.
     .clk_i                (clk              ),
     .rst_ni               (rst_n            ),
+    // GPIO inputs and outputs with output enable
+    .gpio_i               (gpio_pads        ),
+    .gpio_o               (dut_gpio_o       ),
+    .gpio_en_o            (dut_gpio_en_o    ),
     // UART receive and transmit.
     .uart_rx_i            (uart_if.uart_rx  ),
     .uart_tx_o            (uart_if.uart_tx  ),
@@ -70,10 +87,28 @@ module tb;
     .spi_device_sd_en_o   (                 ),
     .spi_device_sd_i      (4'hF             ),
     .spi_device_tpm_csb_i (1'b0             ),
+    // SPI host.
+    .spi_host_sck_o       (                 ),
+    .spi_host_sck_en_o    (                 ),
+    .spi_host_csb_o       (                 ),
+    .spi_host_csb_en_o    (                 ),
+    .spi_host_sd_o        (spi_host_sd      ),
+    .spi_host_sd_en_o     (spi_host_sd_en   ),
+    // Mapping output 0 to input 1 because legacy SPI does not allow
+    // bi-directional wires.
+    // This only works in standard mode where sd_o[0]=COPI and
+    // sd_i[1]=CIPO.
+    .spi_host_sd_i        ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
     // DRAM.
     .dram_req_o           (dram_req         ),
     .dram_resp_i          (dram_resp        )
   );
+
+  // Assignment to the GPIO pads. If dut_gpio_en_o[i] is disabled, then let the gpio_pad[i] float so
+  // an external device / driver can drive it.
+  for (genvar i = 0; i < NUM_GPIOS; i++) begin : gen_gpio_pads
+    assign gpio_pads[i] = dut_gpio_en_o[i] ? dut_gpio_o[i] : 1'bz;
+  end
 
   // Signals to connect the sink
   top_pkg::axi_req_t  sim_sram_cpu_req;
@@ -108,8 +143,8 @@ module tb;
   // ------ Memory backdoor accesses ------
   if (prim_pkg::PrimTechName == "Generic") begin : gen_mem_bkdr_utils
     initial begin
-      chip_mem_e    mem;
-      mem_bkdr_util m_mem_bkdr_util[chip_mem_e];
+      chip_mem_e     mem;
+      mem_bkdr_util  m_mem_bkdr_util[chip_mem_e];
       mem_clear_util tag_mem_clear;
 
       m_mem_bkdr_util[ChipMemSRAM] = new(
@@ -124,6 +159,18 @@ module tb;
       // Zero-initialising the SRAM ensures valid BSS.
       m_mem_bkdr_util[ChipMemSRAM].clear_mem();
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemSRAM], `SRAM_MEM_HIER)
+
+      m_mem_bkdr_util[ChipMemROM] = new(
+        .name                 ("mem_bkdr_util[ChipMemROM]"        ),
+        .path                 (`DV_STRINGIFY(`ROM_MEM_HIER)        ),
+        .depth                ($size(`ROM_MEM_HIER)                ),
+        .n_bits               ($bits(`ROM_MEM_HIER)                ),
+        .err_detection_scheme (mem_bkdr_util_pkg::ErrDetectionNone),
+        .system_base_addr     (top_pkg::RomCtrlMemBase             )
+      );
+
+      `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemROM], `ROM_MEM_HIER)
+
 
       // TODO MVy, see if required
       // Zero-initialise the SRAM Capability tags, otherwise TL-UL FIFO assertions will fire;
@@ -174,10 +221,14 @@ module tb;
   // ------ Initialisation ------
   initial begin
     // Set base of SW DV special write locations
-    `SIM_SRAM_IF.start_addr                               = SW_DV_START_ADDR;
-    `SIM_SRAM_IF.sw_dv_size                               = SW_DV_SIZE;
-    `SIM_SRAM_IF.u_sw_test_status_if.sw_test_status_addr  = SW_DV_TEST_STATUS_ADDR;
-    `SIM_SRAM_IF.u_sw_logger_if.sw_log_addr               = SW_DV_LOG_ADDR;
+    `SIM_SRAM_IF.start_addr                              = SW_DV_START_ADDR;
+    `SIM_SRAM_IF.sw_dv_size                              = SW_DV_SIZE;
+    `SIM_SRAM_IF.u_sw_test_status_if.sw_test_status_addr = SW_DV_TEST_STATUS_ADDR;
+    `SIM_SRAM_IF.u_sw_logger_if.sw_log_addr              = SW_DV_LOG_ADDR;
+
+    // Enable GPIO pull-ups to support the SW boot process. While only pin 8 is strictly required
+    // by the Boot ROM to determine the boot path, we enable pull-ups on all pins for consistency.
+    gpio_pins_if.set_pullup_en('1);
 
     // Start clock and reset generators
     sys_clk_if.set_active();
@@ -186,6 +237,7 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "sys_clk_if", sys_clk_if);
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "peri_clk_if", peri_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
+    uvm_config_db#(virtual pins_if #(NUM_GPIOS))::set(null, "*.env", "gpio_vif", gpio_pins_if);
 
     // AXI VIFs
     uvm_config_db#(virtual axi4_vip_if)::set(null, "*.m_mgr_axi_CVA6.*",       "vif", axi4_mgr_if[top_pkg::CVA6]);

@@ -13,9 +13,7 @@
 
   mapping: [
     // Simulation.
-    {from: "dv/dpi/i2cdpi", to: "dv/dpi/i2cdpi"},
-  ],
-
-  exclude_from_upstream: [
+    {from: "dv/dpi/i2cdpi",       to: "dv/dpi/i2cdpi"},
+    {from: "dv/dpi/spidevicedpi", to: "dv/dpi/spidevicedpi"},
   ],
 }

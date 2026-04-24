@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "boot/trap.h"
+#include "builtin.h"
+#include "constants.h"
 #include "hal/gpio.h"
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
@@ -11,31 +13,60 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MAJOR "00"
+#define MINOR "01"
+#define PATCH "00"
+
+const uintptr_t boot_slots[] = { 0x10004000, 0x80000000 };
+struct boot_context {
+    uart_t console;
+    gpio_t gpio;
+    timer_t timer;
+};
+
 // These are defined by the linker script.
 extern uint8_t _program_start[];
 extern uint8_t _program_end[];
 
-static bool spi_boot_strap(uart_t console);
+static bool spi_boot_strap(struct boot_context *ctx);
 static void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes);
 static void boot(uintptr_t addr);
 static void led_init(gpio_t gpio);
-static void led_animation_run(gpio_t gpio);
+static void led_animation_run(struct boot_context *ctx);
+static bool bootstrap_requested(struct boot_context *ctx);
+static bool get_boot_addr(uint32_t *addr);
+
 
 // TODO: Add support to cheri mode
 int main(void)
 {
-    uart_t console = mocha_system_uart();
-    uart_init(console);
-    uprintf(console, "\nBoot ROM!\n");
+    struct boot_context boot_ctx = (struct boot_context){
+        .console = mocha_system_uart(),
+        .timer = mocha_system_timer(),
+        .gpio = mocha_system_gpio(),
+    };
 
-    // Spin polling the spi_dev and processng incoming data until a reset command is received.
-    spi_boot_strap(console);
+    uart_init(boot_ctx.console);
+    uprintf(boot_ctx.console, "\nBoot ROM: v%s.%s.%s\n", MAJOR, MINOR, PATCH);
 
-    enum { BootAddress = 0x10004080 };
-    uprintf(console, "\nJumping to: 0x%0x\n", BootAddress);
+    timer_init(boot_ctx.timer);
+    timer_enable_write(boot_ctx.timer, true);
+    if (bootstrap_requested(&boot_ctx)) {
+        uprintf(boot_ctx.console, "Entering SPI bootstrap\n");
+        // Spin polling the spi_dev and processing incoming data until a reset command is received.
+        spi_boot_strap(&boot_ctx);
+    }
 
-    boot(BootAddress);
-    uprintf(console, "\nFailed to boot?\n");
+    uint32_t boot_addr = 0;
+    while (!get_boot_addr(&boot_addr)) {
+        uprintf(boot_ctx.console, "Entering SPI bootstrap\n");
+        // Spin polling the spi_dev and processing incoming data until a reset command is received.
+        spi_boot_strap(&boot_ctx);
+    }
+
+    uprintf(boot_ctx.console, "\nJumping to: 0x%x\n", boot_addr);
+    boot(boot_addr);
+    uprintf(boot_ctx.console, "\nFailed to boot?\n");
     return 0;
 }
 
@@ -46,55 +77,56 @@ void boot(uintptr_t addr)
     reset();
 }
 
-bool spi_boot_strap(uart_t console)
+bool get_boot_addr(uint32_t *addr)
 {
-    gpio_t gpio = mocha_system_gpio();
-    led_init(gpio);
+    for (size_t i = 0; i < ARRAY_LEN(boot_slots); i++) {
+        uintptr_t slot = boot_slots[i];
+        if (DEV_READ(slot) == BOOT_MAGIC_NUMBER) {
+            slot += sizeof(uint32_t);
+            *addr = DEV_READ(slot);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool spi_boot_strap(struct boot_context *ctx)
+{
+    led_init(ctx->gpio);
 
     spi_device_t spid = mocha_system_spi_device();
     spi_device_init(spid);
     spi_device_enable_set(spid, true);
     spi_device_flash_status_set(spid, 0);
 
-    uint32_t received_resets = 0;
-    size_t count = 0;
-
     while (true) {
-        // TODO: Use timer
-        if (count++ >= 10000) {
-            led_animation_run(gpio);
-            count = 0;
-        }
+        led_animation_run(ctx);
 
         spi_device_cmd_t cmd = spi_device_cmd_get_non_blocking(spid);
         if (cmd.status != spi_device_status_ready) {
             if (cmd.status == spi_device_status_overflow) {
-                uprintf(console, "SPI payload overflow\n");
+                uprintf(ctx->console, "SPI payload overflow\n");
                 spi_device_flash_status_set(spid, 0);
             }
             continue;
         }
 
         switch (cmd.opcode) {
+        case SPI_DEVICE_OPCODE_SECTOR_ERASE4B:
         case SPI_DEVICE_OPCODE_SECTOR_ERASE:
             // No need to erase SRAM.
             break;
+        case SPI_DEVICE_OPCODE_PAGE_PROGRAM4B:
         case SPI_DEVICE_OPCODE_PAGE_PROGRAM:
             if (cmd.payload_byte_count > 0) {
-                page_program(console, spid, cmd.address, cmd.payload_byte_count);
+                page_program(ctx->console, spid, cmd.address, cmd.payload_byte_count);
             }
             break;
         case SPI_DEVICE_OPCODE_RESET:
-            // This is a workaround to openFPGALoader that starts with a reset.
-            if (received_resets++ > 0) {
-                // Exit boot strap
-                spi_device_enable_set(spid, false);
-                return true;
-            }
-            uprintf(console, "\nFirst reset");
-            break;
+            // Exit boot strap
+            return true;
         default:
-            uprintf(console, "\nUnsupported command: 0x%0x", cmd.opcode);
+            uprintf(ctx->console, "\nUnsupported command: 0x%0x", cmd.opcode);
             break;
         }
         // Finished processing the write, clear the busy bit.
@@ -111,9 +143,7 @@ static inline bool is_overriding_me(uintptr_t addr)
 
 void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes)
 {
-    // TODO: Enable the spi flash 4 bytes addressing.
-    enum { SramOffset = 0x10000000 };
-    uintptr_t ptr = SramOffset + offset;
+    uintptr_t ptr = offset;
     uint32_t payload_offset = 0;
 
     if (bytes > SPI_DEVICE_PAYLOAD_AREA_NUM_BYTES) {
@@ -135,7 +165,7 @@ void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t b
     }
 }
 
-enum { num_leds = 8 };
+enum { num_leds = 8, led_animation_period_us = 1 * 1000 * 1000 };
 
 void led_init(gpio_t gpio)
 {
@@ -144,17 +174,39 @@ void led_init(gpio_t gpio)
     }
 }
 
-void led_animation_run(gpio_t gpio)
+void led_animation_run(struct boot_context *ctx)
 {
     static int current_led = 0;
     static bool going_up = false;
+    static uint64_t timeout = 0;
 
-    gpio_write_pin(gpio, current_led, going_up);
+    uint64_t now = timer_value_read_us(ctx->timer);
+    if (timeout > now) {
+        return;
+    }
+    timeout = (led_animation_period_us / num_leds) + now;
+
+    gpio_write_pin(ctx->gpio, current_led, going_up);
 
     int next_led = current_led + (going_up ? 1 : -1);
     bool toggle = (next_led >= num_leds || next_led < 0);
     current_led = toggle ? current_led : next_led;
     going_up ^= toggle;
+}
+
+bool bootstrap_requested(struct boot_context *ctx)
+{
+    enum { bootstrap_pin = 8, debounce_us = 20 * 1000 };
+    timer_schedule_in_us(ctx->timer, debounce_us);
+    if (!gpio_read_pin(ctx->gpio, bootstrap_pin)) {
+        while (!timer_interrupt_pending(ctx->timer)) {
+            if (gpio_read_pin(ctx->gpio, bootstrap_pin)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
 }
 
 // TODO: Catch exceptions properly.

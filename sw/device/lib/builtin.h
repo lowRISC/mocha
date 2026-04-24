@@ -9,3 +9,11 @@
 
 /* inline assembly */
 #define asm __asm__
+
+/* count trailing zeroes */
+#define ctz(x) (__builtin_ctz((x)))
+
+/* checked arithmetic intrinsics
+ * these return true if x op y causes overflow */
+#define uaddl_overflow(x, y, sum)  (__builtin_uaddl_overflow((x), (y), (sum)))
+#define umull_overflow(x, y, prod) (__builtin_umull_overflow((x), (y), (prod)))

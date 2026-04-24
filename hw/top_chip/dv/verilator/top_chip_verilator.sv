@@ -2,7 +2,10 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-module top_chip_verilator (input logic clk_i, rst_ni);
+module top_chip_verilator (
+  input logic clk_i,
+  input logic rst_ni
+);
   // GPIO signals
   logic [31:0] gpio_inputs;
   logic [31:0] gpio_outputs;
@@ -38,8 +41,13 @@ module top_chip_verilator (input logic clk_i, rst_ni);
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;
 
+  logic [3:0] spi_host_sd;
+  logic [3:0] spi_host_sd_en;
+
   // CHERI Mocha top
   top_chip_system #(
+    .SramInitFile(""),
+    .RomInitFile ("")
   ) u_top_chip_system (
     .clk_i,
     .rst_ni,
@@ -69,9 +77,25 @@ module top_chip_verilator (input logic clk_i, rst_ni);
     .spi_device_sd_i      ({3'h0, spi_device_sdi}), // SPI MOSI = QSPI DQ0
     .spi_device_tpm_csb_i ('0),
 
+    .spi_host_sck_o    ( ),
+    .spi_host_sck_en_o ( ),
+    .spi_host_csb_o    ( ),
+    .spi_host_csb_en_o ( ),
+    .spi_host_sd_o     (spi_host_sd),
+    .spi_host_sd_en_o  (spi_host_sd_en),
+    // Mapping output 0 to input 1 because legacy SPI does not allow
+    // bi-directional wires.
+    // This only works in standard mode where sd_o[0]=COPI and
+    // sd_i[1]=CIPO.
+    .spi_host_sd_i     ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
+
     .dram_req_o  (dram_req),
     .dram_resp_i (dram_resp)
   );
+
+  // No support for dual or quad SPI in loopback mode right now.
+  logic unused_spi_host = (|spi_host_sd[3:2]) | spi_host_sd[0] |
+                          (|spi_host_sd_en[3:2]) | spi_host_sd_en[0];
 
   // Virtual GPIO
   gpiodpi #(

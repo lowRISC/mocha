@@ -42,6 +42,11 @@ SPDX-FileCopyrightText = [
 ]
 
 [[annotations]]
+path = ["axi_riscv_atomics/**"]
+SPDX-License-Identifier = "SHL-0.51"
+SPDX-FileCopyrightText = ["2018 ETH Zurich and University of Bologna."]
+
+[[annotations]]
 path = ["patches/**"]
 SPDX-FileCopyrightText = "lowRISC Contributors (COSMIC project)."
 SPDX-License-Identifier = "Apache-2.0"

@@ -35,6 +35,8 @@ filesets:
       - rtl/shift_reg.sv
       - rtl/shift_reg_gated.sv
       - rtl/spill_register.sv
+      - rtl/stream_arbiter.sv
+      - rtl/stream_arbiter_flushable.sv
       - rtl/stream_demux.sv
       - rtl/stream_join_dynamic.sv
       - rtl/stream_join.sv

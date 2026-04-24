@@ -117,6 +117,18 @@
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_cheri_bare.vmem"]
     }
     {
+      name: spi_host_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["spi_host_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: spi_host_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["spi_host_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_cheri_bare.vmem"]
+    }
+    {
       name: i2c_host_tx_rx
       uvm_test_seq: top_chip_dv_i2c_host_tx_rx_vseq
       sw_images: ["i2c_host_tx_rx_test_vanilla_bare:5"]
@@ -130,15 +142,36 @@
     }
     {
       name: gpio_smoke
-      uvm_test_seq: top_chip_dv_gpio_vseq
+      uvm_test_seq: top_chip_dv_gpio_smoke_vseq
       sw_images: ["gpio_smoketest_vanilla_bare:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: gpio_smoke_cheri
+      uvm_test_seq: top_chip_dv_gpio_smoke_vseq
+      sw_images: ["gpio_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_cheri_bare.vmem"]
     }
     {
       name: rom_ctrl_integrity_check
       uvm_test_seq: top_chip_dv_rom_ctrl_integrity_check_vseq
       sw_images: ["rom_ctrl_integrity_check_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_integrity_check_test_vanilla_bare.vmem"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_integrity_check_test_vanilla_bare.vmem",
+                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
+    }
+    {
+      name: rom_ctrl_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["rom_ctrl_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_vanilla_bare.vmem",
+                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
+    }
+    {
+      name: rom_ctrl_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["rom_ctrl_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rom_ctrl_smoketest_cheri_bare.vmem",
+                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
     }
     {
       name: rv_dm_ndm_reset_req
@@ -176,6 +209,30 @@
       sw_images: ["mailbox_smoketest_cheri_bare:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_cheri_bare.vmem"]
     }
+    {
+      name: axi_sram_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: axi_sram_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_cheri_bare.vmem"]
+    }
+    {
+      name: axi_sram_tag_test
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_tag_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_vanilla_bare.vmem"]
+    }
+    {
+      name: axi_sram_tag_test_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_tag_test_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_cheri_bare.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -195,10 +252,16 @@
         "test_framework_exception_test_cheri",
         "spi_device_smoke",
         "spi_device_smoke_cheri",
+        "spi_host_smoke",
+        "spi_host_smoke_cheri",
         "gpio_smoke",
+        "gpio_smoke_cheri",
         "mailbox_smoke",
-        //TODO currently broken.
-        // "mailbox_smoke_cheri"
+        "mailbox_smoke_cheri",
+        "axi_sram_smoke",
+        "axi_sram_smoke_cheri",
+        "rom_ctrl_smoke",
+        "rom_ctrl_smoke_cheri",
       ]
     }
     {
@@ -248,13 +311,16 @@
     {
       name: gpio
       tests: [
-        "gpio_smoke"
+        "gpio_smoke",
+        "gpio_smoke_cheri"
       ]
     }
     {
       name: rom_ctrl
       tests: [
-        "rom_ctrl_integrity_check"
+        "rom_ctrl_integrity_check",
+        "rom_ctrl_smoke",
+        "rom_ctrl_smoke_cheri"
       ]
     }
     {
@@ -271,6 +337,15 @@
       tests: [
         "mailbox_smoke",
         "mailbox_smoke_cheri"
+      ]
+    }
+    {
+      name: axi_sram
+      tests: [
+        "axi_sram_smoke",
+        "axi_sram_smoke_cheri",
+        "axi_sram_tag_test",
+        "axi_sram_tag_test_cheri"
       ]
     }
   ]

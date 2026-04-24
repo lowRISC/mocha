@@ -6,7 +6,7 @@
 // simulation memory range to provide a dedicated channel for SW <-> DV communication. The AXI
 // traffic within the SW DV range falls into a "sink".
 // AXI traffic outside this range is transparently forwarded to the AXI Crossbar.
-module sim_sram_axi_sink # (
+module sim_sram_axi_sink #(
   parameter bit InstantiateSram = 1'b0, // 1: Instantiate the SRAM memory
   parameter int SramDepth       = 8,    // Depth of the SRAM in words
   parameter bit ErrOnRead       = 1'b1  // 1: Trigger error on CPU read attempt
@@ -60,9 +60,9 @@ module sim_sram_axi_sink # (
   );
 
   // AXI Protocol conversion to memory interface
-  logic mem_req;
-  logic mem_req_d;
-  logic mem_we;
+  logic                             mem_req;
+  logic                             mem_req_d;
+  logic                             mem_we;
   logic [top_pkg::AxiAddrWidth-1:0] mem_addr;
   logic [top_pkg::AxiDataWidth-1:0] mem_wdata;
   logic [top_pkg::AxiDataWidth-1:0] mem_rdata;
@@ -94,7 +94,7 @@ module sim_sram_axi_sink # (
 
   // Read Valid Logic (1-cycle delay loopback)
   // Essential for axi_to_mem to complete read AND write transactions even if SRAM is missing.
-  always_ff @(posedge clk_i or negedge rst_ni) begin: delayed_mem_req
+  always_ff @(posedge clk_i or negedge rst_ni) begin : delayed_mem_req
     if (!rst_ni) begin
       mem_req_d <= 1'b0;
     end else begin
@@ -111,7 +111,7 @@ module sim_sram_axi_sink # (
   if (InstantiateSram) begin : gen_sram
     // Strobe expansion
     logic [AxiDataWidth-1:0] full_wmask;
-    always_comb begin: full_wmask_conversion
+    always_comb begin : full_wmask_conversion
       for (int i = 0; i < AxiStrbWidth; i++) begin
         full_wmask[i*8 +: 8] = {8{mem_be[i]}};
       end
