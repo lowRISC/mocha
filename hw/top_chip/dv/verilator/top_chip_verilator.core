@@ -26,6 +26,7 @@ filesets:
       - lowrisc:dv:sw_test_status
       - lowrisc:dv:dv_test_status
       - lowrisc:sonata:i2cdpi
+      - lowrisc:sonata:spidevicedpi
 
     files:
       - dram_wrapper_sim.sv:    { file_type: systemVerilogSource }

@@ -30,19 +30,23 @@ module top_chip_verilator (
   logic uart_rx;
   logic uart_tx;
 
-  // SPI signals
+  // SPI device signals
   logic       spi_device_sck;
   logic       spi_device_csb;
   logic [3:0] qspi_device_sdo;
   logic [3:0] qspi_device_sdo_en;
   logic       spi_device_sdi;
 
+  // SPI host signals
+  logic       spi_host_sck_output,    spi_host_csb_output;
+  logic       spi_host_sck_en_output, spi_host_csb_en_output;
+  logic       spi_host_input;
+  logic [3:0] spi_host_sd_output;
+  logic [3:0] spi_host_sd_en_output;
+
   // AXI signals
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;
-
-  logic [3:0] spi_host_sd;
-  logic [3:0] spi_host_sd_en;
 
   // CHERI Mocha top
   top_chip_system #(
@@ -77,25 +81,22 @@ module top_chip_verilator (
     .spi_device_sd_i      ({3'h0, spi_device_sdi}), // SPI MOSI = QSPI DQ0
     .spi_device_tpm_csb_i ('0),
 
-    .spi_host_sck_o    ( ),
-    .spi_host_sck_en_o ( ),
-    .spi_host_csb_o    ( ),
-    .spi_host_csb_en_o ( ),
-    .spi_host_sd_o     (spi_host_sd),
-    .spi_host_sd_en_o  (spi_host_sd_en),
-    // Mapping output 0 to input 1 because legacy SPI does not allow
-    // bi-directional wires.
-    // This only works in standard mode where sd_o[0]=COPI and
-    // sd_i[1]=CIPO.
-    .spi_host_sd_i     ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
+    .spi_host_sck_o    (spi_host_sck_output),
+    .spi_host_sck_en_o (spi_host_sck_en_output),
+    .spi_host_csb_o    (spi_host_csb_output),
+    .spi_host_csb_en_o (spi_host_csb_en_output),
+    .spi_host_sd_o     (spi_host_sd_output),
+    .spi_host_sd_en_o  (spi_host_sd_en_output),
+    // Legacy SPI present in SD cards does not allow bi-directional wires.
+    // Work in standard mode where sd_o[0]=COPI and sd_i[1]=CIPO.
+    .spi_host_sd_i     ({2'b0, spi_host_input, 1'b0}), // SPI CIPO = QSPI DQ1
 
     .dram_req_o  (dram_req),
     .dram_resp_i (dram_resp)
   );
 
   // No support for dual or quad SPI in loopback mode right now.
-  logic unused_spi_host = (|spi_host_sd[3:2]) | spi_host_sd[0] |
-                          (|spi_host_sd_en[3:2]) | spi_host_sd_en[0];
+  logic unused_spi_host = |{spi_host_sd_output[3:1], spi_host_sd_en_output[3:1]};
 
   // Virtual GPIO
   gpiodpi #(
@@ -147,8 +148,25 @@ module top_chip_verilator (
     .spi_device_sck_o   (spi_device_sck),
     .spi_device_csb_o   (spi_device_csb),
     .spi_device_sdi_o   (spi_device_sdi),
-    .spi_device_sdo_i   (qspi_device_sdo[1]),   // SPI MISO = QSPI DQ1
-    .spi_device_sdo_en_i(qspi_device_sdo_en[1]) // SPI MISO = QSPI DQ1
+    .spi_device_sdo_i   (qspi_device_sdo[1]),   // SPI CIPO = QSPI DQ1
+    .spi_device_sdo_en_i(qspi_device_sdo_en[1]) // SPI CIPO = QSPI DQ1
+  );
+
+  // Virtual SPI Device - model an SD card (in a limited way)
+  spidevicedpi #(
+    .ID       ("microsd"),
+    .NDevices (1),
+    .DataW    (1),
+    .OOB_InW  (1),
+    .OOB_OutW (1)
+  ) u_spidevicedpi_microsd (
+    .rst_ni,
+    .sck    (spi_host_sck_en_output ? spi_host_sck_output : 1'b0),
+    .cs     (spi_host_csb_en_output ? spi_host_csb_output : 1'b0),
+    .copi   (spi_host_sd_en_output[0] ? spi_host_sd_output[0] : 1'b0), // SPI COPI = QSPI DQ0
+    .cipo   (spi_host_input),
+    .oob_in ( ), // not used
+    .oob_out( ) // TODO(elliotb): figure out how to drive gpio_inputs[9] here alongside gpiodpi
   );
 
   `define DUT               u_top_chip_system
