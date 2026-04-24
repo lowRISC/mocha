@@ -46,7 +46,11 @@ string(CONCAT CMAKE_C_FLAGS_INIT
   " -Wall -Wextra"
 )
 
-set(CMAKE_ASM_FLAGS_INIT "")
+set(CMAKE_ASM_FLAGS_INIT
+    # Workaround: Our current build of the LLVM toolchain crashes
+    # when trying to erroneously relax the devicetree assembly file.
+    "-mno-relax"
+)
 
 set(CMAKE_EXE_LINKER_FLAGS_INIT
     "-nodefaultlibs"

@@ -1,0 +1,80 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+/dts-v1/;
+
+/ {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    compatible = "lowrisc,mocha";
+    model = "lowrisc,mocha";
+
+    memory@80000000 {
+        device_type = "memory";
+        reg = <0x0 0x80000000 0x0 0x80000000>; // 2 GiB
+    };
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        timebase-frequency = <50000000>; // 50 MHz
+
+        cpu@0 {
+            compatible = "riscv";
+            device_type = "cpu";
+            reg = <0>;
+            riscv,isa = "rv64imac_zcheripurecap_zcherihybrid_zicsr_zifencei";
+            mmu-type = "riscv,sv39";
+            status = "okay";
+
+            cpu0intc: interrupt-controller {
+                interrupt-controller;
+                #interrupt-cells = <1>;
+                compatible = "riscv,cpu-intc";
+            };
+        };
+    };
+
+    soc {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        compatible = "simple-bus";
+        ranges;
+
+        serial@41000000 {
+            compatible = "lowrisc,opentitan-uart-1.0.0";
+            reg = <0x0 0x41000000 0x0 0x30>;
+            interrupts-extended = <&plic 8>; // UART is PLIC interrupt source 8
+        };
+
+        timer@44000000 {
+            compatible = "lowrisc,opentitan-rv-timer-1.0.0";
+            reg = <0x0 0x44000000 0x0 0x120>;
+            interrupts-extended = <&cpu0intc 7>; // M-mode timer interrupt
+        };
+
+        plic: interrupt-controller@48000000 {
+            compatible = "lowrisc,opentitan-plic-1.0.0",
+                         "sifive,plic-1.0.0"; // Compatible with the SiFive PLIC memory layout
+            interrupt-controller;
+            #address-cells = <0>;
+            #interrupt-cells = <1>;
+            reg = <0x0 0x48000000 0x0 0x4000000>;
+            interrupts-extended = <&cpu0intc 9>, // S-mode external interrupt
+                                  <&cpu0intc 11>; // M-mode external interrupt
+            riscv,ndev = <32>;
+        };
+
+        // End of PLIC memory region is for software interrupts,
+        // model this as another interrupt controller that delivers the software interrupts
+        plicsw: interrupt-controller@4c000000 {
+            compatible = "lowrisc,opentitan-plicsw-1.0.0";
+            interrupt-controller;
+            #address-cells = <0>;
+            #interrupt-cells = <1>;
+            reg = <0x0 0x4c000000 0x0 0x4000>;
+            interrupts-extended = <&cpu0intc 3>; // M-mode software interrupt
+        };
+    };
+};

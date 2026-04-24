@@ -87,6 +87,7 @@
         verible
         srecord
         d2
+        dtc
       ];
     in {
       formatter = pkgs.alejandra;

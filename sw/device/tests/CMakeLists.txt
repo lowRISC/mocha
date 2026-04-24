@@ -26,4 +26,5 @@ mocha_add_test(NAME timer_smoketest SOURCES timer/smoketest.c LIBRARIES ${LIBS} 
 mocha_add_test(NAME timer_interrupt_test SOURCES timer/interrupt.c LIBRARIES ${LIBS})
 mocha_add_test(NAME uart_smoketest SOURCES uart/smoketest.c LIBRARIES ${LIBS})
 
+add_subdirectory(opensbi)
 add_subdirectory(dram)

@@ -17,7 +17,7 @@
 #define MINOR "01"
 #define PATCH "00"
 
-const uintptr_t boot_slots[] = { 0x10004000, 0x80000000 };
+const uintptr_t boot_slots[] = { 0x10008000, 0x80000000 };
 struct boot_context {
     uart_t console;
     gpio_t gpio;
@@ -27,6 +27,9 @@ struct boot_context {
 // These are defined by the linker script.
 extern uint8_t _program_start[];
 extern uint8_t _program_end[];
+
+/* Pointer to devicetree blob, defined in devicetree/mocha.S */
+extern char dt_blob_start[];
 
 static bool spi_boot_strap(struct boot_context *ctx);
 static void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes);
@@ -57,11 +60,10 @@ int main(void)
         spi_boot_strap(&boot_ctx);
     }
 
-    uint32_t boot_addr = 0;
-    while (!get_boot_addr(&boot_addr)) {
-        uprintf(boot_ctx.console, "Entering SPI bootstrap\n");
-        // Spin polling the spi_dev and processing incoming data until a reset command is received.
-        spi_boot_strap(&boot_ctx);
+    uint32_t boot_addr;
+    if (!get_boot_addr(&boot_addr)) {
+        uprintf(boot_ctx.console, "No boot magic found, default to DRAM\n");
+        boot_addr = dram_base;
     }
 
     uprintf(boot_ctx.console, "\nJumping to: 0x%x\n", boot_addr);
@@ -72,9 +74,12 @@ int main(void)
 
 void boot(uintptr_t addr)
 {
-    typedef void (*reset_handler_t)(void);
-    reset_handler_t reset = (reset_handler_t)addr;
-    reset();
+    asm volatile("mv a0, zero\n" /* a0 = hart id */
+                 "mv a1, %[dtb]\n" /* a1 = pointer to devicetree blob */
+                 "jr %[addr]\n"
+                 :
+                 : [dtb] "r"(dt_blob_start), [addr] "r"(addr)
+                 : "a0", "a1", "memory");
 }
 
 bool get_boot_addr(uint32_t *addr)
