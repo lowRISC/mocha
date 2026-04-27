@@ -17,6 +17,7 @@ static const uintptr_t dv_test_status_base = 0x20020000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
 static const uintptr_t rstmgr_base = 0x40030000ul;
+static const uintptr_t pwrmgr_base = 0x40040000ul;
 static const uintptr_t rom_ctrl_base = 0x40050000ul;
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t i2c_base = 0x42000000ul;
@@ -87,6 +88,15 @@ rstmgr_t mocha_system_rstmgr(void)
     return (rstmgr_t)create_mmio_capability(rstmgr_base, 0x48u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (rstmgr_t)rstmgr_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+pwrmgr_t mocha_system_pwrmgr(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (pwrmgr_t)create_mmio_capability(pwrmgr_base, 0x80u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (pwrmgr_t)pwrmgr_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 

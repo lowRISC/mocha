@@ -4,8 +4,17 @@
 
 #include "hal/rstmgr.h"
 #include "hal/mmio.h"
-#include "hal/mocha.h"
 #include <stdint.h>
+
+uint32_t rstmgr_reset_reason_get(rstmgr_t rstmgr)
+{
+    return DEV_READ(rstmgr + RSTMGR_RESET_INFO_REG);
+}
+
+void rstmgr_reset_reason_clear(rstmgr_t rstmgr, uint32_t reason)
+{
+    DEV_WRITE(rstmgr + RSTMGR_RESET_INFO_REG, reason);
+}
 
 void rstmgr_software_reset_request(rstmgr_t rstmgr)
 {
@@ -14,9 +23,9 @@ void rstmgr_software_reset_request(rstmgr_t rstmgr)
 
 bool rstmgr_software_reset_info_get(rstmgr_t rstmgr)
 {
-    if (DEV_READ(rstmgr + RSTMGR_RESET_INFO_REG) & RSTMGR_RESET_INFO_SW_RESET) {
+    if (rstmgr_reset_reason_get(rstmgr) & RSTMGR_RESET_INFO_SW_RESET) {
         // Clear the info bit before returning.
-        DEV_WRITE(rstmgr + RSTMGR_RESET_INFO_REG, RSTMGR_RESET_INFO_SW_RESET);
+        rstmgr_reset_reason_clear(rstmgr, RSTMGR_RESET_INFO_SW_RESET);
         return true;
     }
     return false;

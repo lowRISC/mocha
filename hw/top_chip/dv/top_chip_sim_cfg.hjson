@@ -174,6 +174,42 @@
                  "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
     }
     {
+      name: rstmgr_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["rstmgr_software_reset_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rstmgr_software_reset_vanilla_bare.vmem"]
+    }
+    {
+      name: rstmgr_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["rstmgr_software_reset_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/rstmgr_software_reset_cheri_bare.vmem"]
+    }
+    {
+      name: clkmgr_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["clkmgr_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/clkmgr_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: clkmgr_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["clkmgr_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/clkmgr_smoketest_cheri_bare.vmem"]
+    }
+    {
+      name: pwrmgr_smoke
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["pwrmgr_smoketest_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/pwrmgr_smoketest_vanilla_bare.vmem"]
+    }
+    {
+      name: pwrmgr_smoke_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["pwrmgr_smoketest_cheri_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/pwrmgr_smoketest_cheri_bare.vmem"]
+    }
+    {
       name: rv_dm_ndm_reset_req
       uvm_test_seq: "top_chip_dv_rv_dm_ndm_reset_req_vseq"
       sw_images: ["rv_dm_ndm_reset_req_test_vanilla_bare:5"]
@@ -262,6 +298,12 @@
         "axi_sram_smoke_cheri",
         "rom_ctrl_smoke",
         "rom_ctrl_smoke_cheri",
+        "rstmgr_smoke",
+        "rstmgr_smoke_cheri",
+        "clkmgr_smoke",
+        "clkmgr_smoke_cheri",
+        "pwrmgr_smoke",
+        "pwrmgr_smoke_cheri",
       ]
     }
     {
@@ -321,6 +363,27 @@
         "rom_ctrl_integrity_check",
         "rom_ctrl_smoke",
         "rom_ctrl_smoke_cheri"
+      ]
+    }
+    {
+      name: rstmgr
+      tests: [
+        "rstmgr_smoke",
+        "rstmgr_smoke_cheri"
+      ]
+    }
+    {
+      name: clkmgr
+      tests: [
+        "clkmgr_smoke",
+        "clkmgr_smoke_cheri"
+      ]
+    }
+    {
+      name: pwrmgr
+      tests: [
+        "pwrmgr_smoke",
+        "pwrmgr_smoke_cheri"
       ]
     }
     {
