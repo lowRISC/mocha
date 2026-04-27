@@ -116,7 +116,7 @@ module top_chip_system #(
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
     '{ idx: top_pkg::Mailbox,    start_addr: top_pkg::MailboxBase,    end_addr: top_pkg::MailboxBase    + top_pkg::MailboxLength    },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
-    '{ idx: top_pkg::DRAM,       start_addr: top_pkg::DRAMBase,       end_addr: top_pkg::DRAMBase       + top_pkg::DRAMLength       }
+    '{ idx: top_pkg::DRAM,       start_addr: top_pkg::DRAMBase,       end_addr: top_pkg::DRAMBase       + top_pkg::DRAMUsableLength }
   };
 
   // TileLink signals.
@@ -1011,7 +1011,7 @@ module top_chip_system #(
   // Instantiate CHERI tag controller for DRAM
   axi_tagctrl_reg_wrap #(
     .DRAMMemBase      ( 32'(top_pkg::DRAMBase)            ),
-    .DRAMMemLength    ( 32'(top_pkg::DRAMLength)          ),
+    .DRAMMemLength    ( 32'(top_pkg::DRAMPhysicalLength)  ),
     .CapSize          ( top_pkg::CapSizeBits              ),
     .TagCacheMemBase  ( 32'(top_pkg::TagCacheMemBase)     ),
     .SetAssociativity ( top_pkg::TagCacheSetAssociativity ),

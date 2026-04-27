@@ -42,22 +42,25 @@ package top_pkg;
     DRAMBase       = 64'h8000_0000
   } axi_addr_start_t;
 
-  localparam longint unsigned RomCtrlMemLength  = 64'h0000_8000;
-  localparam longint unsigned SRAMLength        = 64'h0002_0000;
-  localparam longint unsigned MailboxLength     = 64'h0001_0000;
-  localparam longint unsigned TlCrossbarLength  = 64'h1000_0000;
-  localparam longint unsigned DRAMLength        = 64'h3F80_0000;
+  // Memory lengths
+  localparam longint unsigned RomCtrlMemLength   = 64'h0000_8000;
+  localparam longint unsigned SRAMLength         = 64'h0002_0000;
+  localparam longint unsigned MailboxLength      = 64'h0001_0000;
+  localparam longint unsigned TlCrossbarLength   = 64'h1000_0000;
+  localparam longint unsigned DRAMPhysicalLength = 64'h4000_0000;
 
-  localparam longint unsigned RomCtrlMemMask    = RomCtrlMemLength - 1;
-  localparam longint unsigned SRAMMask          = SRAMLength - 1;
-  localparam longint unsigned MailboxMask       = MailboxLength - 1;
-  localparam longint unsigned TlCrossbarMask    = TlCrossbarLength - 1;
-  localparam longint unsigned DRAMMask          = DRAMLength - 1;
+  // Memory address masks
+  localparam longint unsigned RomCtrlMemMask = RomCtrlMemLength - 1;
+  localparam longint unsigned SRAMMask       = SRAMLength - 1;
+  localparam longint unsigned MailboxMask    = MailboxLength - 1;
+  localparam longint unsigned TlCrossbarMask = TlCrossbarLength - 1;
+  localparam longint unsigned DRAMMask       = DRAMPhysicalLength - 1;
 
   // Tag controller parameters
   localparam int     unsigned CapSizeBits              = 128;
-  localparam longint unsigned TagCacheMemLength        = DRAMLength >> $clog2(CapSizeBits);
-  localparam longint unsigned TagCacheMemBase          = DRAMBase + DRAMLength - TagCacheMemLength;
+  localparam longint unsigned TagCacheMemLength        = DRAMPhysicalLength >> $clog2(CapSizeBits);
+  localparam longint unsigned DRAMUsableLength         = DRAMPhysicalLength - TagCacheMemLength;
+  localparam longint unsigned TagCacheMemBase          = DRAMBase + DRAMUsableLength;
   localparam int     unsigned TagCacheSetAssociativity = 8;
   localparam int     unsigned TagCacheNumLines         = 128; // Number of cache lines in each set
   localparam int     unsigned TagCacheNumBlocks        = 4;   // Number of words in a cache line

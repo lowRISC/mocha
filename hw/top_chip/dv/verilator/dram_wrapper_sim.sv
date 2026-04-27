@@ -13,7 +13,7 @@ module dram_wrapper_sim (
   output top_pkg::axi_dram_resp_t axi_resp_o
 );
   // Local parameters
-  localparam int unsigned ExtMemAddrWidth = $clog2(top_pkg::DRAMLength / (top_pkg::AxiDataWidth / 8));
+  localparam int unsigned ExtMemAddrWidth = $clog2(top_pkg::DRAMPhysicalLength / (top_pkg::AxiDataWidth / 8));
 
   // 64-bit memory format signals
   logic                                 ext_mem_req;
