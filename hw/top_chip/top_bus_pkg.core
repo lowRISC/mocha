@@ -3,19 +3,13 @@ CAPI=2:
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-name: "lowrisc:mocha_constants:top_pkg"
-description: "Toplevel-wide constants for Mocha"
-virtual:
-  - lowrisc:virtual_constants:top_pkg
+name: "lowrisc:cosmic:top_bus_pkg"
+description: "Toplevel bus constants for Mocha"
 
 filesets:
   files_rtl:
-    depend:
-      - pulp-platform.org::axi
-      - cosmic::cva6cheri
-      - lowrisc:cosmic:top_bus_pkg
     files:
-      - rtl/top_pkg.sv
+      - rtl/top_bus_pkg.sv
     file_type: systemVerilogSource
 
 targets:

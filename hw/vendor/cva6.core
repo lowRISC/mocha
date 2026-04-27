@@ -11,6 +11,7 @@ filesets:
     depend:
       - pulp-platform.org::axi
       - lowrisc:common_cells:all
+      - lowrisc:cosmic:top_bus_pkg
       - lowrisc:prim:lfsr
     files:
       # Includes.
