@@ -131,8 +131,8 @@
     {
       name: i2c_host_tx_rx
       uvm_test_seq: top_chip_dv_i2c_host_tx_rx_vseq
-      sw_images: ["i2c_host_tx_rx_test_vanilla_bare:5"]
-      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_host_tx_rx_test_vanilla_bare.vmem"]
+      sw_images: ["i2c_host_test_vanilla_bare:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_host_test_vanilla_bare.vmem"]
       }
     {
       name: i2c_device_tx_rx

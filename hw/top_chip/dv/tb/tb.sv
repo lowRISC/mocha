@@ -35,11 +35,23 @@ module tb;
   logic [3:0] spi_host_sd;
   logic [3:0] spi_host_sd_en;
 
+  // I2C connections
+  wire  scl;
+  wire  sda;
+  logic scl_en_o;
+  logic sda_en_o;
+  logic scl_o;
+  logic sda_o;
+
   // ------ Interfaces ------
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
   uart_if uart_if();
   pins_if #(NUM_GPIOS) gpio_pins_if (.pins(gpio_pads));
+  i2c_if i2c_if (.clk_i(clk),
+                 .rst_ni(rst_n),
+                 .scl_io(scl),
+                 .sda_io(sda));
 
   // ------ Mock DRAM ------
   top_pkg::axi_dram_req_t  dram_req;
@@ -69,6 +81,13 @@ module tb;
     // UART receive and transmit.
     .uart_rx_i            (uart_if.uart_rx  ),
     .uart_tx_o            (uart_if.uart_tx  ),
+    // I^2C controller/target bidirectional interface.
+    .i2c_scl_i            (scl              ),
+    .i2c_scl_o            (scl_o            ),
+    .i2c_scl_en_o         (scl_en_o         ),
+    .i2c_sda_i            (sda              ),
+    .i2c_sda_o            (sda_o            ),
+    .i2c_sda_en_o         (sda_en_o         ),
     // External Mailbox port
     .axi_mailbox_req_i    ('0               ),
     .axi_mailbox_resp_o   (                 ),
@@ -103,6 +122,20 @@ module tb;
   for (genvar i = 0; i < NUM_GPIOS; i++) begin : gen_gpio_pads
     assign gpio_pads[i] = dut_gpio_en_o[i] ? dut_gpio_o[i] : 1'bz;
   end
+
+  // Model PAD behavior
+  i2c_port_conv u_i2c_port_conv (
+    .scl_oe_i (scl_en_o),
+    .sda_oe_i (sda_en_o),
+    .scl_o    (scl_o   ),
+    .sda_o    (sda_o   ),
+    .scl_io   (scl     ),
+    .sda_io   (sda     )
+  );
+
+  // Model external pull-up resistor
+  assign (weak0, weak1) scl = 1'b1;
+  assign (weak0, weak1) sda = 1'b1;
 
   // Signals to connect the sink
   top_pkg::axi_req_t  sim_sram_cpu_req;
