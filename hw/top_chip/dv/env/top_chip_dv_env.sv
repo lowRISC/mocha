@@ -12,7 +12,11 @@ class top_chip_dv_env extends uvm_env;
   mem_bkdr_util mem_bkdr_util_h[chip_mem_e];
 
   // Agents
-  uart_agent m_uart_agent;
+  uart_agent   m_uart_agent;
+  axi4_vip_env m_mgr_axi[];
+  axi4_vip_env m_sub_axi[];
+
+  top_chip_dv_axi_scoreboard m_axi_scb;
 
   // Standard SV/UVM methods
   extern function new(string name = "", uvm_component parent = null);
@@ -29,6 +33,9 @@ function top_chip_dv_env::new(string name = "", uvm_component parent = null);
 endfunction : new
 
 function void top_chip_dv_env::build_phase(uvm_phase phase);
+  top_pkg::axi_hosts_t   axi_mgr_name;
+  top_pkg::axi_devices_t axi_sub_name;
+  
   super.build_phase(phase);
 
   foreach (CHIP_MEM_LIST[i]) begin
@@ -75,6 +82,20 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   m_uart_agent = uart_agent::type_id::create("m_uart_agent", this);
   uvm_config_db#(uart_agent_cfg)::set(this, "m_uart_agent*", "cfg", cfg.m_uart_agent_cfg);
 
+  m_mgr_axi = new[NUM_OF_MGR_AXI_IFS];
+  foreach (m_mgr_axi[i]) begin
+    axi_mgr_name = top_pkg::axi_hosts_t'(i);
+    m_mgr_axi[i] = axi4_vip_env::type_id::create(.name($sformatf("m_mgr_axi_%s", axi_mgr_name.name())), .parent(this));
+  end
+
+  m_sub_axi = new[NUM_OF_SUB_AXI_IFS];
+  foreach (m_sub_axi[i]) begin
+    axi_sub_name = top_pkg::axi_devices_t'(i);
+    m_sub_axi[i] = axi4_vip_env::type_id::create(.name($sformatf("m_sub_axi_%s", axi_sub_name.name())), .parent(this));
+  end
+
+  m_axi_scb = top_chip_dv_axi_scoreboard::type_id::create("m_axi_scb", this);
+  
   uvm_config_db#(top_chip_dv_env_cfg)::set(this, "", "cfg", cfg);
 
   top_vsqr                 = top_chip_dv_virtual_sequencer::type_id::create("top_vsqr", this);
@@ -91,6 +112,12 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.
   m_uart_agent.monitor.tx_analysis_port.connect(top_vsqr.uart_tx_fifo.analysis_export);
+
+  m_mgr_axi[top_pkg::CVA6]      .m_manager    .m_monitor.tx_ap.connect(m_axi_scb.mgr0_cva6_imp);
+  m_sub_axi[top_pkg::SRAM]      .m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub0_sram_imp);
+  m_sub_axi[top_pkg::Mailbox]   .m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub1_mailbox_imp);
+  m_sub_axi[top_pkg::TlCrossbar].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub2_tlcrossbar_imp);
+  m_sub_axi[top_pkg::DRAM]      .m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub3_dram_imp);
 endfunction : connect_phase
 
 task top_chip_dv_env::load_memories();

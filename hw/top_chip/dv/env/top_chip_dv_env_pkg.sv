@@ -9,6 +9,7 @@ package top_chip_dv_env_pkg;
   import mem_bkdr_util_pkg::*;
   import sw_test_status_pkg::*;
   import uart_agent_pkg::*;
+  import axi4_vip_pkg::*;
   import gpio_env_pkg::NUM_GPIOS;
 
   // Macro includes
@@ -21,6 +22,21 @@ package top_chip_dv_env_pkg;
   } chip_mem_e;
 
   typedef chip_mem_e chip_mem_list_t[$];
+
+  typedef enum bit[2:0] {
+    mst0 = 0,
+    slv0 = 1,
+    slv1 = 2,
+    slv2 = 3,
+    slv3 = 4
+  } axi_if_t;
+ 
+  // Local Address Map Struct
+  typedef struct {
+    string     subordinate_name;
+    bit [63:0] start_addr;
+    bit [63:0] end_addr;
+  } axi_addr_range_t;
 
   // Generate the list of all chip_mem_e values, this helps to simplify iterating over them with
   // foreach loops.
@@ -47,11 +63,16 @@ package top_chip_dv_env_pkg;
   parameter bit [31:0] SW_DV_TEST_STATUS_ADDR = SW_DV_START_ADDR + 'h00;
   parameter bit [31:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h04;
 
+  // Manual set is necessary
+  localparam int NUM_OF_MGR_AXI_IFS = 1;
+  localparam int NUM_OF_SUB_AXI_IFS = 4;
+
   // File includes
   `include "mem_clear_util.sv"
   `include "top_chip_dv_env_cfg.sv"
   `include "top_chip_dv_env_cov.sv"
   `include "top_chip_dv_virtual_sequencer.sv"
+  `include "top_chip_dv_axi_scoreboard.sv"
   `include "top_chip_dv_env.sv"
   `include "top_chip_dv_vseq_list.sv"
 endpackage : top_chip_dv_env_pkg
