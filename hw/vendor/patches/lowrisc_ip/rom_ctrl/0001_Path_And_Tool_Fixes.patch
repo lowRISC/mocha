@@ -1,0 +1,117 @@
+diff --git a/data/rom_ctrl_testplan.hjson b/data/rom_ctrl_testplan.hjson
+index 71e2a2d..db8d78a 100644
+--- a/data/rom_ctrl_testplan.hjson
++++ b/data/rom_ctrl_testplan.hjson
+@@ -3,14 +3,14 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name: "rom_ctrl"
+-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/mem_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/passthru_mem_intg_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/sec_cm_fsm_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson",
++  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/mem_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/passthru_mem_intg_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_fsm_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson",
+                      "rom_ctrl_sec_cm_testplan.hjson"]
+   testpoints: [
+     {
+diff --git a/dv/env/rom_ctrl_bkdr_util.core b/dv/env/rom_ctrl_bkdr_util.core
+index 42e75ec..70a2dd6 100644
+--- a/dv/env/rom_ctrl_bkdr_util.core
++++ b/dv/env/rom_ctrl_bkdr_util.core
+@@ -13,6 +13,8 @@ filesets:
+       - lowrisc:dv:crypto_dpi_prince:0.1
+       - lowrisc:dv:crypto_dpi_present:0.1
+       - lowrisc:prim:secded:0.1
++      - lowrisc:dv:digestpp_dpi:0.1
++      - lowrisc:ip:kmac_pkg
+       - lowrisc:dv:sram_ctrl_bkdr_util
+     files:
+       - rom_ctrl_bkdr_util_pkg.sv
+diff --git a/dv/rom_ctrl_32kB_sim_cfg.hjson b/dv/rom_ctrl_32kB_sim_cfg.hjson
+index 941e953..a0b4a0a 100644
+--- a/dv/rom_ctrl_32kB_sim_cfg.hjson
++++ b/dv/rom_ctrl_32kB_sim_cfg.hjson
+@@ -7,7 +7,7 @@
+   variant: 32kB
+
+   // Import the base rom_ctrl sim_cfg file
+-  import_cfgs: ["{proj_root}/hw/ip/rom_ctrl/dv/rom_ctrl_base_sim_cfg.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/rom_ctrl_base_sim_cfg.hjson"]
+
+   build_opts: ["+define+ROM_BYTE_ADDR_WIDTH=15"]
+ }
+diff --git a/dv/rom_ctrl_base_sim_cfg.hjson b/dv/rom_ctrl_base_sim_cfg.hjson
+index 9062c0f..228a0ec 100644
+--- a/dv/rom_ctrl_base_sim_cfg.hjson
++++ b/dv/rom_ctrl_base_sim_cfg.hjson
+@@ -12,30 +12,30 @@
+   tb: tb
+
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:rom_ctrl_sim:0.1
+
+   // Testplan hjson file.
+-  testplan: "{proj_root}/hw/ip/rom_ctrl/data/rom_ctrl_testplan.hjson"
++  testplan: "{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/data/rom_ctrl_testplan.hjson"
+
+   // RAL spec - used to generate the RAL model.
+-  ral_spec: "{proj_root}/hw/ip/rom_ctrl/data/rom_ctrl.hjson"
++  ral_spec: "{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/data/rom_ctrl.hjson"
+
+   // Import additional common sim cfg files.
+   import_cfgs: [// Project wide common sim cfg file
+-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
+                 // Config files to get the correct flags for crypto_dpi_prince
+-                "{proj_root}/hw/ip/prim/dv/prim_prince/crypto_dpi_prince/crypto_dpi_prince_sim_opts.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/ip/prim/dv/prim_prince/crypto_dpi_prince/crypto_dpi_prince_sim_opts.hjson",
+                 // Common CIP test lists
+-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/mem_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/alert_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/passthru_mem_intg_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/stress_tests.hjson"]
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/mem_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/alert_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/passthru_mem_intg_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_tests.hjson"]
+
+   en_build_modes: ["{tool}_crypto_dpi_prince_build_opts"]
+
+@@ -58,13 +58,13 @@
+     }
+     {
+       name: cover_reg_top_vcs_cov_cfg_file
+-      value: "-cm_hier {proj_root}/hw/dv/tools/vcs/cover_reg_top.cfg+{proj_root}/hw/ip/rom_ctrl/dv/cov/cover_reg_top.cfg"
++      value: "-cm_hier {proj_root}/hw/vendor/lowrisc_ip/dv/tools/vcs/cover_reg_top.cfg+{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/cov/cover_reg_top.cfg"
+     }
+   ]
+
+   // Add ROM_CTRL specific exclusion files.
+-  vcs_cov_excl_files: ["{proj_root}/hw/ip/rom_ctrl/dv/cov/rom_ctrl_cov_unr_excl.el",
+-                       "{proj_root}/hw/ip/rom_ctrl/dv/cov/rom_ctrl_cov_excl.el"]
++  vcs_cov_excl_files: ["{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/cov/rom_ctrl_cov_unr_excl.el",
++                       "{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/cov/rom_ctrl_cov_excl.el"]
+
+   // Default UVM test and seq class name.
+   uvm_test: rom_ctrl_base_test
