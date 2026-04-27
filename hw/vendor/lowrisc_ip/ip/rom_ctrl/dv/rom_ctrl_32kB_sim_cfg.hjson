@@ -7,7 +7,7 @@
   variant: 32kB
 
   // Import the base rom_ctrl sim_cfg file
-  import_cfgs: ["{proj_root}/hw/ip/rom_ctrl/dv/rom_ctrl_base_sim_cfg.hjson"]
+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/rom_ctrl_base_sim_cfg.hjson"]
 
   build_opts: ["+define+ROM_BYTE_ADDR_WIDTH=15"]
 }
