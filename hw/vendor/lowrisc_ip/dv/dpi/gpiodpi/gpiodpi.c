@@ -118,7 +118,7 @@ void *gpiodpi_create(const char *name, int n_bits) {
   ctx->n_bits = n_bits;
 
   ctx->driven_pin_values = 0;
-  ctx->weak_pins = 0;
+  ctx->weak_pins = n_bits < 32 ? (1u << n_bits) - 1u : ~0u;
   ctx->counter = 0;
 
   char cwd_buf[PATH_MAX];

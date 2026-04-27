@@ -13,94 +13,125 @@ set(
 
 # for a given executable, create a raw binary (.bin), verilog memory (.vmem),
 # and disassembly output for debugging (.dump).
-macro(mocha_add_executable_artefacts NAME)
+function(mocha_add_executable_artefacts)
+    set(one_value_args NAME)
+    cmake_parse_arguments(arg "" "${one_value_args}" "" ${ARGN})
+
     add_custom_command(
-        TARGET ${NAME} POST_BUILD
-        COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS} "$<TARGET_FILE:${NAME}>"
-                > "$<TARGET_FILE:${NAME}>.dump"
-        COMMAND ${CMAKE_OBJCOPY} -O binary "$<TARGET_FILE:${NAME}>"
-                "$<TARGET_FILE:${NAME}>.bin"
-        COMMAND srec_cat "$<TARGET_FILE:${NAME}>.bin" -binary -byte-swap 8
-                -o "$<TARGET_FILE:${NAME}>.vmem" -vmem 64
+        TARGET ${arg_NAME} POST_BUILD
+        COMMAND ${CMAKE_OBJDUMP} ${OBJDUMP_FLAGS} "$<TARGET_FILE:${arg_NAME}>"
+                > "$<TARGET_FILE:${arg_NAME}>.dump"
+        COMMAND ${CMAKE_OBJCOPY} -O binary "$<TARGET_FILE:${arg_NAME}>"
+                "$<TARGET_FILE:${arg_NAME}>.bin"
+        COMMAND srec_cat "$<TARGET_FILE:${arg_NAME}>.bin" -binary -byte-swap 8
+                -o "$<TARGET_FILE:${arg_NAME}>.vmem" -vmem 64
         VERBATIM
     )
 
-    install(TARGETS ${NAME} DESTINATION . COMPONENT ${NAME})
-    install(FILES "$<TARGET_FILE:${NAME}>.vmem" DESTINATION . COMPONENT ${NAME})
-    install(FILES "$<TARGET_FILE:${NAME}>.bin" DESTINATION . COMPONENT ${NAME})
-endmacro()
+    install(TARGETS ${arg_NAME} DESTINATION . COMPONENT ${arg_NAME})
+    install(FILES "$<TARGET_FILE:${arg_NAME}>.vmem" DESTINATION . COMPONENT ${arg_NAME})
+    install(FILES "$<TARGET_FILE:${arg_NAME}>.bin" DESTINATION . COMPONENT ${arg_NAME})
+endfunction()
 
 # for a given executable, add a test that runs the executable
 # in the Verilator simulation.
-macro(mocha_add_verilator_test NAME)
+function(mocha_add_verilator_test)
+    # Warning: If the BootROM and the test are compiled to the same memory address, the test will 
+    # effectively replace the BootROM. Because the BootROM is listed first in the arguments, it is
+    # overwritten by the subsequent test image; the simulation will behave as if no BootROM is present
+
+    set(one_value_args NAME ROM TIMEOUT)
+    cmake_parse_arguments(arg "" "${one_value_args}" "" ${ARGN})
+
+    if(NOT arg_TIMEOUT)
+        set(arg_TIMEOUT 60)  # default
+    endif()
+
+    set(TEST ${arg_NAME}_sim_verilator)
+
     add_test(
         NAME ${NAME}_sim_verilator
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh
-          -E ${NAME}
-          --rominit ${PROJECT_SOURCE_DIR}/../sw/device/tests/rom_ctrl/mem_init_file.vmem
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E $<TARGET_FILE:${arg_ROM}> -E ${arg_NAME}
     )
-endmacro()
+    set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
 
-macro(mocha_add_fpga_test NAME)
+endfunction()
+
+function(mocha_add_fpga_test)
+    set(one_value_args NAME TIMEOUT)
+    cmake_parse_arguments(arg "" "${one_value_args}" "" ${ARGN})
+
+
+    if(NOT arg_TIMEOUT)
+        set(arg_TIMEOUT 15)  # default
+    endif()
+
+    set(TEST ${arg_NAME}_fpga_genesys2)
     add_test(
-        NAME ${NAME}_fpga_genesys2
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${NAME}
+        NAME ${TEST} 
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${arg_NAME}
     )
-endmacro()
+    set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
+endfunction()
 
-set(BOOT_CFG              rom                 bare        ) # Config Name
-set(BOOT_CFG_OFFSET       0x8000              0x00        ) # Offset
-set(BOOT_CFG_FPGA         YES                 NO          ) # Fpga supported?
-set(BOOT_CFG_VERILATOR    NO                  YES         ) # Verilator supported?
 
 set(ARCHS                 vanilla             cheri       ) # Config Name
 set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
 
-# wrapper macro to create a CHERI and non-CHERI software test.
-# this macro automatically handles CHERI libraries by appending "_cheri" to
+# wrapper function to create a CHERI and non-CHERI software test.
+# this function automatically handles CHERI libraries by appending "_cheri" to
 # the output executable name and all of the libraries it is linked against.
-macro(mocha_add_test)
+function(mocha_add_test)
     # parse arguments
     set(options FPGA SKIP_VERILATOR)
-    set(one_value_args NAME)
+    set(one_value_args NAME TIMEOUT)
     set(multi_value_args SOURCES LIBRARIES)
     cmake_parse_arguments(arg "${options}"
         "${one_value_args}" "${multi_value_args}" ${ARGN})
 
     foreach(ARCH_NAME FLAGS_VAR IN ZIP_LISTS ARCHS ARCHS_FLAGS)
-      set(FLAGS ${${FLAGS_VAR}})
+        set(FLAGS ${${FLAGS_VAR}})
+        set(NAME ${arg_NAME}_${ARCH_NAME})
 
-      foreach(CONFIG OFFSET FPGA SIM IN ZIP_LISTS BOOT_CFG BOOT_CFG_OFFSET BOOT_CFG_FPGA BOOT_CFG_VERILATOR)
-        set(NAME ${arg_NAME}_${ARCH_NAME}_${CONFIG})
         add_executable(${NAME} ${arg_SOURCES})
         target_compile_options(${NAME} PUBLIC ${FLAGS})
         foreach(LIB ${arg_LIBRARIES})
           target_link_libraries(${NAME} PUBLIC ${LIB}_${ARCH_NAME})
         endforeach()
         target_link_options(${NAME} PUBLIC
-          "-Wl,--defsym,BOOT_ROM_OFFSET=${OFFSET}"
-          "-T${LDS}" "-L${LDS_DIR}"
+          "-Tmocha_dram.ld" "-L${LDS_DIR}"
         )
 
         # create artefacts
-        mocha_add_executable_artefacts(${NAME})
+        mocha_add_executable_artefacts(NAME ${NAME})
 
-        if(SIM AND NOT arg_SKIP_VERILATOR)
-          mocha_add_verilator_test(${NAME})
+        # TODO: Remove this when UVM tb can run tests from DRAM
+        if(TRUE)
+            add_executable(${NAME}_sram ${arg_SOURCES})
+            target_compile_options(${NAME}_sram PUBLIC ${FLAGS})
+            foreach(LIB ${arg_LIBRARIES})
+              target_link_libraries(${NAME}_sram PUBLIC ${LIB}_${ARCH_NAME})
+            endforeach()
+            target_link_options(${NAME}_sram PUBLIC
+              "-Tmocha_sram.ld" "-L${LDS_DIR}"
+            )
+            mocha_add_executable_artefacts(NAME ${NAME}_sram)
         endif()
 
-        if(FPGA AND arg_FPGA)
-          mocha_add_fpga_test(${NAME})
+        if(NOT arg_SKIP_VERILATOR)
+          mocha_add_verilator_test(NAME ${NAME} ROM bootrom TIMEOUT ${arg_TIMEOUT})
         endif()
 
-      endforeach() # BOOT_CFG
+        if(arg_FPGA)
+          mocha_add_fpga_test(NAME ${NAME} TIMEOUT ${arg_TIMEOUT})
+        endif()
     endforeach() # ARCH
-endmacro()
+endfunction()
 
-# wrapper macro to create a CHERI and Vanilla library.
-# this macro automatically handles CHERI libraries by appending "_cheri" to
+# wrapper function to create a CHERI and Vanilla library.
+# this function automatically handles CHERI libraries by appending "_cheri" to
 # the output library name and all of the libraries it is linked against.
-macro(mocha_add_library)
+function(mocha_add_library)
     # parse arguments
     set(one_value_args NAME)
     set(multi_value_args SOURCES LIBRARIES)
@@ -122,4 +153,4 @@ macro(mocha_add_library)
       endforeach()
 
     endforeach() # ARCH
-endmacro()
+endfunction()
