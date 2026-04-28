@@ -24,7 +24,7 @@ module axi_sram #(
 
   // 64-bit memory format signals
   logic                                 sram_req;
-  logic                                 sram_we;
+  logic                                 sram_we_d, sram_we_q;
   logic [(top_pkg::AxiDataWidth/8)-1:0] sram_be;
   logic [    top_pkg::AxiAddrWidth-1:0] sram_addr;
   logic [    top_pkg::AxiDataWidth-1:0] sram_wdata;
@@ -74,11 +74,13 @@ module axi_sram #(
     .mem_region_o    ( ),
     .mem_err_i       ('0),
     .mem_exokay_i    ('0),
-    .mem_we_o        (sram_we),
+    .mem_we_o        (sram_we_d),
     .mem_cheri_tag_o (sram_cheri_w_tag),
     .mem_rvalid_i    (sram_rvalid),
-    .mem_rdata_i     (sram_rdata),
-    .mem_cheri_tag_i (sram_cheri_r_tag)
+    // When write is enabled the block requires a read valid response.
+    // In this case feed dummy data since otherwise rdata_i is undefined.
+    .mem_rdata_i     ((sram_rvalid & sram_we_q) ? 64'hFEED_CAFE_8BAD_F00D : sram_rdata),
+    .mem_cheri_tag_i ((sram_rvalid & sram_we_q) ? 1'b0 : sram_cheri_r_tag)
   );
 
   // Tag bit address calculation
@@ -104,7 +106,7 @@ module axi_sram #(
     .rst_ni (rst_ni),
 
     .req_i   (sram_req),
-    .write_i (sram_we),
+    .write_i (sram_we_d),
     .addr_i  (sram_tag_word_addr),
     .wdata_i (sram_tag_wdata),
     .wmask_i (sram_tag_wmask),
@@ -133,7 +135,7 @@ module axi_sram #(
     .rst_ni ( rst_ni ),
 
     .req_i   (sram_req),
-    .write_i (sram_we),
+    .write_i (sram_we_d),
     .addr_i  (sram_word_addr),
     .wdata_i (sram_wdata),
     .wmask_i (sram_wmask),
@@ -145,8 +147,13 @@ module axi_sram #(
 
   // Single-cycle read response.
   always_ff @(posedge clk_i or negedge rst_ni) begin
-    if (!rst_ni) sram_rvalid <= '0;
-    else         sram_rvalid <= sram_req; // Generate rvalid strobes even for writes
+    if (!rst_ni) begin
+      sram_rvalid <= 1'b0;
+      sram_we_q   <= 1'b0;
+    end else begin
+      sram_rvalid <= sram_req; // Generate rvalid strobes even for writes
+      sram_we_q   <= sram_we_d;
+    end
   end
 
 endmodule
