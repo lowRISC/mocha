@@ -18,7 +18,7 @@ def generate(args) -> None:
 
     build_cmd = ["cmake", "--build", build_dir, "-v", "--target"]
     install_cmd = ["cmake", "--install", build_dir, "--prefix", out_dir, "--component"]
-    for img in args.sw_images:
+    for img in args.sw_images.split():
         target = img.split(":")[0]
         cmd = build_cmd + target.split(":")[0:]
         subprocess.run(cmd, capture_output=False, check=True)
@@ -31,8 +31,8 @@ def generate(args) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate software artefact for simulation")
-    parser.add_argument("--sw-images", nargs="+", help="List of software images")
-    parser.add_argument("--sw-build-opts", nargs="+", help="List of build options")
+    parser.add_argument("--sw-images", help="List of software images")
+    parser.add_argument("--sw-build-opts", help="List of build options")
     parser.add_argument("--sw-build-device", help="devices")
     parser.add_argument("--seed", help="seed")
     parser.add_argument("--build-seed", help="build-seed")

@@ -105,6 +105,19 @@ function(mocha_add_test)
         # create artefacts
         mocha_add_executable_artefacts(NAME ${NAME})
 
+        # TODO: Remove this when UVM tb can run tests from DRAM
+        if(TRUE)
+            add_executable(${NAME}_sram ${arg_SOURCES})
+            target_compile_options(${NAME}_sram PUBLIC ${FLAGS})
+            foreach(LIB ${arg_LIBRARIES})
+              target_link_libraries(${NAME}_sram PUBLIC ${LIB}_${ARCH_NAME})
+            endforeach()
+            target_link_options(${NAME}_sram PUBLIC
+              "-Tmocha_sram.ld" "-L${LDS_DIR}"
+            )
+            mocha_add_executable_artefacts(NAME ${NAME}_sram)
+        endif()
+
         if(NOT arg_SKIP_VERILATOR)
           mocha_add_verilator_test(NAME ${NAME} ROM bootrom TIMEOUT ${arg_TIMEOUT})
         endif()
