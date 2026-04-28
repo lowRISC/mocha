@@ -102,16 +102,24 @@ module tb;
   end
 
   // Signals to connect the sink
+  logic               sim_sram_clk;
+  logic               sim_sram_rst;
   top_pkg::axi_req_t  sim_sram_cpu_req;
   top_pkg::axi_resp_t sim_sram_cpu_resp;
   top_pkg::axi_req_t  sim_sram_xbar_req;
   top_pkg::axi_resp_t sim_sram_xbar_resp;
 
+  // CVA6 and Xbar uses clk_main_infra from clock manager and their request and response ports are
+  // interfaced in sim_sram_axi_sink module. Thus, use the same clock and reset as them to stay in
+  // sync.
+  assign sim_sram_clk = dut.clkmgr_clocks.clk_main_infra;
+  assign sim_sram_rst = dut.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel];
+
   // Instantiate the AXI sink to intercept the AXI traffic within the simulation memory range
   // to provide a dedicated channel for SW-to-DV communication.
   sim_sram_axi_sink u_sim_sram (
-    .clk_i          (clk                ),
-    .rst_ni         (rst_n              ),
+    .clk_i          (sim_sram_clk       ),
+    .rst_ni         (sim_sram_rst       ),
     .cpu_req_i      (sim_sram_cpu_req   ),
     .cpu_resp_o     (sim_sram_cpu_resp  ),
     .xbar_req_o     (sim_sram_xbar_req  ),
