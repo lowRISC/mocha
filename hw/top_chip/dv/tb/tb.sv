@@ -263,6 +263,7 @@ module tb;
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "sys_clk_if", sys_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
     uvm_config_db#(virtual pins_if #(NUM_GPIOS))::set(null, "*.env", "gpio_vif", gpio_pins_if);
+    uvm_config_db#(virtual i2c_if)::set(null, "*.env.m_i2c_agent", "vif", i2c_if);
 
     // SW logger and test status interfaces.
     uvm_config_db#(virtual sw_test_status_if)::set(
