@@ -18,6 +18,7 @@ class top_chip_dv_env_cfg extends uvm_object;
 
   // External interface agent configs
   rand uart_agent_cfg    m_uart_agent_cfg;
+  rand i2c_agent_cfg     m_i2c_agent_cfg;
 
   `uvm_object_utils_begin(top_chip_dv_env_cfg)
   `uvm_object_utils_end
@@ -45,6 +46,12 @@ function void top_chip_dv_env_cfg::initialize();
   // Configuration is required to perform meaningful monitoring
   m_uart_agent_cfg.en_tx_monitor = 0;
   m_uart_agent_cfg.en_rx_monitor = 0;
+
+  // Create I2C agent config object
+  m_i2c_agent_cfg = i2c_agent_cfg::type_id::create("m_i2c_agent_cfg");
+
+  // Disable functional coverage collection for chip level
+  m_i2c_agent_cfg.en_cov = 0;
 endfunction : initialize
 
 function void top_chip_dv_env_cfg::get_mem_image_files_from_plusargs();
