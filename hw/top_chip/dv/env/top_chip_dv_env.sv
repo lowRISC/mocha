@@ -13,6 +13,7 @@ class top_chip_dv_env extends uvm_env;
 
   // Agents
   uart_agent m_uart_agent;
+  i2c_agent  m_i2c_agent;
 
   // Standard SV/UVM methods
   extern function new(string name = "", uvm_component parent = null);
@@ -70,6 +71,12 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   if (!uvm_config_db#(virtual clk_rst_if)::get(this, "", "peri_clk_if", cfg.peri_clk_vif)) begin
     `uvm_fatal(`gfn, "Cannot get peri_clk_vif")
   end
+
+  // Set I2C agent config object for I2C agent
+  uvm_config_db#(i2c_agent_cfg)::set(this, "m_i2c_agent", "cfg", cfg.m_i2c_agent_cfg);
+
+  // Create I2C agent
+  m_i2c_agent = i2c_agent::type_id::create("m_i2c_agent", this);
 
   // Instantiate UART agent
   m_uart_agent = uart_agent::type_id::create("m_uart_agent", this);
