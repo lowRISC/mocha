@@ -92,7 +92,6 @@ task top_chip_dv_base_vseq::apply_reset(string kind = "HARD");
       begin : isolation_fork
         fork
           cfg.sys_clk_vif.apply_reset();
-          cfg.peri_clk_vif.apply_reset();
         join_none
         wait fork;
       end : isolation_fork

@@ -67,10 +67,6 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
     `uvm_fatal(`gfn, "Cannot get sys_clk_vif")
   end
 
-  if (!uvm_config_db#(virtual clk_rst_if)::get(this, "", "peri_clk_if", cfg.peri_clk_vif)) begin
-    `uvm_fatal(`gfn, "Cannot get peri_clk_vif")
-  end
-
   // Instantiate UART agent
   m_uart_agent = uart_agent::type_id::create("m_uart_agent", this);
   uvm_config_db#(uart_agent_cfg)::set(this, "m_uart_agent*", "cfg", cfg.m_uart_agent_cfg);

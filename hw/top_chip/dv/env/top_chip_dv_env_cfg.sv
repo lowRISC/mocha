@@ -8,7 +8,6 @@ class top_chip_dv_env_cfg extends uvm_object;
 
   // External interfaces
   virtual clk_rst_if        sys_clk_vif;
-  virtual clk_rst_if        peri_clk_vif;
 
   // GPIO Pads interface
   virtual pins_if #(NUM_GPIOS) gpio_vif;

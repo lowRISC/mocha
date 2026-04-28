@@ -24,8 +24,6 @@ module tb;
   // ------ Signals ------
   wire clk;
   wire rst_n;
-  wire peri_clk;
-  wire peri_rst_n;
 
   // GPIO connections
   wire  [NUM_GPIOS-1:0] gpio_pads;    // A wire connected to bidirectional pads in pins_if
@@ -37,7 +35,6 @@ module tb;
 
   // ------ Interfaces ------
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
-  clk_rst_if peri_clk_if(.clk(peri_clk), .rst_n(peri_rst_n));
   uart_if uart_if();
   pins_if #(NUM_GPIOS) gpio_pins_if (.pins(gpio_pads));
 
@@ -226,10 +223,8 @@ module tb;
 
     // Start clock and reset generators
     sys_clk_if.set_active();
-    peri_clk_if.set_active();
 
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "sys_clk_if", sys_clk_if);
-    uvm_config_db#(virtual clk_rst_if)::set(null, "*", "peri_clk_if", peri_clk_if);
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
     uvm_config_db#(virtual pins_if #(NUM_GPIOS))::set(null, "*.env", "gpio_vif", gpio_pins_if);
 
