@@ -42,14 +42,14 @@ async def set_pin(pin: int, val: bool) -> None:
             print(f"[{RUNNER}] gpio-write command exited with non-zero exit code {p.returncode}")
             sys.exit(1)
     except TimeoutError:
-        print(f"[{RUNNER}] gpio-write timed out after {FTDITOOL_WAIT_TIME} seconds.")
+        print(f"[{RUNNER}] gpio-write timed out after {FTDITOOL_WAIT_TIME} seconds")
         await p.terminate()  # or maybe p.kill()
         sys.exit(1)
 
 
 async def reset_core() -> None:
     """
-    Pull the reset pin down for 100ms.
+    Reset the core by pulling the reset pin down for 100ms.
     """
     await set_pin(2, False)
     await asyncio.sleep(0.1)
@@ -79,13 +79,11 @@ def get_load_addr(elf: Path) -> int:
                 seg["p_paddr"] for seg in elf.iter_segments() if seg["p_type"] == "PT_LOAD"
             ]
             if not load_addrs:
-                print(f"[{RUNNER}] no `PT_LOAD` segments found in elf {elf}")
+                print(f"[{RUNNER}] no PT_LOAD segments found in ELF file {elf}")
                 sys.exit(1)
-
-            first_address = min(load_addrs)
-            return first_address
+            return min(load_addrs)
     except OSError as e:
-        print(f"[{RUNNER}] error opening elf {elf}: {e}")
+        print(f"[{RUNNER}] error opening ELF file {elf}: {e}")
         sys.exit(1)
 
 
