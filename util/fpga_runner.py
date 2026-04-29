@@ -22,17 +22,18 @@ MOCHA_BOOTROM_BOOSTRAP_STR = "Entering SPI bootstrap"
 RUNNER: str = Path(__file__).name
 
 
-async def set_pin(pin: int, val: int) -> None:
+async def set_pin(pin: int, val: bool) -> None:
     command = [
         "ftditool",
         "--pid",
         hex(FTDI_PID),
         "gpio-write",
         str(pin),
-        str(val),
+        str(int(val)),
         "--ftdi",
         FTDI_DEVICE_DESC,
     ]
+
     p = await asyncio.create_subprocess_exec(*command)
     try:
         res = await asyncio.wait_for(p.wait(), FTDITOOL_WAIT_TIME)
@@ -49,21 +50,20 @@ async def reset_core() -> None:
     """
     Pull the reset pin down for 100ms.
     """
-    await set_pin(2, 0)
+    await set_pin(2, False)
     await asyncio.sleep(0.1)
-    await set_pin(2, 1)
+    await set_pin(2, True)
 
 
-async def bootstrap(uart: serial.Serial) -> bool:
+async def bootstrap(uart: serial.Serial) -> None:
     """
     Pull down the bootstrap pin, reset the core, wait for the bootstrap string over uart,
     then release the pin the bootstrap pin.
     """
-    await set_pin(0, 0)
+    await set_pin(0, False)
     await reset_core()
-    result = await poll_uart_checking_for(uart, MOCHA_BOOTROM_BOOSTRAP_STR)
-    await set_pin(0, 1)
-    return result is not None
+    await poll_uart_checking_for(uart, MOCHA_BOOTROM_BOOSTRAP_STR)
+    await set_pin(0, True)
 
 
 def get_load_addr(elf: Path) -> int:
