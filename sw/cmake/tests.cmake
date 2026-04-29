@@ -83,7 +83,7 @@ set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
 # the output executable name and all of the libraries it is linked against.
 function(mocha_add_test)
     # parse arguments
-    set(options FPGA SKIP_VERILATOR)
+    set(options SKIP_FPGA SKIP_VERILATOR)
     set(one_value_args NAME TIMEOUT)
     set(multi_value_args SOURCES LIBRARIES)
     cmake_parse_arguments(arg "${options}"
@@ -122,7 +122,7 @@ function(mocha_add_test)
           mocha_add_verilator_test(NAME ${NAME} ROM bootrom TIMEOUT ${arg_TIMEOUT})
         endif()
 
-        if(arg_FPGA)
+        if(NOT arg_SKIP_FPGA)
           mocha_add_fpga_test(NAME ${NAME} TIMEOUT ${arg_TIMEOUT})
         endif()
     endforeach() # ARCH
