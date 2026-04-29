@@ -189,7 +189,7 @@ openFPGALoader -b genesys2 build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivad
 
 Then, to load and run a single software binary on FPGA, first build the software, then run:
 ```sh
-./util/fpga_runner.py build/sw/device/examples/hello_world
+./util/fpga_runner.py run build/sw/device/examples/hello_world
 ```
 
 Or, to run all the FPGA tests, first build the software, then run:

@@ -93,7 +93,7 @@ function(mocha_opensbi_with_payload_test PAYLOAD_TARGET)
 
   add_test(
       NAME ${NAME}_fpga_genesys2
-      COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${NAME}/fw_payload.elf
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py test ${NAME}/fw_payload.elf
   )
 
   set_property(TEST ${NAME}_sim_verilator PROPERTY TIMEOUT 7200)
