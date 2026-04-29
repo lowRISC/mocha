@@ -17,7 +17,8 @@ FTDI_PID: int = 0x6010
 BAUD_RATE: int = 1_000_000
 FTDITOOL_WAIT_TIME: int = 60
 FTDI_DEVICE_DESC = "Digilent"
-MOCHA_BOOTROM_BOOSTRAP_STR = "Entering SPI bootstrap"
+MOCHA_BOOTSTAP_PATTERN = re.compile(r"Entering SPI bootstrap")
+TEST_PATTERN = re.compile(r"TEST RESULT: (PASSED|FAILED)", re.IGNORECASE)
 
 RUNNER: str = Path(__file__).name
 
@@ -55,14 +56,18 @@ async def reset_core() -> None:
     await set_pin(2, True)
 
 
-async def bootstrap(uart: serial.Serial) -> None:
+async def bootstrap(uart: serial.Serial | None) -> None:
     """
-    Pull down the bootstrap pin, reset the core, wait for the bootstrap string over uart,
-    then release the pin the bootstrap pin.
+    Pull down the bootstrap pin and reset the core. If a UART is provided,
+    wait for the bootstrap string over UART, otherwise wait a short period
+    of time and assume the system is ready for bootstrapping. Then release the pin.
     """
     await set_pin(0, False)
     await reset_core()
-    await poll_uart_checking_for(uart, MOCHA_BOOTROM_BOOSTRAP_STR)
+    if uart is not None:
+        await poll_uart_checking_for(uart, MOCHA_BOOTSTAP_PATTERN)
+    else:
+        await asyncio.sleep(0.5)
     await set_pin(0, True)
 
 
@@ -84,35 +89,30 @@ def get_load_addr(elf: Path) -> int:
         sys.exit(1)
 
 
-async def load_fpga_test(test: Path, uart) -> None:
+async def load_fpga_binary(path: Path, uart: serial.Serial | None) -> None:
+    load_address = get_load_addr(path)
+
     await bootstrap(uart)
+
     command = [
         "ftditool",
         "--pid",
         hex(FTDI_PID),
         "bootstrap",
         "--addr",
-        hex(get_load_addr(test)),
+        hex(load_address),
         "--ftdi",
         FTDI_DEVICE_DESC,
     ]
-    command.append(str(test.with_suffix(".bin")))
+    command.append(str(path.with_suffix(".bin")))
+
     p = await asyncio.create_subprocess_exec(*command)
     if await p.wait() != 0:
         print(f"[{RUNNER}] SPI load command exited with non-zero exit code {p.returncode}")
         sys.exit(1)
 
 
-async def run_fpga_test(tty: str, test: Path) -> bool:
-    with serial.Serial(tty, BAUD_RATE, timeout=0) as uart:
-        await load_fpga_test(test, uart)
-        pattern = r"TEST RESULT: (PASSED|FAILED)"
-        result = await asyncio.create_task(poll_uart_checking_for(uart, pattern))
-        return "PASSED" in result
-
-
-async def poll_uart_checking_for(uart: serial.Serial, pattern: str) -> str:
-    pattern = re.compile(pattern, re.IGNORECASE)
+async def poll_uart_checking_for(uart: serial.Serial, pattern: re.Pattern) -> str:
     while True:
         line = await asyncio.to_thread(uart.readline)
         line = line.decode("utf-8", errors="ignore")
@@ -130,20 +130,62 @@ def find_uart(vid: int = 0x0403, pid: int = 0x6001) -> str | None:
     return None
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="FPGA test runner")
-    parser.add_argument("test", type=Path, help="path to test")
-    args = parser.parse_args()
-
+async def do_fpga_test(args) -> None:
+    """
+    Test subcommand.
+    Load the binary onto the FPGA, then poll for the test result pattern.
+    """
     if uart_tty := find_uart():
-        try:
-            success = asyncio.run(run_fpga_test(uart_tty, args.test))
-            sys.exit(0 if success else 1)
-        except KeyboardInterrupt:
+        with serial.Serial(uart_tty, BAUD_RATE, timeout=0) as uart:
+            await load_fpga_binary(args.path, uart)
+
+            result = await asyncio.create_task(poll_uart_checking_for(uart, TEST_PATTERN))
+            if "PASSED" in result:
+                sys.exit(0)  # test success
             sys.exit(1)
 
     print(f"[{RUNNER}] Error: UART device not found")
     sys.exit(1)
+
+
+async def do_fpga_run(args) -> None:
+    """
+    Run subcommand.
+    Just load the binary onto the FPGA without opening the UART,
+    so that it can remain open in a separate application (e.g screen).
+    """
+    await load_fpga_binary(args.path, None)
+    sys.exit(0)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="FPGA test runner")
+    subparsers = parser.add_subparsers(dest="command", required=True, help="Subcommands")
+
+    test_help = (
+        "Load a binary on the FPGA, then poll the UART for a test result. "
+        "Captures output from the UART."
+    )
+
+    test_parser = subparsers.add_parser("test", help=test_help, description=("test: " + test_help))
+    test_parser.add_argument("path", type=Path, help="Path to test ELF to test on the FPGA")
+    test_parser.set_defaults(func=do_fpga_test)
+
+    run_help = (
+        "Load a binary on the FPGA, then exit. This subcommand does not use the UART, "
+        "so that it can be kept open in a separate program (e.g screen) for "
+        "interactive use."
+    )
+
+    run_parser = subparsers.add_parser("run", help=run_help, description=("run: " + run_help))
+    run_parser.add_argument("path", type=Path, help="Path to program ELF to run on the FPGA")
+    run_parser.set_defaults(func=do_fpga_run)
+
+    args = parser.parse_args()
+    try:
+        asyncio.run(args.func(args))
+    except KeyboardInterrupt:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
