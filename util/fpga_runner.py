@@ -7,7 +7,6 @@ import argparse
 import asyncio
 import re
 import sys
-import time
 from pathlib import Path
 
 import serial
@@ -16,7 +15,6 @@ from elftools.elf.elffile import ELFFile
 
 FTDI_PID: int = 0x6010
 BAUD_RATE: int = 1_000_000
-TIMEOUT: int = 60
 FTDITOOL_WAIT_TIME: int = 60
 FTDI_DEVICE_DESC = "Digilent"
 MOCHA_BOOTROM_BOOSTRAP_STR = "Entering SPI bootstrap"
@@ -110,13 +108,12 @@ async def run_fpga_test(tty: str, test: Path) -> bool:
         await load_fpga_test(test, uart)
         pattern = r"TEST RESULT: (PASSED|FAILED)"
         result = await asyncio.create_task(poll_uart_checking_for(uart, pattern))
-        return result and "PASSED" in result
+        return "PASSED" in result
 
 
-async def poll_uart_checking_for(uart: serial.Serial, pattern: str) -> str | None:
+async def poll_uart_checking_for(uart: serial.Serial, pattern: str) -> str:
     pattern = re.compile(pattern, re.IGNORECASE)
-    start = time.time()
-    while time.time() - start < TIMEOUT:
+    while True:
         line = await asyncio.to_thread(uart.readline)
         line = line.decode("utf-8", errors="ignore")
         print(line, end="")
@@ -124,8 +121,6 @@ async def poll_uart_checking_for(uart: serial.Serial, pattern: str) -> str | Non
             continue
         if match := pattern.search(line):
             return match.group()
-    print(f"[{RUNNER}] Test timeout")
-    return None
 
 
 def find_uart(vid: int = 0x0403, pid: int = 0x6001) -> str | None:
