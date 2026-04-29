@@ -209,7 +209,7 @@ always @(posedge msoc_clk)
         6: begin firstbuf <= core_lsu_wdata[3:0]; end
         default:;
       endcase
-       if ((last > 0) && ~sync)
+       if (last > 0)
          begin
          // check broadcast/multicast address
 	     sync <= (rx_dest_mac[47:24]==24'h01005E) | (&rx_dest_mac) | (mac_address == rx_dest_mac) | promiscuous;
