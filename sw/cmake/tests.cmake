@@ -84,7 +84,7 @@ set(ARCHS_FLAGS           VANILLA_FLAGS       CHERI_FLAGS ) # Flags
 function(mocha_add_test)
     # parse arguments
     set(options SKIP_FPGA SKIP_VERILATOR)
-    set(one_value_args NAME TIMEOUT)
+    set(one_value_args NAME FPGA_TIMEOUT VERILATOR_TIMEOUT)
     set(multi_value_args SOURCES LIBRARIES)
     cmake_parse_arguments(arg "${options}"
         "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -119,11 +119,11 @@ function(mocha_add_test)
         endif()
 
         if(NOT arg_SKIP_VERILATOR)
-          mocha_add_verilator_test(NAME ${NAME} ROM bootrom TIMEOUT ${arg_TIMEOUT})
+          mocha_add_verilator_test(NAME ${NAME} ROM bootrom TIMEOUT ${arg_VERILATOR_TIMEOUT})
         endif()
 
         if(NOT arg_SKIP_FPGA)
-          mocha_add_fpga_test(NAME ${NAME} TIMEOUT ${arg_TIMEOUT})
+          mocha_add_fpga_test(NAME ${NAME} TIMEOUT ${arg_FPGA_TIMEOUT})
         endif()
     endforeach() # ARCH
 endfunction()
