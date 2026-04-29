@@ -305,6 +305,8 @@ module top_chip_system #(
   //    .user_o     ( '0                        ),
   //    .user_i     ( '0                        )
   //);
+  logic dm_slave_req_d;
+
   axi_to_mem #(
     .axi_req_t  ( top_pkg::axi_req_t    ),
     .axi_resp_t ( top_pkg::axi_resp_t   ),
@@ -329,9 +331,19 @@ module top_chip_system #(
     .mem_strb_o   (dm_slave_be),
     .mem_atop_o   ( ), // XXX TODO this signal wasn't present in originally used axi2mem module
     .mem_we_o     (dm_slave_we),
-    .mem_rvalid_i (1'b1), // XXX TODO this signal wasn't present in originally used axi2mem module
+    .mem_rvalid_i (dm_slave_req_d), // XXX TODO this signal wasn't present in originally used axi2mem module
     .mem_rdata_i  (dm_slave_rdata)
   );
+
+  // Read Valid Logic (1-cycle delay loopback)
+  // Essential for axi_to_mem to complete read AND write transactions even if SRAM is missing.
+  always_ff @(posedge clk_i or negedge rst_ni) begin: delayed_mem_req
+    if (!rst_ni) begin
+      dm_slave_req_d <= 1'b0;
+    end else begin
+      dm_slave_req_d <= dm_slave_req;
+    end
+  end : delayed_mem_req
 
   // Instantiate Debug Module
   dm_top #(
