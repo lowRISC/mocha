@@ -94,6 +94,7 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Track specific agent sequencers in the virtual sequencer.
   // Allows virtual sequences to use the agents to drive RX items.
   top_vsqr.uart_sqr = m_uart_agent.sequencer;
+  top_vsqr.i2c_sqr  = m_i2c_agent.sequencer;
 
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.
