@@ -14,6 +14,7 @@ class top_chip_dv_virtual_sequencer extends uvm_sequencer;
   // Handles to specific interface agent sequencers. Used by some virtual
   // sequences to drive RX (to-chip) items.
   uart_sequencer uart_sqr;
+  i2c_sequencer  i2c_sqr;
 
   // FIFOs for monitor output. Used by some virtual sequences to check
   // TX (from-chip) items.
