@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-set(SRCS print.c string.c)
+set(SRCS print.c string.c sdcard.c)
 
 set(LIBS hal)
 
