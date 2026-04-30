@@ -7,6 +7,7 @@
 #include "constants.h"
 #include "hal/gpio.h"
 #include "hal/hart.h"
+#include "hal/mmio.h"
 #include "hal/mocha.h"
 #include "hal/spi_device.h"
 #include "hal/uart.h"
@@ -88,7 +89,7 @@ void boot(uintptr_t addr)
 void clear_slots()
 {
     for (size_t i = 0; i < ARRAY_LEN(boot_slots); i++) {
-        DEV_WRITE(boot_slots[i], 0x00);
+        DEV_WRITE(boot_slots[i], 0);
     }
 }
 
@@ -111,41 +112,41 @@ bool spi_boot_strap(struct boot_context *ctx)
 
     spi_device_t spid = mocha_system_spi_device();
     spi_device_init(spid);
-    spi_device_enable_set(spid, true);
-    spi_device_flash_status_set(spid, 0);
+    spi_device_flash_mode_set(spid, spi_device_flash_mode_flash);
 
     while (true) {
         led_animation_run(ctx);
 
-        spi_device_cmd_t cmd = spi_device_cmd_get_non_blocking(spid);
-        if (cmd.status != spi_device_status_ready) {
-            if (cmd.status == spi_device_status_overflow) {
+        spi_device_software_command cmd;
+        enum spi_device_status status = spi_device_software_command_get_non_blocking(spid, &cmd);
+        if (status != spi_device_status_ready) {
+            if (status == spi_device_status_overflow) {
                 uprintf(ctx->console, "SPI payload overflow\n");
-                spi_device_flash_status_set(spid, 0);
+                spi_device_flash_status_busy_set(spid, false);
             }
             continue;
         }
 
         switch (cmd.opcode) {
-        case SPI_DEVICE_OPCODE_SECTOR_ERASE4B:
-        case SPI_DEVICE_OPCODE_SECTOR_ERASE:
+        case spi_device_opcode_sector_erase:
+        case spi_device_opcode_sector_erase_4b:
             // No need to erase SRAM.
             break;
-        case SPI_DEVICE_OPCODE_PAGE_PROGRAM4B:
-        case SPI_DEVICE_OPCODE_PAGE_PROGRAM:
+        case spi_device_opcode_page_program:
+        case spi_device_opcode_page_program_4b:
             if (cmd.payload_byte_count > 0) {
                 page_program(ctx->console, spid, cmd.address, cmd.payload_byte_count);
             }
             break;
-        case SPI_DEVICE_OPCODE_RESET:
+        case spi_device_opcode_reset:
             // Exit boot strap
             return true;
         default:
-            uprintf(ctx->console, "\nUnsupported command: 0x%0x", cmd.opcode);
+            uprintf(ctx->console, "Unsupported command: 0x%x\n", cmd.opcode);
             break;
         }
         // Finished processing the write, clear the busy bit.
-        spi_device_flash_status_set(spid, 0);
+        spi_device_flash_status_busy_set(spid, false);
     }
 
     return true;
@@ -159,23 +160,26 @@ static inline bool is_overriding_me(uintptr_t addr)
 void page_program(uart_t console, spi_device_t spid, uint32_t offset, uint32_t bytes)
 {
     uintptr_t ptr = offset;
-    uint32_t payload_offset = 0;
 
-    if (bytes > SPI_DEVICE_PAYLOAD_AREA_NUM_BYTES) {
-        uprintf(console, "\npage program size out of bounds");
+    if (bytes > spi_device_ingress_buffer_size_payload_fifo * sizeof(uint32_t)) {
+        uprintf(console, "page program size out of bounds\n");
         return;
     }
 
     // TODO: we need to check that the offset is valid within a memory address space.
     if (is_overriding_me(ptr) || is_overriding_me(ptr + bytes)) {
-        uprintf(console, "\nPlease don't override the bootrom's ram.");
+        uprintf(console, "Please don't override the bootrom's ram.\n");
         return;
     }
 
-    while (payload_offset < bytes) {
-        *((volatile uint64_t *)ptr) = spi_device_flash_payload_buffer_read64(spid, payload_offset);
-        ptr += sizeof(uint64_t);
-        payload_offset += sizeof(uint64_t);
+    uint32_t num_words = (bytes / 4);
+    if (bytes % 4 != 0) {
+        num_words++;
+    }
+    for (size_t i = 0; i < num_words; i++) {
+        uint32_t word =
+            VOLATILE_READ(spid->ingress_buffer[spi_device_ingress_buffer_offset_payload_fifo + i]);
+        ((uint32_t *)ptr)[i] = word;
     }
 }
 
