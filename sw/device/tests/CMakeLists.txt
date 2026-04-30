@@ -13,6 +13,7 @@ mocha_add_test(NAME gpio_reg_access_test SOURCES gpio/reg_access_test.c LIBRARIE
 # driven externally
 mocha_add_test(NAME gpio_smoketest SOURCES gpio/smoketest.c LIBRARIES ${LIBS} SKIP_VERILATOR SKIP_FPGA)
 mocha_add_test(NAME i2c_smoketest SOURCES i2c/smoketest.c LIBRARIES ${LIBS})
+mocha_add_test(NAME i2c_host_tx_rx_test SOURCES i2c/host_test.c LIBRARIES ${LIBS})
 mocha_add_test(NAME mailbox_smoketest SOURCES mailbox/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME plic_smoketest SOURCES plic/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME rstmgr_software_reset SOURCES rstmgr/software_reset.c LIBRARIES ${LIBS})
