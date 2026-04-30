@@ -22,7 +22,7 @@ class top_chip_dv_base_vseq extends uvm_sequence;
 
   // Class specific methods
   extern function void set_handles();
-  extern task dut_init(string reset_kind = "HARD");
+  extern virtual task dut_init(string reset_kind = "HARD");
   extern task apply_reset(string kind = "HARD");
   extern task wait_for_sw_test_done();
   // Backdoor-read or override a const symbol in SW to modify the behavior of the test.

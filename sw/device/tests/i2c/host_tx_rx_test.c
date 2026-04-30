@@ -8,6 +8,15 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+// The const variables below are treated as symbols read by top_chip_dv_i2c_host_tx_rx_vseq in order
+// to calculate agent timing parameters.
+const uint8_t sys_clk_period_ns = SYSCLK_NS;
+
+// The constants are the spec minimums for standard mode speed except hold_data_time_ns which should
+// be at least one according to OpenTitan's programming guide.
+const uint16_t scl_low_time_ns = 4700;
+const uint16_t hold_data_time_ns = 1;
+
 enum : uint8_t {
     device_addr = 0x3A,
     num_bytes = 0x8,
