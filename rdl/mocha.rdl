@@ -8,6 +8,7 @@
 `include "ip/rv_timer.rdl"
 `include "ip/gpio.rdl"
 `include "ip/i2c.rdl"
+`include "ip/kmac.rdl"
 `include "ip/plic.rdl"
 `include "ip/spi_device.rdl"
 
@@ -40,7 +41,7 @@ addrmap top_mocha {
 
   reserved ENTROPY_SOURCE @ 0x4006_0000;
 
-  reserved KMAC @ 0x4007_0000;
+  kmac KMAC[1] @ 0x4007_0000 += 0x10000;
 
   uart UART[1] @ 0x4100_0000 += 0x10000;
 
