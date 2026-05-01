@@ -1,0 +1,75 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:cosmic:hpdcache"
+description: "HPDCache core file for COSMIC project."
+
+filesets:
+  files_rtl:
+    depend:
+      - pulp-platform.org::axi
+      - lowrisc:common_cells:all
+    files:
+      # Includes.
+      - hpdcache/rtl/include/hpdcache_typedef.svh: {is_include_file: true, include_path: hpdcache/rtl/include}
+      # RTL.
+      - hpdcache/rtl/src/hpdcache_pkg.sv
+      - hpdcache/rtl/src/utils/hpdcache_mem_resp_demux.sv
+      - hpdcache/rtl/src/utils/hpdcache_mem_req_read_arbiter.sv
+      - hpdcache/rtl/src/utils/hpdcache_mem_req_write_arbiter.sv
+      - hpdcache/rtl/src/utils/hpdcache_mem_to_axi_read.sv
+      - hpdcache/rtl/src/utils/hpdcache_mem_to_axi_write.sv
+      - hpdcache/rtl/src/common/hpdcache_data_downsize.sv
+      - hpdcache/rtl/src/common/hpdcache_data_resize.sv
+      - hpdcache/rtl/src/common/hpdcache_data_upsize.sv
+      - hpdcache/rtl/src/common/hpdcache_demux.sv
+      - hpdcache/rtl/src/common/hpdcache_lfsr.sv
+      - hpdcache/rtl/src/common/hpdcache_sync_buffer.sv
+      - hpdcache/rtl/src/common/hpdcache_fifo_reg.sv
+      - hpdcache/rtl/src/common/hpdcache_fifo_reg_initialized.sv
+      - hpdcache/rtl/src/common/hpdcache_fxarb.sv
+      - hpdcache/rtl/src/common/hpdcache_rrarb.sv
+      - hpdcache/rtl/src/common/hpdcache_mux.sv
+      - hpdcache/rtl/src/common/hpdcache_decoder.sv
+      - hpdcache/rtl/src/common/hpdcache_1hot_to_binary.sv
+      - hpdcache/rtl/src/common/hpdcache_prio_1hot_encoder.sv
+      - hpdcache/rtl/src/common/hpdcache_prio_bin_encoder.sv
+      - hpdcache/rtl/src/common/hpdcache_sram.sv
+      - hpdcache/rtl/src/common/hpdcache_sram_wbyteenable.sv
+      - hpdcache/rtl/src/common/hpdcache_sram_watomenable.sv
+      - hpdcache/rtl/src/common/hpdcache_sram_wmask.sv
+      - hpdcache/rtl/src/common/hpdcache_regbank_wbyteenable_1rw.sv
+      - hpdcache/rtl/src/common/hpdcache_regbank_wmask_1rw.sv
+      - hpdcache/rtl/src/common/macros/behav/hpdcache_sram_1rw.sv
+      - hpdcache/rtl/src/common/macros/behav/hpdcache_sram_wbyteenable_1rw.sv
+      - hpdcache/rtl/src/common/macros/behav/hpdcache_sram_watomenable_1rw.sv
+      - hpdcache/rtl/src/common/macros/behav/hpdcache_sram_wmask_1rw.sv
+      - hpdcache/rtl/src/hwpf_stride/hwpf_stride_pkg.sv
+      - hpdcache/rtl/src/hwpf_stride/hwpf_stride.sv
+      - hpdcache/rtl/src/hwpf_stride/hwpf_stride_arb.sv
+      - hpdcache/rtl/src/hwpf_stride/hwpf_stride_wrapper.sv
+      - hpdcache/rtl/src/hpdcache.sv
+      - hpdcache/rtl/src/hpdcache_amo.sv
+      - hpdcache/rtl/src/hpdcache_cbuf.sv
+      - hpdcache/rtl/src/hpdcache_cmo.sv
+      - hpdcache/rtl/src/hpdcache_core_arbiter.sv
+      - hpdcache/rtl/src/hpdcache_ctrl.sv
+      - hpdcache/rtl/src/hpdcache_ctrl_pe.sv
+      - hpdcache/rtl/src/hpdcache_flush.sv
+      - hpdcache/rtl/src/hpdcache_memctrl.sv
+      - hpdcache/rtl/src/hpdcache_miss_handler.sv
+      - hpdcache/rtl/src/hpdcache_mshr.sv
+      - hpdcache/rtl/src/hpdcache_rtab.sv
+      - hpdcache/rtl/src/hpdcache_uncached.sv
+      - hpdcache/rtl/src/hpdcache_victim_plru.sv
+      - hpdcache/rtl/src/hpdcache_victim_random.sv
+      - hpdcache/rtl/src/hpdcache_victim_sel.sv
+      - hpdcache/rtl/src/hpdcache_wbuf.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl
