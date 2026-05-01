@@ -6,6 +6,8 @@
 #include "hal/mmio.h"
 #include "hal/mocha.h"
 #include <stdint.h>
+#include <stddef.h>
+#include <ctype.h>
 
 void uart_init(uart_t uart)
 {
@@ -105,4 +107,25 @@ void uart_puts(uart_t uart, const char *str)
     while (*str != '\0') {
         uart_putchar(uart, *str++);
     }
+}
+
+// Dump out a sequence of bytes as hexadecimal and ASCII text.
+void uart_dump_bytes(uart_t uart, const uint8_t* buf, size_t len) {
+  for (size_t off = 0u; off < len; ++off) {
+    uart_putchar(uart, '0' + (buf[off] >> 4));
+    uart_putchar(uart, '0' + (buf[off] & 0xfu));
+    if ((off & 0xfu) == 0xfu) {
+      uart_puts(uart, " : ");
+      for (size_t aoff = (off & ~0xfu); aoff <= off; aoff++) {
+        char text[2];
+        text[0] = buf[aoff];
+        if (!isprint(text[0])) text[0] = '.';
+        text[1] = '\0';
+        uart_puts(uart, text);
+      }
+      uart_putchar(uart, '\n');
+    } else {
+      uart_putchar(uart, ' ');
+    }
+  }
 }

@@ -7,6 +7,7 @@
 #include "autogen/uart.h"
 #include <stdbool.h>
 #include <stdint.h>
+#include <stddef.h>
 
 #define BAUD_RATE (1000000u)
 
@@ -28,3 +29,4 @@ char uart_in(uart_t uart);
 void uart_out(uart_t uart, char ch);
 void uart_putchar(uart_t uart, char ch);
 void uart_puts(uart_t uart, const char *str);
+void uart_dump_bytes(uart_t uart, const uint8_t* buf, size_t blkBytes);

@@ -7,14 +7,11 @@
 #include "hal/mmio.h"
 #include "hal/uart.h"
 #include <stdbool.h>
-// #include <stddef.h>
 #include <stdint.h>
 
 // Compile-switches for sdcard-utils code.
 // - Enable/disable CRC checking on SD Card traffic
 #define SDCARD_CRC_ON true
-// - Enable/disable logging over UART
-#define SDCARD_LOG_ON true
 
 // Transfers in SPI mode are always in terms of 512-byte blocks.
 #define SDCARD_BLOCK_LEN (512u)
@@ -46,17 +43,25 @@
 
 // 'Public' function declarations
 void deselect_card(spi_host_t spi);
-bool init(spi_host_t spi, uart_t uart);
-bool read_cid(spi_host_t spi, uint8_t *buf, uint32_t len, uart_t uart);
-bool read_csd(spi_host_t spi, uint8_t *buf, uint32_t len, uart_t uart);
-bool read_blocks(spi_host_t spi, uint32_t block, uint8_t *buf, uint32_t num_blocks, uart_t uart);
-bool write_blocks(spi_host_t spi, uint32_t block, uint8_t *buf, uint32_t num_blocks, uart_t uart);
-void send_command(spi_host_t spi, uint8_t cmdCode, uint32_t arg, uart_t uart);
+bool init(spi_host_t spi, uart_t uart = NULL);
+bool read_cid(spi_host_t spi, uint8_t *buf, uint32_t len, uart_t uart = NULL);
+bool read_csd(spi_host_t spi, uint8_t *buf, uint32_t len, uart_t uart = NULL);
+bool read_blocks(spi_host_t spi, uint32_t block, uint8_t *buf, uint32_t num_blocks, uart_t uart = NULL);
+bool write_blocks(spi_host_t spi, uint32_t block, uint8_t *buf, uint32_t num_blocks, uart_t uart = NULL);
+void send_command(spi_host_t spi, uint8_t cmdCode, uint32_t arg, uart_t uart = NULL);
 uint8_t get_response_byte(spi_host_t spi);
-uint8_t get_response_R1(spi_host_t spi, uart_t uart);
+uint8_t get_response_R1(spi_host_t spi, uart_t uart = NULL);
 void wait_not_busy(spi_host_t spi);
-uint8_t get_response_R1b(spi_host_t spi, uart_t uart);
+uint8_t get_response_R1b(spi_host_t spi, uart_t uart = NULL);
 uint8_t get_data_response_busy(spi_host_t spi);
-void get_response_R3(spi_host_t spi, uart_t uart);
+void get_response_R3(spi_host_t spi, uart_t uart = NULL);
 uint8_t calc_crc7(const uint8_t *data, uint32_t len);
 uint16_t calc_crc16(const uint8_t *data, uint32_t len);
+
+// 'Private' function declarations
+static bool collected_data(spi_host_t spi, uint8_t *buf, uint32_t len, uart_t uart = NULL);
+static bool read_cid_csd(spi_host_t spi, uint8_t cmd, uint8_t *buf, uint32_t len, uart_t uart = NULL);
+static void read_card_data(spi_host_t spi, uint8_t data[], uint32_t len);
+static void wait_idle(spi_host_t spi);
+static void nonblocking_cycles(spi_host_t spi, uint32_t cycles, bool csaat);
+static void nonblocking_write(spi_host_t spi, const uint8_t data[], uint32_t len);
