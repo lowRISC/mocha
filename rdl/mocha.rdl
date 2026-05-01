@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-`include "ip/udp.rdl"
-`include "ip/uart.rdl"
-`include "ip/rv_timer.rdl"
 `include "ip/entropy_src.rdl"
 `include "ip/gpio.rdl"
 `include "ip/i2c.rdl"
@@ -13,8 +10,11 @@
 `include "ip/plic.rdl"
 `include "ip/rom_ctrl.rdl"
 `include "ip/rstmgr.rdl"
+`include "ip/rv_timer.rdl"
 `include "ip/spi_device.rdl"
 `include "ip/spi_host.rdl"
+`include "ip/uart.rdl"
+`include "ip/udp.rdl"
 
 addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;};
 
@@ -37,9 +37,9 @@ addrmap top_mocha {
 
   reserved CLOCK_MANAGER @ 0x4002_0000;
 
-  rstmgr RESET_MGR[1] @ 0x4003_0000 += 0x10000;
+  rstmgr RSTMGR[1] @ 0x4003_0000 += 0x10000;
 
-  reserved POWER_MANAGER @ 0x4004_0000;
+  reserved POWER_MANAGER[1] @ 0x4004_0000 += 0x10000;
 
   rom_ctrl ROM_CTRL[1] @ 0x4005_0000 += 0x10000;
 
