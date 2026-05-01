@@ -86,8 +86,9 @@ jobs:
           MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
 
       - name: Run verilator software tests
+        # Exclude tests marked 'slow' from quick CI runs.
         run: |
-          ctest --test-dir build/sw -R sim_verilator --output-on-failure -j $(nproc)
+          ctest --test-dir build/sw -R sim_verilator -LE slow --output-on-failure -j $(nproc)
 
   fpga-cache-check:
     runs-on: ["self-hosted", "nixos", "X64"]
@@ -112,7 +113,6 @@ jobs:
           key: ${{ steps.hash-bitstream.outputs.hash }}
           lookup-only: true
 
-
   fpga-build:
     if: needs.fpga-cache-check.outputs.cache-hit != 'true'
     runs-on: ["ubuntu-22.04-bitstream"]
@@ -122,7 +122,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-       # This step is a workaround and should be removed when the container is fixed.
+        # This step is a workaround and should be removed when the container is fixed.
       - name: Uninstall Nix
         run: |
           sudo rm -rf /etc/nix /etc/profile.d/nix.sh /etc/tmpfiles.d/nix-daemon.conf \
@@ -156,7 +156,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-       # This step is a workaround and should be removed when the container is fixed.
+        # This step is a workaround and should be removed when the container is fixed.
       - name: Uninstall Nix
         run: |
           sudo rm -rf /etc/nix /etc/profile.d/nix.sh /etc/tmpfiles.d/nix-daemon.conf \
@@ -188,6 +188,7 @@ jobs:
           nix run .#bitstream-load
 
       - name: Run FPGA tests
+        # Exclude tests marked 'slow' from quick CI runs.
         shell: "nix develop -c bash -e {0}"
         run: |
-          ctest --test-dir build/sw -R fpga --output-on-failure
+          ctest --test-dir build/sw -R fpga -LE slow --output-on-failure
