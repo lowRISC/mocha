@@ -1,0 +1,281 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap gpio #(
+    longint NumIOs = 32,
+    longint NumInpPeriodCounters = 0,
+    longint NumAlerts = 1
+){
+    bus_interface_cfg = BusInterfaceCfg'{
+        racl_support : true,
+        direction : BusDirection::Device,
+        protocol : BusProtocol::TlUl,
+        hier_path : "u_reg"
+    };
+    signal {
+        desc = "The strap enable signal tells gpio to take a snapshot of the input pins.The behaviour of this signal after that event will have no effect.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "logic";
+    } STRAP_EN;
+
+    signal {
+        desc = "This vector contains the sampled strap values.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "gpio_straps";
+        inter_mod_package = "gpio_pkg";
+    } SAMPLED_STRAPS;
+
+    signal {
+        desc = "Incoming RACL policy vector from a racl_ctrl instance.The policy selection vector (parameter) selects the policy for each register.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "racl_policy_vec";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_POLICIES;
+
+    signal {
+        desc = "RACL error log information of this module.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "racl_error_log";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_ERROR;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } TL;
+
+    signal {
+        desc = "raised if any of GPIO pin detects configured interrupt mode";
+        signalwidth = 0x20;
+        sigtype = SigType::Interrupt;
+    } GPIO;
+
+    signal {
+        desc = "This fatal alert is triggered when a fatal TL-UL bus integrity fault is detected.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_FAULT;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    signal {
+        desc = "GPIO inout to/from PAD";
+        signalwidth = 0x20;
+        sigtype = SigType::InOut;
+    } GPIO_PADS;
+
+    reg {
+        desc = "Interrupt State Register";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "raised if any of GPIO pin detects configured interrupt mode";
+        } GPIO[31:0];
+    } INTR_STATE @ 0x0;
+
+    reg {
+        desc = "Interrupt Enable Register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when corresponding bit in !!INTR_STATE.gpio is set.";
+        } GPIO[31:0];
+    } INTR_ENABLE @ 0x4;
+
+    external reg {
+        desc = "Interrupt Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force corresponding bit in !!INTR_STATE.gpio to 1.";
+        } GPIO[31:0];
+    } INTR_TEST @ 0x8;
+
+    external reg {
+        desc = "Alert Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_FAULT[0:0];
+    } ALERT_TEST @ 0xC;
+
+    reg {
+        desc = "GPIO Input data read value";
+        field {
+            sw = r;
+            hw = w;
+        } DATA_IN[31:0];
+    } DATA_IN @ 0x10;
+
+    external reg {
+        desc = "GPIO direct output data write value";
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+        } DIRECT_OUT[31:0];
+    } DIRECT_OUT @ 0x14;
+
+    external reg {
+        desc = "GPIO write data lower with mask.Masked write for DATA_OUT[15:0].Upper 16 bits of this register are used as mask. Writinglower 16 bits of the register changes DATA_OUT[15:0] valueif mask bits are set.Read-back of this register returns upper 16 bits as zeroand lower 16 bits as DATA_OUT[15:0].";
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "Write data value[15:0].Value to write into DATA_OUT[i], valid in the presence of mask[i]==1";
+        } DATA[15:0];
+        field {
+            sw = w;
+            hw = rw;
+            swmod = true;
+            desc = "Write data mask[15:0].A value of 1 in mask[i] allows the updating of DATA_OUT[i], 0 <= i <= 15";
+        } MASK[31:16];
+    } MASKED_OUT_LOWER @ 0x18;
+
+    external reg {
+        desc = "GPIO write data upper with mask.Masked write for DATA_OUT[31:16].Upper 16 bits of this register are used as mask. Writinglower 16 bits of the register changes DATA_OUT[31:16] valueif mask bits are set.Read-back of this register returns upper 16 bits as zeroand lower 16 bits as DATA_OUT[31:16].";
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "Write data value[31:16].   Value to write into DATA_OUT[i], valid in the presence of mask[i]==1";
+        } DATA[15:0];
+        field {
+            sw = w;
+            hw = rw;
+            swmod = true;
+            desc = "Write data mask[31:16].A value of 1 in mask[i] allows the updating of DATA_OUT[i], 16 <= i <= 31";
+        } MASK[31:16];
+    } MASKED_OUT_UPPER @ 0x1C;
+
+    external reg {
+        desc = "GPIO Output Enable.Setting direct_oe[i] to 1 enables output mode for GPIO[i]";
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+        } DIRECT_OE[31:0];
+    } DIRECT_OE @ 0x20;
+
+    external reg {
+        desc = "GPIO write Output Enable lower with mask.Masked write for DATA_OE[15:0], the register that controlsoutput mode for GPIO pins [15:0].Upper 16 bits of this register are used as mask. Writinglower 16 bits of the register changes DATA_OE[15:0] valueif mask bits are set.Read-back of this register returns upper 16 bits as zeroand lower 16 bits as DATA_OE[15:0].";
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "Write OE value[15:0].Value to write into DATA_OE[i], valid in the presence of mask[i]==1";
+        } DATA[15:0];
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "Write OE mask[15:0].A value of 1 in mask[i] allows the updating of DATA_OE[i], 0 <= i <= 15";
+        } MASK[31:16];
+    } MASKED_OE_LOWER @ 0x24;
+
+    external reg {
+        desc = "GPIO write Output Enable upper with mask.Masked write for DATA_OE[31:16], the register that controlsoutput mode for GPIO pins [31:16].Upper 16 bits of this register are used as mask. Writinglower 16 bits of the register changes DATA_OE[31:16] valueif mask bits are set.Read-back of this register returns upper 16 bits as zeroand lower 16 bits as DATA_OE[31:16].";
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "Write OE value[31:16].Value to write into DATA_OE[i], valid in the presence of mask[i]==1";
+        } DATA[15:0];
+        field {
+            sw = rw;
+            hw = rw;
+            swmod = true;
+            desc = "Write OE mask[31:16].A value of 1 in mask[i] allows the updating of DATA_OE[i], 16 <= i <= 31";
+        } MASK[31:16];
+    } MASKED_OE_UPPER @ 0x28;
+
+    reg {
+        desc = "GPIO interrupt enable for GPIO, rising edge.If !!INTR_ENABLE[i] is true, a value of 1 on !!INTR_CTRL_EN_RISING[i]enables rising-edge interrupt detection on GPIO[i].";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+        } INTR_CTRL_EN_RISING[31:0];
+    } INTR_CTRL_EN_RISING @ 0x2C;
+
+    reg {
+        desc = "GPIO interrupt enable for GPIO, falling edge.If !!INTR_ENABLE[i] is true, a value of 1 on !!INTR_CTRL_EN_FALLING[i]enables falling-edge interrupt detection on GPIO[i].";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+        } INTR_CTRL_EN_FALLING[31:0];
+    } INTR_CTRL_EN_FALLING @ 0x30;
+
+    reg {
+        desc = "GPIO interrupt enable for GPIO, level high.If !!INTR_ENABLE[i] is true, a value of 1 on !!INTR_CTRL_EN_LVLHIGH[i]enables level high interrupt detection on GPIO[i].";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+        } INTR_CTRL_EN_LVLHIGH[31:0];
+    } INTR_CTRL_EN_LVLHIGH @ 0x34;
+
+    reg {
+        desc = "GPIO interrupt enable for GPIO, level low.If !!INTR_ENABLE[i] is true, a value of 1 on !!INTR_CTRL_EN_LVLLOW[i]enables level low interrupt detection on GPIO[i].";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+        } INTR_CTRL_EN_LVLLOW[31:0];
+    } INTR_CTRL_EN_LVLLOW @ 0x38;
+
+    reg {
+        desc = "filter enable for GPIO input bits.If !!CTRL_EN_INPUT_FILTER[i] is true, a value of input bit [i]must be stable for 16 cycles before transitioning.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+        } CTRL_EN_INPUT_FILTER[31:0];
+    } CTRL_EN_INPUT_FILTER @ 0x3C;
+
+    reg {
+        desc = "Indicates whether the data in !!HW_STRAPS_DATA_IN is valid.";
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+        } HW_STRAPS_DATA_IN_VALID[0:0];
+    } HW_STRAPS_DATA_IN_VALID @ 0x40;
+
+    reg {
+        desc = "GPIO input data that was sampled as straps at most once after the blockcame out of reset.The behavior of this register depends on the GpioAsHwStrapsEn parameter.- If the parameter is false then the register reads as zero.- If the parameter is true then GPIO input data is sampled after reseton the first cycle where the strap_en_i input is high. Thesampled data is then stored in this register.";
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+        } HW_STRAPS_DATA_IN[31:0];
+    } HW_STRAPS_DATA_IN @ 0x44;
+
+};
