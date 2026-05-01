@@ -6,6 +6,7 @@
 `include "ip/udp.rdl"
 `include "ip/uart.rdl"
 `include "ip/rv_timer.rdl"
+`include "ip/entropy_src.rdl"
 `include "ip/gpio.rdl"
 `include "ip/i2c.rdl"
 `include "ip/kmac.rdl"
@@ -39,7 +40,7 @@ addrmap top_mocha {
 
   reserved ROM_CONTROL @ 0x4005_0000;
 
-  reserved ENTROPY_SOURCE @ 0x4006_0000;
+  entropy_src ENTROPY_SRC[1] @ 0x4006_0000 += 0x10000;
 
   kmac KMAC[1] @ 0x4007_0000 += 0x10000;
 
