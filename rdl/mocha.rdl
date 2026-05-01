@@ -12,6 +12,7 @@
 `include "ip/kmac.rdl"
 `include "ip/plic.rdl"
 `include "ip/spi_device.rdl"
+`include "ip/spi_host.rdl"
 
 addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;};
 
@@ -52,7 +53,7 @@ addrmap top_mocha {
 
   rv_timer TIMER[1] @ 0x4400_0000 += 0x10000;
 
-  reserved SPI_HOST @ 0x4500_0000;
+  spi_host SPI_HOST[1] @ 0x4500_0000 += 0x10000;
 
   rv_plic PLIC @ 0x4800_0000;
 

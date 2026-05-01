@@ -1,0 +1,508 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap spi_host #(
+    longint ByteOrder = 1,
+    longint TxDepth = 72,
+    longint RxDepth = 64,
+    longint CmdDepth = 4,
+    longint NumAlerts = 1
+){
+    bus_interface_cfg = BusInterfaceCfg'{
+        racl_support : true,
+        direction : BusDirection::Device,
+        protocol : BusProtocol::TlUl,
+        hier_path : "u_reg"
+    };
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "passthrough";
+        inter_mod_package = "spi_device_pkg";
+    } PASSTHROUGH;
+
+    signal {
+        desc = "Self-clearing status trigger for the DMA.Set when RX or TX FIFOs are past their configured watermarks matching watermark interrupt behaviour.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "logic";
+    } LSIO_TRIGGER;
+
+    signal {
+        desc = "Incoming RACL policy vector from a racl_ctrl instance.The policy selection vector (parameter) selects the policy for each register.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "racl_policy_vec";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_POLICIES;
+
+    signal {
+        desc = "RACL error log information of this module.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "racl_error_log";
+        inter_mod_package = "top_racl_pkg";
+    } RACL_ERROR;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } TL;
+
+    signal {
+        desc = "Error-related interrupts, see !!ERROR_ENABLE register for more   information.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } ERROR;
+
+    signal {
+        desc = "Event-related interrupts, see !!EVENT_ENABLE register for more   information.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } SPI_EVENT;
+
+    signal {
+        desc = "This fatal alert is triggered when a fatal TL-UL bus integrity fault is detected.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_FAULT;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    signal {
+        desc = "SPI data bus";
+        signalwidth = 0x4;
+        sigtype = SigType::InOut;
+    } SD;
+
+    signal {
+        desc = "SPI Clock";
+        signalwidth = 0x1;
+        sigtype = SigType::Output;
+    } SCK;
+
+    signal {
+        desc = "Chip Select# (One hot, active low).  The size of this port should match NumCS.";
+        signalwidth = 0x1;
+        sigtype = SigType::Output;
+    } CSB;
+
+    reg {
+        desc = "Interrupt State Register";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Error-related interrupts, see !!ERROR_ENABLE register for more   information.";
+        } ERROR[0:0];
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+            desc = "Event-related interrupts, see !!EVENT_ENABLE register for more   information.";
+        } SPI_EVENT[1:1];
+    } INTR_STATE @ 0x0;
+
+    reg {
+        desc = "Interrupt Enable Register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.error is set.";
+        } ERROR[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.spi_event is set.";
+        } SPI_EVENT[1:1];
+    } INTR_ENABLE @ 0x4;
+
+    external reg {
+        desc = "Interrupt Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.error to 1.";
+        } ERROR[0:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.spi_event to 1.";
+        } SPI_EVENT[1:1];
+    } INTR_TEST @ 0x8;
+
+    external reg {
+        desc = "Alert Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_FAULT[0:0];
+    } ALERT_TEST @ 0xC;
+
+    reg {
+        desc = "Control register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x7f;
+            desc = "If !!EVENT_ENABLE.RXWM is set, the IP will send   an interrupt when the depth of the RX FIFO reaches   RX_WATERMARK words (32b each).";
+        } RX_WATERMARK[7:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "If !!EVENT_ENABLE.TXWM is set, the IP will send   an interrupt when the depth of the TX FIFO drops below   TX_WATERMARK words (32b each).";
+        } TX_WATERMARK[15:8];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable the SPI host output buffers for the sck, csb, and sd lines.  This allows   the SPI_HOST IP to connect to the same bus as other SPI controllers without   interference.";
+        } OUTPUT_EN[29:29];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Clears the internal state (not registers) to the reset state when set to 1,   including the FIFOs, the CDC's, the core state machine and the shift register.   In the current implementation, the CDC FIFOs are drained not reset.   Therefore software must confirm that both FIFO's empty before releasing   the IP from reset.";
+        } SW_RST[30:30];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enables the SPI host.  On reset, this field is 0, meaning   that no transactions can proceed.";
+        } SPIEN[31:31];
+    } CONTROL @ 0x10;
+
+    reg {
+        desc = "Status register";
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Transmit queue depth.   Indicates how many unsent 32-bit words are currently in the TX FIFO.   When active, this result may be an overestimate due to synchronization delays.";
+        } TXQD[7:0];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Receive queue depth. Indicates how many unread 32-bit words are   currently in the RX FIFO.  When active, this result may an   underestimate due to synchronization delays.";
+        } RXQD[15:8];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Command queue depth. Indicates how many unread 32-bit words are   currently in the command segment queue.";
+        } CMDQD[19:16];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "If high, the number of 32-bits in the RX FIFO now exceeds the   !!CONTROL.RX_WATERMARK entries (32b each).";
+        } RXWM[20:20];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "The value of the ByteOrder parameter, provided so that firmware   can confirm proper IP configuration.";
+        } BYTEORDER[22:22];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "If high, signifies that an ongoing transaction has stalled   due to lack of available space in the RX FIFO";
+        } RXSTALL[23:23];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "When high, indicates that the receive fifo is empty.   Any reads from RX FIFO will cause an error interrupt.";
+        } RXEMPTY[24:24];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "When high, indicates that the receive fifo is full.  Any   ongoing transactions will stall until firmware reads some   data from !!RXDATA.";
+        } RXFULL[25:25];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "If high, the amount of data in the TX FIFO has fallen below the   level of !!CONTROL.TX_WATERMARK words (32b each).";
+        } TXWM[26:26];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "If high, signifies that an ongoing transaction has stalled   due to lack of data in the TX FIFO";
+        } TXSTALL[27:27];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "When high, indicates that the transmit data fifo is empty.";
+        } TXEMPTY[28:28];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "When high, indicates that the transmit data fifo is full.   Any further writes to !!TXDATA will create an error interrupt.";
+        } TXFULL[29:29];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "When high, indicates the SPI host is processing a previously   issued command.";
+        } ACTIVE[30:30];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "When high, indicates the SPI host is ready to receive   commands. Writing to COMMAND when READY is low is   an error, and will trigger an interrupt.";
+        } READY[31:31];
+    } STATUS @ 0x14;
+
+    reg {
+        desc = "Configuration options register.   Contains options for controlling the current peripheral.   Firmware needs to configure the options before the transfer.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Core clock divider.  Slows down subsequent SPI transactions by a    factor of (CLKDIV+1) relative to the core clock frequency.  The    period of sck, T(sck) then becomes 2*(CLK_DIV+1)*T(core)";
+        } CLKDIV[15:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Minimum idle time between commands. Indicates the minimum    number of sck half-cycles to hold cs_n high between commands.    Setting this register to zero creates a minimally-wide CS_N-high    pulse of one-half sck cycle.";
+        } CSNIDLE[19:16];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "CS_N Trailing Time.  Indicates the number of half sck cycles,    CSNTRAIL+1, to leave between last edge of sck and the rising    edge of cs_n. Setting this register to zero corresponds    to the minimum delay of one-half sck cycle.";
+        } CSNTRAIL[23:20];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "CS_N Leading Time.  Indicates the number of half sck cycles,    CSNLEAD+1, to leave between the falling edge of cs_n and    the first edge of sck.  Setting this register to zero    corresponds to the minimum delay of one-half sck cycle";
+        } CSNLEAD[27:24];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Full cycle.  Modifies the CPHA sampling behaviour to allow    for longer device logic setup times.  Rather than sampling the SD    bus a half cycle after shifting out data, the data is sampled    a full cycle after shifting data out.  This means that if    CPHA = 0, data is shifted out on the trailing edge, and    sampled a full cycle later.  If CPHA = 1, data is shifted and    sampled with the trailing edge, also separated by a    full cycle.";
+        } FULLCYC[29:29];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "The phase of the sck clock signal relative to the data. When    CPHA = 0, the data changes on the trailing edge of sck    and is typically sampled on the leading edge.  Conversely    if CPHA = 1 high, data lines change on the leading edge of    sck and are typically sampled on the trailing edge.    CPHA should be chosen to match the phase of the selected    device.  The sampling behavior is modified by the    !!CONFIGOPTS.FULLCYC bit.";
+        } CPHA[30:30];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "The polarity of the sck clock signal.  When CPOL is 0,    sck is low when idle, and emits high pulses.   When CPOL    is 1, sck is high when idle, and emits a series of low    pulses.";
+        } CPOL[31:31];
+    } CONFIGOPTS @ 0x18;
+
+    reg {
+        desc = "Chip-Select ID   Controls which device to target with the next command.  This register   is passed to the core whenever !!COMMAND is written.  The core then   asserts cio_csb_o[!!CSID] during the execution of the command.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Chip Select ID";
+        } CSID[31:0];
+    } CSID @ 0x1C;
+
+    external reg {
+        desc = "Command Register   Parameters specific to each command segment.  Unlike the !!CONFIGOPTS multi-register,   there is only one command register for controlling all attached SPI devices";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "**C**hip **S**elect **A**ctive **A**fter **T**ransaction.   If !!COMMAND.CSAAT = 0, the chip select line is raised immediately   at the end of the command segment.   If !!COMMAND.CSAAT = 1, the chip select line is left low at the   end of the current transaction segment.   This allows the creation of longer, more complete SPI transactions,   consisting of several separate segments for issuing instructions,   pausing for dummy cycles, and transmitting or receiving data from   the device.";
+        } CSAAT[0:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "The speed for this command segment: \"0\" = Standard SPI. \"1\" = Dual SPI.   \"2\"=Quad SPI,  \"3\": RESERVED.";
+        } SPEED[2:1];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "The direction for the following command: \"0\" = Dummy cycles   (no TX/RX). \"1\" = Rx only, \"2\" = Tx only, \"3\" = Bidirectional   Tx/Rx (Standard SPI mode only).";
+        } DIRECTION[4:3];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Segment Length.   For read or write segments, this field controls the   number of 1-byte bursts to transmit and or receive in   this command segment.  The number of cycles required   to send or received a byte will depend on !!COMMAND.SPEED.   For dummy segments, (!!COMMAND.DIRECTION == 0), this register   controls the number of dummy cycles to issue.   The number of bytes (or dummy cycles) in the segment will be   equal to !!COMMAND.LEN + 1.";
+        } LEN[24:5];
+    } COMMAND @ 0x20;
+
+    reg {
+        desc = "Controls which classes of errors raise an interrupt.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "Command Error: If this bit is set, the block sends an error   interrupt whenever a command is issued while busy (i.e. a 1 is   when !!STATUS.READY is not asserted.)";
+        } CMDBUSY[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "Overflow Errors: If this bit is set, the block sends an   error interrupt whenever the TX FIFO overflows.";
+        } OVERFLOW[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "Underflow Errors: If this bit is set, the block sends an   error interrupt whenever there is a read from !!RXDATA   but the RX FIFO is empty.";
+        } UNDERFLOW[2:2];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "Invalid Command Errors: If this bit is set, the block sends an   error interrupt whenever a command is sent with invalid values for   !!COMMAND.SPEED or !!COMMAND.DIRECTION.";
+        } CMDINVAL[3:3];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "Invalid CSID: If this bit is set, the block sends an error interrupt whenever   a command is submitted, but CSID exceeds NumCS.";
+        } CSIDINVAL[4:4];
+    } ERROR_ENABLE @ 0x2C;
+
+    reg {
+        desc = "Indicates that any errors that have occurred.   When an error   occurs, the corresponding bit must be cleared here before   issuing any further commands.";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Indicates a write to !!COMMAND when !!STATUS.READY = 0.   ";
+        } CMDBUSY[0:0];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Indicates that firmware has overflowed the TX FIFO";
+        } OVERFLOW[1:1];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Indicates that firmware has attempted to read from   !!RXDATA when the RX FIFO is empty.";
+        } UNDERFLOW[2:2];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Indicates an invalid command segment, meaning either an invalid value of   !!COMMAND.SPEED or a request for bidirectional data transfer at dual or quad   speed";
+        } CMDINVAL[3:3];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Indicates a command was attempted with an invalid value for !!CSID.";
+        } CSIDINVAL[4:4];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Indicates that TLUL attempted to write to TXDATA with no bytes enabled. Such   'zero byte' writes are not supported.";
+        } ACCESSINVAL[5:5];
+    } ERROR_STATUS @ 0x30;
+
+    reg {
+        desc = "Controls which classes of SPI events raise an interrupt.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Assert to send a spi_event interrupt whenever !!STATUS.RXFULL   goes high";
+        } RXFULL[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Assert to send a spi_event interrupt whenever !!STATUS.TXEMPTY   goes high";
+        } TXEMPTY[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Assert to send a spi_event interrupt whenever the number of 32-bit words in   the RX FIFO is greater than !!CONTROL.RX_WATERMARK. To prevent the   reassertion of this interrupt, read more data from the RX FIFO, or   increase !!CONTROL.RX_WATERMARK.";
+        } RXWM[2:2];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Assert to send a spi_event interrupt whenever the number of 32-bit words in   the TX FIFO is less than !!CONTROL.TX_WATERMARK.  To prevent the   reassertion of this interrupt add more data to the TX FIFO, or   reduce !!CONTROL.TX_WATERMARK.";
+        } TXWM[3:3];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Assert to send a spi_event interrupt whenever !!STATUS.READY   goes high";
+        } READY[4:4];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Assert to send a spi_event interrupt whenever !!STATUS.ACTIVE   goes low";
+        } IDLE[5:5];
+    } EVENT_ENABLE @ 0x34;
+
+    external mem {
+        memwidth = 0x20;
+        mementries = 0x1;
+        sw = r;
+    } RXDATA @ 0x24;
+
+    external mem {
+        memwidth = 0x20;
+        mementries = 0x1;
+        sw = w;
+    } TXDATA @ 0x28;
+
+};
