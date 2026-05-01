@@ -1,0 +1,127 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap rom_ctrl #(
+    longint NumAlerts = 1
+){
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "rom_cfg";
+        inter_mod_package = "prim_rom_pkg";
+    } ROM_CFG;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "pwrmgr_data";
+        inter_mod_package = "rom_ctrl_pkg";
+    } PWRMGR_DATA;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "keymgr_data";
+        inter_mod_package = "rom_ctrl_pkg";
+    } KEYMGR_DATA;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "app";
+        inter_mod_package = "kmac_pkg";
+    } KMAC_DATA;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } REGS_TL;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } ROM_TL;
+
+    signal {
+        desc = "A fatal error. Fatal alerts are non-recoverable and will be asserted until a hard reset.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    addrmap {
+        bus_interface_cfg = BusInterfaceCfg'{
+            racl_support : false,
+            direction : BusDirection::Device,
+            protocol : BusProtocol::TlUl,
+            hier_path : "u_reg"
+        };
+        external reg {
+            desc = "Alert Test Register";
+            field {
+                sw = w;
+                hw = r;
+                reset = 0x0;
+                swmod = true;
+                desc = "Write 1 to trigger one alert event of this kind.";
+            } FATAL[0:0];
+        } ALERT_TEST @ 0x0;
+
+        reg {
+            desc = "The cause of a fatal alert.The bits of this register correspond to errors that can cause a fatalalert. Software can read these bits to see what went wrong. Once set,these bits cannot be cleared.";
+            field {
+                sw = r;
+                hw = w;
+                reset = 0x0;
+                desc = "Set on a fatal error detected by the ROM checker.";
+            } CHECKER_ERROR[0:0];
+            field {
+                sw = r;
+                hw = w;
+                reset = 0x0;
+                desc = "Set on an integrity error from the register interface.";
+            } INTEGRITY_ERROR[1:1];
+        } FATAL_ALERT_CAUSE @ 0x4;
+
+        reg {
+            compacted = true;
+            desc = "The digest computed from the contents of ROM";
+            field {
+                sw = r;
+                hw = rw;
+                reset = 0x0;
+                desc = "32 bits of the digest";
+            } DIGEST[31:0];
+        } DIGEST[8] @ 0x8;
+
+        reg {
+            compacted = true;
+            desc = "The expected digest, stored in the top words of ROM";
+            field {
+                sw = r;
+                hw = rw;
+                reset = 0x0;
+                desc = "32 bits of the digest";
+            } DIGEST[31:0];
+        } EXP_DIGEST[8] @ 0x28;
+
+    } REGS;
+
+};

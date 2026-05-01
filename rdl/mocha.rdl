@@ -11,6 +11,8 @@
 `include "ip/i2c.rdl"
 `include "ip/kmac.rdl"
 `include "ip/plic.rdl"
+`include "ip/rom_ctrl.rdl"
+`include "ip/rstmgr.rdl"
 `include "ip/spi_device.rdl"
 `include "ip/spi_host.rdl"
 
@@ -35,11 +37,11 @@ addrmap top_mocha {
 
   reserved CLOCK_MANAGER @ 0x4002_0000;
 
-  reserved RESET_MANAGER @ 0x4003_0000;
+  rstmgr RESET_MGR[1] @ 0x4003_0000 += 0x10000;
 
   reserved POWER_MANAGER @ 0x4004_0000;
 
-  reserved ROM_CONTROL @ 0x4005_0000;
+  rom_ctrl ROM_CTRL[1] @ 0x4005_0000 += 0x10000;
 
   entropy_src ENTROPY_SRC[1] @ 0x4006_0000 += 0x10000;
 
