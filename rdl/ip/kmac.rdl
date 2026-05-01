@@ -1,0 +1,512 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap kmac #(
+    longint NumWordsKey = 16,
+    longint NumWordsPrefix = 11,
+    longint NumEntriesMsgFifo = 10,
+    longint NumBytesMsgFifoEntry = 8,
+    longint HashCntW = 10,
+    longint NumSeedsEntropy = 6,
+    longint NumAlerts = 2
+){
+    bus_interface_cfg = BusInterfaceCfg'{
+        racl_support : false,
+        direction : BusDirection::Device,
+        protocol : BusProtocol::TlUl,
+        hier_path : "u_reg"
+    };
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "hw_key_req";
+        inter_mod_package = "keymgr_pkg";
+    } KEYMGR_KEY;
+
+    signal {
+        signalwidth = 0x3;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "app";
+        inter_mod_package = "kmac_pkg";
+    } APP;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "edn";
+        inter_mod_package = "edn_pkg";
+    } ENTROPY;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "mubi4";
+        inter_mod_package = "prim_mubi_pkg";
+    } IDLE;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "logic";
+    } EN_MASKING;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "lc_tx";
+        inter_mod_package = "lc_ctrl_pkg";
+    } LC_ESCALATE_EN;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } TL;
+
+    signal {
+        desc = "KMAC/SHA3 absorbing has been completed";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } KMAC_DONE;
+
+    signal {
+        desc = "The message FIFO is empty.This interrupt is raised only if the message FIFO is actually writable by software, i.e., if all of the following conditions are met:i) The KMAC block is not exercised by a hardware application interface.ii) The SHA3 block is in the Absorb state.iii) Software has not yet written the Process command to finish the absorption process.For the interrupt to be raised, the message FIFO must also have been full previously.Otherwise, the hardware empties the FIFO faster than software can fill it and there is no point in interrupting the software to inform it about the message FIFO being empty.";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } FIFO_EMPTY;
+
+    signal {
+        desc = "KMAC/SHA3 error occurred. ERR_CODE register shows the details";
+        signalwidth = 0x1;
+        sigtype = SigType::Interrupt;
+    } KMAC_ERR;
+
+    signal {
+        desc = "Alert for KMAC operation error. It occurs when the shadow registers have update errors.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } RECOV_OPERATION_ERR;
+
+    signal {
+        desc = "This fatal alert is triggered when a fatal error is detected inside the KMAC unit.Examples for such faults include:i) TL-UL bus integrity fault.ii) Storage errors in the shadow registers.iii) Errors in the message, round, or key counter.iv) Any internal FSM entering an invalid state.v) An error in the redundant lfsr.The KMAC unit cannot recover from such an error and needs to be reset.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_FAULT_ERR;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_EDN_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_EDN_NI;
+
+    reg {
+        desc = "Interrupt State Register";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "KMAC/SHA3 absorbing has been completed";
+        } KMAC_DONE[0:0];
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+            desc = "The message FIFO is empty.This interrupt is raised only if the message FIFO is actually writable by software, i.e., if all of the following conditions are met:i) The KMAC block is not exercised by a hardware application interface.ii) The SHA3 block is in the Absorb state.iii) Software has not yet written the Process command to finish the absorption process.For the interrupt to be raised, the message FIFO must also have been full previously.Otherwise, the hardware empties the FIFO faster than software can fill it and there is no point in interrupting the software to inform it about the message FIFO being empty.";
+        } FIFO_EMPTY[1:1];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "KMAC/SHA3 error occurred. ERR_CODE register shows the details";
+        } KMAC_ERR[2:2];
+    } INTR_STATE @ 0x0;
+
+    reg {
+        desc = "Interrupt Enable Register";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.kmac_done is set.";
+        } KMAC_DONE[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.fifo_empty is set.";
+        } FIFO_EMPTY[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.kmac_err is set.";
+        } KMAC_ERR[2:2];
+    } INTR_ENABLE @ 0x4;
+
+    external reg {
+        desc = "Interrupt Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.kmac_done to 1.";
+        } KMAC_DONE[0:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.fifo_empty to 1.";
+        } FIFO_EMPTY[1:1];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to force !!INTR_STATE.kmac_err to 1.";
+        } KMAC_ERR[2:2];
+    } INTR_TEST @ 0x8;
+
+    external reg {
+        desc = "Alert Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } RECOV_OPERATION_ERR[0:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_FAULT_ERR[1:1];
+    } ALERT_TEST @ 0xC;
+
+    external reg {
+        desc = "Controls the configurability of !!CFG_SHADOWED register.This register ensures the contents of !!CFG_SHADOWED register cannot bechanged by the software while the KMAC/SHA3 is in operation mode.";
+        field {
+            sw = r;
+            hw = w;
+            reset = true;
+            desc = "Configuration enable.";
+        } EN[0:0];
+    } CFG_REGWEN @ 0x10;
+
+    reg {
+        shadowed = true;
+        desc = "KMAC Configuration register.This register is  updated when the hashing engine is in Idle.If the software updates the register while the engine computes, theupdated value will be discarded.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "KMAC datapath enable.If this bit is 1, the incoming message is processed in KMACwith the secret key.";
+        } KMAC_EN[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Hashing Strength3 bit field to select the security strength of SHA3 hashingengine. If mode field is set to SHAKE or cSHAKE, only 128 and256 strength can be selected. Other value will result errorwhen hashing starts.";
+        } KSTRENGTH[3:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Keccak hashing mode.This module supports SHA3 main hashing algorithm and the partof its derived functions, SHAKE and cSHAKE with limitations.This field is to select the mode.";
+        } MODE[5:4];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            swmod = true;
+            desc = "Message Endianness.If 1 then each individual multi-byte value, regardless of itsalignment, written to !!MSG_FIFO will be added to the messagein big-endian byte order.If 0, each value will be added to the message in little-endianbyte order.A message written to !!MSG_FIFO one byte at a time will not beaffected by this setting.From a hardware perspective byte swaps are performed on a TL-ULword granularity.";
+        } MSG_ENDIANNESS[8:8];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "State Endianness.If 1 then each individual word in the !!STATE output registeris converted to big-endian byte order.The order of the words in relation to one another is notchanged.This setting does not affect how the state is interpretedduring computation.";
+        } STATE_ENDIANNESS[9:9];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Sideloaded Key.If 1, KMAC uses KeyMgr sideloaded key for SW initiated KMACoperation. KMAC uses the sideloaded key regardless of thisconfiguration when KeyMgr initiates the KMAC operation forKey Derivation Function (KDF).";
+        } SIDELOAD[12:12];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Entropy ModeUsing this field, software can configure mode of operation of the internal pseudo-random number generator (PRNG).Note that once software has configured a value different from idle_mode after reset, and set the !!CFG_SHADOWED.entropy_ready bit afterwards, the PRNG configuration cannot be changed anymore (unless an EDN request timeout occurs when running in EDN mode).Further writes to this field will change the value received upon reading the register, but they will be ignored by the internal hardware.";
+        } ENTROPY_MODE[17:16];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Entropy Fast process mode.If 1, entropy logic uses garbage data while not processing the KMACkey block. It will re-use previous entropy value and will notexpand the entropy when it is consumed. Only it refreshes theentropy while processing the secret key block. This process shouldnot be used if SCA resistance is required because it may cause sidechannel leakage.";
+        } ENTROPY_FAST_PROCESS[19:19];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Message Masking with PRNG.If 1, KMAC applies PRNG to the input messages to the Keccak modulewhen KMAC mode is on.";
+        } MSG_MASK[20:20];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Entropy Ready status.Software sets this field to allow the entropy generator in KMAC tofetch the entropy and run.";
+        } ENTROPY_READY[24:24];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Enable Unsupported Mode and Strength configs.SW may set this field for KMAC to move forward with unsupportedKeccak Mode and Strength configurations, such as cSHAKE512.If not set, KMAC won't propagate the SW command (CmdStart) to therest of the blocks (AppIntf, KMAC Core, SHA3).";
+        } EN_UNSUPPORTED_MODESTRENGTH[26:26];
+    } CFG_SHADOWED @ 0x14;
+
+    external reg {
+        desc = "KMAC/ SHA3 command register.This register is to control the KMAC to start accepting message,to process the message, and to manually run additional keccakrounds at the end. Only at certain stage, the CMD affects to thecontrol logic. It follows the sequence ofstart --> process --> {run if needed --> } done";
+        field {
+            sw = w;
+            onwrite = woclr;
+            hw = r;
+            swmod = true;
+            desc = "Issue a command to the KMAC/SHA3 IP. The command is sparseencoded. To prevent sw from writing multiple commands at once,the field is defined as enum.";
+        } CMD[5:0];
+        field {
+            sw = w;
+            onwrite = woclr;
+            hw = r;
+            swmod = true;
+            desc = "Software can set this bit to 1 to manually trigger the reseeding of the internal PRNG when running in EDN mode.This will also clear !!ENTROPY_REFRESH_HASH_CNT.Note that the hardware may miss the trigger pulse if the module is not idle, or if the module is currently performing a reseed operation.";
+        } ENTROPY_REQ[8:8];
+        field {
+            sw = w;
+            onwrite = woclr;
+            hw = r;
+            swmod = true;
+            desc = "Software can set this bit to 1 to manually clear !!ENTROPY_REFRESH_HASH_CNT.";
+        } HASH_CNT_CLR[9:9];
+        field {
+            sw = w;
+            onwrite = woclr;
+            hw = r;
+            swmod = true;
+            desc = "When error occurs and one of the state machine stays at Error handling state, SW may process the error based on ERR_CODE, then let FSM back to the reset state";
+        } ERR_PROCESSED[10:10];
+    } CMD @ 0x18;
+
+    external reg {
+        desc = "KMAC/SHA3 Status register.";
+        field {
+            sw = r;
+            hw = w;
+            reset = true;
+            desc = "If 1, SHA3 hashing engine is in idle state.";
+        } SHA3_IDLE[0:0];
+        field {
+            sw = r;
+            hw = w;
+            desc = "If 1, SHA3 is receiving message stream and processing it";
+        } SHA3_ABSORB[1:1];
+        field {
+            sw = r;
+            hw = w;
+            desc = "If 1, SHA3 completes sponge absorbing stage.In this stage, SW can manually run the hashing engine.";
+        } SHA3_SQUEEZE[2:2];
+        field {
+            sw = r;
+            hw = w;
+            desc = "Count of occupied entries in the message FIFO.";
+        } FIFO_DEPTH[12:8];
+        field {
+            sw = r;
+            hw = w;
+            reset = true;
+            desc = "Message FIFO Empty indicator.The FIFO's Pass parameter is set to 1'b 1. So, by default, ifthe SHA engine is ready, the write data to FIFO just passesthrough.In this case, fifo_depth remains **0**. fifo_empty, however,lowers the value to **0** for a cycle, then goes back to the emptystate, **1**.See the \"Message FIFO\" section in the spec for the reason.";
+        } FIFO_EMPTY[14:14];
+        field {
+            sw = r;
+            hw = w;
+            desc = "Message FIFO Full indicator";
+        } FIFO_FULL[15:15];
+        field {
+            sw = r;
+            hw = w;
+            reset = false;
+            desc = "No fatal fault has occurred inside the KMAC unit (0).A fatal fault has occurred and the KMAC unit needs to be reset (1),Examples for such faults includei) TL-UL bus integrity faultii) storage errors in the shadow registersiii) errors in the message, round, or key counteriv) any internal FSM entering an invalid statev) an error in the redundant lfsr";
+        } ALERT_FATAL_FAULT[16:16];
+        field {
+            sw = r;
+            hw = w;
+            reset = false;
+            desc = "An update error has not occurred (0) or has occurred (1) in the shadowed Control Register.KMAC operation needs to be restarted by re-writing the Control Register.";
+        } ALERT_RECOV_CTRL_UPDATE_ERR[17:17];
+    } STATUS @ 0x1C;
+
+    reg {
+        desc = "Entropy Timer Periods.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "EDN Wait timer prescaler.EDN Wait timer has 16 bit value. The timer value is increased when the timer pulse is generated. Timer pulse is raises when the number of the clock cycles hit this prescaler value.The exact period of the timer pulse is unknown as the KMAC input clock may contain jitters.";
+        } PRESCALER[9:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "EDN request wait timer.The entropy module in KMAC waits up to this field in the timer pulseafter it sends request to EDN module. If the timer expires, theentropy module moves to an error state and notifies to the system.If there is a pending EDN request during wait timer update, then this update is delayed until the EDN request is complete.If 0, the entropy module waits the EDN response always. If EDN doesnot respond in this configuration, the software shall reset the IP.";
+        } WAIT_TIMER[31:16];
+    } ENTROPY_PERIOD @ 0x20;
+
+    reg {
+        desc = "Entropy Refresh CounterKMAC entropy can be refreshed after the given threshold KMAC operationsrun. If the KMAC hash counter !!ENTROPY_REFRESH_HASH_CNT hits (GTE) theconfigured threshold !!ENTROPY_REFRESH_THRESHOLD_SHADOWED, the entropymodule in the KMAC IP requests new seed to EDN and reset the KMAChash counter.If the threshold is 0, the refresh by the counter does not work. And thecounter is only reset by the CMD.hash_cnt_clr CSR bit.";
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "Hash (KMAC) counter";
+        } HASH_CNT[9:0];
+    } ENTROPY_REFRESH_HASH_CNT @ 0x24;
+
+    reg {
+        shadowed = true;
+        desc = "Entropy Refresh ThresholdKMAC entropy can be refreshed after the given threshold KMAC operationsrun. If the KMAC hash counter !!ENTROPY_REFRESH_HASH_CNT hits (GTE) theconfigured threshold !!ENTROPY_REFRESH_THRESHOLD_SHADOWED, the entropymodule in the KMAC IP requests new seed to EDN and reset the KMAChash counter.If the threshold is 0, the refresh by the counter does not work. And thecounter is only reset by the CMD.hash_cnt_clr CSR bit.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Hash Threshold";
+        } THRESHOLD[9:0];
+    } ENTROPY_REFRESH_THRESHOLD_SHADOWED @ 0x28;
+
+    external reg {
+        desc = "Entropy SeedEntropy seed register for the integrated entropy generator.If !!CFG_SHADOWED.entropy_mode is set to sw_mode, software first needs to set !!CFG_SHADOWED.entropy_ready.Then, software needs to write the !!ENTROPY_SEED register 6 times.Upon each write, the written value is loaded into the corresponding state chunk of the entropy generator.After writing the !!ENTROPY_SEED register 6 times, the entropy generator will start its operation.After this point, writing this register has no longer any effect.";
+        field {
+            sw = w;
+            hw = r;
+            swmod = true;
+            desc = "32-bit chunk of the entropy generator seed";
+        } SEED[31:0];
+    } ENTROPY_SEED @ 0x2C;
+
+    reg {
+        desc = "Secret Key length in bit.This value is used to make encoded secret key in KMAC.KMAC supports certain lengths of the secret key. Currently itsupports 128b, 192b, 256b, 384b, and 512b secret keys.";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            desc = "Key length choice";
+        } LEN[2:0];
+    } KEY_LEN @ 0xB0;
+
+    reg {
+        desc = "KMAC/SHA3 Error Code";
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "If the kmac_err interrupt occurs, this register has information on the error cause.Bits 31:24 contain the error code (please refer to err_code_e in hw/ip/kmac/rtl/kmac_pkg.sv) for the encoding, and bits 23:0 contain additional debug information.This register does *not* get cleared when the kmac_err interrupt state gets cleared.";
+        } ERR_CODE[31:0];
+    } ERR_CODE @ 0xE0;
+
+    external reg {
+        compacted = true;
+        desc = "KMAC Secret KeyKMAC secret key can be up to 512 bit.Order of the secret key is:key[512:0] = {KEY15, KEY14, ... , KEY0};The registers are allowed to be updated when the engine is in Idle state.If the engine computes the hash, it discards any attempts to update the secret keysand report an error.Current KMAC supports up to 512 bit secret key. It is the swresponsibility to keep upper bits of the secret key to 0.";
+        field {
+            sw = w;
+            hw = r;
+            swmod = true;
+            desc = "32-bit chunk of up-to 512-bit Secret Key";
+        } KEY[31:0];
+    } KEY_SHARE0[16] @ 0x30;
+
+    external reg {
+        compacted = true;
+        desc = "KMAC Secret Key, 2nd share.KMAC secret key can be up to 512 bit.Order of the secret key is:key[512:0] = {KEY15, KEY14, ... , KEY0};The registers are allowed to be updated when the engine is in Idle state.If the engine computes the hash, it discards any attempts to update the secret keysand report an error.Current KMAC supports up to 512 bit secret key. It is the swresponsibility to keep upper bits of the secret key to 0.";
+        field {
+            sw = w;
+            hw = r;
+            swmod = true;
+            desc = "32-bit chunk of up-to 512-bit Secret Key";
+        } KEY[31:0];
+    } KEY_SHARE1[16] @ 0x70;
+
+    reg {
+        compacted = true;
+        desc = "cSHAKE Prefix register.Prefix including Function Name N and Customization String S.The SHA3 assumes this register value is encoded as:encode_string(N) || encode_string(S) || 0. It means that thesoftware can freely decide the length of N or S based on thegiven Prefix register size 320bit. 320bit is determined to have32-bit of N and up to 256-bit of S + encode of their length.It is SW responsibility to fill the register with encoded valuethat is described at Section 2.3.2 String Encoding in NIST SP800-185 specification.Order of Prefix is:prefix[end:0] := {PREFIX(N-1), ..., PREFIX(1), PREFIX(0) }The registers are allowed to be updated when the engine is in Idle state.If the engine computes the hash, it discards any attempts to update the secret keysand report an error.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "32-bit chunk of Encoded NS Prefix";
+        } PREFIX[31:0];
+    } PREFIX[11] @ 0xB4;
+
+    external mem {
+        memwidth = 0x20;
+        mementries = 0x80;
+        sw = r;
+    } STATE @ 0x400;
+
+    external mem {
+        memwidth = 0x20;
+        mementries = 0x200;
+        sw = w;
+    } MSG_FIFO @ 0x800;
+
+    CFG_SHADOWED.KMAC_EN -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.KSTRENGTH -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.MODE -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.MSG_ENDIANNESS -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.STATE_ENDIANNESS -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.SIDELOAD -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.ENTROPY_MODE -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.ENTROPY_FAST_PROCESS -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.MSG_MASK -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.ENTROPY_READY -> swwe = CFG_REGWEN.EN;
+    CFG_SHADOWED.EN_UNSUPPORTED_MODESTRENGTH -> swwe = CFG_REGWEN.EN;
+    ENTROPY_PERIOD.PRESCALER -> swwe = CFG_REGWEN.EN;
+    ENTROPY_PERIOD.WAIT_TIMER -> swwe = CFG_REGWEN.EN;
+    ENTROPY_REFRESH_THRESHOLD_SHADOWED.THRESHOLD -> swwe = CFG_REGWEN.EN;
+    KEY_LEN.LEN -> swwe = CFG_REGWEN.EN;
+    KEY_SHARE0.KEY -> swwe = CFG_REGWEN.EN;
+    KEY_SHARE1.KEY -> swwe = CFG_REGWEN.EN;
+    PREFIX.PREFIX -> swwe = CFG_REGWEN.EN;
+};

@@ -1,0 +1,333 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+`include "udp.rdl"
+
+addrmap rstmgr #(
+    longint RdWidth = 32,
+    longint IdxWidth = 4,
+    longint NumHwResets = 4,
+    longint NumSwResets = 3,
+    longint NumTotalResets = 7,
+    longint NumAlerts = 2
+){
+    bus_interface_cfg = BusInterfaceCfg'{
+        racl_support : false,
+        direction : BusDirection::Device,
+        protocol : BusProtocol::TlUl,
+        hier_path : "u_reg"
+    };
+    signal {
+        desc = "Root power on reset signals from ast.There is one root reset signal for each core power domain.";
+        signalwidth = 0x2;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "logic";
+    } POR_N;
+
+    signal {
+        desc = "Reset request signals from power manager.Power manager can request for specific domains of the lc/sys reset tree to assert.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "pwr_rst";
+    } PWR;
+
+    signal {
+        desc = "Leaf resets fed to the system.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "rstmgr_out";
+        inter_mod_package = "rstmgr_pkg";
+    } RESETS;
+
+    signal {
+        desc = "Low-power-group outputs used by alert handler.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "rstmgr_rst_en";
+        inter_mod_package = "rstmgr_pkg";
+    } RST_EN;
+
+    signal {
+        desc = "Alert handler crash dump information.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "alert_crashdump";
+        inter_mod_package = "alert_handler_pkg";
+    } ALERT_DUMP;
+
+    signal {
+        desc = "Main processing element crash dump information.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "cpu_crash_dump";
+        inter_mod_package = "rv_core_ibex_pkg";
+    } CPU_DUMP;
+
+    signal {
+        desc = "Software requested system reset to pwrmgr.";
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "mubi4";
+        inter_mod_package = "prim_mubi_pkg";
+    } SW_RST_REQ;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } TL;
+
+    signal {
+        desc = "This fatal alert is triggered when a fatal structural fault is detected.Structural faults include errors such as sparse fsm errors and tlul integrity errors.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_FAULT;
+
+    signal {
+        desc = "This fatal alert is triggered when a reset consistency fault is detected.It is separated from the category above for clearer error collection and debug.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_CNSTY_FAULT;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_AON_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_IO_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_MAIN_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_POR_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_POR_NI;
+
+    external reg {
+        desc = "Alert Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_FAULT[0:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_CNSTY_FAULT[1:1];
+    } ALERT_TEST @ 0x0;
+
+    reg {
+        desc = "Software requested system reset.";
+        field {
+            sw = rw;
+            hw = rw;
+            reset = 0x9;
+            desc = "When set to kMultiBitBool4True, a reset to power manager is requested.Upon completion of reset, this bit is automatically cleared by hardware.";
+            encode = MultiBitBool4;
+        } VAL[3:0];
+    } RESET_REQ @ 0x4;
+
+    reg {
+        desc = "Device reset reason.";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = na;
+            reset = true;
+            desc = "Indicates when a device has reset due to power up.";
+        } POR[0:0];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = w;
+            reset = false;
+            desc = "Indicates when a device has reset due low power exit.";
+        } LOW_POWER_EXIT[1:1];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Indicates when a device has reset due to !!RESET_REQ.";
+        } SW_RESET[2:2];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = false;
+            desc = "Indicates when a device has reset due to a hardware requested reset.The bit mapping is as follows:b3: soc_proxy: External reset requestb4: pwrmgr_aon: main power glitch reset requestb5: alert_handler: escalation reset requestb6: rv_dm: non-debug-module reset request";
+        } HW_REQ[6:3];
+    } RESET_INFO @ 0x8;
+
+    reg {
+        desc = "Alert write enable";
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = na;
+            reset = true;
+            desc = "When 1, !!ALERT_INFO_CTRL can be modified.";
+        } EN[0:0];
+    } ALERT_REGWEN @ 0xC;
+
+    reg {
+        desc = "Alert info dump controls.";
+        field {
+            sw = rw;
+            hw = rw;
+            reset = false;
+            desc = "Enable alert dump to capture new information.This field is automatically set to 0 upon system reset (even if rstmgr is not reset).";
+        } EN[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "Controls which 32-bit value to read.";
+        } INDEX[7:4];
+    } ALERT_INFO_CTRL @ 0x10;
+
+    external reg {
+        desc = "Alert info dump attributes.";
+        field {
+            sw = r;
+            hw = w;
+            reset = false;
+            desc = "The number of 32-bit values contained in the alert info dump.";
+        } CNT_AVAIL[3:0];
+    } ALERT_INFO_ATTR @ 0x14;
+
+    external reg {
+        desc = "  Alert dump information prior to last reset.  Which value read is controlled by the !!ALERT_INFO_CTRL register.";
+        field {
+            sw = r;
+            hw = w;
+            reset = false;
+            desc = "The current 32-bit value of crash dump.";
+        } VALUE[31:0];
+    } ALERT_INFO @ 0x18;
+
+    reg {
+        desc = "Cpu write enable";
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = na;
+            reset = true;
+            desc = "When 1, !!CPU_INFO_CTRL can be modified.";
+        } EN[0:0];
+    } CPU_REGWEN @ 0x1C;
+
+    reg {
+        desc = "Cpu info dump controls.";
+        field {
+            sw = rw;
+            hw = rw;
+            reset = false;
+            desc = "Enable cpu dump to capture new information.This field is automatically set to 0 upon system reset (even if rstmgr is not reset).";
+        } EN[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = false;
+            desc = "Controls which 32-bit value to read.";
+        } INDEX[7:4];
+    } CPU_INFO_CTRL @ 0x20;
+
+    external reg {
+        desc = "Cpu info dump attributes.";
+        field {
+            sw = r;
+            hw = w;
+            reset = false;
+            desc = "The number of 32-bit values contained in the cpu info dump.";
+        } CNT_AVAIL[3:0];
+    } CPU_INFO_ATTR @ 0x24;
+
+    external reg {
+        desc = "  Cpu dump information prior to last reset.  Which value read is controlled by the !!CPU_INFO_CTRL register.";
+        field {
+            sw = r;
+            hw = w;
+            reset = false;
+            desc = "The current 32-bit value of crash dump.";
+        } VALUE[31:0];
+    } CPU_INFO @ 0x28;
+
+    reg {
+        desc = "A bit vector of all the errors that have occurred in reset manager";
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+            desc = "The register file has experienced an integrity error.";
+        } REG_INTG_ERR[0:0];
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+            desc = "A inconsistent parent / child reset was observed.";
+        } RESET_CONSISTENCY_ERR[1:1];
+        field {
+            sw = r;
+            hw = rw;
+            reset = false;
+            desc = "Sparsely encoded fsm error.";
+        } FSM_ERR[2:2];
+    } ERR_CODE @ 0x44;
+
+    reg {
+        desc = "Register write enable for software controllable resets.When a particular bit value is 0, the corresponding value in !!SW_RST_CTRL_N can no longer be changed.When a particular bit value is 1, the corresponding value in !!SW_RST_CTRL_N can be changed.";
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = na;
+            reset = true;
+            desc = "Register write enable for software controllable resets";
+        } EN[0:0];
+    } SW_RST_REGWEN[3] @ 0x2C;
+
+    reg {
+        desc = "Software controllable resets.When a particular bit value is 0, the corresponding module is held in reset.When a particular bit value is 1, the corresponding module is not held in reset.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = true;
+            desc = "Software reset value";
+            swwe = true;
+        } VAL[0:0];
+    } SW_RST_CTRL_N[3] @ 0x38;
+
+    ALERT_INFO_CTRL.EN -> swwe = ALERT_REGWEN.EN;
+    ALERT_INFO_CTRL.INDEX -> swwe = ALERT_REGWEN.EN;
+    CPU_INFO_CTRL.EN -> swwe = CPU_REGWEN.EN;
+    CPU_INFO_CTRL.INDEX -> swwe = CPU_REGWEN.EN;
+};

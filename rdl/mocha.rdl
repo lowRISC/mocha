@@ -3,11 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-`include "ip/udp.rdl"
-`include "ip/uart.rdl"
-`include "ip/rv_timer.rdl"
+`include "ip/entropy_src.rdl"
+`include "ip/gpio.rdl"
+`include "ip/i2c.rdl"
+`include "ip/kmac.rdl"
 `include "ip/plic.rdl"
+`include "ip/rom_ctrl.rdl"
+`include "ip/rstmgr.rdl"
+`include "ip/rv_timer.rdl"
 `include "ip/spi_device.rdl"
+`include "ip/spi_host.rdl"
+`include "ip/uart.rdl"
+`include "ip/udp.rdl"
 
 addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;};
 
@@ -26,29 +33,29 @@ addrmap top_mocha {
 
   reserved DV_SW_IFC @ 0x2002_0000;
 
-  reserved GPIO @ 0x4000_0000;
+  gpio GPIO[1] @ 0x4000_0000 += 0x10000;
 
   reserved CLOCK_MANAGER @ 0x4002_0000;
 
-  reserved RESET_MANAGER @ 0x4003_0000;
+  rstmgr RSTMGR[1] @ 0x4003_0000 += 0x10000;
 
-  reserved POWER_MANAGER @ 0x4004_0000;
+  reserved POWER_MANAGER[1] @ 0x4004_0000 += 0x10000;
 
-  reserved ROM_CONTROL @ 0x4005_0000;
+  rom_ctrl ROM_CTRL[1] @ 0x4005_0000 += 0x10000;
 
-  reserved ENTROPY_SOURCE @ 0x4006_0000;
+  entropy_src ENTROPY_SRC[1] @ 0x4006_0000 += 0x10000;
 
-  reserved KMAC @ 0x4007_0000;
+  kmac KMAC[1] @ 0x4007_0000 += 0x10000;
 
   uart UART[1] @ 0x4100_0000 += 0x10000;
 
-  reserved I2C @ 0x4200_0000;
+  i2c I2C[1] @ 0x4200_0000 += 0x10000;
 
   spi_device SPI_DEVICE[1] @ 0x4300_0000 += 0x10000;
 
   rv_timer TIMER[1] @ 0x4400_0000 += 0x10000;
 
-  reserved SPI_HOST @ 0x4500_0000;
+  spi_host SPI_HOST[1] @ 0x4500_0000 += 0x10000;
 
   rv_plic PLIC @ 0x4800_0000;
 
