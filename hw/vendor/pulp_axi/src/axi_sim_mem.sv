@@ -257,7 +257,7 @@ module axi_sim_mem #(
                     r_data[i_byte*8+:8] = '1;
                   "zeros":
                     r_data[i_byte*8+:8] = '0;
-                  default: 
+                  default:
                     r_data[i_byte*8+:8] = 'x;
                 endcase
               end else begin
@@ -341,10 +341,10 @@ module axi_sim_mem #(
 
   // Parameter Assertions
   initial begin
-    assert (AddrWidth != 0) else $fatal("AddrWidth must be non-zero!", 1);
-    assert (DataWidth != 0) else $fatal("DataWidth must be non-zero!", 1);
-    assert (IdWidth != 0) else $fatal("IdWidth must be non-zero!", 1);
-    assert (UserWidth != 0) else $fatal("UserWidth must be non-zero!", 1);
+    assert (AddrWidth != 0) else $fatal(1, "AddrWidth must be non-zero!");
+    assert (DataWidth != 0) else $fatal(1, "DataWidth must be non-zero!");
+    assert (IdWidth != 0) else $fatal(1, "IdWidth must be non-zero!");
+    assert (UserWidth != 0) else $fatal(1, "UserWidth must be non-zero!");
   end
 
 endmodule
@@ -384,7 +384,7 @@ module axi_sim_mem_intf #(
   output axi_pkg::len_t             mon_r_beat_count_o,
   output logic                      mon_r_last_o
 );
-  
+
   typedef logic [AXI_ADDR_WIDTH-1:0]   axi_addr_t;
   typedef logic [AXI_DATA_WIDTH-1:0]   axi_data_t;
   typedef logic [AXI_ID_WIDTH-1:0]     axi_id_t;
