@@ -21,7 +21,7 @@
   testplan: "{self_dir}/data/rstmgr_cnsty_chk_testplan.hjson"
 
   // Import additional common sim cfg files.
-  import_cfgs: ["{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson"]
+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"]
 
 
   // Specific exclusion files.
