@@ -99,7 +99,9 @@ module commit_stage
     // TO_BE_COMPLETED - CONTROLLER
     output logic hfence_vvma_o,
     // TO_BE_COMPLETED - CONTROLLER
-    output logic hfence_gvma_o
+    output logic hfence_gvma_o,
+    // Breakpoint exception from trigger module
+    input logic break_from_trigger_i
 );
 
   // ila_0 i_ila_commit (
@@ -123,7 +125,7 @@ module commit_stage
   always_comb begin : prepare_pc_o
     // Recalculate the PCC with correct address. Representability check not required because this was in-bounds at issue.
     automatic
-    cva6_cheri_pkg::cap_pcc_t
+    cva6_cheri_pkg::cap_reg_t
     pcc_o = cva6_cheri_pkg::set_cap_reg_addr(
         pcc_i, commit_instr_i[0].pc
     );
@@ -184,7 +186,7 @@ module commit_stage
     // we do not commit the instruction yet if we requested a halt
     if (commit_instr_i[0].valid && !halt_i && !halt_for_single_step_i) begin
       // we will not commit the instruction if we took an exception
-      if (commit_instr_i[0].ex.valid) begin
+      if (commit_instr_i[0].ex.valid || break_from_trigger_i) begin
         // However we can drop it (with its exception)
         if (commit_drop_i[0]) begin
           commit_ack_o[0] = 1'b1;
@@ -441,6 +443,11 @@ module commit_stage
     // - We completed a single step
     if (halt_i || halt_for_single_step_i) begin
       exception_o.valid = 1'b0;
+    end
+
+    if (CVA6Cfg.SDTRIG && !CVA6Cfg.DebugEn && break_from_trigger_i) begin
+      exception_o.valid = 1'b1;
+      exception_o.cause = 32'h00000003;
     end
   end
 endmodule

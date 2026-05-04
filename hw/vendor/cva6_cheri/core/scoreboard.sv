@@ -220,7 +220,8 @@ module scoreboard #(
         mem_n[trans_id_i[i]].sbe.result = wbdata_i[i];
         // save the target address of a branch (needed for debug in commit stage)
         if (CVA6Cfg.DebugEn || CVA6Cfg.RVFI_DII) begin
-          mem_n[trans_id_i[i]].sbe.bp.predict_address = resolved_branch_i.target_address[CVA6Cfg.XLEN-1:0];
+          mem_n[trans_id_i[i]].sbe.bp.predict_address =
+              ariane_pkg::reg_to_x(resolved_branch_i.target_address);
         end
         if (mem_n[trans_id_i[i]].sbe.fu == ariane_pkg::CVXIF) begin
           if (x_we_i) mem_n[trans_id_i[i]].sbe.rd = x_rd_i;
@@ -307,7 +308,7 @@ module scoreboard #(
   end
 
   assign fwd_o.still_issued = still_issued;
-  assign fwd_o.issue_pointer = issue_pointer;
+  assign fwd_o.issue_pointer = issue_pointer[0];
   assign fwd_o.wb = wb;
   for (genvar i = 0; i < CVA6Cfg.NR_SB_ENTRIES; i++) begin
     assign fwd_o.sbe[i] = mem_q[i].sbe;

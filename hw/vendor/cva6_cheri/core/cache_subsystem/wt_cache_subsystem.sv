@@ -113,50 +113,33 @@ module wt_cache_subsystem
   logic dcache_adapter_data_req, adapter_dcache_data_ack, adapter_dcache_rtrn_vld;
   dcache_req_t  dcache_adapter;
   dcache_rtrn_t adapter_dcache;
-  if (CVA6Cfg.RVFI_DII) begin : gen_rvfi_dii_generator
-    rvfi_dii_generator #(
-        .CVA6Cfg(CVA6Cfg),
-        .icache_dreq_t(icache_dreq_t),
-        .icache_drsp_t(icache_drsp_t),
-        .exception_t(exception_t)
-    ) i_cva6_rvfi_dii_generator (
-        .clk_i (clk_i),
-        .rst_ni(rst_ni),
-        .dreq_i(icache_dreq_i),
-        .dreq_o(icache_dreq_o)
-    );
-    assign icache_areq_o = '0;
-    assign icache_adapter_data_req = '0;
-    assign icache_adapter = '0;
-  end else begin : gen_icache
-    cva6_icache #(
-        // use ID 0 for icache reads
-        .CVA6Cfg(CVA6Cfg),
-        .icache_areq_t(icache_areq_t),
-        .icache_arsp_t(icache_arsp_t),
-        .icache_dreq_t(icache_dreq_t),
-        .icache_drsp_t(icache_drsp_t),
-        .icache_req_t(icache_req_t),
-        .icache_rtrn_t(icache_rtrn_t),
-        .RdTxId(0)
-    ) i_cva6_icache (
-        .clk_i         (clk_i),
-        .rst_ni        (rst_ni),
-        .flush_i       (icache_flush_i),
-        .en_i          (icache_en_i),
-        .miss_o        (icache_miss_o),
-        .areq_i        (icache_areq_i),
-        .areq_o        (icache_areq_o),
-        .dreq_i        (icache_dreq_i),
-        .dreq_o        (icache_dreq_o),
-        .mem_rtrn_vld_i(adapter_icache_rtrn_vld),
-        .mem_rtrn_i    (adapter_icache),
-        .mem_data_req_o(icache_adapter_data_req),
-        .mem_data_ack_i(adapter_icache_data_ack),
-        .mem_data_o    (icache_adapter)
-    );
-  end
 
+  cva6_icache #(
+      // use ID 0 for icache reads
+      .CVA6Cfg(CVA6Cfg),
+      .icache_areq_t(icache_areq_t),
+      .icache_arsp_t(icache_arsp_t),
+      .icache_dreq_t(icache_dreq_t),
+      .icache_drsp_t(icache_drsp_t),
+      .icache_req_t(icache_req_t),
+      .icache_rtrn_t(icache_rtrn_t),
+      .RdTxId(0)
+  ) i_cva6_icache (
+      .clk_i         (clk_i),
+      .rst_ni        (rst_ni),
+      .flush_i       (icache_flush_i),
+      .en_i          (icache_en_i),
+      .miss_o        (icache_miss_o),
+      .areq_i        (icache_areq_i),
+      .areq_o        (icache_areq_o),
+      .dreq_i        (icache_dreq_i),
+      .dreq_o        (icache_dreq_o),
+      .mem_rtrn_vld_i(adapter_icache_rtrn_vld),
+      .mem_rtrn_i    (adapter_icache),
+      .mem_data_req_o(icache_adapter_data_req),
+      .mem_data_ack_i(adapter_icache_data_ack),
+      .mem_data_o    (icache_adapter)
+  );
 
   // Note:
   // Ports 0/1 for PTW and LD unit are read only.

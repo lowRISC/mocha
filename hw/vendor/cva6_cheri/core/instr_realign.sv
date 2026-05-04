@@ -204,7 +204,7 @@ module instr_realign
               end else begin
                 unaligned_instr_d   = instr_o[3];
                 unaligned_address_d = addr_o[3];
-                if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[3];
+                if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[2];
               end
             end
           end else begin
@@ -248,7 +248,7 @@ module instr_realign
                   unaligned_d         = 1'b1;
                   unaligned_instr_d   = instr_o[3];
                   unaligned_address_d = addr_o[3];
-                  if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[3];
+                  if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[2];
                 end
               end
             end else begin
@@ -270,7 +270,7 @@ module instr_realign
                   unaligned_d         = 1'b1;
                   unaligned_instr_d   = instr_o[3];
                   unaligned_address_d = addr_o[3];
-                  if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[3];
+                  if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[2];
                 end
               end
             end
@@ -321,7 +321,7 @@ module instr_realign
               unaligned_d         = 1'b1;
               unaligned_instr_d   = instr_o[2];
               unaligned_address_d = addr_o[2];
-              if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[2];
+              if (CVA6Cfg.RVFI_DII) unaligned_dii_id_d = dii_id_o[1];
             end
           end
         end
