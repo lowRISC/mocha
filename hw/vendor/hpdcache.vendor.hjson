@@ -4,6 +4,7 @@
 {
   name: "hpdcache",
   target_dir: "hpdcache",
+  patch_dir: "patches/hpdcache",
 
   upstream: {
     url: "https://github.com/Capabilities-Limited/cv-hpdcache.git",
