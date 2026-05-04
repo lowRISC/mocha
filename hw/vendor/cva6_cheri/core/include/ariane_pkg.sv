@@ -29,7 +29,12 @@
 /// moved out to favour a fully parameterizable core.
 package ariane_pkg;
 
-  localparam CLEN = cva6_config_pkg::CVA6ConfigRVZcheripurecap || cva6_config_pkg::CVA6ConfigRVZcherihybrid ? 2*cva6_config_pkg::CVA6ConfigXlen : cva6_config_pkg::CVA6ConfigXlen;
+  localparam XLEN = cva6_config_pkg::CVA6ConfigXlen;
+  localparam CheriPresent = cva6_config_pkg::CVA6ConfigRVZcheripurecap;
+  localparam CLEN = CheriPresent ? 2 * XLEN : XLEN;
+  localparam REGLEN = CheriPresent ? $bits(cva6_cheri_pkg::cap_reg_t) : XLEN;
+  localparam logic [REGLEN-1:0] REG_NULL = CheriPresent ? cva6_cheri_pkg::REG_NULL_CAP : '0;
+  localparam logic [REGLEN-1:0] REG_ROOT = CheriPresent ? cva6_cheri_pkg::REG_ROOT_CAP : '0;
   // TODO: Slowly move those parameters to the new system.
   localparam BITS_SATURATION_COUNTER = 2;
 
@@ -56,6 +61,7 @@ package ariane_pkg;
 
   localparam logic [31:0] OPENHWGROUP_MVENDORID = 32'h0602;
   localparam logic [31:0] ARIANE_MARCHID = 32'd3;
+  localparam logic [31:0] ARIANE_MIMPID = 32'd0;
 
   // 32 registers
   localparam REG_ADDR_SIZE = 5;
@@ -582,6 +588,11 @@ package ariane_pkg;
     SHA512SUM1
   } fu_op;
 
+  typedef struct packed {
+    logic rs1_from_rd;
+    logic rs2_from_rd;
+  } alu_bypass_t;
+
   function automatic logic op_is_branch(input fu_op op);
     unique case (op) inside
       EQ, NE, LTS, GES, LTU, GEU: return 1'b1;
@@ -1028,5 +1039,23 @@ package ariane_pkg;
   function automatic int unsigned avoid_neg(int n);
     return (n < 0) ? 0 : n;
   endfunction : avoid_neg
+
+  // Convert XLENs to registers (which are capabilities with CHERI)
+  function automatic logic [REGLEN-1:0] x_to_reg(logic [XLEN-1:0] x_val);
+    if (CheriPresent) begin
+      return cva6_cheri_pkg::set_cap_reg_addr(REG_NULL, x_val);
+    end else begin
+      return x_val;
+    end
+  endfunction
+
+  // Convert registers (which are capabilities with CHERI) to XLENs
+  function automatic logic [XLEN-1:0] reg_to_x(logic [REGLEN-1:0] reg_val);
+    if (CheriPresent) begin
+      return reg_val[XLEN-1:0];
+    end else begin
+      return reg_val;
+    end
+  endfunction
 
 endpackage

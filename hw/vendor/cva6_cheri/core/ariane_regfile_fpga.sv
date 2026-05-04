@@ -30,8 +30,7 @@ module ariane_regfile_fpga #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg       = config_pkg::cva6_cfg_empty,
     parameter int unsigned           DATA_WIDTH    = 32,
     parameter int unsigned           NR_READ_PORTS = 2,
-    parameter bit                    ZERO_REG_ZERO = 0,
-    parameter bit                    EN_CHERI_CAP  = 0
+    parameter bit                    ZERO_REG_ZERO = 0
 ) (
     // clock and reset
     input  logic                                             clk_i,

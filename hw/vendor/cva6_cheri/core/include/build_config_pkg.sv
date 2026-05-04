@@ -4,7 +4,7 @@ package build_config_pkg;
     bit IS_XLEN32 = (CVA6Cfg.XLEN == 32) ? 1'b1 : 1'b0;
     bit IS_XLEN64 = (CVA6Cfg.XLEN == 32) ? 1'b0 : 1'b1;
     bit FpPresent = CVA6Cfg.RVF | CVA6Cfg.RVD | CVA6Cfg.XF16 | CVA6Cfg.XF16ALT | CVA6Cfg.XF8;
-    bit CheriPresent = CVA6Cfg.RVZcheripurecap | CVA6Cfg.RVZcherihybrid;
+    bit CheriPresent = CVA6Cfg.RVZcheripurecap;
     bit NSX = CVA6Cfg.XF16 | CVA6Cfg.XF16ALT | CVA6Cfg.XF8 | CVA6Cfg.XFVec;  // Are non-standard extensions present?
     int unsigned FLen = CVA6Cfg.RVD ? 64 :  // D ext.
     CVA6Cfg.RVF ? 32 :  // F ext.
@@ -38,7 +38,7 @@ package build_config_pkg;
     cfg.PLEN = (CVA6Cfg.XLEN == 32) ? 34 : 56;
     cfg.GPLEN = (CVA6Cfg.XLEN == 32) ? 34 : 41;
     cfg.REGLEN = CheriPresent ? $bits(cva6_cheri_pkg::cap_reg_t) : cfg.XLEN;
-    cfg.PCLEN = CheriPresent ? $bits(cva6_cheri_pkg::cap_pcc_t) : cfg.VLEN;
+    cfg.PCLEN = CheriPresent ? $bits(cva6_cheri_pkg::cap_reg_t) : cfg.VLEN;
     cfg.IS_XLEN32 = IS_XLEN32;
     cfg.IS_XLEN64 = IS_XLEN64;
     cfg.XLEN_ALIGN_BYTES = $clog2(CVA6Cfg.XLEN / 8);
@@ -54,6 +54,9 @@ package build_config_pkg;
     cfg.NrCommitPorts = CVA6Cfg.SuperscalarEn ? unsigned'(2) : CVA6Cfg.NrCommitPorts;
     cfg.NrIssuePorts = unsigned'(CVA6Cfg.SuperscalarEn ? 2 : 1);
     cfg.SpeculativeSb = CVA6Cfg.SuperscalarEn;
+
+    cfg.NrALUs = CVA6Cfg.SuperscalarEn ? unsigned'(2) : unsigned'(1);
+    cfg.ALUBypass = CVA6Cfg.SuperscalarEn ? bit'(CVA6Cfg.ALUBypass) : bit'(0);
 
     cfg.NrLoadPipeRegs = CVA6Cfg.NrLoadPipeRegs;
     cfg.NrStorePipeRegs = CVA6Cfg.NrStorePipeRegs;
@@ -134,6 +137,11 @@ package build_config_pkg;
     cfg.CachedRegionLength = CVA6Cfg.CachedRegionLength;
     cfg.MaxOutstandingStores = CVA6Cfg.MaxOutstandingStores;
     cfg.DebugEn = CVA6Cfg.DebugEn;
+    cfg.SDTRIG = CVA6Cfg.SDTRIG;
+    cfg.Mcontrol6 = CVA6Cfg.Mcontrol6;
+    cfg.Icount = CVA6Cfg.Icount;
+    cfg.Etrigger = CVA6Cfg.Etrigger;
+    cfg.Itrigger = CVA6Cfg.Itrigger;
     cfg.NonIdemPotenceEn = (CVA6Cfg.NrNonIdempotentRules > 0) && (CVA6Cfg.NonIdempotentLength > 0);
     cfg.AxiBurstWriteEn = CVA6Cfg.AxiBurstWriteEn;
 
@@ -165,7 +173,7 @@ package build_config_pkg;
 
     cfg.CheriCapTagWidth = CVA6Cfg.CheriCapTagWidth;
     cfg.RVFI_DII = bit'(CVA6Cfg.RVFI_DII);
-    cfg.DIIIDLEN = CVA6Cfg.DIIIDLEN;
+    cfg.DIIIDLEN = 6;
 
     cfg.DATA_USER_EN = CVA6Cfg.DataUserEn;
     cfg.WtDcacheWbufDepth = CVA6Cfg.WtDcacheWbufDepth;

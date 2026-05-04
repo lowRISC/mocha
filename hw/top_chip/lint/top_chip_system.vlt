@@ -6,8 +6,12 @@
 
 `verilator_config
 
+// Turn off UNOPTFLAT warnings in the whole design.
+// We may turn these back on once the design is more finalised but for now they give too many false positives.
+lint_off -rule UNOPTFLAT
+
 // Initialising all RVFI signals to zero is OK in this case.
-lint_off -rule WIDTHCONCAT -file "*/cva6_cheri/core/cva6_rvfi_probes.sv" -match "*More than a 8k bit replication is probably wrong: 8461"
+lint_off -rule WIDTHCONCAT -file "*/cva6_cheri/core/cva6_rvfi_probes.sv" -match "*More than a 8k bit replication is probably wrong: 8475"
 
 // This is only when data width is equal to one.
 lint_off -rule UNSIGNED -file "*/rtl/rr_arb_tree.sv" -match "*Comparison is constant due to unsigned arithmetic"
@@ -50,7 +54,6 @@ lint_off -rule WIDTHTRUNC -file "*/cva6_cheri/common/*.sv"
 lint_off -rule WIDTHTRUNC -file "*/cva6_cheri/core/*.sv"
 lint_off -rule WIDTHEXPAND -file "*/cva6_cheri/common/*.sv"
 lint_off -rule WIDTHEXPAND -file "*/cva6_cheri/core/*.sv"
-lint_off -rule UNOPTFLAT -file "*/cva6_cheri/core/*.sv"
 // Caused by using async reset in sync concurrent assertion in CVA6
 lint_off -rule SYNCASYNCNET -file "*/*lowrisc_mocha_ip_rstmgr*/rtl/rstmgr_leaf_rst.sv" -match "*u_rstmgr*leaf_rst_o*"
 lint_off -rule SYNCASYNCNET -file "*/*lowrisc_prim_generic_ram_1p*/rtl/prim_ram_1p.sv" -match "*i_tc_sram_wrapper_user.rst_ni*"
@@ -63,7 +66,6 @@ lint_off -rule UNUSEDSIGNAL -file "*/pulp-platform*_axi*/src/*.sv"
 lint_off -rule UNUSEDPARAM -file "*/pulp-platform*_axi*/src/*.sv" -match "*AxiIdWidth*"
 lint_off -rule WIDTHTRUNC -file "*/pulp-platform*_axi*/src/*.sv"
 lint_off -rule WIDTHEXPAND -file "*/pulp-platform*_axi*/src/*.sv"
-lint_off -rule UNOPTFLAT -file "*/pulp-platform*_axi*/src/*.sv"
 lint_off -rule UNUSEDPARAM -file "*/pulp-platform*_axi*/src/*.sv"
 
 // Mute RTL style warning from lowRISC prim
@@ -89,11 +91,6 @@ lint_off -rule UNUSEDPARAM -file "*/lowrisc_common_cells_all*/rtl/counter.sv" -m
 lint_off -rule UNUSEDPARAM -file "*/lowrisc_common_cells_all*/rtl/delta_counter.sv" -match "*STICKY_OVERFLOW*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_common_cells_all*/rtl/fifo_v3.sv" -match "*depth_o*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_common_cells_all*/rtl/popcount.sv" -match "*popcount_o*"
-lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*sel_nodes*"
-lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
-lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*gnt_nodes*"
-lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/id_queue.sv" -match "*match_in_id_valid*"
-lint_off -rule UNOPTFLAT -file "*/*lowrisc_common_cells_all*/rtl/onehot_to_bin.sv" -match "*onehot_to_bin.bin*"
 
 // Mute RTL style warning from lowRISC UART IP
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_uart*/rtl/uart_core.sv" -match "*uart_fifo_rxilvl*"
@@ -117,7 +114,6 @@ lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramIngressIdx*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramCmdFifoIdx*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramAddrFifoIdx*"
-lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_spi_device*/rtl/spi_readcmd.sv" -match "*addr_cnt_d*"
 
 // Memory downsizer truncates address bits
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/rtl/mem_downsizer.sv" -match "*mem64_addr_i*"
@@ -206,13 +202,6 @@ lint_off -rule WIDTHEXPAND -file "*/tagctrl/src/axi_tagctrl_reg_wrap.sv" -match 
 lint_off -rule WIDTHEXPAND -file "*/tagctrl/src/axi_tagctrl_reg_wrap.sv" -match "*config_regs_d.cfg_spm*"
 lint_off -rule WIDTHEXPAND -file "*/tagctrl/src/axi_tagctrl_reg_wrap.sv" -match "*config_regs_d.flushed*"
 lint_off -rule CASEOVERLAP -file "*/pulp_axi_llc/src/axi_llc_reg_top.sv" -match "*addr_hit*"
-lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*sel*"
-lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/rr_arb_tree.sv" -match "*req_d*"
-lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_llc_tag_store.sv" -match "*evict_req*"
-lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_llc_tag_store.sv" -match "*evict_valid*"
-lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_llc_tag_store.sv" -match "*bin_ind*"
-lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_tagctrl_w.sv" -match "*b_chan_mst_ready_o*"
-lint_off -rule UNOPTFLAT -file "*/pulp_axi_llc/src/hit_miss_detect/axi_llc_evict_box.sv" -match "*valid_o*"
 
 // Output ds of the following prim_subreg instances are not used
 lint_off -rule PINMISSING -file "*/pulp_axi_llc/src/axi_llc_reg_top.sv" -match "*u_cfg_spm_low*"
@@ -295,3 +284,11 @@ lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -matc
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_vld_outer*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_last_outer*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_err*"
+
+// HPDCache
+lint_off -rule CASEINCOMPLETE -file "*/hpdcache/rtl/src/utils/hpdcache_mem_to_axi_write.sv" -match "*req_i*" // Default values specified outside case
+lint_off -rule UNDRIVEN -file "*/hpdcache/rtl/src/hwpf_stride/hwpf_stride.sv" -match "*hpdcache_req_o*"
+lint_off -rule UNUSEDPARAM -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for vendored in code.
+lint_off -rule UNUSEDSIGNAL -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for vendored in code.
+lint_off -rule WIDTHEXPAND -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.
+lint_off -rule WIDTHTRUNC -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.

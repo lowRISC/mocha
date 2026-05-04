@@ -11,6 +11,7 @@ filesets:
     depend:
       - pulp-platform.org::axi
       - lowrisc:common_cells:all
+      - lowrisc:cosmic:hpdcache
       - lowrisc:prim:lfsr
     files:
       # Includes.
@@ -18,7 +19,7 @@ filesets:
       - cva6_cheri/core/include/cvxif_types.svh: {is_include_file: true, include_path: cva6_cheri/core/include}
       # Packages.
       - cva6_cheri/core/include/config_pkg.sv
-      - cva6_cheri/core/include/cv64a6_imafdchzcheri_sv39_config_pkg.sv
+      - cva6_cheri/core/include/cv64a6_imafdczcheri_sv39_hpdcache_wb_config_pkg.sv
       - cva6_cheri/core/include/riscv_pkg.sv
       - cva6_cheri/core/include/cva6_cheri_pkg.sv
       - cva6_cheri/core/include/wt_cache_pkg.sv
@@ -30,6 +31,7 @@ filesets:
       - cva6_cheri/core/cva6.sv
       - cva6_cheri/core/cva6_rvfi_probes.sv
       - cva6_cheri/core/alu.sv
+      - cva6_cheri/core/alu_wrapper.sv
       - cva6_cheri/core/branch_unit.sv
       - cva6_cheri/core/compressed_decoder.sv
       - cva6_cheri/core/macro_decoder.sv
@@ -70,18 +72,6 @@ filesets:
       - cva6_cheri/core/frontend/instr_scan.sv
       - cva6_cheri/core/frontend/instr_queue.sv
       - cva6_cheri/core/frontend/frontend.sv
-      # Cache.
-      - cva6_cheri/core/cache_subsystem/wt_dcache_ctrl.sv
-      - cva6_cheri/core/cache_subsystem/wt_dcache_mem.sv
-      - cva6_cheri/core/cache_subsystem/wt_dcache_missunit.sv
-      - cva6_cheri/core/cache_subsystem/wt_dcache_wbuffer.sv
-      - cva6_cheri/core/cache_subsystem/wt_dcache.sv
-      - cva6_cheri/core/cache_subsystem/cva6_icache.sv
-      - cva6_cheri/core/cache_subsystem/wt_cache_subsystem.sv
-      - cva6_cheri/core/cache_subsystem/wt_axi_adapter.sv
-      - cva6_cheri/common/local/util/tc_sram_wrapper.sv
-      - cva6_cheri/common/local/util/sram.sv
-      - cva6_cheri/common/local/util/sram_cache.sv
       # Physical memory protection.
       - cva6_cheri/core/pmp/src/pmp.sv
       - cva6_cheri/core/pmp/src/pmp_entry.sv
@@ -91,6 +81,15 @@ filesets:
       - cva6_cheri/core/cva6_mmu/cva6_ptw.sv
       - cva6_cheri/core/cva6_mmu/cva6_tlb.sv
       - cva6_cheri/core/cva6_mmu/cva6_shared_tlb.sv
+      # HPDCache
+      - cva6_cheri/common/local/util/sram.sv
+      - cva6_cheri/common/local/util/sram_cache.sv
+      - cva6_cheri/common/local/util/tc_sram_wrapper.sv
+      - cva6_cheri/core/cache_subsystem/cva6_hpdcache_subsystem.sv
+      - cva6_cheri/core/cache_subsystem/cva6_icache.sv
+      - cva6_cheri/core/cache_subsystem/cva6_hpdcache_subsystem_axi_arbiter.sv
+      - cva6_cheri/core/cache_subsystem/cva6_hpdcache_if_adapter.sv
+      - cva6_cheri/core/cache_subsystem/cva6_hpdcache_wrapper.sv
     file_type: systemVerilogSource
 
   files_model:

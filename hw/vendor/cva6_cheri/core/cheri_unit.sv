@@ -22,7 +22,6 @@ typedef struct packed {
 } cap_check_select_t;
 
 module cheri_unit
-  import ariane_pkg::*;
   import cva6_cheri_pkg::*;
 #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
@@ -52,9 +51,7 @@ module cheri_unit
   cap_reg_t operand_b;
   addrw_t operand_b_base;
   addrwe_t operand_b_top;
-  //addrw_t operand_b_length;
   addrw_t operand_b_address;
-  //addrw_t operand_b_offset;
   logic operand_b_is_sealed;
   cap_meta_data_t op_b_meta_info;
   logic operand_b_hperms_malformed;
@@ -79,7 +76,6 @@ module cheri_unit
   cap_mem_t cap_mem_null;
   cap_reg_t tmp_cap, req_cap;
   addrwe_t tmp_length;
-  cap_reg_set_bounds_ret_t res_set_bounds;
   always_comb begin
     // exceptions signals reset
     check_operand_a_violations = {1'b0, 1'b0, 1'b0};
@@ -104,11 +100,14 @@ module cheri_unit
       end
       // CAndPerm
       ariane_pkg::ACPERM: begin
-        automatic cap_report_perms_t mask = cap_report_perms_t'(operand_b_address);
+        automatic cap_report_perms_t new_perms;
         check_operand_a_violations.seal = 1'b1;
         tmp_cap = operand_a;
-        tmp_cap.uperms = (tmp_cap.uperms & mask.uperms);
-        tmp_cap.hperms = cap_hperms_t'(tmp_cap.hperms & report_perms_to_hperms(mask));
+        new_perms = hperms_and_uperms_to_report_perms(operand_a.hperms, operand_a.uperms,
+                                                      operand_a_hperms_malformed);
+        new_perms &= cap_report_perms_t'(operand_b_address);
+        tmp_cap.uperms = new_perms.uperms;
+        tmp_cap.hperms = legalize_arch_perms(report_perms_to_hperms(new_perms));
         if (!tmp_cap.hperms.permit_execute) tmp_cap.flags.int_mode = 1'b0;
         clu_result = tmp_cap;
       end
@@ -152,47 +151,43 @@ module cheri_unit
         if (fu_data_i.operation == ariane_pkg::CBLD) clu_result = tmp_cap;
         // fu_data_i.operation == ariane_pkg::SCSS
         else
-          clu_result = set_cap_reg_addr(REG_NULL_CAP, {{CVA6Cfg.XLEN - 1{1'b0}}, tmp_cap.tag});
+          clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, tmp_cap.tag});
       end
       // CGetBase
       ariane_pkg::GCBASE: begin
-        clu_result =
-            set_cap_reg_addr(REG_NULL_CAP, operand_a_bounds_malformed ? '0 : operand_a_base);
+        clu_result = ariane_pkg::x_to_reg(operand_a_bounds_malformed ? '0 : operand_a_base);
       end
       // CGetFlags
       ariane_pkg::GCMODE: begin
-        clu_result = set_cap_reg_addr(REG_NULL_CAP,
-                                      {{CVA6Cfg.XLEN - 1{1'b0}}, get_cap_reg_flags(operand_a)});
+        clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, get_cap_reg_flags(operand_a)});
       end
       // CGetLength
       ariane_pkg::GCLEN: begin
-        clu_result =
-            set_cap_reg_addr(REG_NULL_CAP, operand_a_bounds_malformed ? '0 : operand_a_length);
+        clu_result = ariane_pkg::x_to_reg(operand_a_bounds_malformed ? '0 : operand_a_length);
       end
       // CGetHigh
       ariane_pkg::GCHI: begin
         cap_mem = cap_reg_to_cap_mem(operand_a);
-        clu_result = set_cap_reg_addr(REG_NULL_CAP, cap_mem[((CVA6Cfg.XLEN*2)-1):CVA6Cfg.XLEN]);
+        clu_result = ariane_pkg::x_to_reg(cap_mem[((CVA6Cfg.XLEN*2)-1):CVA6Cfg.XLEN]);
       end
       // CGetPerm
       ariane_pkg::GCPERM: begin
-        clu_result = set_cap_reg_addr(
-          REG_NULL_CAP,
+        clu_result = ariane_pkg::x_to_reg(
           {
             {CVA6Cfg.XLEN - $bits(cap_report_perms_t) {1'b0}},
             hperms_and_uperms_to_report_perms(
-              operand_a.hperms, operand_a.uperms, operand_a.flags.int_mode
+              operand_a.hperms, operand_a.uperms, operand_a_hperms_malformed
             )
           }
         );
       end
       // CGetTag
       ariane_pkg::GCTAG: begin
-        clu_result = set_cap_reg_addr(REG_NULL_CAP, {{CVA6Cfg.XLEN - 1{1'b0}}, operand_a.tag});
+        clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, operand_a.tag});
       end
       // CGetType
       ariane_pkg::GCTYPE: begin
-        clu_result = set_cap_reg_addr(REG_NULL_CAP, {{CVA6Cfg.XLEN - 1{1'b0}}, operand_a.otype});
+        clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, operand_a.otype});
       end
       // CIncOffset and CIncOffsetImm
       // TODO-cheri(ninolomata): use ALU to calculate address
@@ -220,13 +215,14 @@ module cheri_unit
       // CSetBounds, CSetBoundsExact, CSetBoundsImm,
       // CRepresentableAlignmentMask
       ariane_pkg::SCBNDSR, ariane_pkg::SCBNDS, ariane_pkg::CRAM: begin
+        automatic cap_reg_set_bounds_ret_t res_set_bounds;
+        res_set_bounds =
+            set_cap_reg_bounds(operand_a, operand_a_address, {1'b0, operand_b_address});
         check_operand_a_violations.tag = 1'b1;
         check_operand_a_violations.seal = 1'b1;
         check_operand_a_violations.bounds = 1'b1;
-        res_set_bounds =
-            set_cap_reg_bounds(operand_a, operand_a_address, {1'b0, operand_b_address});
         if (fu_data_i.operation == ariane_pkg::CRAM) begin
-          clu_result = set_cap_reg_addr(REG_NULL_CAP, res_set_bounds.mask);
+          clu_result = ariane_pkg::x_to_reg(res_set_bounds.mask);
         end else begin
           clu_result = res_set_bounds.cap;
         end
@@ -237,8 +233,7 @@ module cheri_unit
       end
       // CSetEqualExact
       ariane_pkg::SCEQ: begin
-        clu_result = set_cap_reg_addr(
-          REG_NULL_CAP,
+        clu_result = ariane_pkg::x_to_reg(
           {
             {CVA6Cfg.XLEN - 1{1'b0}},
             (cap_reg_to_cap_mem(operand_a) == cap_reg_to_cap_mem(operand_b)) ? 1'b1 : 1'b0
@@ -287,8 +282,6 @@ module cheri_unit
     operand_b_base = get_cap_reg_base(operand_b, op_b_meta_info);
     operand_b_top = get_cap_reg_top(operand_b, op_b_meta_info);
     operand_b_bounds_malformed = !are_cap_reg_bounds_valid(operand_b, op_b_meta_info);
-    //operand_b_length = get_cap_reg_length(operand_b, op_b_meta_info};
-    //operand_b_offset = get_cap_reg_offset(operand_b, op_b_meta_info);
     operand_b_is_sealed = (operand_b.otype != UNSEALED_CAP);
     operand_b_hperms_malformed = (operand_b.hperms != legalize_arch_perms(operand_b.hperms)) |
         (!operand_b.hperms.permit_execute & operand_b.flags.int_mode);

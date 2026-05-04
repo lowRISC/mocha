@@ -1,0 +1,18 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "hpdcache",
+  target_dir: "hpdcache",
+  patch_dir: "patches/hpdcache",
+
+  upstream: {
+    url: "https://github.com/Capabilities-Limited/cv-hpdcache.git",
+    rev: "cva6-zcheri-support",
+  },
+
+  exclude_from_upstream: [
+    ".github",
+    "docs/old",
+  ],
+}

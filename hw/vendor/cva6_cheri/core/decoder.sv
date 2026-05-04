@@ -96,6 +96,7 @@ module decoder
     output logic [31:0] orig_instr_o,
     // Is a control flow instruction - ISSUE_STAGE
     output logic is_control_flow_instr_o,
+    input debug_from_trigger_i,
     // The int_mode for the next instruction - FRONTEND
     output logic int_mode_o
 );
@@ -1313,7 +1314,7 @@ module decoder
             endcase
             if (!illegal_instr_cheri) instruction_o.fu = CLU;
           end
-          illegal_instr = illegal_instr_non_bm & illegal_instr_bm & illegal_instr_cheri;
+          illegal_instr = illegal_instr_non_bm & illegal_instr_bm & (!CVA6Cfg.CheriPresent || illegal_instr_cheri);
         end
 
         // --------------------------------
@@ -1367,7 +1368,7 @@ module decoder
               endcase
               if (!illegal_instr_cheri) instruction_o.fu = CLU;
             end
-            illegal_instr = illegal_instr_non_bm & illegal_instr_bm & illegal_instr_cheri;
+            illegal_instr = illegal_instr_non_bm & illegal_instr_bm & (!CVA6Cfg.CheriPresent || illegal_instr_cheri);
           end else illegal_instr = 1'b1;
         end
         // --------------------------------
@@ -2155,8 +2156,8 @@ module decoder
       end
     end
 
-    // a debug request has precedence over everything else
-    if (CVA6Cfg.DebugEn && debug_req_i && !debug_mode_i) begin
+    // a debug request has precendece over everything else
+    if ((CVA6Cfg.DebugEn && debug_req_i && !debug_mode_i) || (CVA6Cfg.SDTRIG && CVA6Cfg.Mcontrol6 && CVA6Cfg.DebugEn && !debug_mode_i && debug_from_trigger_i)) begin
       instruction_o.ex.valid = 1'b1;
       instruction_o.ex.cause = riscv::DEBUG_REQUEST;
     end

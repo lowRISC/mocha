@@ -99,8 +99,9 @@ module cva6_hpdcache_subsystem_axi_arbiter
 
   //  Adapt the I$ interface to the HPDcache memory interface
   //  {{{
-  localparam int ICACHE_CL_WORDS = CVA6Cfg.ICACHE_LINE_WIDTH / 64;
-  localparam int ICACHE_CL_WORD_INDEX = $clog2(ICACHE_CL_WORDS);
+  localparam int ICACHE_UC_WORD_INDEX = CVA6Cfg.AxiDataWidth > 64 ? $clog2(
+      CVA6Cfg.AxiDataWidth / 64
+  ) : 1;
   localparam int ICACHE_CL_SIZE = $clog2(CVA6Cfg.ICACHE_LINE_WIDTH / 8);
   localparam int ICACHE_WORD_SIZE = 3;
   localparam int ICACHE_MEM_REQ_CL_LEN =
@@ -211,29 +212,31 @@ module cva6_hpdcache_subsystem_axi_arbiter
       assign icache_miss_resp_wok = icache_miss_resp_data_wok & (
                icache_miss_resp_meta_wok | ~icache_miss_resp_wdata.mem_resp_r_last);
 
-      assign icache_miss_rdata = icache_miss_resp_data_rdata;
-
     end else begin
       assign icache_miss_resp_data_rok = icache_miss_resp_w;
       assign icache_miss_resp_meta_rok = icache_miss_resp_w;
       assign icache_miss_resp_wok = 1'b1;
       assign icache_miss_resp_meta_id = icache_miss_resp_wdata.mem_resp_r_id;
       assign icache_miss_resp_data_rdata = icache_miss_resp_wdata.mem_resp_r_data;
-
-      //  In the case of uncacheable accesses, the Icache expects the data to be right-aligned
-      always_comb begin : icache_miss_resp_data_comb
-        if (!icache_miss_req_rdata.mem_req_cacheable) begin
-          automatic logic [ICACHE_CL_WORD_INDEX - 1:0] icache_miss_word_index;
-          automatic logic [63:0] icache_miss_word;
-          icache_miss_word_index = icache_miss_req_rdata.mem_req_addr[3+:ICACHE_CL_WORD_INDEX];
-          icache_miss_word = icache_miss_resp_data_rdata[icache_miss_word_index*64+:64];
-          icache_miss_rdata = {{CVA6Cfg.ICACHE_LINE_WIDTH - 64{1'b0}}, icache_miss_word};
-        end else begin
-          icache_miss_rdata = icache_miss_resp_data_rdata;
-        end
-      end
     end
   endgenerate
+
+  //  In the case of uncacheable accesses, the Icache expects the data to be right-aligned
+  always_comb begin : icache_miss_resp_data_comb
+    if (!icache_miss_req_rdata.mem_req_cacheable) begin
+      automatic logic [ICACHE_UC_WORD_INDEX - 1:0] icache_miss_word_index;
+      automatic logic [63:0] icache_miss_word;
+      if (CVA6Cfg.AxiDataWidth > 64) begin
+        icache_miss_word_index = icache_miss_req_rdata.mem_req_addr[3+:ICACHE_UC_WORD_INDEX];
+      end else begin
+        icache_miss_word_index = 0;
+      end
+      icache_miss_word  = icache_miss_resp_data_rdata[icache_miss_word_index*64+:64];
+      icache_miss_rdata = {{CVA6Cfg.ICACHE_LINE_WIDTH - 64{1'b0}}, icache_miss_word};
+    end else begin
+      icache_miss_rdata = icache_miss_resp_data_rdata;
+    end
+  end
 
   assign icache_miss_resp_valid_o = icache_miss_resp_meta_rok;
   assign icache_miss_resp_o.rtype = wt_cache_pkg::ICACHE_IFILL_ACK;
@@ -350,7 +353,8 @@ module cva6_hpdcache_subsystem_axi_arbiter
       .hpdcache_mem_resp_w_t(hpdcache_mem_resp_w_t),
       .aw_chan_t            (axi_aw_chan_t),
       .w_chan_t             (axi_w_chan_t),
-      .b_chan_t             (axi_b_chan_t)
+      .b_chan_t             (axi_b_chan_t),
+      .userEn               (CVA6Cfg.CheriPresent)
   ) i_hpdcache_mem_to_axi_write (
       .req_ready_o(dcache_write_ready_o),
       .req_valid_i(dcache_write_valid_i),
@@ -381,7 +385,8 @@ module cva6_hpdcache_subsystem_axi_arbiter
       .hpdcache_mem_req_t   (hpdcache_mem_req_t),
       .hpdcache_mem_resp_r_t(hpdcache_mem_resp_r_t),
       .ar_chan_t            (axi_ar_chan_t),
-      .r_chan_t             (axi_r_chan_t)
+      .r_chan_t             (axi_r_chan_t),
+      .userEn               (CVA6Cfg.CheriPresent)
   ) i_hpdcache_mem_to_axi_read (
       .req_ready_o(mem_req_read_ready_arb),
       .req_valid_i(mem_req_read_valid_arb),
