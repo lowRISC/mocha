@@ -11,7 +11,7 @@
 lint_off -rule UNOPTFLAT
 
 // Initialising all RVFI signals to zero is OK in this case.
-lint_off -rule WIDTHCONCAT -file "*/cva6_cheri/core/cva6_rvfi_probes.sv" -match "*More than a 8k bit replication is probably wrong: 8461"
+lint_off -rule WIDTHCONCAT -file "*/cva6_cheri/core/cva6_rvfi_probes.sv" -match "*More than a 8k bit replication is probably wrong: 8475"
 
 // This is only when data width is equal to one.
 lint_off -rule UNSIGNED -file "*/rtl/rr_arb_tree.sv" -match "*Comparison is constant due to unsigned arithmetic"
@@ -284,3 +284,11 @@ lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -matc
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_vld_outer*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_last_outer*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_err*"
+
+// HPDCache
+lint_off -rule CASEINCOMPLETE -file "*/hpdcache/rtl/src/utils/hpdcache_mem_to_axi_write.sv" -match "*req_i*" // Default values specified outside case
+lint_off -rule UNDRIVEN -file "*/hpdcache/rtl/src/hwpf_stride/hwpf_stride.sv" -match "*hpdcache_req_o*"
+lint_off -rule UNUSEDPARAM -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for vendored in code.
+lint_off -rule UNUSEDSIGNAL -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for vendored in code.
+lint_off -rule WIDTHEXPAND -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.
+lint_off -rule WIDTHTRUNC -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.
