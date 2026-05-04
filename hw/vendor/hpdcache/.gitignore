@@ -1,0 +1,7 @@
+vnc_logs/
+veloce.map
+VRMDATA/
+*.log
+*.wlf
+*.ucdb
+*.swp
