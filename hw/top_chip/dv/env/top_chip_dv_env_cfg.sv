@@ -18,6 +18,8 @@ class top_chip_dv_env_cfg extends uvm_object;
 
   // External interface agent configs
   rand uart_agent_cfg    m_uart_agent_cfg;
+  axi4_vip_cfg           m_axi_mgr_cfg[];
+  axi4_vip_cfg           m_axi_sub_cfg[];
 
   `uvm_object_utils_begin(top_chip_dv_env_cfg)
   `uvm_object_utils_end
