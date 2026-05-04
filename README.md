@@ -41,6 +41,7 @@ There is a dashboard of the nightly verification runs for Mocha, which can be fo
 It shows test pass rates and coverage metrics for all the blocks currently integrated.
 Initially this dashboard is expected to grow as we add more blocks and the red statuses will turn to green as we integrate more of our verification effort.
 For more information on our top-level verification framework, check out its [dedicated documentation](hw/top_chip/dv/README.md).
+The current sign-off status for each block can be found in the [design stages documentation](doc/verif/stages.md).
 
 ## Contributing
 
