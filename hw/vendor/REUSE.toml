@@ -3,7 +3,7 @@
 version = 1
 
 [[annotations]]
-path = ["lowrisc_ibex/**", "lowrisc_ip/**"]
+path = ["lowrisc_ip/**"]
 SPDX-FileCopyrightText = "lowRISC Contributors."
 SPDX-License-Identifier = "Apache-2.0"
 
