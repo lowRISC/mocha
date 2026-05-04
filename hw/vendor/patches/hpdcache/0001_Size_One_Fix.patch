@@ -1,0 +1,35 @@
+diff --git a/rtl/src/common/hpdcache_data_upsize.sv b/rtl/src/common/hpdcache_data_upsize.sv
+index 357f03d..a9ea8ee 100644
+--- a/rtl/src/common/hpdcache_data_upsize.sv
++++ b/rtl/src/common/hpdcache_data_upsize.sv
+@@ -58,7 +58,7 @@ import hpdcache_pkg::*;
+     //  Local definitions
+     //  {{{
+     localparam int WR_WORDS = RD_WIDTH/WR_WIDTH;
+-    localparam int PTR_WIDTH = $clog2(DEPTH);
++    localparam int PTR_WIDTH = (DEPTH == 1) ? 1 : $clog2(DEPTH);
+     localparam int WORDCNT_WIDTH = $clog2(WR_WORDS);
+     typedef logic [PTR_WIDTH-1:0]  bufptr_t;
+     typedef logic [WORDCNT_WIDTH-1:0]  wordptr_t;
+diff --git a/rtl/src/hpdcache_memctrl.sv b/rtl/src/hpdcache_memctrl.sv
+index bf2ac09..89590e1 100644
+--- a/rtl/src/hpdcache_memctrl.sv
++++ b/rtl/src/hpdcache_memctrl.sv
+@@ -200,6 +200,8 @@ import hpdcache_pkg::*;
+                                                        HPDcacheCfg.u.dataWaysPerRamWord;
+     localparam int unsigned HPDCACHE_DATA_RAM_X_CUTS = HPDcacheCfg.u.accessWords;
+     localparam int unsigned HPDCACHE_ALL_CUTS = HPDCACHE_DATA_RAM_X_CUTS*HPDCACHE_DATA_RAM_Y_CUTS;
++    localparam int unsigned HPDCACHE_DATA_WAYS_PER_RAM_WORD_WIDTH =
++      (HPDcacheCfg.u.dataWaysPerRamWord == 1) ? 1 : $clog2(HPDcacheCfg.u.dataWaysPerRamWord);
+ 
+     typedef logic [HPDCACHE_DIR_RAM_ADDR_WIDTH-1:0] hpdcache_dir_addr_t;
+ 
+@@ -207,7 +209,7 @@ import hpdcache_pkg::*;
+     typedef hpdcache_data_word_t[HPDcacheCfg.u.dataWaysPerRamWord-1:0] hpdcache_data_ram_data_t;
+     typedef hpdcache_data_be_t  [HPDcacheCfg.u.dataWaysPerRamWord-1:0] hpdcache_data_ram_be_t;
+     typedef logic [HPDCACHE_DATA_RAM_Y_CUTS-1:0] hpdcache_data_ram_row_idx_t;
+-    typedef logic [$clog2(HPDcacheCfg.u.dataWaysPerRamWord)-1:0] hpdcache_data_ram_way_idx_t;
++    typedef logic [HPDCACHE_DATA_WAYS_PER_RAM_WORD_WIDTH-1:0] hpdcache_data_ram_way_idx_t;
+     typedef logic [HPDCACHE_DATA_RAM_X_CUTS-1:0] hpdcache_data_row_enable_t;
+     typedef hpdcache_data_row_enable_t [HPDCACHE_DATA_RAM_Y_CUTS-1:0] hpdcache_data_enable_t;
+ 

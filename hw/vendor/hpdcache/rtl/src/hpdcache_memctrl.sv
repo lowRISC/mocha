@@ -200,6 +200,8 @@ import hpdcache_pkg::*;
                                                        HPDcacheCfg.u.dataWaysPerRamWord;
     localparam int unsigned HPDCACHE_DATA_RAM_X_CUTS = HPDcacheCfg.u.accessWords;
     localparam int unsigned HPDCACHE_ALL_CUTS = HPDCACHE_DATA_RAM_X_CUTS*HPDCACHE_DATA_RAM_Y_CUTS;
+    localparam int unsigned HPDCACHE_DATA_WAYS_PER_RAM_WORD_WIDTH =
+      (HPDcacheCfg.u.dataWaysPerRamWord == 1) ? 1 : $clog2(HPDcacheCfg.u.dataWaysPerRamWord);
 
     typedef logic [HPDCACHE_DIR_RAM_ADDR_WIDTH-1:0] hpdcache_dir_addr_t;
 
@@ -207,7 +209,7 @@ import hpdcache_pkg::*;
     typedef hpdcache_data_word_t[HPDcacheCfg.u.dataWaysPerRamWord-1:0] hpdcache_data_ram_data_t;
     typedef hpdcache_data_be_t  [HPDcacheCfg.u.dataWaysPerRamWord-1:0] hpdcache_data_ram_be_t;
     typedef logic [HPDCACHE_DATA_RAM_Y_CUTS-1:0] hpdcache_data_ram_row_idx_t;
-    typedef logic [$clog2(HPDcacheCfg.u.dataWaysPerRamWord)-1:0] hpdcache_data_ram_way_idx_t;
+    typedef logic [HPDCACHE_DATA_WAYS_PER_RAM_WORD_WIDTH-1:0] hpdcache_data_ram_way_idx_t;
     typedef logic [HPDCACHE_DATA_RAM_X_CUTS-1:0] hpdcache_data_row_enable_t;
     typedef hpdcache_data_row_enable_t [HPDCACHE_DATA_RAM_Y_CUTS-1:0] hpdcache_data_enable_t;
 
