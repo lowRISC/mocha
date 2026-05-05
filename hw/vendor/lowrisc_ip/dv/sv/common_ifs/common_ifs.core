@@ -10,6 +10,7 @@ filesets:
     depend:
       - lowrisc:prim:assert
       - lowrisc:dv:pins_if
+      - lowrisc:dv:dv_macros
     files:
       - common_ifs_pkg.sv
       - clk_if.sv
