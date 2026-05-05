@@ -9,9 +9,11 @@ filesets:
     depend:
       - lowrisc:mocha:top_chip_system
       - lowrisc:prim_xilinx:all
+      - lowrisc::ethernet
       - pulp-platform.org::axi
     files:
       - rtl/clkgen_xil7series.sv
+      - rtl/ethernet_wrapper.sv
       - rtl/chip_mocha_genesys2.sv
     file_type: systemVerilogSource
 
@@ -25,6 +27,7 @@ filesets:
       - data/config_genesys2.xdc
       - data/pins_genesys2.xdc
       - data/timing_genesys2.xdc
+      - data/placement_genesys2.xdc
     file_type: xdc
 
 parameters:

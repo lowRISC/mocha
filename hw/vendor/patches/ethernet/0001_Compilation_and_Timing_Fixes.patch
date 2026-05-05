@@ -1,0 +1,41 @@
+diff --git a/dualmem_widen.sv b/dualmem_widen.sv
+index 2429db6..5fb19ea 100644
+--- a/dualmem_widen.sv
++++ b/dualmem_widen.sv
+@@ -21,9 +21,7 @@ module dualmem_widen(clka, clkb, dina, dinb, addra, addrb, wea, web, douta, dout
+ `endif
+ */
+    
+-`ifdef GENESYSII
+  `define RAMB16
+-`endif
+ 
+ `ifdef RAMB16
+    
+diff --git a/dualmem_widen8.sv b/dualmem_widen8.sv
+index b031324..4a6d066 100644
+--- a/dualmem_widen8.sv
++++ b/dualmem_widen8.sv
+@@ -28,9 +28,7 @@ module dualmem_widen8(clka, clkb, dina, dinb, addra, addrb, wea, web, douta, dou
+ `endif
+ */
+    
+-`ifdef GENESYSII
+  `define RAMB16
+-`endif
+ 
+ `ifdef RAMB16
+    
+@@ -46,8 +44,11 @@ module dualmem_widen8(clka, clkb, dina, dinb, addra, addrb, wea, web, douta, dou
+    always @(posedge clka)
+      begin
+ 	addra_dly <= addra;
+-	addrb_dly <= addrb;
+      end
++
++  always @(posedge clkb) begin
++	  addrb_dly <= addrb;
++  end
+    
+    generate for (r = 0; r < 8; r=r+1)
+      RAMB16_S9_S36

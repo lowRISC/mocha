@@ -1,0 +1,35 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc::ethernet"
+description: "1GbE ethernet MAC"
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:prim_generic:flop_2sync
+    files:
+      - ethernet/axis_async_fifo.sv
+      - ethernet/axis_gmii_rx.sv
+      - ethernet/axis_gmii_tx.sv
+      - ethernet/dualmem_widen.sv
+      - ethernet/dualmem_widen8.sv
+      - ethernet/eth_mac_1g.sv
+      - ethernet/eth_mac_1g_rgmii.sv
+      - ethernet/eth_mac_1g_rgmii_fifo.sv
+      - ethernet/framing_top.sv
+      - ethernet/iddr.sv
+      - ethernet/oddr.sv
+      - ethernet/rgmii_core.sv
+      - ethernet/rgmii_lfsr.sv
+      - ethernet/rgmii_phy_if.sv
+      - ethernet/rgmii_soc.sv
+      - ethernet/ssio_ddr_in.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

@@ -58,7 +58,14 @@ module top_chip_system #(
 
   // DRAM AXI interface.
   output top_pkg::axi_dram_req_t  dram_req_o,
-  input  top_pkg::axi_dram_resp_t dram_resp_i
+  input  top_pkg::axi_dram_resp_t dram_resp_i,
+
+  // Rest of chip AXI interface.
+  output top_pkg::axi_req_t  rest_of_chip_req_o,
+  input  top_pkg::axi_resp_t rest_of_chip_resp_i,
+
+  // Ethernet IRQ in
+  input  logic ethernet_irq_i
 );
 
   // Local parameters.
@@ -125,6 +132,7 @@ module top_chip_system #(
     '{ idx: top_pkg::RomCtrlMem, start_addr: top_pkg::RomCtrlMemBase, end_addr: top_pkg::RomCtrlMemBase + top_pkg::RomCtrlMemLength },
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
     '{ idx: top_pkg::Mailbox,    start_addr: top_pkg::MailboxBase,    end_addr: top_pkg::MailboxBase    + top_pkg::MailboxLength    },
+    '{ idx: top_pkg::RestOfChip, start_addr: top_pkg::RestOfChipBase, end_addr: top_pkg::RestOfChipBase + top_pkg::RestOfChipLength },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
     '{ idx: top_pkg::DRAM,       start_addr: top_pkg::DRAMBase,       end_addr: top_pkg::DRAMBase       + top_pkg::DRAMUsableLength }
   };
@@ -244,7 +252,8 @@ module top_chip_system #(
   // Interrupt vector
   logic [31:0] intr_vector;
 
-  assign intr_vector[31 : 12] = '0;  // Reserved for future use.
+  assign intr_vector[     31] = ethernet_irq_i;
+  assign intr_vector[30 : 12] = '0;  // Reserved for future use.
   assign intr_vector[     11] = mailbox_main_irq;
   assign intr_vector[     10] = pwrmgr_wakeup_irq;
   assign intr_vector[      9] = gpio_irq;
@@ -349,6 +358,10 @@ module top_chip_system #(
     .axi_req_i  (xbar_device_req[top_pkg::SRAM]),
     .axi_resp_o (xbar_device_resp[top_pkg::SRAM])
   );
+
+  // Rest of chip AXI passthrough
+  assign rest_of_chip_req_o                    = xbar_device_req[top_pkg::RestOfChip];
+  assign xbar_device_resp[top_pkg::RestOfChip] = rest_of_chip_resp_i;
 
   // Primary AXI crossbar
   axi_xbar #(

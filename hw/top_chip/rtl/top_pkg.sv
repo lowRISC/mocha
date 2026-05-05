@@ -17,11 +17,11 @@ package top_pkg;
   localparam int TL_DBW = (TL_DW>>3);
   localparam int TL_SZW = $clog2($clog2(TL_DBW)+1);
 
-  // AXI crossbar parameters
+  // Mocha AXI crossbar parameters
   localparam int AxiXbarHosts   = 1;
-  localparam int AxiXbarDevices = 5;
+  localparam int AxiXbarDevices = 6;
 
-  // AXI crossbar hosts and devices
+  // Mocha AXI crossbar hosts and devices
   typedef enum int unsigned {
     CVA6 = 0
   } axi_hosts_t;
@@ -30,8 +30,9 @@ package top_pkg;
     RomCtrlMem = 0,
     SRAM       = 1,
     Mailbox    = 2,
-    TlCrossbar = 3,
-    DRAM       = 4
+    RestOfChip = 3,
+    TlCrossbar = 4,
+    DRAM       = 5
   } axi_devices_t;
 
   typedef enum longint unsigned {
@@ -39,6 +40,7 @@ package top_pkg;
     SRAMBase       = 64'h1000_0000,
     DebugMemBase   = 64'h2000_0000,
     MailboxBase    = 64'h2001_0000,
+    RestOfChipBase = 64'h3000_0000,
     TlCrossbarBase = 64'h4000_0000,
     DRAMBase       = 64'h8000_0000
   } axi_addr_start_t;
@@ -48,6 +50,7 @@ package top_pkg;
   localparam longint unsigned SRAMLength         = 64'h0002_0000;
   localparam longint unsigned DebugMemLength     = 64'h0000_1000;
   localparam longint unsigned MailboxLength      = 64'h0001_0000;
+  localparam longint unsigned RestOfChipLength   = 64'h0000_8000;
   localparam longint unsigned TlCrossbarLength   = 64'h1000_0000;
   localparam longint unsigned DRAMPhysicalLength = 64'h4000_0000;
 
@@ -55,8 +58,32 @@ package top_pkg;
   localparam longint unsigned RomCtrlMemMask = RomCtrlMemLength - 1;
   localparam longint unsigned SRAMMask       = SRAMLength - 1;
   localparam longint unsigned MailboxMask    = MailboxLength - 1;
+  localparam longint unsigned RestOfChipMask = RestOfChipLength - 1;
   localparam longint unsigned TlCrossbarMask = TlCrossbarLength - 1;
   localparam longint unsigned DRAMMask       = DRAMPhysicalLength - 1;
+
+  // Rest of chip AXI crossbar parameters
+  localparam int RestOfChipAxiXbarHosts   = 1;
+  localparam int RestOfChipAxiXbarDevices = 1;
+
+  // Rest of chip AXI crossbar hosts and devices
+  typedef enum int unsigned {
+    MochaAXICrossbar = 0
+  } rest_of_chip_axi_hosts_t;
+
+  typedef enum int unsigned {
+    Ethernet = 0
+  } rest_of_chip_axi_devices_t;
+
+  typedef enum longint unsigned {
+    EthernetBase = 64'h3000_0000
+  } rest_of_chip_axi_addr_start_t;
+
+  // Memory lengths
+  localparam longint unsigned EthernetLength = 64'h0000_8000;
+
+  // Memory address masks
+  localparam longint unsigned EthernetMask = EthernetLength - 1;
 
   // Tag controller parameters
   localparam int     unsigned CapSizeBits              = 128;
