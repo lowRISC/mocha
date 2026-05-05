@@ -12,6 +12,11 @@
 // - Wolfgang Roenninger <wroennin@iis.ee.ethz.ch>
 // - Nicole Narr <narrn@ethz.ch>
 
+// registers.svh defines `FFARN and other register macros used below; included explicitly here
+// because FuseSoC -makelib isolation means macros from earlier compilation blocks don't persist.
+`include "common_cells/registers.svh"
+
+
 /// Protocol adapter which translates memory requests to the AXI4-Lite protocol.
 ///
 /// This module acts like an SRAM and makes AXI4-Lite requests downstream.

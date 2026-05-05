@@ -18,6 +18,12 @@
 `ifndef AXI_ASSIGN_SVH_
 `define AXI_ASSIGN_SVH_
 
+// common_cells/registers.svh defines `FF, `FFLARN, etc. and pulls in prim_assert.sv (which
+// defines `ASSERT, `ASSUME, etc.).  Included here explicitly because FuseSoC compiles each
+// file in an isolated -makelib block where macros from earlier blocks don't persist.
+`include "common_cells/registers.svh"
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Internal implementation for assigning one AXI struct or interface to another struct or interface.
 // The path to the signals on each side is defined by the `__sep*` arguments.  The `__opt_as`
