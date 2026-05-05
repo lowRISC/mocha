@@ -115,8 +115,8 @@ class rstmgr_reset_vseq extends rstmgr_base_vseq;
     expected_cpu_enable = 0;
 
     cfg.clk_rst_vif.wait_clks(8);
-    // Wait till rst_lc_n is inactive for non-aon.
-    `DV_WAIT(cfg.rstmgr_vif.resets_o.rst_lc_n[1])
+    // Wait till rst_por_aon_n is inactive for non-aon.
+    `DV_WAIT(cfg.rstmgr_vif.resets_o.rst_por_aon_n[1])
 
     check_reset_info(get_reset_code(start_reset, 0), {reset_name[start_reset], " reset"});
     check_alert_info_after_reset(expected_alert_dump, expected_alert_enable);
@@ -172,7 +172,7 @@ class rstmgr_reset_vseq extends rstmgr_base_vseq;
       reset_done();
 
       cfg.io_clk_rst_vif.wait_clks(8);
-      wait(cfg.rstmgr_vif.resets_o.rst_lc_n[1]);
+      wait(cfg.rstmgr_vif.resets_o.rst_por_aon_n[1]);
       check_reset_info(expected_reset_info_code);
       check_alert_info_after_reset(.alert_dump(expected_alert_dump),
                                    .enable(expected_alert_enable));
