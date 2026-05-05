@@ -11,6 +11,13 @@
 // __arst_n: asynchronous reset, active-low
 // __arst: asynchronous reset, active-high
 
+// prim_flop_macros.sv defines `PRIM_FLOP_A; must be included explicitly here
+// because FuseSoC compiles each file in an isolated -makelib block where macros
+// defined in earlier blocks (e.g. via prim_flop.sv -> prim_assert.sv) don't persist.
+`include "prim_flop_macros.sv"
+// prim_assert.sv defines `ASSUME and other assertion macros; included for the same reason.
+`include "prim_assert.sv"
+
 `ifndef LOWRISC_COMMON_CELLS_REGISTERS_SVH_
 `define LOWRISC_COMMON_CELLS_REGISTERS_SVH_
 

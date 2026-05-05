@@ -12,6 +12,7 @@ filesets:
       - lowrisc:prim:fifo
       - lowrisc:prim:util
     files:
+      - include/common_cells/prim_flop_macros.sv: {is_include_file: true, include_path: include/common_cells}
       - include/common_cells/registers.svh: {is_include_file: true, include_path: include}
       - rtl/counter.sv
       - rtl/delta_counter.sv
