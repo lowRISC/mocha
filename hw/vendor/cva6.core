@@ -29,6 +29,7 @@ filesets:
       # CVA6.
       - cva6_cheri/core/cva6.sv
       - cva6_cheri/core/cva6_rvfi_probes.sv
+      - cva6_cheri/core/cva6_rvfi.sv
       - cva6_cheri/core/alu.sv
       - cva6_cheri/core/branch_unit.sv
       - cva6_cheri/core/compressed_decoder.sv
