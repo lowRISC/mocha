@@ -8,6 +8,7 @@
 `include "ip/rv_timer.rdl"
 `include "ip/plic.rdl"
 `include "ip/spi_device.rdl"
+`include "ip/ethernet.rdl"
 
 addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;};
 
@@ -26,7 +27,7 @@ addrmap top_mocha {
 
   reserved DV_SW_IFC @ 0x2002_0000;
 
-  reserved ETHERNET @ 0x3000_0000;
+  ethernet ETHERNET @ 0x3000_0000;
 
   reserved GPIO @ 0x4000_0000;
 
