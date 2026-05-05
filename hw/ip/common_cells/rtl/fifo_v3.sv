@@ -54,7 +54,7 @@ module fifo_v3 #(
   );
 
   assign full_o  = full | err | ~wready;
-  assign empty_o = (usage == '0) | err;
+  assign empty_o = ((usage == '0) & ~full) | err;
   assign usage_o = usage;
 
   assign unused_testmode = testmode_i;
