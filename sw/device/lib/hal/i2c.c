@@ -47,9 +47,6 @@ void i2c_init(i2c_t i2c)
                                          (rnd_up_div(250, SYSCLK_NS) << I2C_TIMING3_TSU_DAT));
     DEV_WRITE(i2c + I2C_TIMING4_REG, (rnd_up_div(4700, SYSCLK_NS) << I2C_TIMING4_T_BUF) |
                                          (rnd_up_div(4000, SYSCLK_NS) << I2C_TIMING4_TSU_STO));
-
-    // -- Configure IP for Controller mode --
-    DEV_WRITE(i2c + I2C_CTRL_REG, (1u << I2C_CTRL_ENABLEHOST));
 }
 
 bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
