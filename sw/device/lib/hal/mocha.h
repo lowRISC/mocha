@@ -7,6 +7,7 @@
 #pragma once
 
 #include "hal/clkmgr.h"
+#include "hal/ethernet.h"
 #include "hal/gpio.h"
 #include "hal/i2c.h"
 #include "hal/mailbox.h"
@@ -33,6 +34,7 @@ static const uintptr_t dram_base = 0x80000000ul;
 /* In order of memory map */
 rom_t mocha_system_rom(void);
 mailbox_t mocha_system_mailbox(void);
+ethernet_t mocha_system_ethernet(void);
 gpio_t mocha_system_gpio(void);
 clkmgr_t mocha_system_clkmgr(void);
 rstmgr_t mocha_system_rstmgr(void);
