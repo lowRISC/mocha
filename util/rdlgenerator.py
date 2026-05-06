@@ -5,6 +5,7 @@
 
 import argparse
 import json
+import os
 import shlex
 import sys
 from pathlib import Path
@@ -590,6 +591,10 @@ def gen_device_register_c_headers(args) -> None:
             f.write("\n#pragma once\n\n#include <stdbool.h>\n#include <stdint.h>\n\n")
             # emit the generated C code.
             f.write(output)
+
+    # Format generated headers
+    cmd_args = ["--", "util/clang_format.py", f"--root={args.out_dir}"]
+    os.execvp("python", cmd_args)
 
 
 def main():
