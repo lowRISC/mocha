@@ -126,16 +126,18 @@ module axi_sim_mem #(
 
   for (genvar i = 0; i < NumPorts; i++) begin
     initial begin
-      automatic ar_t ar_queue[$];
-      automatic aw_t aw_queue[$];
-      automatic b_t b_queue[$];
-      automatic shortint unsigned r_cnt = 0, w_cnt = 0;
       axi_rsp_o[i] = '0;
       // Monitor interface
       mon_w[i] = '0;
       mon_r[i] = '0;
-      wait (rst_ni);
-      fork
+      // Outer loop re-declares queues/counters clean on every reset cycle.
+      forever begin
+        automatic ar_t ar_queue[$];
+        automatic aw_t aw_queue[$];
+        automatic b_t b_queue[$];
+        automatic shortint unsigned r_cnt = 0, w_cnt = 0;
+        wait (rst_ni);
+        fork
         // AW
         forever begin
           @(posedge clk_i);
@@ -295,7 +297,23 @@ module axi_sim_mem #(
             end
           end
         end
-      join
+        // Reset monitor: when rst_ni falls, kill all AXI handler threads.
+        begin
+          // The AXI handler threads share local automatic queues (ar_queue, aw_queue, b_queue)
+          // and burst counters (r_cnt, w_cnt) that are invisible to hierarchical access and were
+          // never reset between tests, causing stale state when a transaction was in-flight at
+          // reset. Fix: wrap the fork in a forever loop so automatics are re-declared fresh each
+          // reset cycle, and add a reset monitor thread so join_any + disable fork tears down all
+          // handlers on negedge rst_ni.
+          @(negedge rst_ni);
+        end
+        join_any
+        disable fork;
+        axi_rsp_o[i] = '0;
+        mon_w[i] = '0;
+        mon_r[i] = '0;
+        error_happened[i] = axi_pkg::RESP_OKAY;
+      end
     end
 
     // Assign the monitor output in the next clock cycle.  Rationale: We only know whether we are
