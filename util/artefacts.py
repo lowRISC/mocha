@@ -19,6 +19,45 @@ COMMANDS: list[list[str]] = [
     # lockfiles
     ["uv", "lock"],
     ["nix", "flake", "lock"],
+    # rdl code gen
+    ["mkdir", "-p", "build/rdl"],
+    ["rdl2ot", "export-rtl", "--soc", "rdl/mocha.rdl", "build/rdl"],
+    # rdl: generate device register headers
+    [
+        "util/rdlgenerator.py",
+        "gen-device-headers",
+        "build/rdl/rdl.json",
+        "sw/device/lib/hal/autogen",
+    ],
+    # rdl: generate linkerscript
+    [
+        "util/rdlgenerator.py",
+        "gen-linker-script",
+        "build/rdl/rdl.json",
+        "sw/device/lib/boot/memory.ld",
+    ],
+    # rdl: generate memory map image
+    [
+        "util/rdlgenerator.py",
+        "gen-memory-map",
+        "build/rdl/rdl.json",
+        "doc/img/memmap.svg",
+    ],
+    # generate devicetree
+    [
+        "dtc",
+        "-I",
+        "dts",
+        "sw/device/devicetree/mocha.dts",
+        "-O",
+        "asm",
+        "-o",
+        "sw/device/devicetree/mocha.S",
+        "--align",
+        "64",
+    ],
+    # documentation
+    ["d2", "doc/img/mocha.d2"],
     # crossbar generator
     [
         "hw/vendor/lowrisc_ip/util/tlgen.py",
@@ -108,45 +147,6 @@ COMMANDS: list[list[str]] = [
     ["util/vendor.py", "hw/vendor/pulp_register_interface.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/sonata_system.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/tagctrl.vendor.hjson"],
-    # rdl code gen
-    ["mkdir", "-p", "build/rdl"],
-    ["rdl2ot", "export-rtl", "--soc", "rdl/mocha.rdl", "build/rdl"],
-    # rdl: generate device register headers
-    [
-        "util/rdlgenerator.py",
-        "gen-device-headers",
-        "build/rdl/rdl.json",
-        "sw/device/lib/hal/autogen",
-    ],
-    # rdl: generate linkerscript
-    [
-        "util/rdlgenerator.py",
-        "gen-linker-script",
-        "build/rdl/rdl.json",
-        "sw/device/lib/boot/memory.ld",
-    ],
-    # rdl: generate memory map image
-    [
-        "util/rdlgenerator.py",
-        "gen-memory-map",
-        "build/rdl/rdl.json",
-        "doc/img/memmap.svg",
-    ],
-    # generate devicetree
-    [
-        "dtc",
-        "-I",
-        "dts",
-        "sw/device/devicetree/mocha.dts",
-        "-O",
-        "asm",
-        "-o",
-        "sw/device/devicetree/mocha.S",
-        "--align",
-        "64",
-    ],
-    # documentation
-    ["d2", "doc/img/mocha.d2"],
 ]
 
 
