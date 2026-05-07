@@ -201,7 +201,7 @@ static size_t format_capability(char *buf, const uintptr_t value)
     buf[total++] = '[';
 
     /* capability permissions to check */
-    cheri_perms_t perms[7] = {
+    size_t perms[7] = {
         CHERI_PERM_READ,
         CHERI_PERM_WRITE,
         CHERI_PERM_EXECUTE,
