@@ -106,8 +106,17 @@ typedef struct {
 
 void i2c_init(i2c_t i2c, i2c_speed_t speed);
 
-bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
-uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr);
+// Transmits a single byte to the target
+void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
+
+// Receive a single byte from the target
+void i2c_read_byte(i2c_t i2c, uint8_t addr);
+
+// Check if the write was successful
+bool check_rd_xfer_status(i2c_t i2c);
+
+// checks if the read was successful
+bool check_wr_xfer_status(i2c_t i2c);
 
 // Enable I2C in controller mode
 void enable_controller_mode(i2c_t i2c);
