@@ -10,6 +10,7 @@
 
 /* device IRQs at the PLIC */
 enum [[clang::flag_enum]] mocha_system_irq : uint32_t {
+    mocha_system_irq_none = (0),
     mocha_system_irq_invalid = (1u << 0),
     mocha_system_irq_unmapped_1 = (1u << 1),
     mocha_system_irq_unmapped_2 = (1u << 2),
