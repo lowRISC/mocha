@@ -90,8 +90,17 @@
 
 void i2c_init(i2c_t i2c);
 
-bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
-uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr);
+// Transmits a single byte to the target
+void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
+
+// Receive a single byte from the target
+void i2c_read_byte(i2c_t i2c, uint8_t addr);
+
+// Wait for the read transfer to complete by checking interrupt state and status register fields
+bool i2c_wait_read_finish(i2c_t i2c);
+
+// Wait for the write transfer to complete by checking interrupt state and status register fields
+bool i2c_wait_write_finish(i2c_t i2c);
 
 // Enable I2C in controller mode
 void enable_controller_mode(i2c_t i2c);

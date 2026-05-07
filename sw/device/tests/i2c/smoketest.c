@@ -12,14 +12,25 @@
 static bool as6212_test(i2c_t i2c)
 {
     // Write the desired register index
-    if (!i2c_write_byte(i2c, 0x48u, 0u)) {
+    i2c_write_byte(i2c, 0x48u, 0u);
+
+    // Check if the write was successful
+    if (!i2c_wait_write_finish(i2c)) {
         return false;
     }
+
     // Read current temperature
-    uint8_t byte = i2c_read_byte(i2c, 0x48u);
-    if (byte == 0xFFu /* error value */) {
+    i2c_read_byte(i2c, 0x48u);
+
+    // Check if the read was successful
+    if (!i2c_wait_read_finish(i2c)) {
         return false;
     }
+
+    // If the read was successful, then retrieve the data from the fifo.
+    i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
+    uint8_t byte = rdata_reg.rdata;
+
     int16_t tval = byte; // signed, as temperature can be negative
     tval <<= 8; // first byte is the most-significant byte of two
     tval >>= 7; // convert from units of 1/128 degC to 1 degC

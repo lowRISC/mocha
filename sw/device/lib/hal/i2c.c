@@ -60,7 +60,7 @@ void i2c_init(i2c_t i2c)
     VOLATILE_WRITE(i2c->timing4, t4_reg);
 }
 
-bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
+void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
 {
     // Reset FMT FIFO (because we currently don't clean-up after errors)
     i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
@@ -79,24 +79,9 @@ bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
     fdata_reg.start = 0;
     fdata_reg.stop = 1u;
     VOLATILE_WRITE(i2c->fdata, fdata_reg);
-
-    // Wait for transaction to complete and report simple succeed/fail
-    for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
-        i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
-        if (i2c_intr_state_reg & i2c_intr_controller_halt) {
-            return false; // transaction failed
-        }
-        if (i2c_intr_state_reg & i2c_intr_cmd_complete) {
-            i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
-            if (i2c_status_reg & i2c_status_fmtempty) {
-                return true; // transaction succeeded
-            }
-        }
-    }
-    return false; // timeout
 }
 
-uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr)
+void i2c_read_byte(i2c_t i2c, uint8_t addr)
 {
     // Reset FMT FIFO (because we currently don't clean-up after errors)
     i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
@@ -116,21 +101,38 @@ uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr)
     fdata_reg.start = 0;
     fdata_reg.stop = 1u;
     VOLATILE_WRITE(i2c->fdata, fdata_reg);
+}
 
-    // Wait for transaction to complete and return either read data or 0xFF
-    for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
+bool i2c_wait_write_finish(i2c_t i2c)
+{
+    // Wait for transaction to complete and report simple succeed / fail
+    while (true) {
         i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
         if (i2c_intr_state_reg & i2c_intr_controller_halt) {
-            return 0xFF; // transaction failed
+            return false; // Transaction failed
+        }
+        if (i2c_intr_state_reg & i2c_intr_cmd_complete) {
+            i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
+            if (i2c_status_reg & i2c_status_fmtempty) {
+                return true; // Transaction succeeded
+            }
+        }
+    }
+}
+
+bool i2c_wait_read_finish(i2c_t i2c)
+{
+    // Wait for transaction to complete and report simple succeed / fail
+    while (true) {
+        i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
+        if (i2c_intr_state_reg & i2c_intr_controller_halt) {
+            return false; // Transaction failed
         }
         i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
         if (i2c_status_reg & i2c_status_fmtempty) {
-            // transaction succeeded, return read data
-            i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
-            return rdata_reg.rdata;
+            return true;
         }
     }
-    return 0xFF; // timeout
 }
 
 void enable_controller_mode(i2c_t i2c)

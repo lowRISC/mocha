@@ -29,9 +29,12 @@ int main(void)
         timer_busy_sleep_us(timer, 1000u);
 
         // Read current temperature from an AS6212 I^2C-bus sensor and print the value
-        if (i2c_write_byte(i2c, 0x48u, 0u)) { // select TVAL reg; also a presence check
-            uint16_t sensor_reading = i2c_read_byte(i2c, 0x48u); // read TVAl reg
-            if (sensor_reading != 0xFF) { // only print if we get a non-error value
+        i2c_write_byte(i2c, 0x48u, 0u);
+        if (i2c_wait_write_finish(i2c)) { // select TVAL reg; also a presence check
+            i2c_read_byte(i2c, 0x48u);
+            if (i2c_wait_read_finish(i2c)) {
+                i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
+                uint16_t sensor_reading = rdata_reg.rdata; // read TVAl reg
                 uprintf(uart, "Temperature: 0x%x degC\n",
                         (sensor_reading << 1)); // no decimal printf
             }
