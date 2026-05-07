@@ -34,7 +34,8 @@ jobs:
       - name: Build verilator
         run: |
           JOBS=$(($(nproc) / 4))
-          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
+          fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator \
+            --verilator_options="-j ${JOBS} --threads 2 --trace-threads 2" --make_options="-j ${JOBS}"
 
       - name: Run Slow Verilator tests
         # Display the tests that are about to be ran with '--show-only' first.
