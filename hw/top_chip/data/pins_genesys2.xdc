@@ -48,7 +48,7 @@ set_property -dict { PACKAGE_PIN Y23   IOSTANDARD LVCMOS33 } [get_ports { uart_t
 set_property -dict { PACKAGE_PIN T26   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { i2c_scl_io }];
 set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { i2c_sda_io }];
 
-## SPI (PMOD Header JD)
+## SPI Device (PMOD Header JD)
 set_property -dict { PACKAGE_PIN W28   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_o  }];
 set_property -dict { PACKAGE_PIN W27   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_i  }];
 set_property -dict { PACKAGE_PIN W29   IOSTANDARD LVCMOS33 PULLTYPE PULLUP   } [get_ports { spi_device_csb_i }];
@@ -71,3 +71,18 @@ set_property -dict { PACKAGE_PIN AJ11  IOSTANDARD LVCMOS15 } [get_ports { eth_tx
 set_property -dict { PACKAGE_PIN AK10  IOSTANDARD LVCMOS15 } [get_ports { eth_tx_d[3]  }];
 set_property -dict { PACKAGE_PIN AF12  IOSTANDARD LVCMOS15 } [get_ports { eth_mdc      }];
 set_property -dict { PACKAGE_PIN AG12  IOSTANDARD LVCMOS15 } [get_ports { eth_mdio     }];
+
+## SPI Host (MicroSD card slot)
+set_property -dict { PACKAGE_PIN R28   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sck_o }]; # SD_SCLK
+set_property -dict { PACKAGE_PIN R26   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sd_i  }]; # SD_DAT0
+set_property -dict { PACKAGE_PIN T30   IOSTANDARD LVCMOS33 } [get_ports { spi_host_csb_o }]; # SD_DAT3
+set_property -dict { PACKAGE_PIN R29   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sd_o  }]; # SD_CMD
+# Micro SD card presence detect line (low = card present)
+set_property -dict { PACKAGE_PIN P28   IOSTANDARD LVCMOS33 } [get_ports { sd_cd }];
+# Micro SD card power (VDD) control (low = PWR ON, ext. pull-up)
+set_property -dict { PACKAGE_PIN AE24  IOSTANDARD LVCMOS33 } [get_ports { sd_reset }];
+# SPI Host signal copies for external logic analyser on PMOD "JB"
+set_property -dict { PACKAGE_PIN W26   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sck_o_dbg_o }]; # JB2_N (PMOD 4)
+set_property -dict { PACKAGE_PIN V25   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sd_i_dbg_o  }]; # JB2_P (PMOD 3)
+set_property -dict { PACKAGE_PIN V29   IOSTANDARD LVCMOS33 } [get_ports { spi_host_csb_o_dbg_o }]; # JB1_P (PMOD 1)
+set_property -dict { PACKAGE_PIN V30   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sd_o_dbg_o  }]; # JB1_N (PMOD 2)

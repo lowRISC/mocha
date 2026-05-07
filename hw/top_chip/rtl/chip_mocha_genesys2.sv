@@ -26,12 +26,25 @@ module chip_mocha_genesys2 #(
   inout  logic i2c_scl_io,
   inout  logic i2c_sda_io,
 
-  // SPI
+  // SPI Device
   input  logic spi_device_sck_i,
   input  logic spi_device_csb_i,
   input  logic spi_device_sd_i,
   output logic spi_device_sd_o,
   output logic spien,
+
+  // SPI Host
+  output logic spi_host_sck_o,
+  output logic spi_host_csb_o,
+  input  logic spi_host_sd_i,
+  output logic spi_host_sd_o,
+  input  logic sd_cd,
+  output logic sd_reset,
+  // SPI Host signal copies for external logic analyser on PMOD "JB"
+  output logic spi_host_sck_o_dbg_o,
+  output logic spi_host_csb_o_dbg_o,
+  output logic spi_host_sd_i_dbg_o,
+  output logic spi_host_sd_o_dbg_o,
 
   // DDR3
   inout  wire  [31:0] ddr3_dq,
@@ -116,9 +129,10 @@ module chip_mocha_genesys2 #(
   logic        i2c_scl_en_output, i2c_sda_en_output;
   logic [3:0]  qspi_device_sdo;
   logic [3:0]  qspi_device_sdo_en;
-
-  logic [3:0] spi_host_sd;
-  logic [3:0] spi_host_sd_en;
+  logic        spi_host_sck_output,    spi_host_csb_output;
+  logic        spi_host_sck_en_output, spi_host_csb_en_output;
+  logic [3:0]  spi_host_sd_output;
+  logic [3:0]  spi_host_sd_en_output;
 
   // Noise source signals
   logic                                      rng_enable;
@@ -163,6 +177,11 @@ module chip_mocha_genesys2 #(
   end
 
   assign fpga_rst_n_sync_cfg = fpga_rst_n_shreg[0];
+
+  // SD Card reset/power-switch - unused for now.
+  // Drive low to switch the SD card power ON, or high to switch power OFF.
+  // Connect this up to a GPIO output if we have SD card reliability issues.
+  assign sd_reset = 1'b0;
 
   // External reset synchroniser
   // Synchronisation is required here because the external reset is used in logic here,
@@ -218,7 +237,7 @@ module chip_mocha_genesys2 #(
     .rst_ni   (rst_n_sync_50m),
 
     // GPIO
-    .gpio_i    ({23'd0, gpio_i}),
+    .gpio_i    ({sd_cd, 31'(gpio_i)}),
     .gpio_o    (gpio_outputs),
     .gpio_en_o (gpio_en_outputs),
 
@@ -244,21 +263,17 @@ module chip_mocha_genesys2 #(
     .spi_device_csb_i     (spi_device_csb_i),
     .spi_device_sd_o      (qspi_device_sdo),
     .spi_device_sd_en_o   (qspi_device_sdo_en),
-    .spi_device_sd_i      ({3'h0, spi_device_sd_i}), // SPI MOSI = QSPI DQ0
+    .spi_device_sd_i      ({3'h0, spi_device_sd_i}), // SPI COPI = QSPI DQ0
     .spi_device_tpm_csb_i ('0),
 
     // SPI host
-    .spi_host_sck_o    ( ),
-    .spi_host_sck_en_o ( ),
-    .spi_host_csb_o    ( ),
-    .spi_host_csb_en_o ( ),
-    .spi_host_sd_o     (spi_host_sd),
-    .spi_host_sd_en_o  (spi_host_sd_en),
-    // Mapping output 0 to input 1 because legacy SPI does not allow
-    // bi-directional wires.
-    // This only works in standard mode where sd_o[0]=COPI and
-    // sd_i[1]=CIPO.
-    .spi_host_sd_i     ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
+    .spi_host_sck_o    (spi_host_sck_output),
+    .spi_host_sck_en_o (spi_host_sck_output_en),
+    .spi_host_csb_o    (spi_host_csb_output),
+    .spi_host_csb_en_o (spi_host_csb_output_en),
+    .spi_host_sd_o     (spi_host_sd_output),
+    .spi_host_sd_en_o  (spi_host_sd_en_output),
+    .spi_host_sd_i     ({2'b00, spi_host_sd_i, 1'b0}), // SPI CIPO = QSPI DQ1
 
     // Entropy source
     .entropy_src_rng_enable_o (rng_enable),
@@ -301,11 +316,48 @@ module chip_mocha_genesys2 #(
     .O (i2c_sda_input)
   );
 
-  // SPI tri-state output driver
-  OBUFT spi_obuft (
-    .I(qspi_device_sdo[1]),     // SPI MISO = QSPI DQ1
-    .T(~qspi_device_sdo_en[1]), // SPI MISO = QSPI DQ1
+  // SPI device tri-state output driver
+  OBUFT spi_device_obuft (
+    .I(qspi_device_sdo[1]),     // SPI CIPO = QSPI DQ1
+    .T(~qspi_device_sdo_en[1]), // SPI CIPO = QSPI DQ1
     .O(spi_device_sd_o)
+  );
+
+  // SPI host tri-state output drivers
+  OBUFT spi_host_sck_obuft (
+    .I(spi_host_sck_output),
+    .T(~spi_host_sck_output_en),
+    .O(spi_host_sck_o)
+  );
+  OBUFT spi_host_csb_obuft (
+    .I(spi_host_csb_output),
+    .T(~spi_host_csb_output_en),
+    .O(spi_host_csb_o)
+  );
+  // Legacy SPI present in SD cards does not allow bi-directional wires.
+  // Work in standard mode where sd_o[0]=COPI and sd_i[1]=CIPO.
+  // Other data outputs are unused.
+  OBUFT spi_host_sd_obuft (
+    .I(spi_host_sd_output[0]),     // SPI COPI = QSPI DQ0
+    .T(~spi_host_sd_en_output[0]), // SPI COPI = QSPI DQ0
+    .O(spi_host_sd_o)
+  );
+  // SPI Host signal copies for external logic analyser on PMOD "JB"
+  assign spi_host_sd_i_dbg_o = spi_host_sd_i;
+  OBUFT spi_host_sck_obuft_dbg (
+    .I(spi_host_sck_output),
+    .T(~spi_host_sck_output_en),
+    .O(spi_host_sck_o_dbg_o)
+  );
+  OBUFT spi_host_csb_obuft_dbg (
+    .I(spi_host_csb_output),
+    .T(~spi_host_csb_output_en),
+    .O(spi_host_csb_o_dbg_o)
+  );
+  OBUFT spi_host_sd_obuft_dbg (
+    .I(spi_host_sd_output[0]),     // SPI COPI = QSPI DQ0
+    .T(~spi_host_sd_en_output[0]), // SPI COPI = QSPI DQ0
+    .O(spi_host_sd_o_dbg_o)
   );
 
   // Noise source

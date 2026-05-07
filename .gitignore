@@ -27,3 +27,6 @@ __pycache__
 scratch/
 # clangd
 .cache
+
+# SD card image file
+sd.img
