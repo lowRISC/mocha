@@ -90,11 +90,11 @@
 
 void i2c_init(i2c_t i2c);
 
-// Transmits a single byte to the target
-void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
+// Transmits multiple bytes to the target
+void i2c_write_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_bytes);
 
-// Receive a single byte from the target
-void i2c_read_byte(i2c_t i2c, uint8_t addr);
+// Receive multiple bytes from the target
+void i2c_read_bytes(i2c_t i2c, uint8_t addr, uint8_t num_bytes);
 
 // Wait for the read transfer to complete by checking interrupt state and status register fields
 bool i2c_wait_read_finish(i2c_t i2c);
