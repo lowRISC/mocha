@@ -34,7 +34,7 @@ module axi_sram #(
   logic [    top_pkg::AxiDataWidth-1:0] sram_wmask;
   logic [          TagBitAddrWidth-1:0] sram_tag_bit_addr;
   logic [             TagAddrWidth-1:0] sram_tag_word_addr;
-  logic [               TagBitWith-1:0] sram_tag_bit_select;
+  logic [               TagBitWith-1:0] sram_tag_bit_select_d, sram_tag_bit_select_q;
   logic [    top_pkg::AxiDataWidth-1:0] sram_tag_wmask;
   logic [    top_pkg::AxiDataWidth-1:0] sram_tag_wdata;
   logic [    top_pkg::AxiDataWidth-1:0] sram_tag_rdata;
@@ -84,17 +84,17 @@ module axi_sram #(
   );
 
   // Tag bit address calculation
-  assign sram_tag_bit_addr   = TagBitAddrWidth'((sram_addr & top_pkg::SRAMMask) >>
-                               $clog2(top_pkg::CapSizeBits / 8));
-  assign sram_tag_word_addr  = TagAddrWidth'(sram_tag_bit_addr >>
-                               $clog2(top_pkg::AxiDataWidth));
-  assign sram_tag_bit_select = sram_tag_bit_addr[$clog2(top_pkg::AxiDataWidth)-1:0];
+  assign sram_tag_bit_addr     = TagBitAddrWidth'((sram_addr & top_pkg::SRAMMask) >>
+                                 $clog2(top_pkg::CapSizeBits / 8));
+  assign sram_tag_word_addr    = TagAddrWidth'(sram_tag_bit_addr >>
+                                 $clog2(top_pkg::AxiDataWidth));
+  assign sram_tag_bit_select_d = sram_tag_bit_addr[$clog2(top_pkg::AxiDataWidth)-1:0];
 
   // Shift tag bit to proper position within SRAM word
-  assign sram_tag_wmask      = 1'b1 << sram_tag_bit_select;
-  assign sram_tag_wdata      = { {top_pkg::AxiDataWidth-1{1'b0}}, sram_cheri_w_tag } <<
-                               sram_tag_bit_select;
-  assign sram_cheri_r_tag    = sram_tag_rdata[sram_tag_bit_select];
+  assign sram_tag_wmask   = 1'b1 << sram_tag_bit_select_d;
+  assign sram_tag_wdata   = { {top_pkg::AxiDataWidth-1{1'b0}}, sram_cheri_w_tag } <<
+                               sram_tag_bit_select_d;
+  assign sram_cheri_r_tag = sram_tag_rdata[sram_tag_bit_select_q];
 
   // Tag RAM
   prim_ram_1p #(
@@ -148,11 +148,13 @@ module axi_sram #(
   // Single-cycle read response.
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
-      sram_rvalid <= 1'b0;
-      sram_we_q   <= 1'b0;
+      sram_rvalid           <= 1'b0;
+      sram_we_q             <= 1'b0;
+      sram_tag_bit_select_q <= '0;
     end else begin
-      sram_rvalid <= sram_req; // Generate rvalid strobes even for writes
-      sram_we_q   <= sram_we_d;
+      sram_rvalid           <= sram_req; // Generate rvalid strobes even for writes
+      sram_we_q             <= sram_we_d;
+      sram_tag_bit_select_q <= sram_tag_bit_select_d;
     end
   end
 
