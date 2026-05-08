@@ -214,6 +214,8 @@ Some peripheral tests require additional hardware to be connected to the Genesys
 
 - I^2C: AS6212 Temperature Sensor connected to header "JA" according to PMOD Interface Type 6 (I^2C).
   - i.e. header "JA" top-row left-to-right: VCC, GND, SDA, SCL, (NC), (NC)
+- SPI Host: a FAT32-formatted SDHC/SDXC microSD card containing the "lorem.ips" file inserted in the onboard microSD slot.
+  - See lorem_text.h for details on the file contents.
 
 ## Verification
 

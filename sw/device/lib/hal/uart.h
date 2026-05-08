@@ -6,6 +6,7 @@
 
 #include "autogen/uart.h"
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define BAUD_RATE (1000000u)
