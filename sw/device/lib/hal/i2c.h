@@ -90,17 +90,17 @@
 
 void i2c_init(i2c_t i2c);
 
-// Transmits a single byte to the target
-void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
+// Transmits multiple bytes to the target
+void i2c_write_n_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_wr_bytes);
 
-// Receive a single byte from the target
-void i2c_read_byte(i2c_t i2c, uint8_t addr);
+// Receive n bytes from the target
+void i2c_read_n_bytes(i2c_t i2c, uint8_t addr, uint8_t num_rd_bytes);
 
 // Check if the write was successful
-bool check_rd_xfer_status(i2c_t i2c);
+bool wait_rd_xfer_status(i2c_t i2c);
 
 // checks if the read was successful
-bool check_wr_xfer_status(i2c_t i2c);
+bool wait_wr_xfer_status(i2c_t i2c);
 
 // Enable I2C in controller mode
 void enable_controller_mode(i2c_t i2c);

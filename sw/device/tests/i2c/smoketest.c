@@ -11,19 +11,21 @@
 // Read temperature from an AS6212 sensor (default address 0x48)
 static bool as6212_test(i2c_t i2c)
 {
+    uint8_t w_data = 0;
+
     // Write the desired register index
-    i2c_write_byte(i2c, 0x48u, 0u);
+    i2c_write_n_bytes(i2c, 0x48u, &w_data, 1);
 
     // Check if the write was successful
-    if (!check_wr_xfer_status(i2c)) {
+    if (!wait_wr_xfer_status(i2c)) {
         return false;
     }
 
     // Read current temperature
-    i2c_read_byte(i2c, 0x48u);
+    i2c_read_n_bytes(i2c, 0x48u, 1);
 
     // Check if the read was successful
-    if (!check_rd_xfer_status(i2c)) {
+    if (!wait_rd_xfer_status(i2c)) {
         return false;
     }
 
