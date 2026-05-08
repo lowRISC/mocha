@@ -1,0 +1,340 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0 */
+
+`include "udp.rdl"
+
+addrmap clkmgr #(
+    longint NumGroups = 2,
+    longint NumSwGateableClocks = 1,
+    longint NumHintableClocks = 1,
+    longint NumAlerts = 2
+){
+    bus_interface_cfg = BusInterfaceCfg'{
+        racl_support : false,
+        direction : BusDirection::Device,
+        protocol : BusProtocol::TlUl,
+        hier_path : "u_reg"
+    };
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "clkmgr_out";
+        inter_mod_package = "clkmgr_pkg";
+    } CLOCKS;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "clkmgr_cg_en";
+        inter_mod_package = "clkmgr_pkg";
+    } CG_EN;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReq;
+        inter_mod_struct = "mubi4";
+        inter_mod_package = "prim_mubi_pkg";
+    } JITTER_EN;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "pwr_clk";
+    } PWR;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModRecv;
+        inter_mod_struct = "mubi4";
+        inter_mod_package = "prim_mubi_pkg";
+    } IDLE;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::InterModReqRsp;
+        inter_mod_struct = "tl";
+        inter_mod_package = "tlul_pkg";
+    } TL;
+
+    signal {
+        desc = "This recoverable alert is triggered when there are measurement errors.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } RECOV_FAULT;
+
+    signal {
+        desc = "This fatal alert is triggered when a fatal TL-UL bus integrity fault is detected.";
+        signalwidth = 0x1;
+        sigtype = SigType::Alert;
+    } FATAL_FAULT;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_ROOT_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_MAIN_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_MAIN_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_IO_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_IO_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } CLK_AON_I;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_AON_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_ROOT_MAIN_NI;
+
+    signal {
+        signalwidth = 0x1;
+        sigtype = SigType::Sync;
+    } RST_ROOT_IO_NI;
+
+    external reg {
+        desc = "Alert Test Register";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } RECOV_FAULT[0:0];
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            swmod = true;
+            desc = "Write 1 to trigger one alert event of this kind.";
+        } FATAL_FAULT[1:1];
+    } ALERT_TEST @ 0x0;
+
+    reg {
+        desc = "Jitter write enable";
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = na;
+            reset = true;
+            desc = "When 1, the value of !!JITTER_ENABLE can be changed.  When 0, writes have noeffect.";
+        } EN[0:0];
+    } JITTER_REGWEN @ 0x10;
+
+    reg {
+        desc = "Enable jittery clock";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x9;
+            desc = "Enable jittery clock.A value of kMultiBitBool4False disables the jittery clock,while all other values enable jittery clock.";
+            encode = MultiBitBool4;
+        } VAL[3:0];
+    } JITTER_ENABLE @ 0x14;
+
+    reg {
+        desc = "Clock enable for software gateable clocks.These clocks are directly controlled by software.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "0 CLK_IO_PERI is disabled.1 CLK_IO_PERI is enabled.";
+        } CLK_IO_PERI_EN[0:0];
+    } CLK_ENABLES @ 0x18;
+
+    reg {
+        desc = "Clock hint for software gateable transactional clocks during active mode.During low power mode, all clocks are gated off regardless of the software hint.Transactional clocks are not fully controlled by software.  Instead software provides only a disable hint.When software provides a disable hint, the clock manager checks to see if the associated hardware block is idle.If the hardware block is idle, then the clock is disabled.If the hardware block is not idle, the clock is kept on.For the enable case, the software hint is immediately honored and the clock turned on.  Hardware does not provide anyfeedback in this case.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x1;
+            desc = "0 CLK_MAIN_HINT can be disabled.1 CLK_MAIN_HINT is enabled.";
+        } CLK_MAIN_HINT_HINT[0:0];
+    } CLK_HINTS @ 0x1C;
+
+    reg {
+        desc = "Since the final state of !!CLK_HINTS is not always determined by software,this register provides read feedback for the current clock state.";
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x1;
+            desc = "0 CLK_MAIN_HINT is disabled.1 CLK_MAIN_HINT is enabled.";
+        } CLK_MAIN_HINT_VAL[0:0];
+    } CLK_HINTS_STATUS @ 0x20;
+
+    reg {
+        desc = "Measurement control write enable";
+        field {
+            sw = rw;
+            onwrite = wzc;
+            hw = rw;
+            reset = true;
+            desc = "When 1, the value of the measurement control can be set.  When 0, writes have noeffect.";
+        } EN[0:0];
+    } MEASURE_CTRL_REGWEN @ 0x24;
+
+    reg {
+        desc = "Enable for measurement control";
+        field {
+            sw = rw;
+            hw = rw;
+            reset = 0x9;
+            desc = "Enable measurement for io";
+            encode = MultiBitBool4;
+        } EN[3:0];
+    } IO_MEAS_CTRL_EN @ 0x28;
+
+    reg {
+        shadowed = true;
+        desc = "Configuration controls for io measurement.The threshold fields are made wider than required (by 1 bit) to ensurethere is room to adjust for measurement inaccuracies.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x8a;
+            desc = "Max threshold for io measurement";
+        } HI[8:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x76;
+            desc = "Min threshold for io measurement";
+        } LO[17:9];
+    } IO_MEAS_CTRL_SHADOWED @ 0x2C;
+
+    reg {
+        desc = "Enable for measurement control";
+        field {
+            sw = rw;
+            hw = rw;
+            reset = 0x9;
+            desc = "Enable measurement for main";
+            encode = MultiBitBool4;
+        } EN[3:0];
+    } MAIN_MEAS_CTRL_EN @ 0x30;
+
+    reg {
+        shadowed = true;
+        desc = "Configuration controls for main measurement.The threshold fields are made wider than required (by 1 bit) to ensurethere is room to adjust for measurement inaccuracies.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x96;
+            desc = "Max threshold for main measurement";
+        } HI[8:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x82;
+            desc = "Min threshold for main measurement";
+        } LO[17:9];
+    } MAIN_MEAS_CTRL_SHADOWED @ 0x34;
+
+    reg {
+        desc = "Recoverable Error code";
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = w;
+            reset = 0x0;
+            desc = "One of the shadow registers encountered an update error.";
+        } SHADOW_UPDATE_ERR[0:0];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = w;
+            reset = 0x0;
+            desc = "io has encountered a measurement error.";
+        } IO_MEASURE_ERR[1:1];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = w;
+            reset = 0x0;
+            desc = "main has encountered a measurement error.";
+        } MAIN_MEASURE_ERR[2:2];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = w;
+            reset = 0x0;
+            desc = "io has timed out.";
+        } IO_TIMEOUT_ERR[3:3];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = w;
+            reset = 0x0;
+            desc = "main has timed out.";
+        } MAIN_TIMEOUT_ERR[4:4];
+    } RECOV_ERR_CODE @ 0x38;
+
+    reg {
+        desc = "Error code";
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "Register file has experienced a fatal integrity error.";
+        } REG_INTG[0:0];
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "One of the idle counts encountered a duplicate error.";
+        } IDLE_CNT[1:1];
+        field {
+            sw = r;
+            hw = rw;
+            reset = 0x0;
+            desc = "One of the shadow registers encountered a storage error.";
+        } SHADOW_STORAGE_ERR[2:2];
+    } FATAL_ERR_CODE @ 0x3C;
+
+    JITTER_ENABLE.VAL -> swwe = JITTER_REGWEN.EN;
+    IO_MEAS_CTRL_EN -> async_clk = CLK_IO_I;
+    IO_MEAS_CTRL_EN -> async_rst = RST_IO_NI;
+    IO_MEAS_CTRL_EN.EN -> swwe = MEASURE_CTRL_REGWEN.EN;
+    IO_MEAS_CTRL_SHADOWED -> async_clk = CLK_IO_I;
+    IO_MEAS_CTRL_SHADOWED -> async_rst = RST_IO_NI;
+    IO_MEAS_CTRL_SHADOWED.HI -> swwe = MEASURE_CTRL_REGWEN.EN;
+    IO_MEAS_CTRL_SHADOWED.LO -> swwe = MEASURE_CTRL_REGWEN.EN;
+    MAIN_MEAS_CTRL_EN -> async_clk = CLK_MAIN_I;
+    MAIN_MEAS_CTRL_EN -> async_rst = RST_MAIN_NI;
+    MAIN_MEAS_CTRL_EN.EN -> swwe = MEASURE_CTRL_REGWEN.EN;
+    MAIN_MEAS_CTRL_SHADOWED -> async_clk = CLK_MAIN_I;
+    MAIN_MEAS_CTRL_SHADOWED -> async_rst = RST_MAIN_NI;
+    MAIN_MEAS_CTRL_SHADOWED.HI -> swwe = MEASURE_CTRL_REGWEN.EN;
+    MAIN_MEAS_CTRL_SHADOWED.LO -> swwe = MEASURE_CTRL_REGWEN.EN;
+};

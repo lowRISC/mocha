@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+`include "ip/clkmgr.rdl"
 `include "ip/entropy_src.rdl"
 `include "ip/gpio.rdl"
 `include "ip/i2c.rdl"
@@ -37,7 +38,7 @@ addrmap top_mocha {
 
   gpio GPIO[1] @ 0x4000_0000 += 0x10000;
 
-  reserved CLOCK_MANAGER @ 0x4002_0000;
+  clkmgr CLKMGR[1] @ 0x4002_0000 += 0x10000;
 
   rstmgr RSTMGR[1] @ 0x4003_0000 += 0x10000;
 
