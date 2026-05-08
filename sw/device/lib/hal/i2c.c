@@ -60,7 +60,7 @@ void i2c_init(i2c_t i2c)
     VOLATILE_WRITE(i2c->timing4, t4_reg);
 }
 
-void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
+void i2c_write_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_bytes)
 {
     // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
     // is halted and the SW didn't manage to clear the FIFO during that scenario.
@@ -75,14 +75,19 @@ void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
     fdata_reg.start = 1u;
     VOLATILE_WRITE(i2c->fdata, fdata_reg);
 
-    // Send stop bit and data
-    fdata_reg.fbyte = data;
     fdata_reg.start = 0;
-    fdata_reg.stop = 1u;
-    VOLATILE_WRITE(i2c->fdata, fdata_reg);
+
+    // Send all data bytes; assert STOP only on the last byte
+    for (uint8_t i = 0; i < num_bytes; i++) {
+        fdata_reg.fbyte = data[i];
+        if (i == (num_bytes - 1u)) {
+            fdata_reg.stop = 1u;
+        }
+        VOLATILE_WRITE(i2c->fdata, fdata_reg);
+    }
 }
 
-void i2c_read_byte(i2c_t i2c, uint8_t addr)
+void i2c_read_bytes(i2c_t i2c, uint8_t addr, uint8_t num_bytes)
 {
     // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
     // is halted and the SW didn't manage to clear the FIFO during that scenario.
@@ -99,7 +104,7 @@ void i2c_read_byte(i2c_t i2c, uint8_t addr)
 
     // Send stop bit, read bit and number of bytes to read
     fdata_reg.readb = 1u;
-    fdata_reg.fbyte = 1u; // If readb = 1 then fbyte contains the number of bytes to read
+    fdata_reg.fbyte = num_bytes; // If readb = 1 then fbyte contains the number of bytes to read
     fdata_reg.start = 0;
     fdata_reg.stop = 1u;
     VOLATILE_WRITE(i2c->fdata, fdata_reg);
