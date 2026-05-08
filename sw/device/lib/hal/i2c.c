@@ -134,7 +134,8 @@ void i2c_init(i2c_t i2c, i2c_speed_t speed)
 
 void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
 {
-    // Reset FMT FIFO (because we currently don't clean-up after errors)
+    // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
+    // is halted and the SW didn't manage to clear the FIFO during that scenario.
     i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
     VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
 
@@ -155,7 +156,8 @@ void i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
 
 void i2c_read_byte(i2c_t i2c, uint8_t addr)
 {
-    // Reset FMT FIFO (because we currently don't clean-up after errors)
+    // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
+    // is halted and the SW didn't manage to clear the FIFO during that scenario.
     i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
     VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
 
@@ -181,6 +183,13 @@ bool check_wr_xfer_status(i2c_t i2c)
     for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
         i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
         if (i2c_intr_state_reg & i2c_intr_controller_halt) {
+            // Reset FMT FIFO as controller's FSM is in halt
+            i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
+            VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
+
+            // According to programmer's guide, the CONTROLLER_EVENTS register would be cleared
+            // here to acknowledge the controller halt interrupt. However, since we want to
+            // treat a halt event as a failure, we intentionally skip clearing it.
             return false; // transaction failed
         }
         if (i2c_intr_state_reg & i2c_intr_cmd_complete) {
@@ -199,13 +208,18 @@ bool check_rd_xfer_status(i2c_t i2c)
     for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
         i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
         if (i2c_intr_state_reg & i2c_intr_controller_halt) {
-            return 0xFF; // transaction failed
+            // Reset FMT FIFO as controller's FSM is in halt
+            i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
+            VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
+
+            // According to programmer's guide, the CONTROLLER_EVENTS register would be cleared
+            // here to acknowledge the controller halt interrupt. However, since we want to
+            // treat a halt event as a failure, we intentionally skip clearing it.
+            return false; // Transaction failed
         }
         i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
         if (i2c_status_reg & i2c_status_fmtempty) {
-            // transaction succeeded, return read data
-            i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
-            return rdata_reg.rdata;
+            return true;
         }
     }
     return false; // Timeout
