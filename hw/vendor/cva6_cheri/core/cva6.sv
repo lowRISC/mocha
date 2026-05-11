@@ -142,13 +142,14 @@ module cva6
     // all the necessary data structures
     // bp_resolve_t
     localparam type bp_resolve_t = struct packed {
-      logic                        valid;           // prediction with all its values is valid
-      logic [CVA6Cfg.VLEN-1:0]     pc;              // PC of predict or mis-predict
-      logic [CVA6Cfg.DIIIDLEN-1:0] dii_id;          // dii id of branch
-      logic [CVA6Cfg.PCLEN-1:0]    target_address;  // target address at which to jump, or not
-      logic                        is_mispredict;   // set if this was a mis-predict
-      logic                        is_taken;        // branch is taken
-      cf_t                         cf_type;         // Type of control flow change
+      logic valid;  // prediction with all its values is valid
+      logic [CVA6Cfg.VLEN-1:0] pc;  // PC of predict or mis-predict
+      logic [CVA6Cfg.DIIIDLEN-1:0] dii_id;  // dii id of branch
+      logic [CVA6Cfg.PCLEN-1:0] target_address;  // target address at which to jump, or not
+      logic is_mispredict;  // set if this was a mis-predict
+      logic is_taken;  // branch is taken
+      logic is_pcc_change;  // with CHERI: set if the branch changes PCC metadata
+      cf_t cf_type;  // Type of control flow change
     },
 
     // All information needed to determine whether we need to associate an interrupt
@@ -329,7 +330,7 @@ module cva6
     parameter type x_commit_t = `X_COMMIT_T(CVA6Cfg, hartid_t, id_t),
     parameter type x_result_t = `X_RESULT_T(CVA6Cfg, hartid_t, id_t, writeregflags_t),
     parameter type cvxif_req_t =
-    `CVXIF_REQ_T(CVA6Cfg, x_compressed_req_t, x_issue_req_t, x_register_req_t, x_commit_t),
+    `CVXIF_REQ_T(CVA6Cfg, x_compressed_req_t, x_issue_req_t, x_register_t, x_commit_t),
     parameter type cvxif_resp_t =
     `CVXIF_RESP_T(CVA6Cfg, x_compressed_resp_t, x_issue_resp_t, x_result_t)
 ) (
@@ -375,16 +376,16 @@ module cva6
   };
 
   localparam interrupts_t INTERRUPTS = '{
-      S_SW: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_SOFT),
-      VS_SW: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_SOFT),
-      M_SW: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_SOFT),
-      S_TIMER: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_TIMER),
-      VS_TIMER: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_TIMER),
-      M_TIMER: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_TIMER),
-      S_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_EXT),
-      VS_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_EXT),
-      M_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_EXT),
-      HS_EXT: (1 << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_HS_EXT)
+      S_SW: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_SOFT),
+      VS_SW: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_SOFT),
+      M_SW: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_SOFT),
+      S_TIMER: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_TIMER),
+      VS_TIMER: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_TIMER),
+      M_TIMER: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_TIMER),
+      S_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_S_EXT),
+      VS_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_EXT),
+      M_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_EXT),
+      HS_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_HS_EXT)
   };
 
   // ------------------------------------------
@@ -454,6 +455,7 @@ module cva6
   logic [CVA6Cfg.NrIssuePorts-1:0][CVA6Cfg.XLEN-1:0] rvfi_rs2;
 
   fu_data_t [CVA6Cfg.NrIssuePorts-1:0] fu_data_id_ex;
+  alu_bypass_t alu_bypass_id_ex;
   logic [CVA6Cfg.PCLEN-1:0] pc_id_ex;
   logic [CVA6Cfg.DIIIDLEN-1:0] dii_id_id_ex;
   logic zcmt_id_ex;
@@ -478,7 +480,7 @@ module cva6
   logic [CVA6Cfg.NrIssuePorts-1:0] lsu_valid_id_ex;
   logic lsu_ready_ex_id;
   // CLU
-  logic clu_valid_id_ex;
+  logic [CVA6Cfg.NrIssuePorts-1:0] clu_valid_id_ex;
 
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] load_trans_id_ex_id;
   logic [CVA6Cfg.REGLEN-1:0] load_result_ex_id;
@@ -500,6 +502,7 @@ module cva6
   logic [CVA6Cfg.REGLEN-1:0] fpu_result_ex_id;
   logic fpu_valid_ex_id;
   exception_t fpu_exception_ex_id;
+  logic fpu_early_valid_ex_id;
   // ALU2
   logic [CVA6Cfg.NrIssuePorts-1:0] alu2_valid_id_ex;
   // Accelerator
@@ -625,6 +628,9 @@ module cva6
   logic [31:0] mcountinhibit_csr_perf;
   //jvt
   jvt_t jvt;
+  // trigger module
+  logic debug_from_trigger;
+  logic break_from_trigger;
   // ----------------------------
   // Performance Counters <-> *
   // ----------------------------
@@ -637,6 +643,7 @@ module cva6
   logic dtlb_miss_ex_perf;
   logic dcache_miss_cache_perf;
   logic icache_miss_cache_perf;
+  logic icache_miss_cache_perf_real;
   logic [NumPorts-1:0][CVA6Cfg.DCACHE_SET_ASSOC-1:0] miss_vld_bits;
   logic stall_issue;
   // --------------
@@ -669,8 +676,10 @@ module cva6
 
   icache_areq_t icache_areq_ex_cache;
   icache_arsp_t icache_areq_cache_ex;
+  icache_arsp_t icache_areq_cache_ex_real;
   icache_dreq_t icache_dreq_if_cache;
   icache_drsp_t icache_dreq_cache_if;
+  icache_drsp_t icache_dreq_cache_if_real;
 
   amo_req_t amo_req;
   amo_resp_t amo_resp;
@@ -789,6 +798,7 @@ module cva6
       .compressed_valid_o(x_compressed_valid),
       .compressed_req_o(x_compressed_req),
       .jvt_i(jvt),
+      .debug_from_trigger_i(debug_from_trigger),
       // DCACHE interfaces
       .dcache_req_ports_i(dcache_req_ports_cache_id),
       .dcache_req_ports_o(dcache_req_ports_id_cache),
@@ -859,6 +869,13 @@ module cva6
     assign wt_valid_ex_id[ACC_WB] = acc_valid_ex_id;
   end else begin
     assign cvxif_req = '0;
+    assign x_compressed_ready = '0;
+    assign x_compressed_resp = '0;
+    assign x_issue_ready = '0;
+    assign x_issue_resp = '0;
+    assign x_register_ready = '0;
+    assign x_result_valid = '0;
+    assign x_result = '0;
   end
 
   if (CVA6Cfg.CvxifEn && CVA6Cfg.EnableAccelerator) begin : gen_err_xif_and_acc
@@ -900,6 +917,7 @@ module cva6
       .rs1_forwarding_o        (rs1_forwarding_id_ex),
       .rs2_forwarding_o        (rs2_forwarding_id_ex),
       .fu_data_o               (fu_data_id_ex),
+      .alu_bypass_o            (alu_bypass_id_ex),
       .pc_o                    (pc_id_ex),
       .commit_pcc_o            (commit_pcc),
       .dii_id_o                (dii_id_id_ex),
@@ -927,6 +945,7 @@ module cva6
       .fpu_valid_o             (fpu_valid_id_ex),
       .fpu_fmt_o               (fpu_fmt_id_ex),
       .fpu_rm_o                (fpu_rm_id_ex),
+      .fpu_early_valid_i       (fpu_early_valid_ex_id),
       // ALU2
       .alu2_valid_o            (alu2_valid_id_ex),
       // CSR
@@ -1010,6 +1029,7 @@ module cva6
       .rs1_forwarding_i(rs1_forwarding_id_ex),
       .rs2_forwarding_i(rs2_forwarding_id_ex),
       .fu_data_i(fu_data_id_ex),
+      .alu_bypass_i(alu_bypass_id_ex),
       .pc_i(pc_id_ex),
       .dii_id_i(dii_id_id_ex),
       .is_zcmt_i(zcmt_id_ex),
@@ -1070,6 +1090,7 @@ module cva6
       .fpu_result_o            (fpu_result_ex_id),
       .fpu_valid_o             (fpu_valid_ex_id),
       .fpu_exception_o         (fpu_exception_ex_id),
+      .fpu_early_valid_o       (fpu_early_valid_ex_id),
       // ALU2
       .alu2_valid_i            (alu2_valid_id_ex),
       .amo_valid_commit_i      (amo_valid_commit),
@@ -1186,7 +1207,8 @@ module cva6
       .flush_commit_o        (flush_commit),
       .sfence_vma_o          (sfence_vma_commit_controller),
       .hfence_vvma_o         (hfence_vvma_commit_controller),
-      .hfence_gvma_o         (hfence_gvma_commit_controller)
+      .hfence_gvma_o         (hfence_gvma_commit_controller),
+      .break_from_trigger_i  (break_from_trigger)
   );
 
   assign commit_ack = commit_macro_ack & ~commit_drop_id_commit;
@@ -1280,7 +1302,13 @@ module cva6
       .mcountinhibit_o         (mcountinhibit_csr_perf),
       .jvt_o                   (jvt),
       //RVFI
-      .rvfi_csr_o              (rvfi_csr)
+      .rvfi_csr_o              (rvfi_csr),
+      // Trigger Signals
+      .debug_from_trigger_o    (debug_from_trigger),
+      .vaddr_from_lsu_i        (rvfi_lsu_ctrl.vaddr),
+      .orig_instr_i            (orig_instr_id_issue),
+      .store_result_i          (reg_to_x(store_result_ex_id)),
+      .break_from_trigger_o    (break_from_trigger)
   );
 
   // ------------------------
@@ -1438,15 +1466,15 @@ module cva6
         .clk_i             (clk_i),
         .rst_ni            (rst_ni),
         // I$
-        .icache_en_i       (1'b0),
+        .icache_en_i       (icache_en_csr),
         .icache_flush_i    (icache_flush_ctrl_cache),
-        .icache_miss_o     (icache_miss_cache_perf),
+        .icache_miss_o     (icache_miss_cache_perf_real),
         .icache_areq_i     (icache_areq_ex_cache),
-        .icache_areq_o     (icache_areq_cache_ex),
+        .icache_areq_o     (icache_areq_cache_ex_real),
         .icache_dreq_i     (icache_dreq_if_cache),
-        .icache_dreq_o     (icache_dreq_cache_if),
+        .icache_dreq_o     (icache_dreq_cache_if_real),
         // D$
-        .dcache_enable_i   (1'b0),
+        .dcache_enable_i   (dcache_en_csr_nbdcache),
         .dcache_flush_i    (dcache_flush_ctrl_cache),
         .dcache_flush_ack_o(dcache_flush_ack_cache_ctrl),
         // to commit stage
@@ -1497,15 +1525,15 @@ module cva6
         .clk_i (clk_i),
         .rst_ni(rst_ni),
 
-        .icache_en_i   (icache_en_csr),
+        .icache_en_i   (1'b0),
         .icache_flush_i(icache_flush_ctrl_cache),
-        .icache_miss_o (icache_miss_cache_perf),
+        .icache_miss_o (icache_miss_cache_perf_real),
         .icache_areq_i (icache_areq_ex_cache),
-        .icache_areq_o (icache_areq_cache_ex),
+        .icache_areq_o (icache_areq_cache_ex_real),
         .icache_dreq_i (icache_dreq_if_cache),
-        .icache_dreq_o (icache_dreq_cache_if),
+        .icache_dreq_o (icache_dreq_cache_if_real),
 
-        .dcache_enable_i   (dcache_en_csr_nbdcache),
+        .dcache_enable_i   (1'b0),
         .dcache_flush_i    (dcache_flush_ctrl_cache),
         .dcache_flush_ack_o(dcache_flush_ack_cache_ctrl),
         .dcache_miss_o     (dcache_miss_cache_perf),
@@ -1536,7 +1564,8 @@ module cva6
         .noc_req_o (noc_req_o),
         .noc_resp_i(noc_resp_i)
     );
-    assign inval_ready = 1'b1;
+    assign inval_ready   = 1'b1;
+    assign miss_vld_bits = '0;
   end else begin : gen_cache_wb
     std_cache_subsystem #(
         // note: this only works with one cacheable region
@@ -1566,11 +1595,11 @@ module cva6
         // I$
         .icache_en_i       (icache_en_csr),
         .icache_flush_i    (icache_flush_ctrl_cache),
-        .icache_miss_o     (icache_miss_cache_perf),
+        .icache_miss_o     (icache_miss_cache_perf_real),
         .icache_areq_i     (icache_areq_ex_cache),
-        .icache_areq_o     (icache_areq_cache_ex),
+        .icache_areq_o     (icache_areq_cache_ex_real),
         .icache_dreq_i     (icache_dreq_if_cache),
-        .icache_dreq_o     (icache_dreq_cache_if),
+        .icache_dreq_o     (icache_dreq_cache_if_real),
         // D$
         .dcache_enable_i   (dcache_en_csr_nbdcache),
         .dcache_flush_i    (dcache_flush_ctrl_cache),
@@ -1590,6 +1619,27 @@ module cva6
     );
     assign dcache_commit_wbuffer_not_ni = 1'b1;
     assign inval_ready                  = 1'b1;
+    assign miss_vld_bits                = '0;
+  end
+
+  if (CVA6Cfg.RVFI_DII) begin
+    rvfi_dii_generator #(
+        .CVA6Cfg(CVA6Cfg),
+        .icache_dreq_t(icache_dreq_t),
+        .icache_drsp_t(icache_drsp_t),
+        .exception_t(exception_t)
+    ) i_cva6_rvfi_dii_generator (
+        .clk_i (clk_i),
+        .rst_ni(rst_ni),
+        .dreq_i(icache_dreq_if_cache),
+        .dreq_o(icache_dreq_cache_if)
+    );
+    assign icache_miss_cache_perf = '0;
+    assign icache_areq_cache_ex   = '0;
+  end else begin
+    assign icache_dreq_cache_if   = icache_dreq_cache_if_real;
+    assign icache_miss_cache_perf = icache_miss_cache_perf_real;
+    assign icache_areq_cache_ex   = icache_areq_cache_ex_real;
   end
 
   // ----------------
@@ -1861,7 +1911,7 @@ module cva6
 
   logic [CVA6Cfg.NrCommitPorts-1:0][CVA6Cfg.XLEN-1:0] wdata_commit_rvfi;
   for (genvar i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
-    assign wdata_commit_rvfi[i] = wdata_commit_id[i][CVA6Cfg.XLEN-1:0];
+    assign wdata_commit_rvfi[i] = reg_to_x(wdata_commit_id[i]);
   end
 
   cva6_rvfi_probes #(

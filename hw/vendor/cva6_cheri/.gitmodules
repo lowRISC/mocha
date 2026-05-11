@@ -21,7 +21,7 @@
 	url = https://github.com/lowRISC/ariane-ethernet.git
 [submodule "corev_apu/src/axi_riscv_atomics"]
 	path = corev_apu/src/axi_riscv_atomics
-	url = https://github.com/pulp-platform/axi_riscv_atomics.git
+	url = https://github.com/ninolomata/axi_riscv_atomics.git
 [submodule "corev_apu/riscv-dbg"]
 	path = corev_apu/riscv-dbg
 	url = https://github.com/pulp-platform/riscv-dbg.git
@@ -42,7 +42,7 @@
 	url = https://github.com/openhwgroup/cvfpu.git
 [submodule "core/cache_subsystem/hpdcache"]
 	path = core/cache_subsystem/hpdcache
-	url = https://github.com/openhwgroup/cv-hpdcache.git
+	url = https://github.com/Capabilities-Limited/cv-hpdcache.git
 [submodule "verif/sim/dv"]
 	path = verif/sim/dv
 	url = https://github.com/google/riscv-dv.git
@@ -57,7 +57,7 @@
 	url = https://github.com/pulp-platform/gpio.git
 [submodule "vendor/zero-day/axi_tagcontroller"]
 	path = vendor/zero-day/axi_tagcontroller
-	url = https://github.com/ninolomata/axi_cheri_tagcontroller.git
+	url = https://github.com/Capabilities-Limited/axi_cheri_tagcontroller.git
 [submodule "corev_apu/tb/tb_testRig_cheri/src/RVFI-DII-utils"]
 	path = corev_apu/tb/tb_testRig_cheri/src/RVFI-DII-utils
 	url = https://github.com/CTSRD-CHERI/RVFI-DII-utils.git

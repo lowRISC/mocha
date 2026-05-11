@@ -541,38 +541,22 @@ module wt_axi_adapter
       };
       // if this is a single word transaction, we need to make sure that word is placed at offset 0
       if (dcache_first_q) begin
-        dcache_rd_shift_d[0] = axi_rd_data;
-        dcache_rd_shift_user_d[0] = axi_rd_user;
-        // replicate also the second word
-        if (CVA6Cfg.CheriPresent) begin
-          for (int i = 1; i < CVA6Cfg.DCACHE_LINE_WIDTH / CVA6Cfg.AxiDataWidth; i++) begin
-            dcache_rd_shift_d[i] = axi_rd_data;
-            dcache_rd_shift_user_d[i] = axi_rd_user;
-          end
-        end
-      end
-      // Fixup for this shift register which assumes all bursted reads are data cache line width.
-      // This is false when the data cache is disabled and CHERI capabilities are 128 bit, bus is 64 bit and data cahce line is 256 bit.
-      if (CVA6Cfg.CheriPresent && axi_rd_last) begin
-        for (int i = 1; i < CVA6Cfg.DCACHE_LINE_WIDTH / CVA6Cfg.AxiDataWidth; i+=2) begin
+        automatic int limit;
+        limit = CVA6Cfg.CheriPresent ? CVA6Cfg.DCACHE_LINE_WIDTH / CVA6Cfg.AxiDataWidth : 1;
+        for (int i = 0; i < limit; i++) begin
           dcache_rd_shift_d[i] = axi_rd_data;
           dcache_rd_shift_user_d[i] = axi_rd_user;
         end
       end
     end else if (CVA6Cfg.RVA && dcache_sc_rtrn) begin
+      automatic int limit;
+      limit = CVA6Cfg.CheriPresent ? CVA6Cfg.DCACHE_LINE_WIDTH / CVA6Cfg.AxiDataWidth : 1;
       // encode lr/sc success
-      dcache_rd_shift_d[0] = '0;
-      dcache_rd_shift_user_d[0] = '0;
-      dcache_rd_shift_d[0][amo_off_q*8] = (wr_exokay) ? '0 : 1'b1;
-      dcache_rd_shift_user_d[0][amo_off_q*8] = (wr_exokay) ? '0 : 1'b1;
-      // replicate also the second word
-      if (CVA6Cfg.CheriPresent) begin
-        for (int i = 1; i < CVA6Cfg.DCACHE_LINE_WIDTH / CVA6Cfg.AxiDataWidth; i++) begin
-          dcache_rd_shift_d[i] = '0;
-          dcache_rd_shift_user_d[i] = '0;
-          dcache_rd_shift_d[i][amo_off_q*8] = (wr_exokay) ? '0 : 1'b1;
-          dcache_rd_shift_user_d[i][amo_off_q*8] = (wr_exokay) ? '0 : 1'b1;
-        end
+      for (int i = 0; i < limit; i++) begin
+        dcache_rd_shift_d[i] = '0;
+        dcache_rd_shift_user_d[i] = '0;
+        dcache_rd_shift_d[i][amo_off_q*8] = (wr_exokay) ? '0 : 1'b1;
+        dcache_rd_shift_user_d[i][amo_off_q*8] = (wr_exokay) ? '0 : 1'b1;
       end
     end
   end

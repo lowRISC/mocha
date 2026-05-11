@@ -23,11 +23,12 @@
 //
 
 module ariane_regfile #(
-    parameter config_pkg::cva6_cfg_t CVA6Cfg       = config_pkg::cva6_cfg_empty,
-    parameter int unsigned           DATA_WIDTH    = 32,
-    parameter int unsigned           NR_READ_PORTS = 2,
-    parameter bit                    ZERO_REG_ZERO = 0,
-    parameter bit                    EN_CHERI_CAP  = 0
+    parameter config_pkg::cva6_cfg_t                  CVA6Cfg       = config_pkg::cva6_cfg_empty,
+    parameter int unsigned                            DATA_WIDTH    = 32,
+    parameter int unsigned                            NR_READ_PORTS = 2,
+    parameter logic                  [DATA_WIDTH-1:0] INIT_VAL      = '0,
+    parameter bit                                     ZERO_REG_ZERO = 0,
+    parameter logic                  [DATA_WIDTH-1:0] ZERO_VAL      = '0
 ) (
     // clock and reset
     input  logic                                             clk_i,
@@ -63,7 +64,7 @@ module ariane_regfile #(
   always_ff @(posedge clk_i, negedge rst_ni) begin : register_write_behavioral
     if (~rst_ni) begin
       for (int unsigned i = 0; i < NUM_WORDS; i++) begin
-        mem[i] <= (EN_CHERI_CAP) ? (CVA6Cfg.RVFI_DII ? cva6_cheri_pkg::REG_ROOT_CAP : cva6_cheri_pkg::REG_NULL_CAP) : '0;
+        mem[i] <= INIT_VAL;
       end
     end else begin
       for (int unsigned j = 0; j < CVA6Cfg.NrCommitPorts; j++) begin
@@ -73,7 +74,7 @@ module ariane_regfile #(
           end
         end
         if (ZERO_REG_ZERO) begin
-          mem[0] <= (EN_CHERI_CAP) ? cva6_cheri_pkg::REG_NULL_CAP : '0;
+          mem[0] <= ZERO_VAL;
         end
       end
     end

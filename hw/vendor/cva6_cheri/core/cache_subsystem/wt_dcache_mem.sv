@@ -283,7 +283,7 @@ module wt_dcache_mem
     // In case of an uncached read, return the desired CVA6Cfg.XLEN-bit segment of the most recent AXI read
     assign wr_cl_off     = (wr_cl_nc_i) ? (CVA6Cfg.AxiDataWidth == CVA6Cfg.CLEN) ? '0 :
                            (CVA6Cfg.CheriPresent) ? {{CVA6Cfg.DCACHE_OFFSET_WIDTH-CVA6Cfg.CLEN_ALIGN_BYTES{1'b0}}, wr_cl_off_i[CVA6Cfg.CLEN_ALIGN_BYTES]} :
-                          {{CVA6Cfg.DCACHE_OFFSET_WIDTH-AXI_OFFSET_WIDTH{1'b0}}, wr_cl_off_i[AXI_OFFSET_WIDTH-1-:CVA6Cfg.CLEN_ALIGN_BYTES]} :
+                          {{CVA6Cfg.DCACHE_OFFSET_WIDTH-AXI_OFFSET_WIDTH{1'b0}}, wr_cl_off_i[AXI_OFFSET_WIDTH-1:CVA6Cfg.CLEN_ALIGN_BYTES]} :
                               wr_cl_off_i[CVA6Cfg.DCACHE_OFFSET_WIDTH-1:CVA6Cfg.CLEN_ALIGN_BYTES];
   end else begin : gen_piton_offset
     assign wr_cl_off = wr_cl_off_i[CVA6Cfg.DCACHE_OFFSET_WIDTH-1:3];

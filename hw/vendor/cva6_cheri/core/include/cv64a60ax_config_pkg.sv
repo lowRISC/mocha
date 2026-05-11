@@ -55,6 +55,7 @@ package cva6_config_pkg;
       FpgaAlteraEn: bit'(0),  // for Altera (only)
       TechnoCut: bit'(0),
       SuperscalarEn: bit'(0),
+      ALUBypass: bit'(0),
       NrCommitPorts: unsigned'(2),
       AxiAddrWidth: unsigned'(CVA6ConfigAxiAddrWidth),
       AxiDataWidth: unsigned'(CVA6ConfigAxiDataWidth),
@@ -82,6 +83,8 @@ package cva6_config_pkg;
       RVZiCond: bit'(1),
       RVZicntr: bit'(1),
       RVZihpm: bit'(1),
+      RVZcheripurecap: bit'(0),
+      RVZcherihybrid: bit'(0),
       NrScoreboardEntries: unsigned'(8),
       PerfCounterEn: bit'(1),
       MmuPresent: bit'(1),
@@ -121,7 +124,12 @@ package cva6_config_pkg;
       CachedRegionLength: 1024'({64'h2_0000_0000, 64'h1_0000}),
       MaxOutstandingStores: unsigned'(7),
       DebugEn: bit'(1),
-      AxiBurstWriteEn: bit'(1),
+      SDTRIG: bit'(0),
+      Mcontrol6: bit'(0),
+      Icount: bit'(0),
+      Etrigger: bit'(0),
+      Itrigger: bit'(0),
+      AxiBurstWriteEn: bit'(0),
       IcacheByteSize: unsigned'(32768),
       IcacheSetAssoc: unsigned'(8),
       IcacheLineWidth: unsigned'(512),
@@ -141,7 +149,9 @@ package cva6_config_pkg;
       SharedTlbDepth: int'(64),
       NrLoadPipeRegs: int'(0),
       NrStorePipeRegs: int'(0),
-      DcacheIdWidth: int'(3)
+      DcacheIdWidth: int'(3),
+      CheriCapTagWidth : int'(1),
+      RVFI_DII: int'(0)
   };
 
 endpackage

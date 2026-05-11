@@ -242,6 +242,8 @@ module load_unit
                                               CVA6Cfg.DCACHE_INDEX_WIDTH];
   // request id = index of the load buffer's entry
   assign req_port_o.data_id = ldbuf_windex;
+  // user field not used
+  assign req_port_o.data_wuser = '0;
   // strip tag request
   assign req_port_o.strip_tag = CVA6Cfg.CheriPresent ? strip_tag_i : 1'b0;
   // directly forward exception fields (valid bit is set below)
@@ -540,7 +542,7 @@ module load_unit
 
   // realign as needed
   assign shifted_data_wide = req_port_i.data_rdata >> {ldbuf_rdata.address_offset, 3'b000};
-  assign shifted_data = shifted_data_wide[CVA6Cfg.XLEN-1:0]; // If not using cap, we need at most XLEN bits.
+  assign shifted_data = shifted_data_wide[CVA6Cfg.XLEN-1:0];
   if (CVA6Cfg.CheriPresent) begin : gen_cheri_load_data
     assign data = {req_port_i.data_ruser, req_port_i.data_rdata};
   end
@@ -584,66 +586,38 @@ module load_unit
 
   // result mux
   always_comb begin
-    result_o = (CVA6Cfg.CheriPresent) ? cva6_cheri_pkg::REG_NULL_CAP : '{default: 0};
+    result_o = REG_NULL;
     unique case (ldbuf_rdata.operation)
       ariane_pkg::LW, ariane_pkg::LWU, ariane_pkg::HLV_W, ariane_pkg::HLV_WU, ariane_pkg::HLVX_WU:
-      result_o = cva6_cheri_pkg::set_cap_reg_addr(
-          cva6_cheri_pkg::REG_NULL_CAP, {{CVA6Cfg.XLEN - 32{rdata_sign_bit}}, shifted_data[31:0]});
+      result_o = x_to_reg({{CVA6Cfg.XLEN - 32{rdata_sign_bit}}, shifted_data[31:0]});
       ariane_pkg::LH, ariane_pkg::LHU, ariane_pkg::HLV_H, ariane_pkg::HLV_HU, ariane_pkg::HLVX_HU:
-      result_o = cva6_cheri_pkg::set_cap_reg_addr(
-          cva6_cheri_pkg::REG_NULL_CAP,
-              {{CVA6Cfg.XLEN - 32 + 16{rdata_sign_bit}}, shifted_data[15:0]});
+      result_o = x_to_reg({{CVA6Cfg.XLEN - 32 + 16{rdata_sign_bit}}, shifted_data[15:0]});
       ariane_pkg::LB, ariane_pkg::LBU, ariane_pkg::HLV_B, ariane_pkg::HLV_BU:
-      result_o = cva6_cheri_pkg::set_cap_reg_addr(
-          cva6_cheri_pkg::REG_NULL_CAP,
-              {{CVA6Cfg.XLEN - 32 + 24{rdata_sign_bit}}, shifted_data[7:0]});
+      result_o = x_to_reg({{CVA6Cfg.XLEN - 32 + 24{rdata_sign_bit}}, shifted_data[7:0]});
       default: begin
         // FLW, FLH and FLB have been defined here in default case to improve Code Coverage
         if (CVA6Cfg.FpPresent) begin
           unique case (ldbuf_rdata.operation)
             ariane_pkg::FLW: begin
-              result_o = cva6_cheri_pkg::set_cap_reg_addr(
-                cva6_cheri_pkg::REG_NULL_CAP,
-                {
-                  {CVA6Cfg.XLEN - 32{rdata_sign_bit}}, shifted_data[31:0]
-                }
-              );
+              result_o = x_to_reg({{CVA6Cfg.XLEN - 32{rdata_sign_bit}}, shifted_data[31:0]});
             end
             ariane_pkg::FLH: begin
-              result_o = cva6_cheri_pkg::set_cap_reg_addr(
-                cva6_cheri_pkg::REG_NULL_CAP,
-                {
-                  {CVA6Cfg.XLEN - 32 + 16{rdata_sign_bit}}, shifted_data[15:0]
-                }
-              );
+              result_o = x_to_reg({{CVA6Cfg.XLEN - 32 + 16{rdata_sign_bit}}, shifted_data[15:0]});
             end
             ariane_pkg::FLB: begin
-              result_o = cva6_cheri_pkg::set_cap_reg_addr(
-                cva6_cheri_pkg::REG_NULL_CAP,
-                {
-                  {CVA6Cfg.XLEN - 32 + 24{rdata_sign_bit}}, shifted_data[7:0]
-                }
-              );
+              result_o = x_to_reg({{CVA6Cfg.XLEN - 32 + 24{rdata_sign_bit}}, shifted_data[7:0]});
             end
             default: begin
-              result_o = cva6_cheri_pkg::set_cap_reg_addr(cva6_cheri_pkg::REG_NULL_CAP,
-                                                          shifted_data[CVA6Cfg.XLEN-1:0]);
+              result_o = x_to_reg(shifted_data);
             end
           endcase
         end else begin
-          result_o = cva6_cheri_pkg::set_cap_reg_addr(cva6_cheri_pkg::REG_NULL_CAP,
-                                                      shifted_data[CVA6Cfg.XLEN-1:0]);
+          result_o = x_to_reg(shifted_data);
         end
 
-        if (CVA6Cfg.CheriPresent) begin
-          if (ldbuf_rdata.operation == ariane_pkg::LC) begin
-            // Convert memory capability to register capability
-            result_o = cva6_cheri_pkg::cap_mem_to_cap_reg(data);
-          end else begin
-            result_o = cva6_cheri_pkg::set_cap_reg_addr(cva6_cheri_pkg::REG_NULL_CAP, shifted_data);
-          end
-        end else begin
-          result_o = shifted_data[CVA6Cfg.XLEN-1:0];
+        if (CVA6Cfg.CheriPresent && ldbuf_rdata.operation == ariane_pkg::LC) begin
+          // Convert memory capability to register capability
+          result_o = cva6_cheri_pkg::cap_mem_to_cap_reg(data);
         end
       end
     endcase

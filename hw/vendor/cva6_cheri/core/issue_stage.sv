@@ -63,6 +63,8 @@ module issue_stage
     output [CVA6Cfg.NrIssuePorts-1:0][CVA6Cfg.REGLEN-1:0] rs2_forwarding_o,
     // FU data useful to execute instruction - EX_STAGE
     output fu_data_t [CVA6Cfg.NrIssuePorts-1:0] fu_data_o,
+    // ALU to ALU bypass control - EX_STAGE
+    output alu_bypass_t alu_bypass_o,
     // Program Counter - EX_STAGE
     output logic [CVA6Cfg.REGLEN-1:0] pc_o,
     // Program Counter Capability - EX_STAGE
@@ -101,12 +103,14 @@ module issue_stage
     output logic [1:0] fpu_fmt_o,
     // FPU rm field - EX_STAGE
     output logic [2:0] fpu_rm_o,
+    // FPU early valid - EX_STAGE
+    input logic fpu_early_valid_i,
     // ALU2 FU is valid - EX_STAGE
     output logic [CVA6Cfg.NrIssuePorts-1:0] alu2_valid_o,
     // CSR is valid - EX_STAGE
     output logic [CVA6Cfg.NrIssuePorts-1:0] csr_valid_o,
     // CLU is valid - EX_STAGE
-    output logic clu_valid_o,
+    output logic [CVA6Cfg.NrIssuePorts-1:0] clu_valid_o,
     // CVXIF FU is valid - EX_STAGE
     output logic [CVA6Cfg.NrIssuePorts-1:0] xfu_valid_o,
     // CVXIF is FU ready - EX_STAGE
@@ -211,7 +215,7 @@ module issue_stage
 
   logic                                               backend_empty;
 
-  exception_t                                         issue_pcc_ex;
+  exception_t        [CVA6Cfg.NrIssuePorts-1:0]       issue_pcc_ex;
 
   assign issue_instr_hs_o = issue_instr_valid_sb_iro[0] & issue_ack_iro_sb[0];
   assign issue_instr_o = issue_instr_sb_iro;
@@ -297,6 +301,7 @@ module issue_stage
       .issue_pcc_ex_o          (issue_pcc_ex),
       .backend_empty_i         (backend_empty),
       .fu_data_o               (fu_data_o),
+      .alu_bypass_o            (alu_bypass_o),
       .rs1_forwarding_o        (rs1_forwarding_o),
       .rs2_forwarding_o        (rs2_forwarding_o),
       .pc_o,
@@ -317,6 +322,7 @@ module issue_stage
       .fpu_valid_o,
       .fpu_fmt_o,
       .fpu_rm_o,
+      .fpu_early_valid_i,
       .alu2_valid_o,
       .csr_valid_o,
       .cvxif_valid_o           (xfu_valid_o),

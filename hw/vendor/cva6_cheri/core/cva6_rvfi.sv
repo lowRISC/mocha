@@ -168,7 +168,7 @@ module cva6_rvfi
   assign branch_valid_iti = instr.branch_valid;
   assign is_taken_iti = instr.is_taken;
   assign tval_iti = instr.tval;
-  assign time_iti = rvfi_probes_i.csr.cycle_q;
+  assign time_iti = csr.cycle_q;
 
   assign priv_lvl = instr.priv_lvl;
 
@@ -178,7 +178,7 @@ module cva6_rvfi
 
   assign lsu_addr = instr.lsu_ctrl_vaddr;
   assign lsu_rmask = (instr.lsu_ctrl_fu == LOAD || (((mem_q[lsu_addr_trans_id].instr & 32'hF800703F) == 32'h1000402F)) && instr.lsu_ctrl_fu == STORE) ? instr.lsu_ctrl_be : '0;
-  assign lsu_wmask = (instr.lsu_ctrl_fu == STORE && !((mem_q[lsu_addr_trans_id].instr  & 32'hF800703F) == 32'h1000402F)) ? instr.lsu_ctrl_be : '0;
+  assign lsu_wmask = instr.lsu_ctrl_fu == STORE ? instr.lsu_ctrl_be : '0;
   assign lsu_addr_trans_id = instr.lsu_ctrl_trans_id;
   assign branch_trans_id = instr.branch_trans_id;
 
@@ -366,14 +366,19 @@ module cva6_rvfi
       rvfi_instr_o[i].mem_addr <= mem_q[commit_pointer[i]].lsu_addr;
       // So far, only write paddr is reported. TODO: read paddr
       rvfi_instr_o[i].mem_paddr <= mem_paddr;
-      rvfi_instr_o[i].mem_wmask <= /* (mem_q[commit_pointer[i]].lsu_wmask == 16'hFFFF) ? '0 : */ (is_amo_sc(
+      rvfi_instr_o[i].mem_wmask <= (is_amo_sc(
           commit_instr_op[i]
       ) && wdata[i] == 1) ? '0 :
-          mem_q[commit_pointer[i]].lsu_wmask >> mem_q[commit_pointer[i]].lsu_addr[3:0];
+          mem_q[commit_pointer[i]].lsu_wmask >> mem_q[commit_pointer[i]].lsu_addr[$clog2(
+          CVA6Cfg.CLEN/8
+      )-1:0];
       rvfi_instr_o[i].mem_wdata <= (is_amo_sc(
           commit_instr_op[i]
       ) && wdata[i] == 1) ? '0 : mem_q[commit_pointer[i]].lsu_wdata;
-      rvfi_instr_o[i].mem_rmask <= /* (mem_q[commit_pointer[i]].lsu_wmask == 16'hFFFF) ? '0 :  */mem_q[commit_pointer[i]].lsu_rmask >> mem_q[commit_pointer[i]].lsu_addr[3:0];
+      rvfi_instr_o[i].mem_rmask <= mem_q[commit_pointer[i]].lsu_rmask >>
+          mem_q[commit_pointer[i]].lsu_addr[$clog2(
+          CVA6Cfg.CLEN/8
+      )-1:0];
       rvfi_instr_o[i].mem_rdata <= commit_instr_result[i];
       rvfi_instr_o[i].rs1_rdata <= mem_q[commit_pointer[i]].rs1_rdata;
       rvfi_instr_o[i].rs2_rdata <= (rs2_addr == 0) ? '0 : mem_q[commit_pointer[i]].rs2_rdata;
@@ -395,113 +400,110 @@ module cva6_rvfi
   //----------------------------------------------------------------------------------------------------------
   // CSR
   //----------------------------------------------------------------------------------------------------------
-
-  `define CONNECT_RVFI_FULL(CSR_ENABLE_COND, CSR_NAME,
-                            CSR_SOURCE_NAME) \
-    always_ff @(posedge clk_i) begin \
-        if (CSR_ENABLE_COND) begin \
-            rvfi_csr_o.``CSR_NAME``.rdata <= {{CVA6Cfg.XLEN - $bits(CSR_SOURCE_NAME)}, CSR_SOURCE_NAME}; \
-        end \
-    end \
-    assign rvfi_csr_o.``CSR_NAME``.wdata = CSR_ENABLE_COND ? { {{CVA6Cfg.XLEN-$bits(CSR_SOURCE_NAME)}, CSR_SOURCE_NAME} } : 0; \
-    assign rvfi_csr_o.``CSR_NAME``.rmask = CSR_ENABLE_COND ? 1 : 0; \
-    assign rvfi_csr_o.``CSR_NAME``.wmask = (rvfi_csr_o.``CSR_NAME``.rdata != {{CVA6Cfg.XLEN - $bits(CSR_SOURCE_NAME)}, CSR_SOURCE_NAME}) && CSR_ENABLE_COND;
+  // Changing verible formating to fix vivado synthesis errors and warnings
+  // verilog_format: off
+  `define CONNECT_RVFI_FULL(CSR_ENABLE_COND, CSR_NAME, CSR_SOURCE_NAME) \
+  always_ff @(posedge clk_i) begin \
+      if (CSR_ENABLE_COND) begin \
+          rvfi_csr_o.``CSR_NAME``.rdata <= {{CVA6Cfg.XLEN - $bits(CSR_SOURCE_NAME)}, CSR_SOURCE_NAME}; \
+      end \
+  end \
+  assign rvfi_csr_o.``CSR_NAME``.wdata = CSR_ENABLE_COND ? { {{CVA6Cfg.XLEN-$bits(CSR_SOURCE_NAME)}, CSR_SOURCE_NAME} } : 0; \
+  assign rvfi_csr_o.``CSR_NAME``.rmask = CSR_ENABLE_COND ? 1 : 0; \
+  assign rvfi_csr_o.``CSR_NAME``.wmask = (rvfi_csr_o.``CSR_NAME``.rdata != {{CVA6Cfg.XLEN - $bits(CSR_SOURCE_NAME)}, CSR_SOURCE_NAME}) && CSR_ENABLE_COND;
 
   `define CONNECT_RVFI_SAME(CSR_ENABLE_COND, CSR_NAME) \
-            `CONNECT_RVFI_FULL(CSR_ENABLE_COND, CSR_NAME, csr.``CSR_NAME``_q)
+          `CONNECT_RVFI_FULL(CSR_ENABLE_COND, CSR_NAME, csr.``CSR_NAME``_q)
 
-  `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, fflags, csr.fcsr_q.fflags)
-  `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, frm, csr.fcsr_q.frm)
-  `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, fcsr, {csr.fcsr_q.frm, csr.fcsr_q.fflags})
+  if ($bits(rvfi_csr_o) != 1) begin
+    `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, fflags, csr.fcsr_q.fflags)
+    `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, frm, csr.fcsr_q.frm)
+    `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, fcsr, {csr.fcsr_q.frm, csr.fcsr_q.fflags})
 
-  `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, ftran, csr.fcsr_q.fprec)
-  `CONNECT_RVFI_SAME(CVA6Cfg.FpPresent, dcsr)
+    `CONNECT_RVFI_FULL(CVA6Cfg.FpPresent, ftran, csr.fcsr_q.fprec)
+    `CONNECT_RVFI_SAME(CVA6Cfg.FpPresent, dcsr)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.DebugEn, dpc)
+    `CONNECT_RVFI_SAME(CVA6Cfg.DebugEn, dpc)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.DebugEn, dscratch0)
-  `CONNECT_RVFI_SAME(CVA6Cfg.DebugEn, dscratch1)
+    `CONNECT_RVFI_SAME(CVA6Cfg.DebugEn, dscratch0)
+    `CONNECT_RVFI_SAME(CVA6Cfg.DebugEn, dscratch1)
 
-  `CONNECT_RVFI_FULL(CVA6Cfg.RVS, sstatus,
-                     csr.mstatus_extended & SMODE_STATUS_READ_MASK[CVA6Cfg.XLEN-1:0])
+    `CONNECT_RVFI_FULL(CVA6Cfg.RVS, sstatus, csr.mstatus_extended & SMODE_STATUS_READ_MASK[CVA6Cfg.XLEN-1:0])
 
-  `CONNECT_RVFI_FULL(CVA6Cfg.RVS, sie, csr.mie_q & csr.mideleg_q)
-  `CONNECT_RVFI_FULL(CVA6Cfg.RVS, sip, csr.mip_q & csr.mideleg_q)
+    `CONNECT_RVFI_FULL(CVA6Cfg.RVS, sie, csr.mie_q & csr.mideleg_q)
+    `CONNECT_RVFI_FULL(CVA6Cfg.RVS, sip, csr.mip_q & csr.mideleg_q)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, stvec)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, stvec)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, scounteren)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, scounteren)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, sscratch)
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, sepc)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, sscratch)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, sepc)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, scause)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, scause)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, stval)
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, satp)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, stval)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, satp)
 
-  `CONNECT_RVFI_FULL(1'b1, mstatus, csr.mstatus_extended)
+    `CONNECT_RVFI_FULL(1'b1, mstatus, csr.mstatus_extended)
 
-  bit [31:0] mstatush_q;
-  `CONNECT_RVFI_FULL(1'b1, mstatush, mstatush_q)
+    bit [31:0] mstatush_q;
+    `CONNECT_RVFI_FULL(1'b1, mstatush, mstatush_q)
 
-  `CONNECT_RVFI_FULL(1'b1, misa, IsaCode)
+    `CONNECT_RVFI_FULL(1'b1, misa, IsaCode)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, medeleg)
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVS, mideleg)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, medeleg)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVS, mideleg)
 
-  `CONNECT_RVFI_SAME(1'b1, mie)
-  `CONNECT_RVFI_SAME(1'b1, mtvec)
-  `CONNECT_RVFI_SAME(1'b1, mcounteren)
+    `CONNECT_RVFI_SAME(1'b1, mie)
+    `CONNECT_RVFI_SAME(1'b1, mtvec)
+    `CONNECT_RVFI_SAME(1'b1, mcounteren)
 
-  `CONNECT_RVFI_SAME(1'b1, mscratch)
+    `CONNECT_RVFI_SAME(1'b1, mscratch)
 
-  `CONNECT_RVFI_SAME(1'b1, mepc)
-  `CONNECT_RVFI_SAME(1'b1, mcause)
-  `CONNECT_RVFI_SAME(1'b1, mtval)
-  `CONNECT_RVFI_SAME(1'b1, mip)
+    `CONNECT_RVFI_SAME(1'b1, mepc)
+    `CONNECT_RVFI_SAME(1'b1, mcause)
+    `CONNECT_RVFI_SAME(1'b1, mtval)
+    `CONNECT_RVFI_SAME(1'b1, mip)
 
-  `CONNECT_RVFI_FULL(1'b1, menvcfg, csr.fiom_q)
+    `CONNECT_RVFI_FULL(1'b1, menvcfg, csr.fiom_q)
 
-  `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, menvcfgh, 32'h0)
+    `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, menvcfgh, 32'h0)
 
-  `CONNECT_RVFI_FULL(1'b1, mvendorid, OPENHWGROUP_MVENDORID)
-  `CONNECT_RVFI_FULL(1'b1, marchid, ARIANE_MARCHID)
-  `CONNECT_RVFI_FULL(1'b1, mhartid, hart_id_i)
+    `CONNECT_RVFI_FULL(1'b1, mvendorid, OPENHWGROUP_MVENDORID)
+    `CONNECT_RVFI_FULL(1'b1, marchid, ARIANE_MARCHID)
+    `CONNECT_RVFI_FULL(1'b1, mhartid, hart_id_i)
 
-  `CONNECT_RVFI_SAME(1'b1, mcountinhibit)
+    `CONNECT_RVFI_SAME(1'b1, mcountinhibit)
 
-  `CONNECT_RVFI_FULL(1'b1, mcycle, csr.cycle_q[CVA6Cfg.XLEN-1:0])
-  `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, mcycleh, csr.cycle_q[63:32])
+    `CONNECT_RVFI_FULL(1'b1, mcycle, csr.cycle_q[CVA6Cfg.XLEN-1:0])
+    `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, mcycleh, csr.cycle_q[63:32])
 
-  `CONNECT_RVFI_FULL(1'b1, minstret, csr.instret_q[CVA6Cfg.XLEN-1:0])
-  `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, minstreth, csr.instret_q[63:32])
+    `CONNECT_RVFI_FULL(1'b1, minstret, csr.instret_q[CVA6Cfg.XLEN-1:0])
+    `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, minstreth, csr.instret_q[63:32])
 
-  `CONNECT_RVFI_FULL(1'b1, cycle, csr.cycle_q[CVA6Cfg.XLEN-1:0])
-  `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, cycleh, csr.cycle_q[63:32])
+    `CONNECT_RVFI_FULL(1'b1, cycle, csr.cycle_q[CVA6Cfg.XLEN-1:0])
+    `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, cycleh, csr.cycle_q[63:32])
 
-  `CONNECT_RVFI_FULL(1'b1, instret, csr.instret_q[CVA6Cfg.XLEN-1:0])
-  `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, instreth, csr.instret_q[63:32])
+    `CONNECT_RVFI_FULL(1'b1, instret, csr.instret_q[CVA6Cfg.XLEN-1:0])
+    `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, instreth, csr.instret_q[63:32])
 
-  `CONNECT_RVFI_SAME(1'b1, dcache)
-  `CONNECT_RVFI_SAME(1'b1, icache)
+    `CONNECT_RVFI_SAME(1'b1, dcache)
+    `CONNECT_RVFI_SAME(1'b1, icache)
 
-  `CONNECT_RVFI_SAME(CVA6Cfg.EnableAccelerator, acc_cons)
-  `CONNECT_RVFI_SAME(CVA6Cfg.RVZCMT, jvt)
-  `CONNECT_RVFI_FULL(1'b1, pmpcfg0, csr.pmpcfg_q[CVA6Cfg.XLEN/8-1:0])
-  `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, pmpcfg1, csr.pmpcfg_q[7:4])
+    `CONNECT_RVFI_SAME(CVA6Cfg.EnableAccelerator, acc_cons)
+    `CONNECT_RVFI_SAME(CVA6Cfg.RVZCMT, jvt)
+    `CONNECT_RVFI_FULL(1'b1, pmpcfg0, csr.pmpcfg_q[CVA6Cfg.XLEN/8-1:0])
+    `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, pmpcfg1, csr.pmpcfg_q[7:4])
 
-  `CONNECT_RVFI_FULL(1'b1, pmpcfg2, csr.pmpcfg_q[8+:CVA6Cfg.XLEN/8])
-  `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, pmpcfg3, csr.pmpcfg_q[15:12])
+    `CONNECT_RVFI_FULL(1'b1, pmpcfg2, csr.pmpcfg_q[8+:CVA6Cfg.XLEN/8])
+    `CONNECT_RVFI_FULL(CVA6Cfg.XLEN == 32, pmpcfg3, csr.pmpcfg_q[15:12])
 
-  bit [CVA6Cfg.XLEN-1:0] pmpaddr_q;
-  genvar i;
-  generate
+    bit [CVA6Cfg.XLEN-1:0] pmpaddr_q;
+    genvar i;
     for (i = 0; i < 16; i++) begin
-      `CONNECT_RVFI_FULL(1'b1, pmpaddr[i], {
-                         csr.pmpaddr_q[i][CVA6Cfg.PLEN-3:1], pmpcfg_q[i].addr_mode[1]})
+      `CONNECT_RVFI_FULL(1'b1, pmpaddr[i], {csr.pmpaddr_q[i][CVA6Cfg.PLEN-3:1], pmpcfg_q[i].addr_mode[1]})
     end
-  endgenerate
-  ;
-
+  end
+  // verilog_format: on
 endmodule

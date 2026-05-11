@@ -49,6 +49,8 @@ module store_unit
     input logic amo_valid_commit_i,
     // Store result is valid - ISSUE_STAGE
     output logic valid_o,
+    // Store result is actually for an lr - TO_BE_COMPLETED
+    output logic st_is_actually_lr_o,
     // Transaction ID - ISSUE_STAGE
     output logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id_o,
     // Store result - ISSUE_STAGE
@@ -59,6 +61,8 @@ module store_unit
     output logic translation_req_o,
     // Addredd translation request is tagged data - TO_BE_COMPLETED
     output logic translation_req_is_cap_o,
+    // Translation req is actually for an lr - TO_BE_COMPLETED
+    output logic translation_req_is_actually_lr_o,
     // Virtual address - TO_BE_COMPLETED
     output logic [CVA6Cfg.VLEN-1:0] vaddr_o,
     // RVFI information - RVFI
@@ -184,15 +188,21 @@ module store_unit
   assign trans_id_o      = trans_id_q;  // transaction id from previous cycle
 
   always_comb begin : store_control
-    translation_req_o      = 1'b0;
-    valid_o                = 1'b0;
-    st_valid               = 1'b0;
-    st_valid_without_flush = 1'b0;
-    pop_st_o               = 1'b0;
-    ex_o                   = ex_i;
-    cap_translation_req_d  = cap_translation_req_q;
+    translation_req_o                = 1'b0;
+    translation_req_is_actually_lr_o = 1'b0;
+    valid_o                          = 1'b0;
+    st_is_actually_lr_o              = 1'b0;
+    st_valid                         = 1'b0;
+    st_valid_without_flush           = 1'b0;
+    pop_st_o                         = 1'b0;
+    ex_o                             = ex_i;
+    cap_translation_req_d            = cap_translation_req_q;
     if (CVA6Cfg.RVFI_DII && amo_op_q == AMO_SC && ex_i.cause == riscv::ST_ACCESS_FAULT) begin
       ex_o.valid = 1'b0;
+    end
+    if (amo_op_q == AMO_LR) begin
+      st_is_actually_lr_o = 1'b1;
+      translation_req_is_actually_lr_o = 1'b1;
     end
     trans_id_n = lsu_ctrl_i.trans_id;
     state_d    = state_q;

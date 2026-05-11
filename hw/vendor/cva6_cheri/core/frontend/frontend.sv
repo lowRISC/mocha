@@ -205,7 +205,6 @@ module frontend
     assign bht_prediction_shifted[0] = (serving_unaligned) ? bht_q : bht_prediction[addr[0][1]];
     assign btb_prediction_shifted[0] = (serving_unaligned) ? btb_q : btb_prediction[addr[0][1]];
   end
-  ;
 
   // for the return address stack it doesn't matter as we have the
   // address of the call/return already
@@ -340,7 +339,7 @@ module frontend
 
   // assert on branch, deassert when resolved
   logic speculative_q, speculative_d;
-  assign speculative_d = (speculative_q && !resolved_branch_i.valid || |is_branch || |is_return || |is_jalr) && !flush_i;
+  assign speculative_d = (speculative_q && !resolved_branch_i.valid || |is_branch || |is_return || |is_jalr) && !flush_i && !replay;
   assign icache_dreq_o.spec = speculative_d;
 
   assign bht_update.valid = resolved_branch_i.valid
