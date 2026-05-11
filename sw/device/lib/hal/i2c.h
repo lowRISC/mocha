@@ -92,3 +92,6 @@ void i2c_init(i2c_t i2c);
 
 bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
 uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr);
+
+// Enable I2C in controller mode
+void enable_controller_mode(i2c_t i2c);

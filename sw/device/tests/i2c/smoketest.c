@@ -32,6 +32,6 @@ bool test_main()
     i2c_init(i2c);
 
     // -- Configure IP for Controller mode --
-    VOLATILE_WRITE(i2c->ctrl, i2c_ctrl_enablehost);
+    enable_controller_mode(i2c);
     return as6212_test(i2c);
 }

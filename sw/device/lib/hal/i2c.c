@@ -132,3 +132,8 @@ uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr)
     }
     return 0xFF; // timeout
 }
+
+void enable_controller_mode(i2c_t i2c)
+{
+    VOLATILE_WRITE(i2c->ctrl, i2c_ctrl_enablehost);
+}
