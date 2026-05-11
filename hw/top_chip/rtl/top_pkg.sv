@@ -85,6 +85,13 @@ package top_pkg;
   // Memory address masks
   localparam longint unsigned EthernetMask = EthernetLength - 1;
 
+  // Entropy source parameters
+  localparam int EntropySrcRngBusWidth           = 16;
+  localparam int EntropySrcRngBusBitSelWidth     = 4;
+  localparam int EntropySrcHealthTestWindowWidth = 20;
+  localparam int EntropySrcEsFifoDepth           = 3;
+  localparam int EntropySrcDistrFifoDepth        = 11;
+
   // Tag controller parameters
   localparam int     unsigned CapSizeBits              = 128;
   localparam longint unsigned TagCacheMemLength        = DRAMPhysicalLength >> $clog2(CapSizeBits);
