@@ -229,3 +229,9 @@ void enable_controller_mode(i2c_t i2c)
 {
     VOLATILE_WRITE(i2c->ctrl, i2c_ctrl_enablehost);
 }
+
+uint8_t i2c_rdata_byte(i2c_t i2c)
+{
+    i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
+    return rdata_reg.rdata;
+}
