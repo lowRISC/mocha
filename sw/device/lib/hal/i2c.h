@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "autogen/i2c.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -86,8 +87,6 @@
 // Genesys2 with AS6212 I^2C sensor measured by Saleae analyser: rise ~450ns, fall ~120ns
 #define I2C_RISE_NS (450)
 #define I2C_FALL_NS (120)
-
-typedef void *i2c_t;
 
 void i2c_init(i2c_t i2c);
 

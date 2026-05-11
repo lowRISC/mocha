@@ -32,41 +32,63 @@ void i2c_init(i2c_t i2c)
     // cycles calculated are sufficient to still allow the clock stretching logic to function.
     //
     // SCL high cycles calculation adapted from OpenTitan sw/device/lib/dif/dif_i2c.c
+
+    // Calculate the timing paramters
     uint32_t rise_cycles = rnd_up_div(I2C_RISE_NS, SYSCLK_NS);
     uint32_t fall_cycles = rnd_up_div(I2C_FALL_NS, SYSCLK_NS);
     uint32_t scl_period_cycles = rnd_up_div((10000 /* 10000 ns -> 100 kHz */), SYSCLK_NS);
     uint32_t scl_low_cycles = rnd_up_div(4700, SYSCLK_NS);
     uint32_t scl_high_cycles = scl_period_cycles - scl_low_cycles - rise_cycles - fall_cycles;
-    DEV_WRITE(i2c + I2C_TIMING0_REG,
-              (scl_low_cycles << I2C_TIMING0_TLOW) | (scl_high_cycles << I2C_TIMING0_THIGH));
-    DEV_WRITE(i2c + I2C_TIMING1_REG,
-              (fall_cycles << I2C_TIMING1_T_F) | (rise_cycles << I2C_TIMING1_T_R));
-    DEV_WRITE(i2c + I2C_TIMING2_REG, (rnd_up_div(4000, SYSCLK_NS) << I2C_TIMING2_THD_STA) |
-                                         (rnd_up_div(4700, SYSCLK_NS) << I2C_TIMING2_TSU_STA));
-    DEV_WRITE(i2c + I2C_TIMING3_REG, ((1ul /* must be at least one */) << I2C_TIMING3_THD_DAT) |
-                                         (rnd_up_div(250, SYSCLK_NS) << I2C_TIMING3_TSU_DAT));
-    DEV_WRITE(i2c + I2C_TIMING4_REG, (rnd_up_div(4700, SYSCLK_NS) << I2C_TIMING4_T_BUF) |
-                                         (rnd_up_div(4000, SYSCLK_NS) << I2C_TIMING4_TSU_STO));
+    uint32_t setup_start_cycles = rnd_up_div(4700, SYSCLK_NS);
+    uint32_t hold_start_cycles = rnd_up_div(4000, SYSCLK_NS);
+    uint32_t setup_data_cycles = rnd_up_div(250, SYSCLK_NS);
+    uint32_t hold_data_cycles = 1u;
+    uint32_t setup_stop_cycles = rnd_up_div(4000, SYSCLK_NS);
+    uint32_t bus_free_time_cycles = rnd_up_div(4700, SYSCLK_NS);
+
+    // Declare timing registers
+    i2c_timing0 t0_reg = { .tlow = scl_low_cycles, .thigh = scl_high_cycles };
+    i2c_timing1 t1_reg = { .t_r = rise_cycles, .t_f = fall_cycles };
+    i2c_timing2 t2_reg = { .tsu_sta = setup_start_cycles, .thd_sta = hold_start_cycles };
+    i2c_timing3 t3_reg = { .tsu_dat = setup_data_cycles, .thd_dat = hold_data_cycles };
+    i2c_timing4 t4_reg = { .tsu_sto = setup_stop_cycles, .t_buf = bus_free_time_cycles };
+
+    VOLATILE_WRITE(i2c->timing0, t0_reg);
+    VOLATILE_WRITE(i2c->timing1, t1_reg);
+    VOLATILE_WRITE(i2c->timing2, t2_reg);
+    VOLATILE_WRITE(i2c->timing3, t3_reg);
+    VOLATILE_WRITE(i2c->timing4, t4_reg);
 }
 
 bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
 {
     // Reset FMT FIFO (because we currently don't clean-up after errors)
-    DEV_WRITE(i2c + I2C_FIFO_CTRL_REG, (1u << I2C_FIFO_CTRL_FMTRST));
+    i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
+    VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
 
     // Queue write request
-    DEV_WRITE(i2c + I2C_FDATA_REG,
-              ((1u << I2C_FDATA_START) | (((addr << 1) | 0u) << I2C_FDATA_FBYTE)));
-    DEV_WRITE(i2c + I2C_FDATA_REG, ((1u << I2C_FDATA_STOP) | (data << I2C_FDATA_FBYTE)));
+    //
+    // Send start bit, address and R/W bit first
+    i2c_fdata fdata_reg = { 0 };
+    fdata_reg.fbyte = addr << 1u; // fbyte[7:1] = addr; fbyte[0] = 0 -> write
+    fdata_reg.start = 1u;
+    VOLATILE_WRITE(i2c->fdata, fdata_reg);
+
+    // Send stop bit and data
+    fdata_reg.fbyte = data;
+    fdata_reg.start = 0;
+    fdata_reg.stop = 1u;
+    VOLATILE_WRITE(i2c->fdata, fdata_reg);
 
     // Wait for transaction to complete and report simple succeed/fail
     for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
-        uint32_t intr_state = DEV_READ(i2c + I2C_INTR_STATE_REG);
-        if (intr_state & (1u << I2C_INTR_STATE_CONTROLLER_HALT)) {
+        i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
+        if (i2c_intr_state_reg & i2c_intr_controller_halt) {
             return false; // transaction failed
         }
-        if (intr_state & (1u << I2C_INTR_STATE_CMD_COMPLETE)) {
-            if (DEV_READ(i2c + I2C_STATUS_REG) & (1u << I2C_STATUS_FMTEMPTY)) {
+        if (i2c_intr_state_reg & i2c_intr_cmd_complete) {
+            i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
+            if (i2c_status_reg & i2c_status_fmtempty) {
                 return true; // transaction succeeded
             }
         }
@@ -77,22 +99,35 @@ bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
 uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr)
 {
     // Reset FMT FIFO (because we currently don't clean-up after errors)
-    DEV_WRITE(i2c + I2C_FIFO_CTRL_REG, (1u << I2C_FIFO_CTRL_FMTRST));
+    i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
+    VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
 
     // Queue read request
-    DEV_WRITE(i2c + I2C_FDATA_REG,
-              ((1u << I2C_FDATA_START) | (((addr << 1) | 1u) << I2C_FDATA_FBYTE)));
-    DEV_WRITE(i2c + I2C_FDATA_REG,
-              ((1u << I2C_FDATA_READB) | (1u << I2C_FDATA_STOP) | (1u << I2C_FDATA_FBYTE)));
+    //
+    // Send start bit, address and R/W bit first
+    i2c_fdata fdata_reg = { 0 };
+    fdata_reg.fbyte = (addr << 1u) | 1u; // fbyte[7:1] = addr; fbyte[0] = 1 -> read
+    fdata_reg.start = 1u;
+    VOLATILE_WRITE(i2c->fdata, fdata_reg);
+
+    // Send stop bit, read bit and number of bytes to read
+    fdata_reg.readb = 1u;
+    fdata_reg.fbyte = 1u; // If readb = 1 then fbyte contains the number of bytes to read
+    fdata_reg.start = 0;
+    fdata_reg.stop = 1u;
+    VOLATILE_WRITE(i2c->fdata, fdata_reg);
 
     // Wait for transaction to complete and return either read data or 0xFF
     for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
-        if (DEV_READ(i2c + I2C_INTR_STATE_REG) & (1u << I2C_INTR_STATE_CONTROLLER_HALT)) {
+        i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
+        if (i2c_intr_state_reg & i2c_intr_controller_halt) {
             return 0xFF; // transaction failed
         }
-        if (DEV_READ(i2c + I2C_STATUS_REG) & (1u << I2C_STATUS_FMTEMPTY)) {
+        i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
+        if (i2c_status_reg & i2c_status_fmtempty) {
             // transaction succeeded, return read data
-            return DEV_READ(i2c + I2C_RDATA_REG);
+            i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
+            return rdata_reg.rdata;
         }
     }
     return 0xFF; // timeout
