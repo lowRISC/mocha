@@ -44,6 +44,12 @@ module xbar_peri_bind;
     .h2d    (tl_rom_ctrl_regs_o),
     .d2h    (tl_rom_ctrl_regs_i)
   );
+  bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_entropy_src (
+    .clk_i  (clk_io_i),
+    .rst_ni (rst_io_ni),
+    .h2d    (tl_entropy_src_o),
+    .d2h    (tl_entropy_src_i)
+  );
   bind xbar_peri tlul_assert #(.EndpointType("Host")) tlul_assert_device_uart (
     .clk_i  (clk_io_i),
     .rst_ni (rst_io_ni),
