@@ -33,7 +33,7 @@ int main(void)
         if (check_wr_xfer_status(i2c)) { // select TVAL reg; also a presence check
             i2c_read_byte(i2c, 0x48u);
             if (check_rd_xfer_status(i2c)) {
-                uint16_t sensor_reading = DEV_READ(i2c + I2C_RDATA_REG); // read TVAl reg
+                uint16_t sensor_reading = i2c_rdata_byte(i2c); // read TVAl reg
                 uprintf(uart, "Temperature: 0x%x degC\n",
                         (sensor_reading << 1)); // no decimal printf
             }
