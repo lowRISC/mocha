@@ -28,8 +28,7 @@ static bool as6212_test(i2c_t i2c)
     }
 
     // If the read was successful, then retrieve the data from the fifo.
-    i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
-    uint8_t byte = rdata_reg.rdata;
+    uint8_t byte = i2c_rdata_byte(i2c);
 
     int16_t tval = byte; // signed, as temperature can be negative
     tval <<= 8; // first byte is the most-significant byte of two
