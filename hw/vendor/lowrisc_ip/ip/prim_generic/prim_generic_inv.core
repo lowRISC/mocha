@@ -3,15 +3,15 @@ CAPI=2:
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-name: "lowrisc:prim_xilinx:xor2"
-description: "Xilinx 2-input xor"
+name: "lowrisc:prim_generic:inv"
+description: "inverter"
 virtual:
-  - lowrisc:prim:xor2
+  - lowrisc:prim:inv
 
 filesets:
   files_rtl:
     files:
-      - rtl/prim_xor2.sv
+      - rtl/prim_inv.sv
     file_type: systemVerilogSource
 
   files_verilator_waiver:

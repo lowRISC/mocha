@@ -4,16 +4,13 @@
 
 `include "prim_assert.sv"
 
-// Prevent Vivado from performing optimizations on/across this module.
-(* DONT_TOUCH = "yes" *)
-module prim_xnor2 #(
+module prim_inv #(
   parameter int Width = 1
 ) (
-  input [Width-1:0] in0_i,
-  input [Width-1:0] in1_i,
+  input  logic [Width-1:0] in_i,
   output logic [Width-1:0] out_o
 );
 
-  assign out_o = ~(in0_i ^ in1_i);
+  assign out_o = ~in_i;
 
 endmodule
