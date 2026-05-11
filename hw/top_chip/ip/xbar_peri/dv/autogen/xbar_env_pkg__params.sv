@@ -22,6 +22,9 @@ tl_device_t xbar_devices[$] = '{
     '{"rom_ctrl_regs", '{
         '{32'h40050000, 32'h4005ffff}
     }},
+    '{"entropy_src", '{
+        '{32'h40060000, 32'h4006ffff}
+    }},
     '{"uart", '{
         '{32'h41000000, 32'h4100ffff}
     }},
@@ -49,6 +52,7 @@ tl_host_t xbar_hosts[$] = '{
         "rstmgr",
         "pwrmgr",
         "rom_ctrl_regs",
+        "entropy_src",
         "uart",
         "i2c",
         "spi_device",
