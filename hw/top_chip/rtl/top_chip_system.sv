@@ -56,6 +56,11 @@ module top_chip_system #(
   output logic [             3:0] spi_host_sd_en_o,
   input  logic [             3:0] spi_host_sd_i,
 
+  // Entropy source noise source.
+  output logic                                      entropy_src_rng_enable_o,
+  input  logic                                      entropy_src_rng_valid_i,
+  input  logic [top_pkg::EntropySrcRngBusWidth-1:0] entropy_src_rng_bits_i,
+
   // DRAM AXI interface.
   output top_pkg::axi_dram_req_t  dram_req_o,
   input  top_pkg::axi_dram_resp_t dram_resp_i,
@@ -862,9 +867,9 @@ module top_chip_system #(
     .entropy_src_hw_if_o ( ),
 
     // Noise source connections
-    .entropy_src_rng_enable_o (), // TODO
-    .entropy_src_rng_valid_i  ('1),
-    .entropy_src_rng_bits_i   ('1),
+    .entropy_src_rng_enable_o (entropy_src_rng_enable_o),
+    .entropy_src_rng_valid_i  (entropy_src_rng_valid_i),
+    .entropy_src_rng_bits_i   (entropy_src_rng_bits_i),
 
     // Unused external health test interface
     .entropy_src_xht_valid_o              ( ),

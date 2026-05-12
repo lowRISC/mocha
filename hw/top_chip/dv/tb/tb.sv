@@ -33,6 +33,11 @@ module tb;
   logic [3:0] spi_host_sd;
   logic [3:0] spi_host_sd_en;
 
+  // Noise source connections
+  logic                                      rng_enable;
+  logic                                      rng_valid;
+  logic [top_pkg::EntropySrcRngBusWidth-1:0] rng_bits;
+
   // ------ Interfaces ------
   clk_rst_if sys_clk_if(.clk(clk), .rst_n(rst_n));
   uart_if uart_if();
@@ -49,6 +54,17 @@ module tb;
     // AXI interface.
     .axi_req_i  (dram_req                        ),
     .axi_resp_o (dram_resp                       )
+  );
+
+  // ------ Noise source ------
+  rng u_rng(
+    .clk_i  (dut.clkmgr_clocks.clk_io_infra),
+    .rst_ni (dut.rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+
+    // Entropy output bus
+    .rng_enable_i (rng_enable),
+    .rng_valid_o  (rng_valid),
+    .rng_bits_o   (rng_bits)
   );
 
   // ------ DUT ------
@@ -90,6 +106,10 @@ module tb;
     // This only works in standard mode where sd_o[0]=COPI and
     // sd_i[1]=CIPO.
     .spi_host_sd_i        ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
+    // Entropy source.
+    .entropy_src_rng_enable_o (rng_enable   ),
+    .entropy_src_rng_valid_i  (rng_valid    ),
+    .entropy_src_rng_bits_i   (rng_bits     ),
     // DRAM.
     .dram_req_o           (dram_req         ),
     .dram_resp_i          (dram_resp        ),

@@ -10,6 +10,7 @@ filesets:
     depend:
       - lowrisc:prim:mubi
       - lowrisc:prim_generic:all
+      - lowrisc:mocha:rng
       - lowrisc:mocha:top_chip_system
 
   files_verilator:

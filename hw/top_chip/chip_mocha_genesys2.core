@@ -10,6 +10,7 @@ filesets:
       - lowrisc:mocha:top_chip_system
       - lowrisc:prim_xilinx:all
       - lowrisc::ethernet
+      - lowrisc:mocha:rng
       - pulp-platform.org::axi
     files:
       - rtl/clkgen_xil7series.sv
