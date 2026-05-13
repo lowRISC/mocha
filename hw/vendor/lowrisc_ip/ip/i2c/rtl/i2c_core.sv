@@ -280,8 +280,8 @@ module i2c_core import i2c_pkg::*;
        scl_rx_val <= 16'h0;
        sda_rx_val <= 16'h0;
     end else begin
-       scl_rx_val <= {scl_rx_val[14:0], scl_i};
-       sda_rx_val <= {sda_rx_val[14:0], sda_i};
+       scl_rx_val <= {scl_rx_val[14:0], scl_sync};
+       sda_rx_val <= {sda_rx_val[14:0], sda_sync};
     end
   end
 
