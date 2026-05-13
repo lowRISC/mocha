@@ -54,8 +54,8 @@ void spi_device_4b_addr_mode_enable_set(spi_device_t spi_device, bool enable)
     VOLATILE_WRITE(spi_device->addr_mode, addr_mode);
 
     // Wait for change to take effect
-    while (VOLATILE_READ(spi_device->addr_mode).pending) {
-    }
+    // while (VOLATILE_READ(spi_device->addr_mode).pending) {
+    // }
 }
 
 bool spi_device_4b_addr_mode_enable_get(spi_device_t spi_device)
