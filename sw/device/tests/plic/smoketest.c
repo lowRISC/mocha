@@ -18,8 +18,8 @@ bool reg_test(plic_t plic)
 {
     plic_init(plic);
 
-    plic_interrupt_priority_write(plic, mocha_system_irq_unmapped_4, 2);
-    if ((plic_interrupt_priority_read(plic, mocha_system_irq_unmapped_4) != 2)) {
+    plic_interrupt_priority_write(plic, mocha_system_irq_unmapped_28, 2);
+    if ((plic_interrupt_priority_read(plic, mocha_system_irq_unmapped_28) != 2)) {
         return false;
     }
 

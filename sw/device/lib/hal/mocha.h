@@ -7,6 +7,7 @@
 #pragma once
 
 #include "hal/clkmgr.h"
+#include "hal/entropy_src.h"
 #include "hal/ethernet.h"
 #include "hal/gpio.h"
 #include "hal/i2c.h"
@@ -41,6 +42,7 @@ clkmgr_t mocha_system_clkmgr(void);
 rstmgr_t mocha_system_rstmgr(void);
 pwrmgr_t mocha_system_pwrmgr(void);
 rom_ctrl_t mocha_system_rom_ctrl(void);
+entropy_src_t mocha_system_entropy_src(void);
 uart_t mocha_system_uart(void);
 i2c_t mocha_system_i2c(void);
 spi_device_t mocha_system_spi_device(void);

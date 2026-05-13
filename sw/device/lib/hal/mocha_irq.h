@@ -15,8 +15,8 @@ enum [[clang::flag_enum]] mocha_system_irq : uint32_t {
     mocha_system_irq_unmapped_1 = (1u << 1),
     mocha_system_irq_unmapped_2 = (1u << 2),
     mocha_system_irq_unmapped_3 = (1u << 3),
-    mocha_system_irq_unmapped_4 = (1u << 4),
-    mocha_system_irq_unmapped_5 = (1u << 5),
+    mocha_system_irq_entropy_src = (1u << 4),
+    mocha_system_irq_spi_host = (1u << 5),
     mocha_system_irq_i2c = (1u << 6),
     mocha_system_irq_spi_device = (1u << 7),
     mocha_system_irq_uart = (1u << 8),
@@ -42,5 +42,5 @@ enum [[clang::flag_enum]] mocha_system_irq : uint32_t {
     mocha_system_irq_unmapped_28 = (1u << 28),
     mocha_system_irq_unmapped_29 = (1u << 29),
     mocha_system_irq_unmapped_30 = (1u << 30),
-    mocha_system_irq_unmapped_31 = (1u << 31),
+    mocha_system_irq_ethernet = (1u << 31),
 };
