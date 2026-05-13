@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-bool rapid_write_test()
+static bool rapid_write_test()
 {
     uint64_t d1 = 0xB03747F359ABBCFEUL, res1;
     uint64_t d2 = 0x0A197F0071E028A1UL, res2;
