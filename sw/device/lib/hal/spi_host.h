@@ -15,6 +15,7 @@
 #define SPI_HOST_CONTROL_SPIEN_MASK              (1u << 31)
 #define SPI_HOST_CONTROL_OUTPUTEN_MASK           (1u << 29)
 #define SPI_HOST_STATUS_REG                      (0x14)
+#define SPI_HOST_STATUS_ACTIVE_MASK              (1u << 30)
 #define SPI_HOST_CONFIGOPTS_REG                  (0x18)
 #define SPI_HOST_CSID_REG                        (0x1C)
 #define SPI_HOST_COMMAND_REG                     (0x20)
@@ -32,3 +33,5 @@ typedef void *spi_host_t;
 void spi_host_init(spi_host_t spi_host);
 void spi_host_write(spi_host_t spi_host, uint32_t data);
 uint32_t spi_host_read(spi_host_t spi_host);
+uint32_t spi_host_status(spi_host_t spi_host);
+void spi_host_wait_for_idle(spi_host_t spi_host);
