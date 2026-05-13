@@ -22,6 +22,14 @@ void uart_interrupt_force(uart_t uart, uart_intr intrs);
 void uart_interrupt_clear(uart_t uart, uart_intr intrs);
 bool uart_interrupt_all_pending(uart_t uart, uart_intr intrs);
 bool uart_interrupt_any_pending(uart_t uart, uart_intr intrs);
+bool uart_status_any(uart_t uart, uart_status status);
+bool uart_status_all(uart_t uart, uart_status status);
+
+static inline void uart_wait_for(uart_t uart, uart_status status)
+{
+    while (!uart_status_any(uart, status)) {
+    };
+}
 
 void uart_loopback_set(uart_t uart, bool system_enable, bool line_enable);
 char uart_in(uart_t uart);
