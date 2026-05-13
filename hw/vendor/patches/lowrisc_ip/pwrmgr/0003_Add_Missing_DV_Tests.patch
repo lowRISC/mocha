@@ -1,0 +1,28 @@
+diff --git a/dv/pwrmgr_sim_cfg.hjson.tpl b/dv/pwrmgr_sim_cfg.hjson.tpl
+index 93de583..5deaf02 100644
+--- a/dv/pwrmgr_sim_cfg.hjson.tpl
++++ b/dv/pwrmgr_sim_cfg.hjson.tpl
+@@ -85,6 +85,11 @@
+       uvm_test_seq: pwrmgr_wakeup_reset_vseq
+       run_opts: ["+test_timeout_ns=1000000"]
+     }
++    {
++      name: pwrmgr_repeat_wakeup_reset
++      uvm_test_seq: pwrmgr_repeat_wakeup_reset_vseq
++      run_opts: ["+test_timeout_ns=1000000"]
++    }
+     {
+       name: pwrmgr_aborted_low_power
+       uvm_test_seq: pwrmgr_aborted_low_power_vseq
+@@ -139,6 +144,11 @@
+       uvm_test_seq: pwrmgr_lowpower_invalid_vseq
+       run_opts: ["+test_timeout_ns=1000000"]
+     }
++    {
++      name: pwrmgr_stress_all
++      uvm_test_seq: pwrmgr_stress_all_vseq
++      run_opts: ["+test_timeout_ns=1000000"]
++    }
+   ]
+ 
+   // List of regressions.
