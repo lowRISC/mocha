@@ -16,6 +16,7 @@ bool test_main()
     spi_host = mocha_system_spi_host();
     spi_host_init(spi_host);
     spi_host_write(spi_host, tx_data);
+    spi_host_wait_for_idle(spi_host);
     rx_data = spi_host_read(spi_host);
     return tx_data == rx_data;
 }
