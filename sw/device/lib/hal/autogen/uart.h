@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 typedef enum [[clang::flag_enum]] uart_intr : uint32_t {
+    uart_intr_none = 0,
     uart_intr_tx_watermark = (1u << 0),
     uart_intr_rx_watermark = (1u << 1),
     uart_intr_tx_done = (1u << 2),
@@ -40,6 +41,7 @@ typedef struct [[gnu::aligned(4)]] {
 } uart_ctrl;
 
 typedef enum [[clang::flag_enum]] uart_status : uint32_t {
+    uart_status_none = 0,
     uart_status_txfull = (1u << 0),
     uart_status_rxfull = (1u << 1),
     uart_status_txempty = (1u << 2),
@@ -74,6 +76,7 @@ typedef struct [[gnu::aligned(4)]] {
 } uart_fifo_status;
 
 typedef enum [[clang::flag_enum]] uart_ovrd : uint32_t {
+    uart_ovrd_none = 0,
     uart_ovrd_txen = (1u << 0),
     uart_ovrd_txval = (1u << 1),
 } uart_ovrd;

@@ -14,6 +14,7 @@ typedef struct [[gnu::aligned(4)]] {
 } rom_ctrl_alert_test;
 
 typedef enum [[clang::flag_enum]] rom_ctrl_fatal_alert_cause : uint32_t {
+    rom_ctrl_fatal_alert_cause_none = 0,
     rom_ctrl_fatal_alert_cause_checker_error = (1u << 0),
     rom_ctrl_fatal_alert_cause_integrity_error = (1u << 1),
 } rom_ctrl_fatal_alert_cause;

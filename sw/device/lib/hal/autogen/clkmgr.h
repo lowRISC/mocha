@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 typedef enum [[clang::flag_enum]] clkmgr_alert_test : uint32_t {
+    clkmgr_alert_test_none = 0,
     clkmgr_alert_test_recov_fault = (1u << 0),
     clkmgr_alert_test_fatal_fault = (1u << 1),
 } clkmgr_alert_test;
@@ -66,6 +67,7 @@ typedef struct [[gnu::aligned(4)]] {
 } clkmgr_main_meas_ctrl_shadowed;
 
 typedef enum [[clang::flag_enum]] clkmgr_recov_err_code : uint32_t {
+    clkmgr_recov_err_code_none = 0,
     clkmgr_recov_err_code_shadow_update_err = (1u << 0),
     clkmgr_recov_err_code_io_measure_err = (1u << 1),
     clkmgr_recov_err_code_main_measure_err = (1u << 2),
@@ -74,6 +76,7 @@ typedef enum [[clang::flag_enum]] clkmgr_recov_err_code : uint32_t {
 } clkmgr_recov_err_code;
 
 typedef enum [[clang::flag_enum]] clkmgr_fatal_err_code : uint32_t {
+    clkmgr_fatal_err_code_none = 0,
     clkmgr_fatal_err_code_reg_intg = (1u << 0),
     clkmgr_fatal_err_code_idle_cnt = (1u << 1),
     clkmgr_fatal_err_code_shadow_storage_err = (1u << 2),

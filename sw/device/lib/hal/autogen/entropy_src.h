@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 typedef enum [[clang::flag_enum]] entropy_src_intr : uint32_t {
+    entropy_src_intr_none = 0,
     entropy_src_intr_es_entropy_valid = (1u << 0),
     entropy_src_intr_es_health_test_failed = (1u << 1),
     entropy_src_intr_es_observe_fifo_ready = (1u << 2),
@@ -16,6 +17,7 @@ typedef enum [[clang::flag_enum]] entropy_src_intr : uint32_t {
 } entropy_src_intr;
 
 typedef enum [[clang::flag_enum]] entropy_src_alert_test : uint32_t {
+    entropy_src_alert_test_none = 0,
     entropy_src_alert_test_recov_alert = (1u << 0),
     entropy_src_alert_test_fatal_alert = (1u << 1),
 } entropy_src_alert_test;

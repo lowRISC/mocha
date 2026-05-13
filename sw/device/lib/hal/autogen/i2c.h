@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 typedef enum [[clang::flag_enum]] i2c_intr : uint32_t {
+    i2c_intr_none = 0,
     i2c_intr_fmt_threshold = (1u << 0),
     i2c_intr_rx_threshold = (1u << 1),
     i2c_intr_acq_threshold = (1u << 2),
@@ -32,6 +33,7 @@ typedef struct [[gnu::aligned(4)]] {
 } i2c_alert_test;
 
 typedef enum [[clang::flag_enum]] i2c_ctrl : uint32_t {
+    i2c_ctrl_none = 0,
     i2c_ctrl_enablehost = (1u << 0),
     i2c_ctrl_enabletarget = (1u << 1),
     i2c_ctrl_llpbk = (1u << 2),
@@ -42,6 +44,7 @@ typedef enum [[clang::flag_enum]] i2c_ctrl : uint32_t {
 } i2c_ctrl;
 
 typedef enum [[clang::flag_enum]] i2c_status : uint32_t {
+    i2c_status_none = 0,
     i2c_status_fmtfull = (1u << 0),
     i2c_status_rxfull = (1u << 1),
     i2c_status_fmtempty = (1u << 2),
@@ -108,6 +111,7 @@ typedef struct [[gnu::aligned(4)]] {
 } i2c_target_fifo_status;
 
 typedef enum [[clang::flag_enum]] i2c_ovrd : uint32_t {
+    i2c_ovrd_none = 0,
     i2c_ovrd_txovrden = (1u << 0),
     i2c_ovrd_sclval = (1u << 1),
     i2c_ovrd_sdaval = (1u << 2),
@@ -210,6 +214,7 @@ typedef struct [[gnu::aligned(4)]] {
 } i2c_acq_fifo_next_data;
 
 typedef enum [[clang::flag_enum]] i2c_controller_events : uint32_t {
+    i2c_controller_events_none = 0,
     i2c_controller_events_nack = (1u << 0),
     i2c_controller_events_unhandled_nack_timeout = (1u << 1),
     i2c_controller_events_bus_timeout = (1u << 2),
@@ -217,6 +222,7 @@ typedef enum [[clang::flag_enum]] i2c_controller_events : uint32_t {
 } i2c_controller_events;
 
 typedef enum [[clang::flag_enum]] i2c_target_events : uint32_t {
+    i2c_target_events_none = 0,
     i2c_target_events_tx_pending = (1u << 0),
     i2c_target_events_bus_timeout = (1u << 1),
     i2c_target_events_arbitration_lost = (1u << 2),
