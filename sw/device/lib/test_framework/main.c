@@ -78,9 +78,13 @@ test_exception_handler(struct trap_registers *registers, struct trap_context *co
     void *dv_test_status = mocha_system_dv_test_status();
 
     uart_init(console);
+    // Flush the uart
+    uart_wait_for(console, uart_status_txidle);
     DEV_WRITE(dv_test_status, TEST_STATUS_IN_TEST);
 
     bool result = test_main(console);
+    // Flush the uart
+    uart_wait_for(console, uart_status_txidle);
 
     test_exit(result);
 }
