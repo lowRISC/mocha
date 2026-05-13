@@ -32,14 +32,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(LDS_DIR "${CMAKE_SOURCE_DIR}/device/lib/boot")
 
 string(CONCAT CMAKE_CXX_FLAGS_INIT
-  "-std=c++20 -O0 -g"
+  "-std=c++20 -O1 -g"
   " -ffreestanding -static"
   " -fno-builtin -fno-exceptions -fno-c++-static-destructors -fno-rtti"
   " -Wall -Wextra"
 )
 
 string(CONCAT CMAKE_C_FLAGS_INIT
-  "-std=c99 -O0 -g"
+  "-std=c99 -O1 -g"
   " -ffreestanding -static"
   " -fno-builtin"
   " -Wall -Wextra"
