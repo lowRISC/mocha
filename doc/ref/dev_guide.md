@@ -104,8 +104,9 @@ Changing directory outside the repository root will deactivate the dev shell for
 
 ### Build
 
-Software binaries are built using CMake.
+Mocha software binaries are built using CMake.
 
+To build all software binaries, run:
 ```sh
 # Setup the buildsystem.
 cmake -B build/sw -S sw
@@ -113,9 +114,12 @@ cmake -B build/sw -S sw
 cmake --build build/sw -j $(nproc)
 ```
 
+Outputs with the suffix "_sram" exist only for UVM-based tests, as they presently lack a DRAM backdoor-load mechanism.
+
 ### Code Quality
 
-For software written in C, `clang-format` and `clang-tidy` are used format and lint the code. Wrapper scripts to run these on all C files in the project are provided for convenience.
+For software written in C, `clang-format` and `clang-tidy` are used to format and lint the code.
+Wrapper scripts to run these on all C files in the project are provided for convenience.
 
 To format and lint, run:
 ```sh
@@ -127,19 +131,24 @@ util/clang_tidy.py
 
 ## Simulation
 
-We use Verilator to simulate our hardware design and use FuseSoC as a build system:
+We use Verilator to simulate our hardware design and use FuseSoC as a build system.
+
+To build and run a Verilator simulation of Mocha, run:
 ```sh
 # Build simulator.
-fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
+fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="-j 4 --threads 2 --trace-threads 2" --make_options="-j 4"
 # Run simulator.
-build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -E build/sw/device/examples/hello_world_verilator
+build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -E build/sw/device/bootrom/bootrom -E build/sw/device/examples/hello_world
 ```
+
+Note that the `-j 4` arguments speed up simulator building, while the `--threads 2 --trace-threads 2` arguments speed up simulator running.
+For maximum tracing performance, omit `--threads 2`.
+For maximum non-tracing performance, or when using Verilator v5.048 onwards, omit `--trace-threads 2`.
 
 One specific feature of our simulator is that you can exit the simulation by using the following magic string:
 `Safe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7`
 
-
-To run the verilator tests, first build the software, then run:
+To run the Verilator tests, first build the software, then run:
 ```sh
 ctest --test-dir build/sw -R sim_verilator
 ```
@@ -160,25 +169,51 @@ usermod -a -G plugdev $USER
 
 ### Build bitstream
 
-Make sure that Vivado is on your path, then run:
+To build a bitstream with the boot-ROM, make sure that Vivado is on your path, then run:
 ```sh
-fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --RomInitFile=$PWD/build/sw/device/examples/hello_world.vmem
+fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --RomInitFile=$PWD/build/sw/device/bootrom/bootrom.vmem
+# Nix alternative: `nix run .#bitstream-build`
 ```
 
-### Test on Genesys2
+### Test on Genesys 2
 
-Connect to the "UART" and "JTAG" USB ports on the Genesys2 board.
+To exercise a bitstream using a Genesys 2 board, perform the following steps.
+
+Connect to the "UART" and "JTAG" USB ports on the Genesys 2 board.
+
+Load the bitstream into the Genesys 2 FPGA:
+```sh
+openFPGALoader -b genesys2 build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+# Nix alternative: `nix run .#bitstream-load`
+```
+
+Then, to load and run a single software binary on FPGA, first build the software, then run:
+```sh
+./util/fpga_runner.py build/sw/device/examples/hello_world
+```
+
+Or, to run all the FPGA tests, first build the software, then run:
+```sh
+ctest --test-dir build/sw -R fpga_genesys2
+```
+
+### Standalone UART
+
+The UART output will be automatically presented when using `fpga_runner.py` or `ctest`, but otherwise requires a UART terminal.
 
 Open a UART terminal with 1Mbps baud rate:
 ```sh
 screen /dev/ttyUSB0 1000000
+# Alternative: `picocom /dev/ttyUSB0 -b 1000000 --imap lfcrlf`
 ```
 You may have to change the ttyUSB number.
 
-Then load the bitstream onto Genesys 2:
-```sh
-openFPGALoader -b genesys2 build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
-```
+### Additional hardware
+
+Some peripheral tests require additional hardware to be connected to the Genesys 2 board:
+
+- I^2C: AS6212 Temperature Sensor connected to header "JA" according to PMOD Interface Type 6 (I^2C).
+  - i.e. header "JA" top-row left-to-right: VCC, GND, SDA, SCL, (NC), (NC)
 
 ## Verification
 
