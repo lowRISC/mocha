@@ -13,32 +13,32 @@ enum {
     mip_read_retry_count = 20u,
 };
 
-bool cmd_filter_readback_test(spi_device_t spi_device, uint32_t offset)
+bool cmd_filter_readback_test(spi_device_t spi_device, uint8_t idx)
 {
-    spi_device_cmd_filter_set(spi_device, offset, 0x55555555);
-    if (spi_device_cmd_filter_get(spi_device, offset) != 0x55555555) {
+    spi_device_cmd_filter_set(spi_device, idx, 0x55555555);
+    if (spi_device_cmd_filter_get(spi_device, idx) != 0x55555555) {
         return false;
     }
 
-    spi_device_cmd_filter_set(spi_device, offset, 0xAAAAAAAA);
-    if (spi_device_cmd_filter_get(spi_device, offset) != 0xAAAAAAAA) {
+    spi_device_cmd_filter_set(spi_device, idx, 0xAAAAAAAA);
+    if (spi_device_cmd_filter_get(spi_device, idx) != 0xAAAAAAAA) {
         return false;
     }
 
     return true;
 }
 
-bool cmd_info_readback_test(spi_device_t spi_device, uint32_t offset)
+bool cmd_info_readback_test(spi_device_t spi_device, uint8_t idx)
 {
     const uint32_t CMD_INFO_RESET_MASK = 0x83FFFFFF;
-    spi_device_cmd_info_set_raw(spi_device, offset, 0xAAAAAAAA & CMD_INFO_RESET_MASK);
-    if ((spi_device_cmd_info_get(spi_device, offset) & CMD_INFO_RESET_MASK) !=
+    spi_device_cmd_info_set_raw(spi_device, idx, 0xAAAAAAAA & CMD_INFO_RESET_MASK);
+    if ((spi_device_cmd_info_get(spi_device, idx) & CMD_INFO_RESET_MASK) !=
         (0xAAAAAAAA & CMD_INFO_RESET_MASK)) {
         return false;
     }
 
-    spi_device_cmd_info_set_raw(spi_device, offset, 0x55555555 & CMD_INFO_RESET_MASK);
-    if ((spi_device_cmd_info_get(spi_device, offset) & CMD_INFO_RESET_MASK) !=
+    spi_device_cmd_info_set_raw(spi_device, idx, 0x55555555 & CMD_INFO_RESET_MASK);
+    if ((spi_device_cmd_info_get(spi_device, idx) & CMD_INFO_RESET_MASK) !=
         (0x55555555 & CMD_INFO_RESET_MASK)) {
         return false;
     }
@@ -83,25 +83,17 @@ bool reg_test(spi_device_t spi_device)
         return false;
     }
 
-    if (!(cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_0_REG) &&
-          cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_1_REG) &&
-          cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_2_REG) &&
-          cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_3_REG) &&
-          cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_4_REG) &&
-          cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_5_REG) &&
-          cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_6_REG) &&
-          cmd_filter_readback_test(spi_device, SPI_DEVICE_CMD_FILTER_7_REG))) {
+    if (!(cmd_filter_readback_test(spi_device, 0) && cmd_filter_readback_test(spi_device, 1) &&
+          cmd_filter_readback_test(spi_device, 2) && cmd_filter_readback_test(spi_device, 3) &&
+          cmd_filter_readback_test(spi_device, 4) && cmd_filter_readback_test(spi_device, 5) &&
+          cmd_filter_readback_test(spi_device, 6) && cmd_filter_readback_test(spi_device, 7))) {
         return false;
     }
 
-    if (!(cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_0_REG) &&
-          cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_1_REG) &&
-          cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_2_REG) &&
-          cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_3_REG) &&
-          cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_20_REG) &&
-          cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_21_REG) &&
-          cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_22_REG) &&
-          cmd_info_readback_test(spi_device, SPI_DEVICE_CMD_INFO_23_REG))) {
+    if (!(cmd_info_readback_test(spi_device, 0) && cmd_info_readback_test(spi_device, 1) &&
+          cmd_info_readback_test(spi_device, 2) && cmd_info_readback_test(spi_device, 3) &&
+          cmd_info_readback_test(spi_device, 20) && cmd_info_readback_test(spi_device, 21) &&
+          cmd_info_readback_test(spi_device, 22) && cmd_info_readback_test(spi_device, 23))) {
         return false;
     }
 
@@ -116,8 +108,8 @@ bool machine_irq_test(spi_device_t spi_device, plic_t plic)
     plic_interrupt_priority_write(plic, mocha_system_irq_spi_device, 3);
     plic_machine_priority_threshold_write(plic, 0);
 
-    spi_device_interrupt_disable_all(spi_device);
-    spi_device_interrupt_enable(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
+    spi_device_interrupt_enable_write(spi_device, spi_device_intr_none);
+    spi_device_interrupt_enable_set(spi_device, spi_device_intr_upload_payload_overflow);
 
     plic_machine_interrupt_enable_set(plic, mocha_system_irq_spi_device);
 
@@ -126,7 +118,7 @@ bool machine_irq_test(spi_device_t spi_device, plic_t plic)
         return false;
     }
 
-    spi_device_interrupt_trigger(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
+    spi_device_interrupt_force(spi_device, spi_device_intr_upload_payload_overflow);
 
     // Check that mip MEIP is set following the triggered interrupt
     for (size_t i = 0; i < mip_read_retry_count; i++) {
@@ -140,7 +132,7 @@ bool machine_irq_test(spi_device_t spi_device, plic_t plic)
     }
 
     intr_id = plic_machine_interrupt_claim(plic);
-    spi_device_interrupt_clear(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
+    spi_device_interrupt_clear(spi_device, spi_device_intr_upload_payload_overflow);
     plic_machine_interrupt_complete(plic, intr_id);
 
     // Check that mip MEIP is clear
@@ -159,8 +151,8 @@ bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
     plic_interrupt_priority_write(plic, mocha_system_irq_spi_device, 3);
     plic_supervisor_priority_threshold_write(plic, 0);
 
-    spi_device_interrupt_disable_all(spi_device);
-    spi_device_interrupt_enable(spi_device, SPI_DEVICE_INTR_READBUF_FLIP);
+    spi_device_interrupt_enable_write(spi_device, spi_device_intr_none);
+    spi_device_interrupt_enable_set(spi_device, spi_device_intr_readbuf_flip);
 
     plic_supervisor_interrupt_enable_set(plic, mocha_system_irq_spi_device);
 
@@ -169,7 +161,7 @@ bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
         return false;
     }
 
-    spi_device_interrupt_trigger(spi_device, SPI_DEVICE_INTR_READBUF_FLIP);
+    spi_device_interrupt_force(spi_device, spi_device_intr_readbuf_flip);
 
     // Check that mip SEIP is set following the triggered interrupt
     for (size_t i = 0; i < mip_read_retry_count; i++) {
@@ -183,7 +175,7 @@ bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
     }
 
     intr_id = plic_supervisor_interrupt_claim(plic);
-    spi_device_interrupt_clear(spi_device, SPI_DEVICE_INTR_READBUF_FLIP);
+    spi_device_interrupt_clear(spi_device, spi_device_intr_readbuf_flip);
     plic_supervisor_interrupt_complete(plic, intr_id);
 
     // Check that mip SEIP is clear
