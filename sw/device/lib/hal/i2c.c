@@ -22,6 +22,33 @@ static uint16_t rnd_up_div(uint32_t a, uint32_t b)
     return (uint16_t)result;
 }
 
+uint16_t i2c_calc_scl_high_cycles(uint16_t rise_cycles, uint16_t fall_cycles,
+                                  uint16_t scl_period_cycles, uint16_t scl_low_cycles)
+{
+    // Calculate the minimum allowable value for SCL high time
+    uint16_t scl_high_cycles_min = rnd_up_div(4000, SYSCLK_NS);
+
+    // scl_high_time should be atleast 4 cycles to aid correct clock streching
+    scl_high_cycles_min = (scl_high_cycles_min < 4u) ? 4u : scl_high_cycles_min;
+
+    // An SCL period duration is divided into 4 segments:
+    // 1) Rise time
+    // 2) Fall time
+    // 3) High time
+    // 4) Low time
+    // Hence an SCL period must satisfy the equation below:
+    // scl_period = rise_time + fall_time + high_time + low_time
+    //
+    // Even though SCL_low_cycles and SCL_high_cycles have minimum allowable values, increase in
+    // rise time and fall time influences the SCL_period.
+    uint16_t scl_high_cycles = scl_period_cycles - (scl_low_cycles + rise_cycles + fall_cycles);
+
+    scl_high_cycles =
+        (scl_high_cycles > scl_high_cycles_min) ? scl_high_cycles : scl_high_cycles_min;
+
+    return scl_high_cycles;
+}
+
 void i2c_init(i2c_t i2c)
 {
     // -- Set timing parameters --
@@ -34,17 +61,18 @@ void i2c_init(i2c_t i2c)
     // SCL high cycles calculation adapted from OpenTitan sw/device/lib/dif/dif_i2c.c
 
     // Calculate the timing paramters
-    uint32_t rise_cycles = rnd_up_div(I2C_RISE_NS, SYSCLK_NS);
-    uint32_t fall_cycles = rnd_up_div(I2C_FALL_NS, SYSCLK_NS);
-    uint32_t scl_period_cycles = rnd_up_div((10000 /* 10000 ns -> 100 kHz */), SYSCLK_NS);
-    uint32_t scl_low_cycles = rnd_up_div(4700, SYSCLK_NS);
-    uint32_t scl_high_cycles = scl_period_cycles - scl_low_cycles - rise_cycles - fall_cycles;
-    uint32_t setup_start_cycles = rnd_up_div(4700, SYSCLK_NS);
-    uint32_t hold_start_cycles = rnd_up_div(4000, SYSCLK_NS);
-    uint32_t setup_data_cycles = rnd_up_div(250, SYSCLK_NS);
-    uint32_t hold_data_cycles = 1u;
-    uint32_t setup_stop_cycles = rnd_up_div(4000, SYSCLK_NS);
-    uint32_t bus_free_time_cycles = rnd_up_div(4700, SYSCLK_NS);
+    uint16_t rise_cycles = rnd_up_div(I2C_RISE_NS, SYSCLK_NS);
+    uint16_t fall_cycles = rnd_up_div(I2C_FALL_NS, SYSCLK_NS);
+    uint16_t scl_period_cycles = rnd_up_div((10000 /* 10000 ns -> 100 kHz */), SYSCLK_NS);
+    uint16_t scl_low_cycles = rnd_up_div(4700, SYSCLK_NS);
+    uint16_t scl_high_cycles =
+        i2c_calc_scl_high_cycles(rise_cycles, fall_cycles, scl_period_cycles, scl_low_cycles);
+    uint16_t setup_start_cycles = rnd_up_div(4700, SYSCLK_NS);
+    uint16_t hold_start_cycles = rnd_up_div(4000, SYSCLK_NS);
+    uint16_t setup_data_cycles = rnd_up_div(250, SYSCLK_NS);
+    uint16_t hold_data_cycles = 1u;
+    uint16_t setup_stop_cycles = rnd_up_div(4000, SYSCLK_NS);
+    uint16_t bus_free_time_cycles = rnd_up_div(4700, SYSCLK_NS);
 
     // Declare timing registers
     i2c_timing0 t0_reg = { .tlow = scl_low_cycles, .thigh = scl_high_cycles };
