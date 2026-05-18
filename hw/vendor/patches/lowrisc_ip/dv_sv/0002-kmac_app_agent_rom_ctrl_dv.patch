@@ -14,15 +14,16 @@ diff --git a/kmac_app_agent/kmac_app_agent_pkg.sv b/kmac_app_agent/kmac_app_agen
 index d1b3586..572b536 100644
 --- a/kmac_app_agent/kmac_app_agent_pkg.sv
 +++ b/kmac_app_agent/kmac_app_agent_pkg.sv
-@@ -7,7 +7,6 @@ package kmac_app_agent_pkg;
+@@ -7,8 +7,7 @@ package kmac_app_agent_pkg;
    import uvm_pkg::*;
    import dv_utils_pkg::*;
+   import dv_base_agent_pkg::*;
    import dv_lib_pkg::*;
 -  import keymgr_pkg::*;
    import push_pull_agent_pkg::*;
 
    // macro includes
-@@ -15,9 +14,10 @@ package kmac_app_agent_pkg;
+@@ -16,9 +15,10 @@ package kmac_app_agent_pkg;
    `include "dv_macros.svh"
 
    // parameters

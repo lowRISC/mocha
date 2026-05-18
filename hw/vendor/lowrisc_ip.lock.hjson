@@ -9,6 +9,6 @@
   upstream:
   {
     url: https://github.com/lowRISC/opentitan
-    rev: d96fc2abd7b3c547f8a31ac4cb5a0bac645a7d1f
+    rev: b76d9ada848d1d78db878892d051b1c44f7ffcfe
   }
 }

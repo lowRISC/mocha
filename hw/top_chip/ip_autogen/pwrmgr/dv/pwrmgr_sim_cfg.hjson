@@ -22,13 +22,13 @@
 
   // Import additional common sim cfg files.
   import_cfgs: [// Project wide common sim cfg file
-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
                 // Common CIP test lists
-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/intr_test.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/stress_tests.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson"]
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/intr_test.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_tests.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson"]
 
   // Exclusion files
   vcs_cov_excl_files: ["{self_dir}/cov/pwrmgr_cov_manual_excl.el"]
@@ -88,6 +88,11 @@
       run_opts: ["+test_timeout_ns=1000000"]
     }
     {
+      name: pwrmgr_repeat_wakeup_reset
+      uvm_test_seq: pwrmgr_repeat_wakeup_reset_vseq
+      run_opts: ["+test_timeout_ns=1000000"]
+    }
+    {
       name: pwrmgr_aborted_low_power
       uvm_test_seq: pwrmgr_aborted_low_power_vseq
     }
@@ -138,6 +143,11 @@
     {
       name: pwrmgr_lowpower_invalid
       uvm_test_seq: pwrmgr_lowpower_invalid_vseq
+      run_opts: ["+test_timeout_ns=1000000"]
+    }
+    {
+      name: pwrmgr_stress_all
+      uvm_test_seq: pwrmgr_stress_all_vseq
       run_opts: ["+test_timeout_ns=1000000"]
     }
   ]

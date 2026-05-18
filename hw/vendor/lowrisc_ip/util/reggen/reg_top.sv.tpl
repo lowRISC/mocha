@@ -1097,6 +1097,18 @@ ${bits.msb}\
       % if reg.async_clk and reg.shadowed:
   logic async_${finst_name}_err_update;
   logic async_${finst_name}_err_storage;
+  logic deglitched_${finst_name}_err_storage;
+
+  // flop storage error to filter combinational glitches before sending it across CDC
+  prim_flop #(
+    .Width(1),
+    .ResetValue('0)
+  ) u_${finst_name}_err_storage_deglitch (
+    .clk_i (${reg.async_clk[1].clock}),
+    .rst_ni(${reg.async_clk[1].reset}),
+    .d_i   (async_${finst_name}_err_storage),
+    .q_o   (deglitched_${finst_name}_err_storage)
+  );
 
   // storage error is persistent and can be sampled at any time
   prim_flop_2sync #(
@@ -1105,7 +1117,7 @@ ${bits.msb}\
   ) u_${finst_name}_err_storage_sync (
     .clk_i,
     .rst_ni,
-    .d_i(async_${finst_name}_err_storage),
+    .d_i(deglitched_${finst_name}_err_storage),
     .q_o(${finst_name}_storage_err)
   );
 
