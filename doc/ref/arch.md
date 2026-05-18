@@ -38,3 +38,33 @@ In terms of output, the top-level will need output signals:
 - Key to provide an AES engine outside of the secure enclave with the memory encryption key.
 - AXI manager port to interact with the rest of the chip.
 
+## SRAM specification
+
+The SRAM in CHERI Mocha is mainly used as the stack and heap for the boot firmware that lives in the read-only memory.
+However, it should also be possible to execute from SRAM.
+Once code starts executing from DRAM we don't envision using SRAM anymore.
+
+The SRAM block has four ports:
+- Clock input
+- Reset input
+- AXI4 request input from the main SoC sub-system crossbar
+- AXI4 response output back to the main crossbar
+
+Inside the block it translates the AXI4 requests into an SRAM interface that our primitive RAM wrappers use.
+It needs to support AXI4 protocol including:
+- Bursts, where the last signal must be indicated correctly.
+- Response must have the same AXI4 ID as the request
+- The last signal must be indicated correctly.
+- Atomic support is *excluded*.
+- The data width is 64 bits.
+- The address range and size of the SRAM are defined in the [memory map](#memory-map). Accesses outside this range must return an error, including if only part of the burst is outside the memory range.
+- Responses must follow the request with a single cycle of latency.
+
+There needs to be 1 CHERI tag bit per 128-bit aligned region.
+A tag can only be set to 1 by writing a full 128-bit aligned region.
+If a portion of the 128-bit aligned region is written it must clear the tag for the whole region, this includes when a partial write strobe is used.
+The CHERI tag bits are communicated through a single user bit on the AXI4 bus (`wuser` and `ruser` for writes and reads respectively).
+Burst reads from the SRAM must have the appropriate CHERI tags set for each address, so a valid capability must have the user bits set for both of the 64-bit flits it is being sent back, and a mixture of capability and non-capability data is allowed in a burst.
+Tags should be stored in a separate block of memory from the data, this is to allow future optimisations where bulk-reads of tags are desired.
+
+The initial value of the SRAM including the tags is undefined at start-up.
