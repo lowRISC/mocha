@@ -95,6 +95,7 @@ async def load_fpga_test(test: Path, uart) -> None:
         "bootstrap",
         "--addr",
         hex(get_load_addr(test)),
+        "--skip-erase",
         "--ftdi",
         FTDI_DEVICE_DESC,
     ]
