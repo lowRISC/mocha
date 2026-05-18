@@ -29,6 +29,14 @@
       design_stage:       "D2S",
       verification_stage: "V2S",
       dif_stage:          "S2",
+      commit_id:          "0742a8e0ad0f0c9a50720ecfea93287035d52944",
+    },
+    {
+      version:            "2.1.0",
+      life_stage:         "L1",
+      design_stage:       "D1",
+      verification_stage: "V1",
+      dif_stage:          "S1",
     }
   ]
   clocking: [
@@ -381,8 +389,7 @@
           name: "kmac_en"
           desc: '''KMAC datapath enable.
 
-                If this bit is 1, the incoming message is processed in KMAC
-                with the secret key.
+                If this bit is 1, the KMAC mode is active and the secret key is prepended to the incoming message.
                 '''
           tags: [// don't enable kmac and sha data paths - we will do that in functional tests
                  "excl:CsrNonInitTests:CsrExclWrite",

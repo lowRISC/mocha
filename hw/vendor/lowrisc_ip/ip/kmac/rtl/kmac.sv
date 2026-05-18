@@ -217,13 +217,6 @@ module kmac
   logic [kmac_pkg::MsgStrbW-1:0] msgfifo_strb        ;
   logic                          msgfifo_ready       ;
 
-  if (EnMasking) begin : gen_msgfifo_data_masked
-    // In Masked mode, the input message data is split into two shares.
-    // Only concern, however, here is the secret key. So message can be
-    // put into only one share and other is 0.
-    assign msgfifo_data[1] = '0;
-  end
-
   // TL-UL Adapter(MSG_FIFO) signals
   logic        tlram_req;
   logic        tlram_gnt;
@@ -238,14 +231,14 @@ module kmac
   logic [31:0] tlram_wmask_endian;
 
   logic                          sw_msg_valid;
-  logic [kmac_pkg::MsgWidth-1:0] sw_msg_data ;
-  logic [kmac_pkg::MsgWidth-1:0] sw_msg_mask ;
+  logic [kmac_pkg::MsgWidth-1:0] sw_msg_data;
+  logic [kmac_pkg::MsgWidth-1:0] sw_msg_strb;
   logic                          sw_msg_ready;
 
   // KeyMgr interface to MSG_FIFO
   logic                          mux2fifo_valid;
-  logic [kmac_pkg::MsgWidth-1:0] mux2fifo_data ;
-  logic [kmac_pkg::MsgWidth-1:0] mux2fifo_mask ;
+  logic [kmac_pkg::MsgWidth-1:0] mux2fifo_data[Share];
+  logic [kmac_pkg::MsgWidth-1:0] mux2fifo_strb;
   logic                          mux2fifo_ready;
 
   // KMAC to SHA3 core
@@ -1035,10 +1028,10 @@ module kmac
   assign sw_msg_valid = tlram_req & tlram_we ;
   if (MsgWidth == MsgWindowWidth) begin : gen_sw_msg_samewidth
     assign sw_msg_data  = tlram_wdata_endian ;
-    assign sw_msg_mask  = tlram_wmask_endian ;
+    assign sw_msg_strb  = tlram_wmask_endian ;
   end else begin : gen_sw_msg_diff
     assign sw_msg_data = {{MsgWidth-MsgWindowWidth{1'b0}}, tlram_wdata_endian};
-    assign sw_msg_mask = {{MsgWidth-MsgWindowWidth{1'b0}}, tlram_wmask_endian};
+    assign sw_msg_strb = {{MsgWidth-MsgWindowWidth{1'b0}}, tlram_wmask_endian};
   end
   assign tlram_gnt    = sw_msg_ready ;
 
@@ -1067,7 +1060,7 @@ module kmac
     // data from tl_adapter
     .sw_valid_i (sw_msg_valid),
     .sw_data_i  (sw_msg_data),
-    .sw_mask_i  (sw_msg_mask),
+    .sw_strb_i  (sw_msg_strb),
     .sw_ready_o (sw_msg_ready),
 
     // KeyMgr sideloaded key interface
@@ -1085,7 +1078,7 @@ module kmac
     // to MSG_FIFO
     .kmac_valid_o (mux2fifo_valid),
     .kmac_data_o  (mux2fifo_data),
-    .kmac_mask_o  (mux2fifo_mask),
+    .kmac_strb_o  (mux2fifo_strb),
     .kmac_ready_i (mux2fifo_ready),
 
     // to KMAC Core
@@ -1144,11 +1137,12 @@ module kmac
 
     .fifo_valid_i (mux2fifo_valid),
     .fifo_data_i  (mux2fifo_data),
-    .fifo_mask_i  (mux2fifo_mask),
+    .fifo_strb_i  (mux2fifo_strb),
     .fifo_ready_o (mux2fifo_ready),
+    .fifo_bypass_i('0),
 
     .msg_valid_o (msgfifo_valid),
-    .msg_data_o  (msgfifo_data[0]),
+    .msg_data_o  (msgfifo_data),
     .msg_strb_o  (msgfifo_strb),
     .msg_ready_i (msgfifo_ready),
 
