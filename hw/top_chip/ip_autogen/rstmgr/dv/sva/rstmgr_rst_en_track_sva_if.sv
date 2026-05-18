@@ -13,7 +13,7 @@ interface rstmgr_rst_en_track_sva_if (
   input logic rst_por_ni
 );
   import rstmgr_pkg::DomainAonSel;
-  import rstmgr_pkg::Domain0Sel;
+  import rstmgr_pkg::DomainMainSel;
   localparam int DELAY = 1;
 
   `ASSERT(D0RstPorAonEnTracksRstPorAonActive_A,
