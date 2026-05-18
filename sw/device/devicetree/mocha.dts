@@ -42,6 +42,13 @@
         compatible = "simple-bus";
         ranges;
 
+        gpio: gpio@40000000 {
+            compatible = "lowrisc,opentitan-gpio-v1";
+            reg = <0x0 0x40000000 0x0 0x48>;
+            gpio-controller;
+            ngpios = <32>;
+        };
+
         serial@41000000 {
             compatible = "lowrisc,opentitan-uart-v2";
             reg = <0x0 0x41000000 0x0 0x30>;
@@ -52,6 +59,23 @@
             compatible = "lowrisc,opentitan-rv-timer-v1";
             reg = <0x0 0x44000000 0x0 0x120>;
             interrupts-extended = <&cpu0intc 7>; // M-mode timer interrupt
+        };
+
+        spi@45000000 {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            compatible = "lowrisc,opentitan-spi-host-v3";
+            reg = <0x0 0x45000000 0x0 0x38>;
+            tx-fifo-depth = <288>;
+            rx-fifo-depth = <256>;
+            num-cs = <1>;
+
+            mmc@0 {
+                compatible = "mmc-spi-slot";
+                reg = <0>;
+                gpios = <&gpio 9 1>; // Presence detect on GPIO 9
+                spi-max-frequency = <50000000>;
+            };
         };
 
         plic: interrupt-controller@48000000 {
