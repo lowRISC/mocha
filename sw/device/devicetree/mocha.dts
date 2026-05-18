@@ -43,19 +43,19 @@
         ranges;
 
         serial@41000000 {
-            compatible = "lowrisc,opentitan-uart-1.0.0";
+            compatible = "lowrisc,opentitan-uart-v2";
             reg = <0x0 0x41000000 0x0 0x30>;
             interrupts-extended = <&plic 8>; // UART is PLIC interrupt source 8
         };
 
         timer@44000000 {
-            compatible = "lowrisc,opentitan-rv-timer-1.0.0";
+            compatible = "lowrisc,opentitan-rv-timer-v1";
             reg = <0x0 0x44000000 0x0 0x120>;
             interrupts-extended = <&cpu0intc 7>; // M-mode timer interrupt
         };
 
         plic: interrupt-controller@48000000 {
-            compatible = "lowrisc,opentitan-plic-1.0.0",
+            compatible = "lowrisc,opentitan-plic",
                          "sifive,plic-1.0.0"; // Compatible with the SiFive PLIC memory layout
             interrupt-controller;
             #address-cells = <0>;
@@ -69,7 +69,7 @@
         // End of PLIC memory region is for software interrupts,
         // model this as another interrupt controller that delivers the software interrupts
         plicsw: interrupt-controller@4c000000 {
-            compatible = "lowrisc,opentitan-plicsw-1.0.0";
+            compatible = "lowrisc,opentitan-plicsw";
             interrupt-controller;
             #address-cells = <0>;
             #interrupt-cells = <1>;
