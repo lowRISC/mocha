@@ -183,17 +183,21 @@ interface rstmgr_cascading_sva_if (
                     resets_o.rst_por_${clk + "_" if clk != "main" else ""}n[rstmgr_pkg::DomainAonSel], SyncCycles, clk_${clk}_i)
 % endfor
 
-  // Controlled by rst_lc_src_n.
-  `CASCADED_ASSERTS(CascadeLcToLcAon, rst_lc_src_n[rstmgr_pkg::DomainAonSel],
-                    resets_o.rst_lc_aon_n[rstmgr_pkg::DomainAonSel], SysCycles, clk_aon_i)
-  `CASCADED_ASSERTS(CascadeLcToLc, rst_lc_src_n[rstmgr_pkg::Domain0Sel],
-                    resets_o.rst_lc_n[rstmgr_pkg::Domain0Sel], SysCycles, clk_main_i)
-
   // Controlled by rst_sys_src_n.
-  `CASCADED_ASSERTS(CascadeSysToSys, rst_sys_src_n[rstmgr_pkg::Domain0Sel],
-                    resets_o.rst_sys_n[rstmgr_pkg::Domain0Sel], PeriCycles, clk_main_i)
-  `CASCADED_ASSERTS(CascadeLcToLcShadowed, rst_lc_src_n[rstmgr_pkg::Domain0Sel],
-                    resets_o.rst_lc_shadowed_n[rstmgr_pkg::Domain0Sel], SysCycles, clk_main_i)
+  `CASCADED_ASSERTS(CascadeSysToMain_A, rst_sys_src_n[rstmgr_pkg::Domain0Sel],
+                    resets_o.rst_main_n[rstmgr_pkg::Domain0Sel], PeriCycles, clk_main_i)
+
+  `CASCADED_ASSERTS(CascadeSysToIO_A, rst_sys_src_n[rstmgr_pkg::Domain0Sel],
+                    resets_o.rst_io_n[rstmgr_pkg::Domain0Sel], PeriCycles, clk_io_i)
+
+  `CASCADED_ASSERTS(CascadeSysToSPIHost_A, rst_sys_src_n[rstmgr_pkg::Domain0Sel],
+                    resets_o.rst_spi_host_n[rstmgr_pkg::Domain0Sel], PeriCycles, clk_io_i)
+
+  `CASCADED_ASSERTS(CascadeSysToSPIDevice_A, rst_sys_src_n[rstmgr_pkg::Domain0Sel],
+                    resets_o.rst_spi_device_n[rstmgr_pkg::Domain0Sel], PeriCycles, clk_io_i)
+
+  `CASCADED_ASSERTS(CascadeSysToI2C_A, rst_sys_src_n[rstmgr_pkg::Domain0Sel],
+                    resets_o.rst_i2c_n[rstmgr_pkg::Domain0Sel], PeriCycles, clk_io_i)
 
   `undef FALL_ASSERT
   `undef RISE_ASSERTS
