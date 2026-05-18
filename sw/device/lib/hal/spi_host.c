@@ -25,3 +25,14 @@ uint32_t spi_host_read(spi_host_t spi_host)
 {
     return DEV_READ(spi_host + SPI_HOST_RXDATA_REG);
 }
+
+uint32_t spi_host_status(spi_host_t spi_host)
+{
+    return DEV_READ(spi_host + SPI_HOST_STATUS_REG);
+}
+
+void spi_host_wait_for_idle(spi_host_t spi_host)
+{
+    while ((spi_host_status(spi_host) & SPI_HOST_STATUS_ACTIVE_MASK) != 0) {
+    };
+}

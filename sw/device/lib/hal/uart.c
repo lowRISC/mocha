@@ -60,6 +60,16 @@ bool uart_interrupt_any_pending(uart_t uart, uart_intr intrs)
     return (VOLATILE_READ(uart->intr_state) & intrs) != 0u;
 }
 
+bool uart_status_any(uart_t uart, uart_status status)
+{
+    return (VOLATILE_READ(uart->status) & status) != 0u;
+}
+
+bool uart_status_all(uart_t uart, uart_status status)
+{
+    return (VOLATILE_READ(uart->status) & status) == status;
+}
+
 void uart_loopback_set(uart_t uart, bool system_enable, bool line_enable)
 {
     uart_ctrl ctrl = VOLATILE_READ(uart->ctrl);
