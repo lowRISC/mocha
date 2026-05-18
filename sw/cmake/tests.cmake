@@ -69,7 +69,7 @@ function(mocha_add_fpga_test)
     set(TEST ${arg_NAME}_fpga_genesys2)
     add_test(
         NAME ${TEST} 
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py ${arg_NAME}
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py test ${arg_NAME}
     )
     set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
 endfunction()
