@@ -5,6 +5,7 @@
 #include "hal/uart.h"
 #include "hal/mmio.h"
 #include "hal/mocha.h"
+#include <stddef.h>
 #include <stdint.h>
 
 void uart_init(uart_t uart)
