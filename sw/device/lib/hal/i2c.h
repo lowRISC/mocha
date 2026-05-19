@@ -88,6 +88,8 @@
 #define I2C_RISE_NS (450)
 #define I2C_FALL_NS (120)
 
+#define FIFO_DEPTH (64u)
+
 typedef enum { standard_mode, fast_mode, fast_plus_mode } i2c_speed_t;
 
 typedef struct {
