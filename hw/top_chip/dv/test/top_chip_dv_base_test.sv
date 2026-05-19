@@ -28,6 +28,9 @@ function top_chip_dv_base_test::new(string name = "", uvm_component parent = nul
 endfunction : new
 
 function void top_chip_dv_base_test::build_phase(uvm_phase phase);
+  axi4_vip_cfg axi_mgr_cfg[];
+  axi4_vip_cfg axi_sub_cfg[];
+
   dv_report_server m_dv_report_server = new();
   uvm_report_server::set_server(m_dv_report_server);
 
@@ -36,6 +39,132 @@ function void top_chip_dv_base_test::build_phase(uvm_phase phase);
   env     = top_chip_dv_env::type_id::create("env", this);
   env.cfg = top_chip_dv_env_cfg::type_id::create("cfg", this);
   env.cfg.initialize();
+
+  // AXI VIP configuration
+  axi_mgr_cfg = new[top_pkg::AxiXbarHosts];
+  foreach (axi_mgr_cfg[i]) begin
+    top_pkg::axi_hosts_t host = top_pkg::axi_hosts_t'(i);
+    string cfg_name = $sformatf("m_axi_%s_cfg", host.name());
+
+    axi_mgr_cfg[i] = axi4_vip_cfg::type_id::create(cfg_name, this);
+    case (host)
+      top_pkg::CVA6: begin
+        axi_mgr_cfg[i].set_config(.inst_id                    (host.name()),
+                                  .has_manager                (1),
+                                  .manager_active_passive     (UVM_PASSIVE),
+                                  .has_subordinate            (0),
+                                  .subordinate_active_passive (UVM_PASSIVE),
+                                  .has_coverage               (0),
+                                  .has_checker                (0),
+                                  .id_width                   (top_pkg::AxiIdWidth),
+                                  .addr_width                 (top_pkg::AxiAddrWidth),
+                                  .data_width                 (top_pkg::AxiDataWidth),
+                                  .user_width                 (top_pkg::AxiUserWidth),
+                                  .region_width               (4),
+                                  .qos_width                  (4)
+        );
+      end
+    endcase
+
+    uvm_config_db#(axi4_vip_cfg)::set(this, $sformatf("env.m_mgr_axi_%s*", host.name()),
+                                      "m_cfg", axi_mgr_cfg[i]);
+  end
+  env.cfg.m_axi_mgr_cfg = axi_mgr_cfg;
+
+  axi_sub_cfg = new[top_pkg::AxiXbarDevices];
+  foreach (axi_sub_cfg[i]) begin
+    top_pkg::axi_devices_t device = top_pkg::axi_devices_t'(i);
+    string cfg_name = $sformatf("m_axi_%s_cfg", device.name());
+
+    axi_sub_cfg[i] = axi4_vip_cfg::type_id::create(cfg_name, this);
+    case (device)
+      top_pkg::RomCtrlMem: begin
+        axi_sub_cfg[i].set_config(.inst_id                    (device.name()),
+                                  .has_manager                (0),
+                                  .manager_active_passive     (UVM_PASSIVE),
+                                  .has_subordinate            (1),
+                                  .subordinate_active_passive (UVM_PASSIVE),
+                                  .has_coverage               (0),
+                                  .has_checker                (0),
+                                  .id_width                   (top_pkg::AxiIdWidth),
+                                  .addr_width                 (top_pkg::AxiAddrWidth),
+                                  .data_width                 (top_pkg::AxiDataWidth),
+                                  .user_width                 (top_pkg::AxiUserWidth),
+                                  .region_width               (4),
+                                  .qos_width                  (4)
+        );
+      end
+      top_pkg::SRAM: begin
+        axi_sub_cfg[i].set_config(.inst_id                    (device.name()),
+                                  .has_manager                (0),
+                                  .manager_active_passive     (UVM_PASSIVE),
+                                  .has_subordinate            (1),
+                                  .subordinate_active_passive (UVM_PASSIVE),
+                                  .has_coverage               (0),
+                                  .has_checker                (0),
+                                  .id_width                   (top_pkg::AxiIdWidth),
+                                  .addr_width                 (top_pkg::AxiAddrWidth),
+                                  .data_width                 (top_pkg::AxiDataWidth),
+                                  .user_width                 (top_pkg::AxiUserWidth),
+                                  .region_width               (4),
+                                  .qos_width                  (4)
+        );
+      end
+      top_pkg::Mailbox: begin
+        axi_sub_cfg[i].set_config(.inst_id                    (device.name()),
+                                  .has_manager                (0),
+                                  .manager_active_passive     (UVM_PASSIVE),
+                                  .has_subordinate            (1),
+                                  .subordinate_active_passive (UVM_PASSIVE),
+                                  .has_coverage               (0),
+                                  .has_checker                (0),
+                                  .id_width                   (top_pkg::AxiIdWidth),
+                                  .addr_width                 (top_pkg::AxiAddrWidth),
+                                  .data_width                 (top_pkg::AxiDataWidth),
+                                  .user_width                 (top_pkg::AxiUserWidth),
+                                  .region_width               (4),
+                                  .qos_width                  (4)
+        );
+      end
+      top_pkg::TlCrossbar: begin
+        axi_sub_cfg[i].set_config(.inst_id                    (device.name()),
+                                  .has_manager                (0),
+                                  .manager_active_passive     (UVM_PASSIVE),
+                                  .has_subordinate            (1),
+                                  .subordinate_active_passive (UVM_PASSIVE),
+                                  .has_coverage               (0),
+                                  .has_checker                (0),
+                                  .id_width                   (top_pkg::AxiIdWidth),
+                                  .addr_width                 (top_pkg::AxiAddrWidth),
+                                  .data_width                 (top_pkg::AxiDataWidth),
+                                  .user_width                 (top_pkg::AxiUserWidth),
+                                  .region_width               (4),
+                                  .qos_width                  (4)
+        );
+      end
+      top_pkg::DRAM: begin
+        axi_sub_cfg[i].set_config(.inst_id                    (device.name()),
+                                  .has_manager                (0),
+                                  .manager_active_passive     (UVM_PASSIVE),
+                                  .has_subordinate            (1),
+                                  .subordinate_active_passive (UVM_PASSIVE),
+                                  .has_coverage               (0),
+                                  .has_checker                (0),
+                                  .id_width                   (top_pkg::AxiIdWidth),
+                                  .addr_width                 (top_pkg::AxiAddrWidth),
+                                  .data_width                 (top_pkg::AxiDataWidth),
+                                  .user_width                 (top_pkg::AxiUserWidth),
+                                  .region_width               (4),
+                                  .qos_width                  (4)
+        );
+      end
+    endcase
+
+    uvm_config_db#(axi4_vip_cfg)::set(this, $sformatf("env.m_sub_axi_%s*", device.name()),
+                                      "m_cfg", axi_sub_cfg[i]);
+  end
+  env.cfg.m_axi_sub_cfg = axi_sub_cfg;
+
 endfunction : build_phase
 
 function void top_chip_dv_base_test::connect_phase(uvm_phase phase);
