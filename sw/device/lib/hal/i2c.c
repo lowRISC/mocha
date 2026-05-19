@@ -79,9 +79,22 @@ void i2c_write_n_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num
 
     // Send all data bytes; assert STOP only on the last byte
     for (uint8_t i = 0; i < num_wr_bytes; i++) {
+        // The current FIFO depth is 64. So, raise the flag whenever the byte number is a multiple
+        // of 64.
+        bool overflow = ((i % FIFO_DEPTH) == 0);
         fdata_reg.fbyte = data[i];
         if (i == (num_wr_bytes - 1u)) {
             fdata_reg.stop = 1u;
+        }
+
+        // Check the overflow condition on every byte which is a multiple of 64.
+        if (overflow) {
+            i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
+
+            // Wait until FMT FIFO has some space
+            while (i2c_status_reg & i2c_status_fmtfull) {
+                i2c_status_reg = VOLATILE_READ(i2c->status);
+            }
         }
         VOLATILE_WRITE(i2c->fdata, fdata_reg);
     }

@@ -88,6 +88,8 @@
 #define I2C_RISE_NS (450)
 #define I2C_FALL_NS (120)
 
+#define FIFO_DEPTH (64u)
+
 void i2c_init(i2c_t i2c);
 
 // Transmits multiple bytes to the target
