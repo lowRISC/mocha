@@ -77,8 +77,13 @@ void i2c_write_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_b
 
     fdata_reg.start = 0;
 
-    // Send all data bytes; assert STOP only on the last byte
     for (uint8_t i = 0; i < num_bytes; i++) {
+        // Check the overflow condition first before writing to the FMT FIFO by waiting until FMT
+        // FIFO has some space
+        while (VOLATILE_READ(i2c->status) & i2c_status_fmtfull) {
+        }
+
+        // Send all data bytes; assert STOP only on the last byte
         fdata_reg.fbyte = data[i];
         if (i == (num_bytes - 1u)) {
             fdata_reg.stop = 1u;
