@@ -88,7 +88,29 @@
 #define I2C_RISE_NS (450)
 #define I2C_FALL_NS (120)
 
-void i2c_init(i2c_t i2c);
+// All the speed modes supported by OT's I2C block
+typedef enum {
+    i2c_speed_mode_standard,
+    i2c_speed_mode_fast,
+    i2c_speed_mode_fast_plus
+} i2c_speed_mode_t;
+
+// All the timing parameters used by I2C block converted into cycles
+typedef struct {
+    uint16_t rise_cycles;
+    uint16_t fall_cycles;
+    uint16_t scl_low_cycles;
+    uint16_t scl_high_cycles;
+    uint16_t scl_period_cycles;
+    uint16_t setup_start_cycles;
+    uint16_t hold_start_cycles;
+    uint16_t setup_data_cycles;
+    uint16_t hold_data_cycles;
+    uint16_t setup_stop_cycles;
+    uint16_t bus_free_time_cycles;
+} i2c_timing_params_t;
+
+void i2c_init(i2c_t i2c, i2c_speed_mode_t speed_mode);
 
 // Transmits multiple bytes to the target
 void i2c_write_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_bytes);

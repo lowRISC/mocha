@@ -15,7 +15,7 @@ int main(void)
     i2c_t i2c = mocha_system_i2c();
     uart_t uart = mocha_system_uart();
     timer_t timer = mocha_system_timer();
-    i2c_init(i2c);
+    i2c_init(i2c, i2c_speed_mode_standard);
     uart_init(uart);
     timer_init(timer);
     timer_enable_write(timer, true);
