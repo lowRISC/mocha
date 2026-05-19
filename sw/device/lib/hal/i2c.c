@@ -22,36 +22,108 @@ static uint16_t rnd_up_div(uint32_t a, uint32_t b)
     return (uint16_t)result;
 }
 
-void i2c_init(i2c_t i2c)
+uint16_t calc_scl_high_cycles(uint32_t rise_cycles, uint32_t fall_cycles,
+                              uint32_t scl_period_cycles, uint32_t scl_low_cycles)
 {
-    // -- Set timing parameters --
-    //
-    // Using Standard-mode (100 kbits/s) constants, taken from the NXP I^2C specification
-    // "UM10204" Table 10 (rev. 6) / Table 11 (rev. 7).
-    // Faster modes will require different/adjustable constants and checking that SCL high/low
-    // cycles calculated are sufficient to still allow the clock stretching logic to function.
-    //
-    // SCL high cycles calculation adapted from OpenTitan sw/device/lib/dif/dif_i2c.c
+    // Calculate the minimum allowable value for SCL high time
+    uint16_t scl_high_cycles_min = rnd_up_div(4000, SYSCLK_NS);
 
-    // Calculate the timing paramters
-    uint32_t rise_cycles = rnd_up_div(I2C_RISE_NS, SYSCLK_NS);
-    uint32_t fall_cycles = rnd_up_div(I2C_FALL_NS, SYSCLK_NS);
-    uint32_t scl_period_cycles = rnd_up_div((10000 /* 10000 ns -> 100 kHz */), SYSCLK_NS);
-    uint32_t scl_low_cycles = rnd_up_div(4700, SYSCLK_NS);
-    uint32_t scl_high_cycles = scl_period_cycles - scl_low_cycles - rise_cycles - fall_cycles;
-    uint32_t setup_start_cycles = rnd_up_div(4700, SYSCLK_NS);
-    uint32_t hold_start_cycles = rnd_up_div(4000, SYSCLK_NS);
-    uint32_t setup_data_cycles = rnd_up_div(250, SYSCLK_NS);
-    uint32_t hold_data_cycles = 1u;
-    uint32_t setup_stop_cycles = rnd_up_div(4000, SYSCLK_NS);
-    uint32_t bus_free_time_cycles = rnd_up_div(4700, SYSCLK_NS);
+    // scl_high_time should be atleast 4 cycles to aid correct clock streching
+    scl_high_cycles_min = (scl_high_cycles_min < 4u) ? 4u : scl_high_cycles_min;
+
+    // An SCL period duration is divided into 4 segments:
+    // 1) Rise time
+    // 2) Fall time
+    // 3) High time
+    // 4) Low time
+    // Hence an SCL period must satisfy the equation below:
+    // scl_period = rise_time + fall_time + high_time + low_time
+    //
+    // Even though SCL_low_cycles and SCL_high_cycles have minimum allowable values, increase in
+    // rise time and fall time influences the SCL_period.
+    uint32_t scl_high_cycles = scl_period_cycles - (scl_low_cycles + rise_cycles + fall_cycles);
+
+    scl_high_cycles =
+        (scl_high_cycles > scl_high_cycles_min) ? scl_high_cycles : scl_high_cycles_min;
+
+    return (uint16_t)(scl_high_cycles);
+}
+
+// Calculate the minimum allowable value for each timing parameter taken from the NXP I^2C
+// specification "UM10204" Table 10 (rev. 6) / Table 11 (rev. 7).
+//
+// The values for Rise and Fall times for Fast mode are taken as spec minimum. For Fast plus mode,
+// the values are taken from OT's i2c_host_tx_rx_test.c test.
+i2c_timing_params_cycles_t compute_min_timing_params(i2c_speed_t speed)
+{
+    switch (speed) {
+    case standard_mode:
+        return (i2c_timing_params_cycles_t){
+            .rise_cycles = rnd_up_div(I2C_RISE_NS, SYSCLK_NS),
+            .fall_cycles = rnd_up_div(I2C_FALL_NS, SYSCLK_NS),
+            .scl_low_cycles = rnd_up_div(4700, SYSCLK_NS),
+            .scl_high_cycles = rnd_up_div(4000, SYSCLK_NS),
+            .scl_period_cycles = rnd_up_div(10000u, SYSCLK_NS),
+            .setup_start_cycles = rnd_up_div(4700u, SYSCLK_NS),
+            .hold_start_cycles = rnd_up_div(4000u, SYSCLK_NS),
+            .setup_data_cycles = rnd_up_div(250u, SYSCLK_NS),
+            .hold_data_cycles = 1u,
+            .setup_stop_cycles = rnd_up_div(4000u, SYSCLK_NS),
+            .bus_free_time_cycles = rnd_up_div(4700u, SYSCLK_NS)
+        };
+    case fast_mode:
+        return (i2c_timing_params_cycles_t){
+            .rise_cycles = rnd_up_div(20u, SYSCLK_NS),
+            .fall_cycles = rnd_up_div(20u, SYSCLK_NS),
+            .scl_low_cycles = rnd_up_div(1300u, SYSCLK_NS),
+            .scl_high_cycles = rnd_up_div(600, SYSCLK_NS),
+            .scl_period_cycles = rnd_up_div(2500u, SYSCLK_NS),
+            .setup_start_cycles = rnd_up_div(600u, SYSCLK_NS),
+            .hold_start_cycles = rnd_up_div(600u, SYSCLK_NS),
+            .setup_data_cycles = rnd_up_div(100u, SYSCLK_NS),
+            .hold_data_cycles = 1u,
+            .setup_stop_cycles = rnd_up_div(600u, SYSCLK_NS),
+            .bus_free_time_cycles = rnd_up_div(1300u, SYSCLK_NS)
+        };
+    case fast_plus_mode:
+        return (i2c_timing_params_cycles_t){
+            .rise_cycles = rnd_up_div(10u, SYSCLK_NS),
+            .fall_cycles = rnd_up_div(10u, SYSCLK_NS),
+            .scl_low_cycles = rnd_up_div(500u, SYSCLK_NS),
+            .scl_high_cycles = rnd_up_div(260, SYSCLK_NS),
+            .scl_period_cycles = rnd_up_div(1000u, SYSCLK_NS),
+            .setup_start_cycles = rnd_up_div(260u, SYSCLK_NS),
+            .hold_start_cycles = rnd_up_div(260u, SYSCLK_NS),
+            .setup_data_cycles = rnd_up_div(50, SYSCLK_NS),
+            .hold_data_cycles = 1u,
+            .setup_stop_cycles = rnd_up_div(260u, SYSCLK_NS),
+            .bus_free_time_cycles = rnd_up_div(500u, SYSCLK_NS)
+        };
+    default:
+        return (i2c_timing_params_cycles_t){ 0 };
+    }
+}
+
+void i2c_init(i2c_t i2c, i2c_speed_t speed)
+{
+    i2c_timing_params_cycles_t timing_params_cycles = compute_min_timing_params(speed);
+
+    timing_params_cycles.scl_high_cycles =
+        calc_scl_high_cycles(timing_params_cycles.rise_cycles, timing_params_cycles.fall_cycles,
+                             timing_params_cycles.scl_period_cycles,
+                             timing_params_cycles.scl_low_cycles);
 
     // Declare timing registers
-    i2c_timing0 t0_reg = { .tlow = scl_low_cycles, .thigh = scl_high_cycles };
-    i2c_timing1 t1_reg = { .t_r = rise_cycles, .t_f = fall_cycles };
-    i2c_timing2 t2_reg = { .tsu_sta = setup_start_cycles, .thd_sta = hold_start_cycles };
-    i2c_timing3 t3_reg = { .tsu_dat = setup_data_cycles, .thd_dat = hold_data_cycles };
-    i2c_timing4 t4_reg = { .tsu_sto = setup_stop_cycles, .t_buf = bus_free_time_cycles };
+    i2c_timing0 t0_reg = { .tlow = timing_params_cycles.scl_low_cycles,
+                           .thigh = timing_params_cycles.scl_high_cycles };
+    i2c_timing1 t1_reg = { .t_r = timing_params_cycles.rise_cycles,
+                           .t_f = timing_params_cycles.fall_cycles };
+    i2c_timing2 t2_reg = { .tsu_sta = timing_params_cycles.setup_start_cycles,
+                           .thd_sta = timing_params_cycles.hold_start_cycles };
+    i2c_timing3 t3_reg = { .tsu_dat = timing_params_cycles.setup_data_cycles,
+                           .thd_dat = timing_params_cycles.hold_data_cycles };
+    i2c_timing4 t4_reg = { .tsu_sto = timing_params_cycles.setup_stop_cycles,
+                           .t_buf = timing_params_cycles.bus_free_time_cycles };
 
     VOLATILE_WRITE(i2c->timing0, t0_reg);
     VOLATILE_WRITE(i2c->timing1, t1_reg);
@@ -60,9 +132,10 @@ void i2c_init(i2c_t i2c)
     VOLATILE_WRITE(i2c->timing4, t4_reg);
 }
 
-bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
+void i2c_write_n_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_wr_bytes)
 {
-    // Reset FMT FIFO (because we currently don't clean-up after errors)
+    // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
+    // is halted and the SW didn't manage to clear the FIFO during that scenario.
     i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
     VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
 
@@ -74,31 +147,35 @@ bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data)
     fdata_reg.start = 1u;
     VOLATILE_WRITE(i2c->fdata, fdata_reg);
 
-    // Send stop bit and data
-    fdata_reg.fbyte = data;
     fdata_reg.start = 0;
-    fdata_reg.stop = 1u;
-    VOLATILE_WRITE(i2c->fdata, fdata_reg);
 
-    // Wait for transaction to complete and report simple succeed/fail
-    for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
-        i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
-        if (i2c_intr_state_reg & i2c_intr_controller_halt) {
-            return false; // transaction failed
+    // Send all data bytes; assert STOP only on the last byte
+    for (uint8_t i = 0; i < num_wr_bytes; i++) {
+        // The current FIFO depth is 64. So, raise the flag whenever the byte number is a multiple
+        // of 64.
+        bool overflow = ((i % FIFO_DEPTH) == 0);
+        fdata_reg.fbyte = data[i];
+        if (i == (num_wr_bytes - 1u)) {
+            fdata_reg.stop = 1u;
         }
-        if (i2c_intr_state_reg & i2c_intr_cmd_complete) {
+
+        // Check the overflow condition on every byte which is a multiple of 64.
+        if (overflow) {
             i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
-            if (i2c_status_reg & i2c_status_fmtempty) {
-                return true; // transaction succeeded
+
+            // Wait until FMT FIFO has some space
+            while (i2c_status_reg & i2c_status_fmtfull) {
+                i2c_status_reg = VOLATILE_READ(i2c->status);
             }
         }
+        VOLATILE_WRITE(i2c->fdata, fdata_reg);
     }
-    return false; // timeout
 }
 
-uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr)
+void i2c_read_n_bytes(i2c_t i2c, uint8_t addr, uint8_t num_rd_bytes)
 {
-    // Reset FMT FIFO (because we currently don't clean-up after errors)
+    // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
+    // is halted and the SW didn't manage to clear the FIFO during that scenario.
     i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
     VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
 
@@ -112,28 +189,67 @@ uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr)
 
     // Send stop bit, read bit and number of bytes to read
     fdata_reg.readb = 1u;
-    fdata_reg.fbyte = 1u; // If readb = 1 then fbyte contains the number of bytes to read
+    fdata_reg.fbyte = num_rd_bytes; // If readb = 1 then fbyte contains the number of bytes to read
     fdata_reg.start = 0;
     fdata_reg.stop = 1u;
     VOLATILE_WRITE(i2c->fdata, fdata_reg);
+}
 
-    // Wait for transaction to complete and return either read data or 0xFF
-    for (uint32_t ii = 0; ii < 10000000ul /*arbitrary number*/; ii++) {
+bool wait_wr_xfer_status(i2c_t i2c)
+{
+    // Wait for transaction to complete and report simple succeed / fail
+    while (true) {
         i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
         if (i2c_intr_state_reg & i2c_intr_controller_halt) {
-            return 0xFF; // transaction failed
+            // Reset FMT FIFO as controller's FSM is in halt
+            i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
+            VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
+
+            // According to programmer's guide, the CONTROLLER_EVENTS register would be cleared
+            // here to acknowledge the controller halt interrupt. However, since we want to
+            // treat a halt event as a failure, we intentionally skip clearing it.
+            return false; // Transaction failed
+        }
+        if (i2c_intr_state_reg & i2c_intr_cmd_complete) {
+            i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
+            if (i2c_status_reg & i2c_status_fmtempty) {
+                return true; // Transaction succeeded
+            }
+        }
+    }
+    return false; // Timeout
+}
+
+bool wait_rd_xfer_status(i2c_t i2c)
+{
+    // Wait for transaction to complete and report simple succeed / fail
+    while (true) {
+        i2c_intr i2c_intr_state_reg = VOLATILE_READ(i2c->intr_state);
+        if (i2c_intr_state_reg & i2c_intr_controller_halt) {
+            // Reset FMT FIFO as controller's FSM is in halt
+            i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
+            VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
+
+            // According to programmer's guide, the CONTROLLER_EVENTS register would be cleared
+            // here to acknowledge the controller halt interrupt. However, since we want to
+            // treat a halt event as a failure, we intentionally skip clearing it.
+            return false; // Transaction failed
         }
         i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
         if (i2c_status_reg & i2c_status_fmtempty) {
-            // transaction succeeded, return read data
-            i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
-            return rdata_reg.rdata;
+            return true;
         }
     }
-    return 0xFF; // timeout
+    return false; // Timeout
 }
 
 void enable_controller_mode(i2c_t i2c)
 {
     VOLATILE_WRITE(i2c->ctrl, i2c_ctrl_enablehost);
+}
+
+uint8_t i2c_rdata_byte(i2c_t i2c)
+{
+    i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
+    return rdata_reg.rdata;
 }

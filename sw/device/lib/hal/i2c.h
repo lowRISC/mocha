@@ -88,10 +88,40 @@
 #define I2C_RISE_NS (450)
 #define I2C_FALL_NS (120)
 
-void i2c_init(i2c_t i2c);
+#define FIFO_DEPTH (64u)
 
-bool i2c_write_byte(i2c_t i2c, uint8_t addr, uint8_t data);
-uint8_t i2c_read_byte(i2c_t i2c, uint8_t addr);
+typedef enum { standard_mode, fast_mode, fast_plus_mode } i2c_speed_t;
+
+typedef struct {
+    uint32_t rise_cycles;
+    uint32_t fall_cycles;
+    uint32_t scl_low_cycles;
+    uint32_t scl_high_cycles;
+    uint32_t scl_period_cycles;
+    uint32_t setup_start_cycles;
+    uint32_t hold_start_cycles;
+    uint32_t setup_data_cycles;
+    uint32_t hold_data_cycles;
+    uint32_t setup_stop_cycles;
+    uint32_t bus_free_time_cycles;
+} i2c_timing_params_cycles_t;
+
+void i2c_init(i2c_t i2c, i2c_speed_t speed);
+
+// Transmits multiple bytes to the target
+void i2c_write_n_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_wr_bytes);
+
+// Receive n bytes from the target
+void i2c_read_n_bytes(i2c_t i2c, uint8_t addr, uint8_t num_rd_bytes);
+
+// Check if the write was successful
+bool wait_rd_xfer_status(i2c_t i2c);
+
+// checks if the read was successful
+bool wait_wr_xfer_status(i2c_t i2c);
 
 // Enable I2C in controller mode
 void enable_controller_mode(i2c_t i2c);
+
+// Return the data in the target's tx fifo
+uint8_t i2c_rdata_byte(i2c_t i2c);
