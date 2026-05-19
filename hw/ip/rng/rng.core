@@ -1,0 +1,22 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha:rng"
+description: "Pseudorandom noise source model for Mocha"
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:prim:lfsr
+      - lowrisc:prim_generic:flop_2sync
+      - lowrisc:mocha_constants:top_pkg
+    files:
+      - rtl/rng.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

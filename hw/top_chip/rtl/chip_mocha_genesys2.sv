@@ -120,6 +120,11 @@ module chip_mocha_genesys2 #(
   logic [3:0] spi_host_sd;
   logic [3:0] spi_host_sd_en;
 
+  // Noise source signals
+  logic                                      rng_enable;
+  logic                                      rng_valid;
+  logic [top_pkg::EntropySrcRngBusWidth-1:0] rng_bits;
+
   // AXI signals
   // Tag controller to CDC FIFO, synchronous to u_top_chip_system.clkmgr_clocks.clk_main_infra
   top_pkg::axi_dram_req_t  dram_req;
@@ -255,6 +260,11 @@ module chip_mocha_genesys2 #(
     // sd_i[1]=CIPO.
     .spi_host_sd_i     ({2'b0, spi_host_sd_en[0] ? spi_host_sd[0] : 1'b0, 1'b0}),
 
+    // Entropy source
+    .entropy_src_rng_enable_o (rng_enable),
+    .entropy_src_rng_valid_i  (rng_valid),
+    .entropy_src_rng_bits_i   (rng_bits),
+
     // DRAM
     .dram_req_o  (dram_req),
     .dram_resp_i (dram_resp),
@@ -296,6 +306,17 @@ module chip_mocha_genesys2 #(
     .I(qspi_device_sdo[1]),     // SPI MISO = QSPI DQ1
     .T(~qspi_device_sdo_en[1]), // SPI MISO = QSPI DQ1
     .O(spi_device_sd_o)
+  );
+
+  // Noise source
+  rng u_rng(
+    .clk_i  (u_top_chip_system.clkmgr_clocks.clk_io_infra),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+
+    // Entropy output bus
+    .rng_enable_i (rng_enable),
+    .rng_valid_o  (rng_valid),
+    .rng_bits_o   (rng_bits)
   );
 
   // Async AXI FIFO from tag controller to MIG

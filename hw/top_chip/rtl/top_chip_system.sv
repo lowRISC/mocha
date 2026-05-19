@@ -56,6 +56,11 @@ module top_chip_system #(
   output logic [             3:0] spi_host_sd_en_o,
   input  logic [             3:0] spi_host_sd_i,
 
+  // Entropy source noise source.
+  output logic                                      entropy_src_rng_enable_o,
+  input  logic                                      entropy_src_rng_valid_i,
+  input  logic [top_pkg::EntropySrcRngBusWidth-1:0] entropy_src_rng_bits_i,
+
   // DRAM AXI interface.
   output top_pkg::axi_dram_req_t  dram_req_o,
   input  top_pkg::axi_dram_resp_t dram_resp_i,
@@ -78,6 +83,7 @@ module top_chip_system #(
   localparam int unsigned I2cIrqs        = 15;
   localparam int unsigned SPIDeviceIrqs  = 8;
   localparam int unsigned SPIHostIrqs    = 2;
+  localparam int unsigned EntropySrcIrqs = 4;
   localparam int unsigned KmacNumAppIntf = 1;
 
   // CVA6 configuration
@@ -167,6 +173,8 @@ module top_chip_system #(
   tlul_pkg::tl_d2h_t tl_spi_device_d2h;
   tlul_pkg::tl_h2d_t tl_spi_host_h2d;
   tlul_pkg::tl_d2h_t tl_spi_host_d2h;
+  tlul_pkg::tl_h2d_t tl_entropy_src_h2d;
+  tlul_pkg::tl_d2h_t tl_entropy_src_d2h;
   // TL ROM
   tlul_pkg::tl_h2d_t tl_rom_ctrl_mem_h2d;
   tlul_pkg::tl_d2h_t tl_rom_ctrl_mem_d2h;
@@ -227,11 +235,12 @@ module top_chip_system #(
   logic tag_controller_isolated;
 
   // IP block raised interrupts
-  logic [GpioIrqs-1:0]      gpio_interrupts;
-  logic [UartIrqs-1:0]      uart_interrupts;
-  logic [I2cIrqs-1:0]       i2c_interrupts;
-  logic [SPIDeviceIrqs-1:0] spi_device_interrupts;
-  logic [SPIHostIrqs-1:0]   spi_host_interrupts;
+  logic [GpioIrqs-1:0]       gpio_interrupts;
+  logic [UartIrqs-1:0]       uart_interrupts;
+  logic [I2cIrqs-1:0]        i2c_interrupts;
+  logic [SPIDeviceIrqs-1:0]  spi_device_interrupts;
+  logic [SPIHostIrqs-1:0]    spi_host_interrupts;
+  logic [EntropySrcIrqs-1:0] entropy_src_interrupts;
 
   // Interrupt lines to PLIC
   // Each IP block has a single interrupt line to the PLIC and software shall consult the intr_state
@@ -243,14 +252,16 @@ module top_chip_system #(
   logic spi_device_irq;
   logic spi_host_irq;
   logic pwrmgr_wakeup_irq;
+  logic entropy_src_irq;
 
   always_comb begin
     // Single interrupt line per IP block.
-    gpio_irq       = |gpio_interrupts;
-    uart_irq       = |uart_interrupts;
-    i2c_irq        = |i2c_interrupts;
-    spi_device_irq = |spi_device_interrupts;
-    spi_host_irq   = |spi_host_interrupts;
+    gpio_irq        = |gpio_interrupts;
+    uart_irq        = |uart_interrupts;
+    i2c_irq         = |i2c_interrupts;
+    spi_device_irq  = |spi_device_interrupts;
+    spi_host_irq    = |spi_host_interrupts;
+    entropy_src_irq = |entropy_src_interrupts;
   end
 
   // Interrupt vector
@@ -265,7 +276,8 @@ module top_chip_system #(
   assign intr_vector[      7] = spi_device_irq;
   assign intr_vector[      6] = i2c_irq;
   assign intr_vector[      5] = spi_host_irq;
-  assign intr_vector[ 4 :  0] = '0;  // Reserved for future use.
+  assign intr_vector[      4] = entropy_src_irq;
+  assign intr_vector[ 3 :  0] = '0;  // Reserved for future use.
 
   // Interrupts to the CVA6
   logic       intr_timer;
@@ -570,6 +582,8 @@ module top_chip_system #(
     .tl_pwrmgr_i        (tl_pwrmgr_d2h),
     .tl_rom_ctrl_regs_o (tl_rom_ctrl_regs_h2d),
     .tl_rom_ctrl_regs_i (tl_rom_ctrl_regs_d2h),
+    .tl_entropy_src_o   (tl_entropy_src_h2d),
+    .tl_entropy_src_i   (tl_entropy_src_d2h),
     .tl_uart_o          (tl_uart_h2d),
     .tl_uart_i          (tl_uart_d2h),
     .tl_i2c_o           (tl_i2c_h2d),
@@ -824,6 +838,56 @@ module top_chip_system #(
     // Interrupts.
     .intr_error_o     (spi_host_interrupts[0]),
     .intr_spi_event_o (spi_host_interrupts[1])
+  );
+
+  // Instantiate entropy source
+  entropy_src #(
+    .RngBusWidth           ( top_pkg::EntropySrcRngBusWidth           ),
+    .RngBusBitSelWidth     ( top_pkg::EntropySrcRngBusBitSelWidth     ),
+    .HealthTestWindowWidth ( top_pkg::EntropySrcHealthTestWindowWidth ),
+    .EsFifoDepth           ( top_pkg::EntropySrcEsFifoDepth           ),
+    .DistrFifoDepth        ( top_pkg::EntropySrcDistrFifoDepth        )
+  ) u_entropy_src (
+    .clk_i  (clkmgr_clocks.clk_io_infra),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+
+    // TileLink bus connections
+    .tl_i (tl_entropy_src_h2d),
+    .tl_o (tl_entropy_src_d2h),
+
+    // OTP interface
+    .otp_en_entropy_src_fw_read_i (prim_mubi_pkg::MuBi8True),
+    .otp_en_entropy_src_fw_over_i (prim_mubi_pkg::MuBi8True),
+
+    // Unused FIPS interface
+    .rng_fips_o ( ),
+
+    // Unused entropy interface
+    .entropy_src_hw_if_i (entropy_src_pkg::ENTROPY_SRC_HW_IF_REQ_DEFAULT),
+    .entropy_src_hw_if_o ( ),
+
+    // Noise source connections
+    .entropy_src_rng_enable_o (entropy_src_rng_enable_o),
+    .entropy_src_rng_valid_i  (entropy_src_rng_valid_i),
+    .entropy_src_rng_bits_i   (entropy_src_rng_bits_i),
+
+    // Unused external health test interface
+    .entropy_src_xht_valid_o              ( ),
+    .entropy_src_xht_bits_o               ( ),
+    .entropy_src_xht_bit_sel_o            ( ),
+    .entropy_src_xht_health_test_window_o ( ),
+    .entropy_src_xht_meta_o               ( ),
+    .entropy_src_xht_meta_i               (entropy_src_pkg::ENTROPY_SRC_XHT_META_RSP_DEFAULT),
+
+    // Alerts
+    .alert_rx_i ('{default: prim_alert_pkg::ALERT_RX_DEFAULT}),
+    .alert_tx_o ( ),
+
+    // Interrupts
+    .intr_es_entropy_valid_o      (entropy_src_interrupts[0]),
+    .intr_es_health_test_failed_o (entropy_src_interrupts[1]),
+    .intr_es_observe_fifo_ready_o (entropy_src_interrupts[2]),
+    .intr_es_fatal_err_o          (entropy_src_interrupts[3])
   );
 
   ///////////////

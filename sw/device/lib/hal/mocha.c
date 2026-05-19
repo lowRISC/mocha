@@ -20,6 +20,7 @@ static const uintptr_t clkmgr_base = 0x40020000ul;
 static const uintptr_t rstmgr_base = 0x40030000ul;
 static const uintptr_t pwrmgr_base = 0x40040000ul;
 static const uintptr_t rom_ctrl_base = 0x40050000ul;
+static const uintptr_t entropy_src_base = 0x40060000ul;
 static const uintptr_t uart_base = 0x41000000ul;
 static const uintptr_t i2c_base = 0x42000000ul;
 static const uintptr_t spi_device_base = 0x43000000ul;
@@ -116,6 +117,16 @@ rom_ctrl_t mocha_system_rom_ctrl(void)
     return (rom_ctrl_t)create_mmio_capability(rom_ctrl_base, 0x48u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (rom_ctrl_t)rom_ctrl_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+entropy_src_t mocha_system_entropy_src(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return (entropy_src_t)create_mmio_capability(entropy_src_base,
+                                                 sizeof(struct entropy_src_memory_layout));
+#else /* !defined(__riscv_zcherihybrid) */
+    return (entropy_src_t)entropy_src_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
 

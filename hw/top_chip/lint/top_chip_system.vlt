@@ -119,6 +119,19 @@ lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramAddrFifoIdx*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_spi_device*/rtl/spi_readcmd.sv" -match "*addr_cnt_d*"
 
+// Mute RTL style warning from lowRISC Entropy source IP
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_entropy_src*/rtl/entropy_src_markov_ht.sv" -match "*rng_bit_sel_i == i*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_entropy_src*/rtl/entropy_src_adaptp_ht.sv" -match "*rng_bit_sel_i == i*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_entropy_src*/rtl/entropy_src_repcnt_ht.sv" -match "*rng_bit_sel_i == i*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_entropy_src*/rtl/entropy_src_core.sv" -match "*bucket_fail_pulse_step += bucket_fail_pulse[i]*"
+lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_entropy_src*/rtl/entropy_src_core.sv" -match "*rng_bit_sel == i*"
+
+// Mute RTL style warning from lowRISC KMAC IP
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*start_valid*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*process_valid*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*absorb_valid*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*done_valid*"
+
 // Memory downsizer truncates address bits
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/rtl/mem_downsizer.sv" -match "*mem64_addr_i*"
 
