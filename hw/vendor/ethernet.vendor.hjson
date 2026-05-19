@@ -4,7 +4,6 @@
 {
   name: "ethernet",
   target_dir: "ethernet",
-  patch_dir: "patches/ethernet",
 
   upstream: {
     url: "https://github.com/lowRISC/ariane-ethernet.git",
