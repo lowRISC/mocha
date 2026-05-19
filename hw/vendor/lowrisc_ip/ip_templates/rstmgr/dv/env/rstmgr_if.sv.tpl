@@ -13,7 +13,7 @@ elif "io" in all_clks:
 else:
     assert 0, "No preferred clock available"
 
-preferred_rst_n = f"rst_lc_{preferred_domain}_n"
+preferred_rst_n = f"rst_{preferred_domain}_n"
 %>\
 
 interface rstmgr_if (
@@ -77,5 +77,5 @@ interface rstmgr_if (
   always_comb cpu_info_en = `PATH_TO_DUT.reg2hw.cpu_info_ctrl.en.q;
 
   bit rst_ni_inactive;
-  always_comb rst_ni_inactive = resets_o.${preferred_rst_n}[rstmgr_pkg::Domain0Sel];
+  always_comb rst_ni_inactive = resets_o.${preferred_rst_n}[rstmgr_pkg::DomainMainSel];
 endinterface
