@@ -15,31 +15,36 @@ int main(void)
     spi_device_t spi_device = mocha_system_spi_device();
     uart_init(uart);
     spi_device_init(spi_device);
+    spi_device_flash_mode_set(spi_device, spi_device_flash_mode_flash);
+    const spi_device_flash_status clear_status = { 0 };
+    spi_device_flash_status_set(spi_device, clear_status);
 
     uprintf(uart, "Hello SPI in Mocha!\n");
 
     // Poll and process SPI command
-    spi_device_cmd_t cmd;
-    while (1) {
+    spi_device_software_command cmd;
+    while (true) {
         // Now process SPI command (if any)
-        cmd = spi_device_cmd_get(spi_device);
-        if (cmd.status != 0) {
-            uprintf(uart, "SPI payload overflow\n");
-            spi_device_flash_status_set(spi_device, 0);
-            continue;
+        enum spi_device_status status = spi_device_software_command_get(spi_device, &cmd);
+        if (status != spi_device_status_ready) {
+            if (status == spi_device_status_overflow) {
+                uprintf(uart, "SPI payload overflow\n");
+                spi_device_flash_status_set(spi_device, clear_status);
+                continue;
+            }
         }
 
         switch (cmd.opcode) {
-        case SPI_DEVICE_OPCODE_CHIP_ERASE:
+        case spi_device_opcode_chip_erase:
             uprintf(uart, "SPI CHIP ERASE");
             break;
-        case SPI_DEVICE_OPCODE_SECTOR_ERASE:
+        case spi_device_opcode_sector_erase:
             uprintf(uart, "SPI SECTOR ERASE");
             break;
-        case SPI_DEVICE_OPCODE_PAGE_PROGRAM:
+        case spi_device_opcode_page_program:
             uprintf(uart, "SPI PAGE PROGRAM");
             break;
-        case SPI_DEVICE_OPCODE_RESET:
+        case spi_device_opcode_reset:
             uprintf(uart, "SPI RESET");
             break;
         default:
@@ -47,7 +52,7 @@ int main(void)
             break;
         }
 
-        if (cmd.address != UINT32_MAX) {
+        if (cmd.has_address) {
             uprintf(uart, " addr: 0x%x\n", cmd.address);
         }
 
@@ -55,23 +60,22 @@ int main(void)
             uprintf(uart, "payload bytes: 0x%x\n", cmd.payload_byte_count);
             uint32_t payload_word_count = ((uint32_t)cmd.payload_byte_count) / sizeof(uint32_t);
             if ((cmd.payload_byte_count % sizeof(uint32_t)) != 0) {
-                ++payload_word_count;
+                payload_word_count++;
             }
 
             uprintf(uart, "payload data:\n");
 
             uint32_t word;
             for (uint32_t i = 0; i < payload_word_count; ++i) {
-                word = spi_device_flash_payload_buffer_read(spi_device, i * sizeof(uint32_t));
-                spi_device_flash_read_buffer_write(spi_device, cmd.address + i * sizeof(uint32_t),
-                                                   word);
-                uprintf(uart, "0x%x\n", word);
+                if (spi_device_flash_payload_buffer_read_word(spi_device, i, &word)) {
+                    uprintf(uart, "0x%x\n", word);
+                }
             }
         }
 
         uprintf(uart, "\n");
 
-        spi_device_flash_status_set(spi_device, 0);
+        spi_device_flash_status_set(spi_device, clear_status);
     }
 
     return 0;
