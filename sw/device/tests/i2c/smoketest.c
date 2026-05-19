@@ -29,7 +29,7 @@ static bool as6212_test(i2c_t i2c)
 bool test_main()
 {
     i2c_t i2c = mocha_system_i2c();
-    i2c_init(i2c);
+    i2c_init(i2c, standard_mode);
 
     // -- Configure IP for Controller mode --
     enable_controller_mode(i2c);
