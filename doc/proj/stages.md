@@ -31,7 +31,9 @@ This table shows the current design and verification stage for each block in Moc
 | Tag controller    | D0               | V0                     |
 | TileLink crossbar | D0               | V0                     |
 | Timer             | D0               | V0                     |
-| UART              | D0               | V0                     |
+| [UART][]          | D1               | V0                     |
+
+[UART]: uart.md
 
 ## Sign-off procedure
 
