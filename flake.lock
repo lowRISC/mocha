@@ -49,16 +49,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1779108040,
-        "narHash": "sha256-8xyx4xPeNEfNDPeh7NJYl5l7h8XD9X6xxrYSd35AnQo=",
+        "lastModified": 1779281183,
+        "narHash": "sha256-1TcYeyfEQ8vDmtF0gVfW358oXYYRb43jR5u42JZ9fVk=",
         "owner": "lowRISC",
         "repo": "ftditool",
-        "rev": "27173d45ef42172ecb683197f25f5d438e620f59",
+        "rev": "3f173a9debaa805926c0235e36ab2fa0bef0a7f1",
         "type": "github"
       },
       "original": {
         "owner": "lowRISC",
-        "ref": "v0.3.0",
+        "ref": "v0.3.1",
         "repo": "ftditool",
         "type": "github"
       }
