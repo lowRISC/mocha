@@ -10,29 +10,30 @@ Slight modification to the stages and checklists were made to meet the requireme
 
 This table shows the current design and verification stage for each block in Mocha.
 
-| **Block name**    | **Design stage** | **Verification stage** |
-|-------------------|------------------|------------------------|
-| AXI crossbar      | D0               | V0                     |
-| Clock manager     | D0               | V0                     |
-| CVA6-CHERI        | D0               | V0                     |
-| Debug module      | D0               | V0                     |
-| Entropy source    | D0               | V0                     |
-| GPIO              | D0               | V0                     |
-| I2C               | D0               | V0                     |
-| KMAC              | D0               | V0                     |
-| Mailbox           | D0               | V0                     |
-| PLIC              | D0               | V0                     |
-| Power manager     | D0               | V0                     |
-| Reset manager     | D0               | V0                     |
-| ROM control       | D0               | V0                     |
-| SPI device        | D0               | V0                     |
-| SPI host          | D0               | V0                     |
-| SRAM              | D0               | V0                     |
-| Tag controller    | D0               | V0                     |
-| TileLink crossbar | D0               | V0                     |
-| Timer             | D0               | V0                     |
-| [UART][]          | D1               | V0                     |
+| **Block name**        | **Design stage** | **Verification stage** |
+|-----------------------|------------------|------------------------|
+| AXI crossbar          | D0               | V0                     |
+| Clock manager         | D0               | V0                     |
+| CVA6-CHERI            | D0               | V0                     |
+| Debug module          | D0               | V0                     |
+| Entropy source        | D0               | V0                     |
+| GPIO                  | D0               | V0                     |
+| I2C                   | D0               | V0                     |
+| KMAC                  | D0               | V0                     |
+| Mailbox               | D0               | V0                     |
+| PLIC                  | D0               | V0                     |
+| Power manager         | D0               | V0                     |
+| Reset manager         | D0               | V0                     |
+| ROM control           | D0               | V0                     |
+| SPI device            | D0               | V0                     |
+| SPI host              | D0               | V0                     |
+| SRAM                  | D0               | V0                     |
+| Tag controller        | D0               | V0                     |
+| [TileLink crossbar][] | D0               | V1                     |
+| Timer                 | D0               | V0                     |
+| [UART][]              | D1               | V0                     |
 
+[TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
 ## Sign-off procedure
