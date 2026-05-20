@@ -38,6 +38,7 @@ This table shows the current design and verification stage for each block in Moc
 ## Sign-off procedure
 
 To advance a block from one stage to the next you must open a pull request with the checklist in a Markdown file called `doc/proj/BLOCK.md`, where `BLOCK` is replaced by the block's name.
+A [checklist template](checklist_template.md) is provided as a starting point.
 This pull request must be approved by at least three people, one of whom should ideally be someone who has not been involved in the design and the verification of the block.
 It should also update [the table](#current-status) documenting the current status of each block.
 
@@ -92,13 +93,17 @@ Checklist for signing off a block at V1.
 |---------------|----------------|-----------------|
 | DV_DOC_DRAFT_COMPLETED | *Both* | Verification document drafted with overall goal and strategy. |
 | TESTPLAN_COMPLETED | *Both* | Initial test plan drafted including test points and a functional coverage plan. |
+| TB_TOP_CREATED | *Both* | Top-level testbench created with DUT instantiated. Memory bus, clocks, resets and interrupts connected where applicable. |
+| PRELIMINARY_ASSERTION_CHECKS_ADDED | *Both* | Available interface assertions connected up, like tlul_assert. |
 | PRE_VERIFIED_SUB_MODULES_V1 | *Both* | Pre-verified sub-modules must also have reached V1. |
 | DESIGN_SPEC_REVIEWED | *Both* | Review the design specification. |
 | TESTPLAN_REVIEWED | *Both* | Review the software tests proposed by the testplan. |
+| STD_TEST_CATEGORIES_PLANNED | *Both* | The following categories of post-V1 tests have been focused on during testplan review (where applicable): error scenarios, power, performance, debug and stress.
+| SIM_TB_ENV_CREATED | *Simulation* | A UVM environment has been created with major interface agents connected. Any monitors at this point have been connected to the scoreboard. |
 | SIM_SMOKE_TEST_PASSING | *Simulation* | Smoketest passing in simulation with a particular seed. |
 | SIM_SMOKE_REGRESSION_SETUP | *Simulation* | Regression smoke tests selected and defined. |
 | SIM_NIGHTLY_REGRESSION_SETUP | *Simulation* | Regression nightly tests selected and defined. |
-| SIM_COVERAGE_MODEL_ADDED | *Simulation* | Initial coverage model bound in. |
+| SIM_COVERAGE_MODEL_ADDED | *Simulation* | Initial functional coverage model added to the testbench environment. |
 | FPV_MAIN_ASSERTIONS_PROVEN | *Formal* | Each input and each output of the module is part of at least one assertion. Assertions for the main functional path are implemented and proven. |
 | FPV_REGRESSION_SETUP | *Formal* | An FPV regression has been set up and added to `top_chip_fpv_ip_cfgs.hjson` |
 
