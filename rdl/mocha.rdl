@@ -58,7 +58,7 @@ addrmap top_mocha {
 
   rv_timer TIMER[1] @ 0x4400_0000 += 0x10000;
 
-  reserved SPI_HOST @ 0x4500_0000;
+  spi_host SPI_HOST[1] @ 0x4500_0000 += 0x10000;
 
   rv_plic PLIC @ 0x4800_0000;
 
@@ -66,4 +66,3 @@ addrmap top_mocha {
     mementries = 0x7F00000; memwidth=64; // 1 GiB (excluding tag storage)
   } DRAM @ 0x8000_0000;
 };
-
