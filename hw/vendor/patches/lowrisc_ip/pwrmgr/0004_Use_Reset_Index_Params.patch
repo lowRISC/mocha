@@ -1,0 +1,43 @@
+diff --git a/dv/env/seq_lib/pwrmgr_glitch_vseq.sv b/dv/env/seq_lib/pwrmgr_glitch_vseq.sv
+index b7369f1..1a21ff7 100644
+--- a/dv/env/seq_lib/pwrmgr_glitch_vseq.sv
++++ b/dv/env/seq_lib/pwrmgr_glitch_vseq.sv
+@@ -30,7 +30,7 @@ class pwrmgr_glitch_vseq extends pwrmgr_base_vseq;
+       cfg.clk_rst_vif.wait_clks(cycles_before_reset);
+ 
+       `DV_SPINWAIT(wait(cfg.pwrmgr_vif.fast_state == pwrmgr_pkg::FastPwrStateResetPrep &&
+-                        cfg.pwrmgr_vif.pwr_rst_req.rstreqs[2] == 1);, $sformatf(
++                        cfg.pwrmgr_vif.pwr_rst_req.rstreqs[pwrmgr_reg_pkg::ResetMainPwrIdx] == 1);, $sformatf(
+                    "checker timeout : fast_state %s, pwr_rst_req 0x%x",
+                    cfg.pwrmgr_vif.fast_state.name,
+                    cfg.pwrmgr_vif.pwr_rst_req.rstreqs
+diff --git a/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv b/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv
+index 1209fa5..7ec133e 100644
+--- a/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv
++++ b/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv
+@@ -37,7 +37,7 @@ class pwrmgr_global_esc_vseq extends pwrmgr_base_vseq;
+     while (trans_cnt < num_trans) begin
+       @(cfg.clk_rst_vif.cb);
+       wait(cfg.pwrmgr_vif.fast_state != pwrmgr_pkg::FastPwrStateActive &&
+-           cfg.pwrmgr_vif.pwr_rst_req.rstreqs[3] == 1'b1);
++           cfg.pwrmgr_vif.pwr_rst_req.rstreqs[pwrmgr_reg_pkg::ResetEscIdx] == 1'b1);
+       trans_cnt++;
+ 
+       // Make sure previous dut_init is done
+diff --git a/dv/sva/pwrmgr_bind.sv.tpl b/dv/sva/pwrmgr_bind.sv.tpl
+index 59865e7..3117bf8 100644
+--- a/dv/sva/pwrmgr_bind.sv.tpl
++++ b/dv/sva/pwrmgr_bind.sv.tpl
+@@ -63,10 +63,10 @@ module pwrmgr_bind;
+ % if 'io' in src_clks:
+     .io_clk_en(pwr_clk_o.io_ip_clk_en),
+ % endif
+     .pwr_rst_o,
+     .esc_timeout(esc_timeout_lc_q),
+-    .slow_esc_rst_req(slow_peri_reqs.rstreqs[3]),
+-    .slow_mp_rst_req(slow_peri_reqs.rstreqs[2]),
++    .slow_esc_rst_req(slow_peri_reqs.rstreqs[pwrmgr_reg_pkg::ResetEscIdx]),
++    .slow_mp_rst_req(slow_peri_reqs.rstreqs[pwrmgr_reg_pkg::ResetMainPwrIdx]),
+     .slow_fsm_invalid,
+     .fast_fsm_invalid(u_fsm.u_state_regs.unused_err_o),
+     .rom_intg_chk_dis(u_fsm.rom_intg_chk_dis),
