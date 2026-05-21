@@ -197,6 +197,13 @@ Or, to run all the FPGA tests, first build the software, then run:
 ctest --test-dir build/sw -R fpga_genesys2
 ```
 
+### Booting U-Boot
+
+To run U-Boot (wrapped in the OpenSBI firmware and bootloader) on the Genesys 2 board, run:
+```sh
+./util/fpga_runner.py run build/sw/opensbi_with_uboot/fw_payload.elf
+```
+
 ### Standalone UART
 
 The UART output will be automatically presented when using `fpga_runner.py` or `ctest`, but otherwise requires a UART terminal.

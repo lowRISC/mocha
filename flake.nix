@@ -73,7 +73,9 @@
       ftditool-cli = inputs.ftditool.packages.${system}.default;
 
       commonPackages = with pkgs; [
+        bison
         cmake
+        flex
         gnumake
         screen
         picocom

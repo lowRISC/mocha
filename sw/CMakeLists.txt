@@ -20,3 +20,4 @@ include(ExternalProject)
 add_subdirectory(device)
 
 include(cmake/opensbi.cmake)
+include(cmake/uboot.cmake)
