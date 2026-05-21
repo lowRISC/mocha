@@ -193,7 +193,7 @@ module chip_mocha_genesys2 #(
     .ResetValue ('0)
   ) u_mig_axi_rst_sync_200m (
     .clk_i  (clk_200m),
-    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .d_i    (1'b1),
     .q_o    (mig_axi_rst_n_sync_200m)
   );
@@ -203,7 +203,7 @@ module chip_mocha_genesys2 #(
     .ResetValue ('0)
   ) u_eth_rst_sync_125m (
     .clk_i  (clk_125m),
-    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .d_i    (1'b1),
     .q_o    (eth_rst_n_sync_125m)
   );
@@ -311,7 +311,7 @@ module chip_mocha_genesys2 #(
   // Noise source
   rng u_rng(
     .clk_i  (u_top_chip_system.clkmgr_clocks.clk_io_infra),
-    .rst_ni (u_top_chip_system.rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // Entropy output bus
     .rng_enable_i (rng_enable),
@@ -332,7 +332,7 @@ module chip_mocha_genesys2 #(
     .SyncStages (2)   // Needs to be 2 for prim_flop_2sync
   ) u_mig_async_axi_fifo (
     .src_clk_i  (u_top_chip_system.clkmgr_clocks.clk_main_infra),
-    .src_rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .src_rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .src_req_i  (dram_req),
     .src_resp_o (dram_resp),
     .dst_clk_i  (clk_200m),
@@ -467,7 +467,7 @@ module chip_mocha_genesys2 #(
     .rule_t       (axi_pkg::xbar_rule_64_t)
   ) u_rest_of_chip_axi_xbar (
     .clk_i                (u_top_chip_system.clkmgr_clocks.clk_main_infra),
-    .rst_ni               (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni               (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .test_i               (1'b0),
     .slv_ports_req_i      (xbar_host_req),
     .slv_ports_resp_o     (xbar_host_resp),
@@ -486,7 +486,7 @@ module chip_mocha_genesys2 #(
   ethernet_wrapper u_eth_wrapper (
     // Clocking and reset
     .clk_axi_i       (u_top_chip_system.clkmgr_clocks.clk_main_infra),
-    .rst_axi_ni      (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_axi_ni      (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .clk_125m_i      (clk_125m),
     .clk_125m_quad_i (clk_125m_quad),
     .clk_200m_i      (clk_200m),

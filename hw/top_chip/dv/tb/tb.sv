@@ -50,7 +50,7 @@ module tb;
   dram_wrapper_sim u_dram_wrapper (
     // Clock and reset.
     .clk_i      (dut.clkmgr_clocks.clk_main_infra),
-    .rst_ni     (dut.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni     (dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     // AXI interface.
     .axi_req_i  (dram_req                        ),
     .axi_resp_o (dram_resp                       )
@@ -59,7 +59,7 @@ module tb;
   // ------ Noise source ------
   rng u_rng(
     .clk_i  (dut.clkmgr_clocks.clk_io_infra),
-    .rst_ni (dut.rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (dut.rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // Entropy output bus
     .rng_enable_i (rng_enable),
@@ -138,7 +138,7 @@ module tb;
   // interfaced in sim_sram_axi_sink module. Thus, use the same clock and reset as them to stay in
   // sync.
   assign sim_sram_clk = dut.clkmgr_clocks.clk_main_infra;
-  assign sim_sram_rst = dut.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel];
+  assign sim_sram_rst = dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel];
 
   // Instantiate the AXI sink to intercept the AXI traffic within the simulation memory range
   // to provide a dedicated channel for SW-to-DV communication.

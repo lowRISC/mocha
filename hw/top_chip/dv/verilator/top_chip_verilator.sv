@@ -181,7 +181,7 @@ module top_chip_verilator (
   // Detect SW test termination.
   sim_sram_axi_sink u_sim_sram (
     .clk_i       (`DUT.clkmgr_clocks.clk_main_infra),
-    .rst_ni      (`DUT.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni      (`DUT.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .cpu_req_i   (sim_sram_cpu_req                 ),
     .cpu_resp_o  (sim_sram_cpu_resp                ),
     .xbar_req_o  (sim_sram_xbar_req                ),
@@ -231,7 +231,7 @@ module top_chip_verilator (
   // Mock AXI external memory
   dram_wrapper_sim u_dram_wrapper(
     .clk_i  (u_top_chip_system.clkmgr_clocks.clk_main_infra),
-    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // AXI interface
     .axi_req_i  (dram_req),
@@ -241,7 +241,7 @@ module top_chip_verilator (
   // Noise source
   rng u_rng(
     .clk_i  (u_top_chip_system.clkmgr_clocks.clk_io_infra),
-    .rst_ni (u_top_chip_system.rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (u_top_chip_system.rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // Entropy output bus
     .rng_enable_i (rng_enable),

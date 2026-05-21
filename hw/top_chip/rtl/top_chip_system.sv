@@ -335,7 +335,7 @@ module top_chip_system #(
     .noc_resp_t    ( top_pkg::axi_resp_t    )
   ) i_cva6 (
     .clk_i         (clkmgr_clocks.clk_main_infra),
-    .rst_ni        (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni        (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .boot_addr_i   (boot_cap),
     .hart_id_i     ('0),
     .irq_i         (intr),
@@ -368,7 +368,7 @@ module top_chip_system #(
     .MemInitFile ( SramInitFile          )
   ) u_axi_sram (
     .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // Capability AXI interface
     .axi_req_i  (xbar_device_req[top_pkg::SRAM]),
@@ -399,7 +399,7 @@ module top_chip_system #(
     .rule_t       (axi_pkg::xbar_rule_64_t)
   ) u_axi_xbar (
     .clk_i                (clkmgr_clocks.clk_main_infra),
-    .rst_ni               (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni               (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .test_i               (1'b0),
     .slv_ports_req_i      (xbar_host_req),
     .slv_ports_resp_o     (xbar_host_resp),
@@ -426,7 +426,7 @@ module top_chip_system #(
     .lite_resp_t    ( top_pkg::axi_lite_resp_t )
   ) u_axi_to_axi_lite_mailbox_main (
     .clk_i      ( clkmgr_clocks.clk_main_infra ),
-    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel] ),
     .test_i     ( 1'b0 ),
     .slv_req_i  ( xbar_device_req[top_pkg::Mailbox]  ),
     .slv_resp_o ( xbar_device_resp[top_pkg::Mailbox] ),
@@ -450,7 +450,7 @@ module top_chip_system #(
     .lite_resp_t    ( top_pkg::axi_lite_resp_t )
   ) u_axi_to_axi_lite_mailbox_ext (
     .clk_i      ( clkmgr_clocks.clk_main_infra ),
-    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+    .rst_ni     ( rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel] ),
     .test_i     ( 1'b0 ),
     .slv_req_i  ( axi_mailbox_req_i  ),
     .slv_resp_o ( axi_mailbox_resp_o ),
@@ -468,7 +468,7 @@ module top_chip_system #(
     .addr_t       ( top_pkg::addr_t )
   ) u_axi_lite_mailbox (
     .clk_i       ( clkmgr_clocks.clk_main_infra ),
-    .rst_ni      ( rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel] ),
+    .rst_ni      ( rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel] ),
     .test_i      ( 1'b0 ),
     .slv_reqs_i  ( { mailbox_ext_req,   mailbox_main_req  } ),
     .slv_resps_o ( { mailbox_ext_resp,  mailbox_main_resp } ),
@@ -486,7 +486,7 @@ module top_chip_system #(
     .NumBanks   ( 1                     )
   ) u_tl_xbar_axi_to_mem (
     .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // AXI interface.
     .busy_o     ( ),
@@ -508,7 +508,7 @@ module top_chip_system #(
   // 64-bit mem to 32-bit mem for TLUL crossbar
   mem_downsizer u_tl_xbar_mem_downsizer (
     .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // 64-bit memory request in
     .mem64_req_i   (mem64_tl_xbar_req),
@@ -537,7 +537,7 @@ module top_chip_system #(
     .EnableRspDataIntgCheck ( 1 )
   ) u_tl_xbar_tlul_host_adapter (
     .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     .req_i        (mem32_tl_xbar_req),
     .gnt_o        (mem32_tl_xbar_gnt),
@@ -564,8 +564,8 @@ module top_chip_system #(
     // Clock and reset.
     .clk_main_i  (clkmgr_clocks.clk_main_infra),
     .clk_io_i    (clkmgr_clocks.clk_io_infra),
-    .rst_main_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
-    .rst_io_ni   (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_main_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
+    .rst_io_ni   (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // Host interfaces.
     .tl_axi_xbar_i (tl_axi_xbar_h2d),
@@ -606,7 +606,7 @@ module top_chip_system #(
     .GpioAsHwStrapsEn(0) // straps not our problem when we are only a SoC subsystem
   ) u_gpio (
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
     .alert_tx_o ( ),
@@ -634,7 +634,7 @@ module top_chip_system #(
   // Instantiate our UART block.
   uart u_uart (
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
     .alert_tx_o ( ),
@@ -670,7 +670,7 @@ module top_chip_system #(
     .InputDelayCycles(0) // note: may not be true for all tops
   ) u_i2c (
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
     .alert_tx_o ( ),
@@ -716,7 +716,7 @@ module top_chip_system #(
   // Instantiate timer
   rv_timer u_timer (
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     .alert_rx_i (prim_alert_pkg::ALERT_RX_DEFAULT),
     .alert_tx_o ( ),
@@ -735,7 +735,7 @@ module top_chip_system #(
   // Instantiate PLIC
   rv_plic u_rv_plic (
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // Signals to xbar
     .tl_i (tl_plic_h2d),
@@ -757,7 +757,7 @@ module top_chip_system #(
   // Instantiate SPI device
   spi_device u_spi_device (
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // Signals to xbar
     .tl_i (tl_spi_device_h2d),
@@ -809,7 +809,7 @@ module top_chip_system #(
   ) u_spi_host (
     // Clock and reset.
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // TileLink bus connections.
     .tl_i (tl_spi_host_h2d),
@@ -849,7 +849,7 @@ module top_chip_system #(
     .DistrFifoDepth        ( top_pkg::EntropySrcDistrFifoDepth        )
   ) u_entropy_src (
     .clk_i  (clkmgr_clocks.clk_io_infra),
-    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
     // TileLink bus connections
     .tl_i (tl_entropy_src_h2d),
@@ -970,7 +970,7 @@ module top_chip_system #(
     .clk_lc_i    (clkmgr_clocks.clk_io_powerup),
     .clk_esc_i   (clkmgr_clocks.clk_io_powerup),
     .rst_ni      (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
-    .rst_main_ni (rstmgr_resets.rst_por_aon_n[rstmgr_pkg::Domain0Sel]),
+    .rst_main_ni (rstmgr_resets.rst_por_aon_n[rstmgr_pkg::DomainMainSel]),
     .rst_lc_ni   (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
     .rst_esc_ni  (rstmgr_resets.rst_por_io_n[rstmgr_pkg::DomainAonSel]),
     .rst_slow_ni (rstmgr_resets.rst_por_aon_n[rstmgr_pkg::DomainAonSel])
@@ -1042,7 +1042,7 @@ module top_chip_system #(
     .RISCV_WORD_WIDTH   ( 64                    )
   ) u_axi_riscv_atomics (
     .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .slv    (xbar_device_dram),
     .mst    (dram_post_atomics)
   );
@@ -1058,7 +1058,7 @@ module top_chip_system #(
     .axi_resp_t ( top_pkg::axi_resp_t    )
   ) u_axi_cut (
     .clk_i      (clkmgr_clocks.clk_main_infra),
-    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .slv_req_i  (dram_post_atomics_req),
     .slv_resp_o (dram_post_atomics_resp),
     .mst_req_o  (dram_cut_req),
@@ -1077,7 +1077,7 @@ module top_chip_system #(
     .axi_resp_t           ( top_pkg::axi_resp_t   )
   ) u_tag_controller_isolate (
     .clk_i      (clkmgr_clocks.clk_main_infra),
-    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .slv_req_i  (dram_cut_req),
     .slv_resp_o (dram_cut_resp),
     .mst_req_o  (tag_controller_isolated_req),
@@ -1090,8 +1090,8 @@ module top_chip_system #(
   assign tag_controller_isolate = (dram_cut_req.ar_valid && dram_cut_resp.ar_ready) ||
                                   (dram_cut_req.aw_valid && dram_cut_resp.aw_ready);
 
-  always_ff @(posedge clkmgr_clocks.clk_main_infra or negedge rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) begin
-    if (!rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]) tag_controller_isolate_reg <= 1'b0;
+  always_ff @(posedge clkmgr_clocks.clk_main_infra or negedge rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]) begin
+    if (!rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]) tag_controller_isolate_reg <= 1'b0;
     else if (tag_controller_isolate)                       tag_controller_isolate_reg <= 1'b1;
     else if (tag_controller_isolated)                      tag_controller_isolate_reg <= 1'b0;
   end
@@ -1121,7 +1121,7 @@ module top_chip_system #(
     .rule_full_t      ( axi_pkg::xbar_rule_64_t           )
   ) u_tag_controller (
     .clk_i               (clkmgr_clocks.clk_main_infra),
-    .rst_ni              (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni              (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .test_i              ('0),
     .slv_req_i           (tag_controller_isolated_req),
     .slv_resp_o          (tag_controller_isolated_resp),
@@ -1144,7 +1144,7 @@ module top_chip_system #(
     .NumBanks   ( 1                     )
   ) u_tl_rom_axi_to_mem (
     .clk_i      (clkmgr_clocks.clk_main_infra),
-    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // AXI interface.
     .busy_o     ( ),
@@ -1166,7 +1166,7 @@ module top_chip_system #(
   // 64-bit mem to 32-bit mem for TLUL ROM
   mem_downsizer u_tl_rom_mem_downsizer (
     .clk_i      (clkmgr_clocks.clk_main_infra),
-    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // 64-bit memory request in
     .mem64_req_i    (mem64_tl_rom_mem_req),
@@ -1195,7 +1195,7 @@ module top_chip_system #(
     .EnableRspDataIntgCheck ( 1 )
   ) u_tl_rom_tlul_host_adapter (
     .clk_i      (clkmgr_clocks.clk_main_infra),
-    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     .req_i        (mem32_tl_rom_mem_req),
     .gnt_o        (mem32_tl_rom_mem_gnt),
@@ -1229,7 +1229,7 @@ module top_chip_system #(
   ) u_rom_ctrl (
     // Clock and reset connections
     .clk_i  (clkmgr_clocks.clk_main_infra),
-    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::Domain0Sel]),
+    .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // Allert Signals
     .alert_tx_o  ( ),
