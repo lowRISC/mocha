@@ -425,16 +425,25 @@ def emit_device_register_field(device_name: str, reg: dict, type_name: str) -> s
 
 def emit_device_window_field(device_name: str, window: dict) -> str:
     window_name = window["name"].lower()
-    num_u32s = window["entries"]
+    num_entries = window["entries"]
+    mem_width = window["width"]
+    if mem_width not in (32, 64):
+        raise ValueError(
+            f"Register window '{window_name}' in device '{device_name}' "
+            "has entries that are not 32-bits or 64-bits wide"
+        )
+    mem_width_bytes = mem_width // 8
+    type_name = f"uint{mem_width}_t"
+
     offset = window["offset"]
-    end = offset + window["size"] - 4
-    offset_string = f"{hex(offset)}-{hex(end)}"
+    end = offset + window["size"] - mem_width_bytes
+    offset_string = hex(offset) if num_entries == 1 else f"{hex(offset)}-{hex(end)}"
     return "\n".join(
         indent_lines(
             [
                 f"/* {device_name}.{window_name} ({offset_string}) */",
-                f"{'const ' if not window['sw_writable'] else ''}uint32_t "
-                f"{window_name}[{num_u32s}];",
+                f"{'const ' if not window['sw_writable'] else ''}{type_name} "
+                f"{window_name}{f'[{num_entries}]' if num_entries > 1 else ''};",
             ]
         )
     )
@@ -451,43 +460,53 @@ def emit_device_struct_declaration(
 ) -> str:
     """
     Emit the declaration of the device's memory layout. The fields of this structure are the
-    device's registers, with necessary padding fields around them.
+    device's registers and windows, with necessary padding fields around them.
     """
-    typed_registers_ascending_by_offset = sorted(
-        typed_registers, key=lambda reg: min(reg[0]["offsets"])
-    )
+    declaration_fields = [
+        {"field_is_register": True, "field": f, "offset": min(f[0]["offsets"])}
+        for f in typed_registers
+    ] + [{"field_is_register": False, "field": f, "offset": f["offset"]} for f in windows]
+
+    fields_ascending_by_offset = sorted(declaration_fields, key=lambda f: f["offset"])
 
     # number of padding fields in the struct so far
     padding_field_num = 0
     # top offset of last register field, used to calculate size of padding
-    end_of_last_reg = 0
+    end_of_last_field = 0
     # iterate over the register in ascending order of offset
-    device_struct_reg_declarations = []
-    for reg, reg_type_name in typed_registers_ascending_by_offset:
-        offsets = reg["offsets"]
-        start_of_reg = min(offsets)
-        if (start_of_reg - end_of_last_reg) > 0:
-            device_struct_reg_declarations.append(
-                emit_device_register_padding_field(padding_field_num, end_of_last_reg, start_of_reg)
+    device_struct_field_declarations = []
+    for f in fields_ascending_by_offset:
+        is_register, field, start_of_field = f["field_is_register"], f["field"], f["offset"]
+        if is_register:
+            reg, reg_type_name = field[0], field[1]
+            offsets = reg["offsets"]
+            if (start_of_field - end_of_last_field) > 0:
+                device_struct_field_declarations.append(
+                    emit_device_register_padding_field(
+                        padding_field_num, end_of_last_field, start_of_field
+                    )
+                )
+                padding_field_num += 1
+            end_of_last_field = max(offsets) + 4
+            device_struct_field_declarations.append(
+                emit_device_register_field(device_name, reg, reg_type_name)
             )
-            padding_field_num += 1
-        end_of_last_reg = max(offsets) + 4
-        device_struct_reg_declarations.append(
-            emit_device_register_field(device_name, reg, reg_type_name)
-        )
-    for window in windows:
-        start_of_reg = window["offset"]
-        if (start_of_reg - end_of_last_reg) > 0:
-            device_struct_reg_declarations.append(
-                emit_device_register_padding_field(padding_field_num, end_of_last_reg, start_of_reg)
-            )
-            padding_field_num += 1
-        end_of_last_reg = start_of_reg + window["size"]
-        device_struct_reg_declarations.append(emit_device_window_field(device_name, window))
+        else:
+            window = field
+            if (start_of_field - end_of_last_field) > 0:
+                device_struct_field_declarations.append(
+                    emit_device_register_padding_field(
+                        padding_field_num, end_of_last_field, start_of_field
+                    )
+                )
+                padding_field_num += 1
+            end_of_last_field = start_of_field + window["size"]
+            device_struct_field_declarations.append(emit_device_window_field(device_name, window))
+
     return "\n".join(
         [
             f"typedef volatile struct {struct_aligned_attribute} {device_name}_memory_layout {{",
-            "\n\n".join(device_struct_reg_declarations),
+            "\n\n".join(device_struct_field_declarations),
             f"}} *{device_name}_t;",
         ]
     )
