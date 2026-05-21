@@ -266,10 +266,12 @@ def register_is_flag_enum(reg: dict) -> bool:
 def emit_register_flag_enum(device_name: str, reg: dict) -> str:
     """
     Emit register as a flag enum, see 'register_is_flag_enum' predicate.
+    We additionally emit a 'none' variant with a value of 0.
     """
     reg_name = reg["name"].lower()
     fully_qualified_type_name = "_".join([device_name, reg_name])
     enum_variants = []
+    enum_variants.append(f"{'_'.join([device_name, reg_name, 'none'])} = 0,")
     for bit, field in enumerate(fields_ascending_by_lsb(reg)):
         field_name = field["name"].lower()
         fully_qualified_field_name = "_".join([device_name, reg_name, field_name])
@@ -289,6 +291,7 @@ def emit_common_device_register_declaration(
     common_name = stripped_longest_common_prefix([x["name"] for x in register_set])
     fully_qualified_type_name = "_".join([device_name, common_name])
     enum_variants = []
+    enum_variants.append(f"{'_'.join([device_name, common_name, 'none'])} = 0,")
     for bit, field in enumerate(fields_ascending_by_lsb(register_set[0])):
         field_name = field["name"].lower()
         fully_qualified_field_name = "_".join([device_name, common_name, field_name])

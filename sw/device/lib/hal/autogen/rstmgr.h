@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 typedef enum [[clang::flag_enum]] rstmgr_alert_test : uint32_t {
+    rstmgr_alert_test_none = 0,
     rstmgr_alert_test_fatal_fault = (1u << 0),
     rstmgr_alert_test_fatal_cnsty_fault = (1u << 1),
 } rstmgr_alert_test;
@@ -71,6 +72,7 @@ typedef struct [[gnu::aligned(4)]] {
 } rstmgr_sw_rst_ctrl_n;
 
 typedef enum [[clang::flag_enum]] rstmgr_err_code : uint32_t {
+    rstmgr_err_code_none = 0,
     rstmgr_err_code_reg_intg_err = (1u << 0),
     rstmgr_err_code_reset_consistency_err = (1u << 1),
     rstmgr_err_code_fsm_err = (1u << 2),

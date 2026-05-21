@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 typedef enum [[clang::flag_enum]] spi_device_intr : uint32_t {
+    spi_device_intr_none = 0,
     spi_device_intr_upload_cmdfifo_not_empty = (1u << 0),
     spi_device_intr_upload_payload_not_empty = (1u << 1),
     spi_device_intr_upload_payload_overflow = (1u << 2),
@@ -49,6 +50,7 @@ typedef struct [[gnu::aligned(4)]] {
 } spi_device_status;
 
 typedef enum [[clang::flag_enum]] spi_device_intercept_en : uint32_t {
+    spi_device_intercept_en_none = 0,
     spi_device_intercept_en_status = (1u << 0),
     spi_device_intercept_en_jedec = (1u << 1),
     spi_device_intercept_en_sfdp = (1u << 2),
@@ -163,6 +165,7 @@ typedef struct [[gnu::aligned(4)]] {
 } spi_device_tpm_cap;
 
 typedef enum [[clang::flag_enum]] spi_device_tpm_cfg : uint32_t {
+    spi_device_tpm_cfg_none = 0,
     spi_device_tpm_cfg_en = (1u << 0),
     spi_device_tpm_cfg_tpm_mode = (1u << 1),
     spi_device_tpm_cfg_hw_reg_dis = (1u << 2),
@@ -171,6 +174,7 @@ typedef enum [[clang::flag_enum]] spi_device_tpm_cfg : uint32_t {
 } spi_device_tpm_cfg;
 
 typedef enum [[clang::flag_enum]] spi_device_tpm_status : uint32_t {
+    spi_device_tpm_status_none = 0,
     spi_device_tpm_status_cmdaddr_notempty = (1u << 0),
     spi_device_tpm_status_wrfifo_pending = (1u << 1),
     spi_device_tpm_status_rdfifo_aborted = (1u << 2),

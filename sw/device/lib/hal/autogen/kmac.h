@@ -9,12 +9,14 @@
 #include <stdint.h>
 
 typedef enum [[clang::flag_enum]] kmac_intr : uint32_t {
+    kmac_intr_none = 0,
     kmac_intr_kmac_done = (1u << 0),
     kmac_intr_fifo_empty = (1u << 1),
     kmac_intr_kmac_err = (1u << 2),
 } kmac_intr;
 
 typedef enum [[clang::flag_enum]] kmac_alert_test : uint32_t {
+    kmac_alert_test_none = 0,
     kmac_alert_test_recov_operation_err = (1u << 0),
     kmac_alert_test_fatal_fault_err = (1u << 1),
 } kmac_alert_test;
