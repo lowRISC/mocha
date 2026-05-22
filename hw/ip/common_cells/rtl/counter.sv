@@ -33,6 +33,13 @@ module counter #(
     .commit_i           (1'b1),
     .cnt_o              (q_o),
     .cnt_after_commit_o ( ),
-    .err_o              (overflow_o)
+    .err_o              ( )
   );
+
+  // Generate sticky overflow flag as prim_count is a saturating counter
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if      (!rst_ni)             overflow_o <= 1'b0;
+    else if (clear_i || load_i)   overflow_o <= 1'b0;
+    else if (!overflow_o && en_i) overflow_o <= (q_o == '1 && !down_i) || (q_o == '0 && down_i);
+  end
 endmodule

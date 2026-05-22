@@ -359,28 +359,6 @@ index c217401..4b50741 100644
    typedef logic [SelIdxWidth-1:0]          way_sel_t; // Binary representation of the way selection
    typedef logic [Cfg.SetAssociativity-1:0] way_ind_t; // way indicator for switching decision
  
-diff --git a/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv b/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
-index 2d9b2f8..130372e 100644
---- a/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
-+++ b/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv
-@@ -224,9 +224,16 @@ module axi_llc_tag_pattern_gen #(
-     .down_i    (     down_cnt ),
-     .d_i       (     data_cnt ),
-     .q_o       (      index_o ),
--    .overflow_o( overflow_cnt )
-+    .overflow_o( )
-   );
- 
-+  // Generate sticky overflow flag as prim_count is a saturating counter
-+  always_ff @(posedge clk_i or negedge rst_ni) begin
-+    if      (!rst_ni)                 overflow_cnt <= 1'b0;
-+    else if (clear_cnt || load_cnt)   overflow_cnt <= 1'b0;
-+    else if (!overflow_cnt && en_cnt) overflow_cnt <= (index_o == '1 && !down_cnt) || (index_o == '0 && down_cnt);
-+  end
-+
-   // Flip Flops
-   `FFLARN(busy_q,     busy_d,     switch_busy,      '0, clk_i, rst_ni)
-   `FFLARN(eoc_q,      eoc_d,      '1,               '0, clk_i, rst_ni)
 diff --git a/src/hit_miss_detect/axi_llc_tag_store.sv b/src/hit_miss_detect/axi_llc_tag_store.sv
 index d15691a..b9c922b 100644
 --- a/src/hit_miss_detect/axi_llc_tag_store.sv
