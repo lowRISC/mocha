@@ -13,19 +13,19 @@ interface rstmgr_rst_en_track_sva_if (
   input logic rst_por_ni
 );
   import rstmgr_pkg::DomainAonSel;
-  import rstmgr_pkg::Domain0Sel;
+  import rstmgr_pkg::DomainMainSel;
   localparam int DELAY = 1;
 
-  `ASSERT(D0RstPorAonEnTracksRstPorAonActive_A,
-          $fell(resets_i.rst_por_aon_n[Domain0Sel]) |-> ##[0:DELAY]
-          reset_en_i.por_aon[Domain0Sel] == prim_mubi_pkg::MuBi4True,
+  `ASSERT(DMainRstPorAonEnTracksRstPorAonActive_A,
+          $fell(resets_i.rst_por_aon_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.por_aon[DomainMainSel] == prim_mubi_pkg::MuBi4True,
           clk_aon_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstPorAonEnTracksRstPorAonInactive_A,
-          $rose(resets_i.rst_por_aon_n[Domain0Sel]) |-> ##DELAY
-          !resets_i.rst_por_aon_n[Domain0Sel] ||
-          reset_en_i.por_aon[Domain0Sel] == prim_mubi_pkg::MuBi4False,
+  `ASSERT(DMainRstPorAonEnTracksRstPorAonInactive_A,
+          $rose(resets_i.rst_por_aon_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_por_aon_n[DomainMainSel] ||
+          reset_en_i.por_aon[DomainMainSel] == prim_mubi_pkg::MuBi4False,
           clk_aon_i,
           !rst_por_ni)
 
@@ -68,68 +68,68 @@ interface rstmgr_rst_en_track_sva_if (
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstMainEnTracksRstMainActive_A,
-          $fell(resets_i.rst_main_n[Domain0Sel]) |-> ##[0:DELAY]
-          reset_en_i.main[Domain0Sel] == prim_mubi_pkg::MuBi4True,
+  `ASSERT(DMainRstMainEnTracksRstMainActive_A,
+          $fell(resets_i.rst_main_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.main[DomainMainSel] == prim_mubi_pkg::MuBi4True,
           clk_main_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstMainEnTracksRstMainInactive_A,
-          $rose(resets_i.rst_main_n[Domain0Sel]) |-> ##DELAY
-          !resets_i.rst_main_n[Domain0Sel] ||
-          reset_en_i.main[Domain0Sel] == prim_mubi_pkg::MuBi4False,
+  `ASSERT(DMainRstMainEnTracksRstMainInactive_A,
+          $rose(resets_i.rst_main_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_main_n[DomainMainSel] ||
+          reset_en_i.main[DomainMainSel] == prim_mubi_pkg::MuBi4False,
           clk_main_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstIoEnTracksRstIoActive_A,
-          $fell(resets_i.rst_io_n[Domain0Sel]) |-> ##[0:DELAY]
-          reset_en_i.io[Domain0Sel] == prim_mubi_pkg::MuBi4True,
+  `ASSERT(DMainRstIoEnTracksRstIoActive_A,
+          $fell(resets_i.rst_io_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.io[DomainMainSel] == prim_mubi_pkg::MuBi4True,
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstIoEnTracksRstIoInactive_A,
-          $rose(resets_i.rst_io_n[Domain0Sel]) |-> ##DELAY
-          !resets_i.rst_io_n[Domain0Sel] ||
-          reset_en_i.io[Domain0Sel] == prim_mubi_pkg::MuBi4False,
+  `ASSERT(DMainRstIoEnTracksRstIoInactive_A,
+          $rose(resets_i.rst_io_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_io_n[DomainMainSel] ||
+          reset_en_i.io[DomainMainSel] == prim_mubi_pkg::MuBi4False,
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstSpiDeviceEnTracksRstSpiDeviceActive_A,
-          $fell(resets_i.rst_spi_device_n[Domain0Sel]) |-> ##[0:DELAY]
-          reset_en_i.spi_device[Domain0Sel] == prim_mubi_pkg::MuBi4True,
+  `ASSERT(DMainRstSpiDeviceEnTracksRstSpiDeviceActive_A,
+          $fell(resets_i.rst_spi_device_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.spi_device[DomainMainSel] == prim_mubi_pkg::MuBi4True,
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstSpiDeviceEnTracksRstSpiDeviceInactive_A,
-          $rose(resets_i.rst_spi_device_n[Domain0Sel]) |-> ##DELAY
-          !resets_i.rst_spi_device_n[Domain0Sel] ||
-          reset_en_i.spi_device[Domain0Sel] == prim_mubi_pkg::MuBi4False,
+  `ASSERT(DMainRstSpiDeviceEnTracksRstSpiDeviceInactive_A,
+          $rose(resets_i.rst_spi_device_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_spi_device_n[DomainMainSel] ||
+          reset_en_i.spi_device[DomainMainSel] == prim_mubi_pkg::MuBi4False,
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstSpiHostEnTracksRstSpiHostActive_A,
-          $fell(resets_i.rst_spi_host_n[Domain0Sel]) |-> ##[0:DELAY]
-          reset_en_i.spi_host[Domain0Sel] == prim_mubi_pkg::MuBi4True,
+  `ASSERT(DMainRstSpiHostEnTracksRstSpiHostActive_A,
+          $fell(resets_i.rst_spi_host_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.spi_host[DomainMainSel] == prim_mubi_pkg::MuBi4True,
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstSpiHostEnTracksRstSpiHostInactive_A,
-          $rose(resets_i.rst_spi_host_n[Domain0Sel]) |-> ##DELAY
-          !resets_i.rst_spi_host_n[Domain0Sel] ||
-          reset_en_i.spi_host[Domain0Sel] == prim_mubi_pkg::MuBi4False,
+  `ASSERT(DMainRstSpiHostEnTracksRstSpiHostInactive_A,
+          $rose(resets_i.rst_spi_host_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_spi_host_n[DomainMainSel] ||
+          reset_en_i.spi_host[DomainMainSel] == prim_mubi_pkg::MuBi4False,
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstI2cEnTracksRstI2cActive_A,
-          $fell(resets_i.rst_i2c_n[Domain0Sel]) |-> ##[0:DELAY]
-          reset_en_i.i2c[Domain0Sel] == prim_mubi_pkg::MuBi4True,
+  `ASSERT(DMainRstI2cEnTracksRstI2cActive_A,
+          $fell(resets_i.rst_i2c_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.i2c[DomainMainSel] == prim_mubi_pkg::MuBi4True,
           clk_io_i,
           !rst_por_ni)
 
-  `ASSERT(D0RstI2cEnTracksRstI2cInactive_A,
-          $rose(resets_i.rst_i2c_n[Domain0Sel]) |-> ##DELAY
-          !resets_i.rst_i2c_n[Domain0Sel] ||
-          reset_en_i.i2c[Domain0Sel] == prim_mubi_pkg::MuBi4False,
+  `ASSERT(DMainRstI2cEnTracksRstI2cInactive_A,
+          $rose(resets_i.rst_i2c_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_i2c_n[DomainMainSel] ||
+          reset_en_i.i2c[DomainMainSel] == prim_mubi_pkg::MuBi4False,
           clk_io_i,
           !rst_por_ni)
 

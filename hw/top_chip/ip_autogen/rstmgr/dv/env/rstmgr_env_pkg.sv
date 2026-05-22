@@ -35,13 +35,13 @@ package rstmgr_env_pkg;
 
   // Sorted instances of rstmgr_leaf_rst instances with security checks enabled.
   parameter string LIST_OF_LEAFS[] = {
-    "u_d0_i2c",
-    "u_d0_io",
-    "u_d0_main",
-    "u_d0_spi_device",
-    "u_d0_spi_host",
     "u_daon_por",
-    "u_daon_por_io"
+    "u_daon_por_io",
+    "u_dmain_i2c",
+    "u_dmain_io",
+    "u_dmain_main",
+    "u_dmain_spi_device",
+    "u_dmain_spi_host"
   };
 
   // Instances of rstmgr_leaf_rst modules which have a shadow pair.
