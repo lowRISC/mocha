@@ -5,6 +5,7 @@
 package alert_esc_agent_pkg;
   // dep packages
   import uvm_pkg::*;
+  import dv_base_agent_pkg::*;
   import dv_lib_pkg::*;
   import dv_utils_pkg::*;
   import prim_alert_pkg::*;
@@ -43,13 +44,6 @@ package alert_esc_agent_pkg;
     EscRespPing0,
     EscRespPing1
   } esc_handshake_e;
-
-  typedef enum bit [1:0] {
-    NoAlertBeforeAfterIntFail  = 'b00,
-    HasAlertBeforeIntFailOnly  = 'b01,
-    HasAlertAfterIntFailOnly   = 'b10,
-    HasAlertBeforeAfterIntFail = 'b11
-  } alert_sig_int_err_e;
 
   // macro includes
   `include "uvm_macros.svh"

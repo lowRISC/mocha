@@ -251,10 +251,10 @@ class entropy_src_env_cfg extends cip_base_env_cfg #(.RAL_T(entropy_src_reg_bloc
   // Functions //
   ///////////////
 
-  virtual function void initialize(bit [31:0] csr_base_addr = '1);
+  virtual function void initialize();
     list_of_alerts = entropy_src_env_pkg::LIST_OF_ALERTS;
     tl_intg_alert_name = "fatal_alert";
-    super.initialize(csr_base_addr);
+    super.initialize();
 
     dut_cfg = entropy_src_dut_cfg::type_id::create("dut_cfg");
 
@@ -270,19 +270,6 @@ class entropy_src_env_cfg extends cip_base_env_cfg #(.RAL_T(entropy_src_reg_bloc
 
     // only support 1 outstanding TL item
     m_tl_agent_cfg.max_outstanding_req = 1;
-
-    // Disable random CDC delays in alert sender because the scoreboard otherwise could not
-    // accurately predict whether an alert request gets merged with an outstanding request or not
-    // (#18796).
-    disabled_prim_cdc_rand_delays = new[2];
-    foreach (disabled_prim_cdc_rand_delays[i]) begin
-     string path = "tb.dut.gen_alert_tx[0].u_prim_alert_sender.u_decode_ack.gen_async";
-     unique case (i)
-       0: path = {path, ".i_sync_n"};
-       1: path = {path, ".i_sync_p"};
-     endcase
-     disabled_prim_cdc_rand_delays[i] = {path, ".u_prim_cdc_rand_delay"};
-    end
   endfunction
 
   virtual function string convert2string();

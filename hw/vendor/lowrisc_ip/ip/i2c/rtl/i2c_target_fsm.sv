@@ -8,8 +8,8 @@
 
 module i2c_target_fsm import i2c_pkg::*;
 #(
-  parameter int AcqFifoDepth = 64,
-  localparam int AcqFifoDepthWidth = $clog2(AcqFifoDepth+1)
+  parameter int unsigned AcqFifoDepth = 64,
+  localparam int unsigned AcqFifoDepthWidth = $clog2(AcqFifoDepth+1)
 ) (
   input        clk_i,  // clock
   input        rst_ni, // active low reset
