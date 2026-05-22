@@ -7,6 +7,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+enum {
+    evict_test_capabilities = 32u,
+};
+
 bool tag_test()
 {
 #if defined(__riscv_zcherihybrid)
@@ -15,7 +19,7 @@ bool tag_test()
     uint64_t res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,
         res14, res15;
 
-    __asm__ volatile(
+    asm volatile(
         // Get capability to dram in ct0.
         "auipc ct0, 0\n\t"
         "scaddr ct0, ct0, %15\n\t"
@@ -97,7 +101,7 @@ bool tag_test()
         return false;
     }
 
-    __asm__ volatile(
+    asm volatile(
         // Get capability to dram in ct0.
         "auipc ct0, 0\n\t"
         "scaddr ct0, ct0, %6\n\t"
@@ -136,7 +140,7 @@ bool tag_test()
         return false;
     }
 
-    __asm__ volatile(
+    asm volatile(
         // Get capability to dram in ct0.
         "auipc ct0, 0\n\t"
         "scaddr ct0, ct0, %6\n\t"
@@ -179,7 +183,93 @@ bool tag_test()
     return true;
 }
 
+#if defined(__riscv_zcherihybrid)
+void write_valid_cap(const uint64_t addr)
+{
+    asm volatile(
+        // Get capability to address.
+        "auipc ct0, 0\n\t"
+        "scaddr ct0, ct0, %0\n\t"
+
+        // Store valid capability.
+        "csc ct0, 0(ct0)\n\t"
+        "fence\n\t"
+        :
+        : "r"(addr)
+        : "ct0", "memory");
+}
+
+void write_invalid_cap(const uint64_t addr)
+{
+    asm volatile(
+        // Get capability to address.
+        "auipc ct0, 0\n\t"
+        "scaddr ct0, ct0, %0\n\t"
+
+        // Store invalid capability.
+        "csc cnull, 0(ct0)\n\t"
+        "fence\n\t"
+        :
+        : "r"(addr)
+        : "ct0", "memory");
+}
+
+bool cap_is_valid(const uint64_t addr)
+{
+    uint64_t res;
+
+    asm volatile(
+        // Get capability to address.
+        "auipc ct0, 0\n\t"
+        "scaddr ct0, ct0, %1\n\t"
+
+        // Check if tag is set.
+        "clc ct1, 0(ct0)\n\t"
+        "gctag %0, ct1\n\t"
+        : "=r"(res)
+        : "r"(addr)
+        : "ct0", "ct1");
+
+    return res != 0;
+}
+#endif /* defined(__riscv_zcherihybrid) */
+
+bool tag_cache_evict_test()
+{
+#if defined(__riscv_zcherihybrid)
+    for (int i = 0; i < evict_test_capabilities; ++i) {
+        write_valid_cap(0x81000000UL + (i << 24));
+    }
+
+    for (int i = 0; i < evict_test_capabilities; ++i) {
+        if (!cap_is_valid(0x81000000UL + (i << 24))) {
+            return false;
+        }
+    }
+
+    for (int i = 0; i < evict_test_capabilities; ++i) {
+        if ((i & 1) == 1) {
+            write_invalid_cap(0x81000000UL + (i << 24));
+        }
+    }
+
+    for (int i = 0; i < evict_test_capabilities; ++i) {
+        if ((i & 1) == 0) {
+            if (!cap_is_valid(0x81000000UL + (i << 24))) {
+                return false;
+            }
+        } else {
+            if (cap_is_valid(0x81000000UL + (i << 24))) {
+                return false;
+            }
+        }
+    }
+#endif /* defined(__riscv_zcherihybrid) */
+
+    return true;
+}
+
 bool test_main()
 {
-    return tag_test();
+    return tag_test() && tag_cache_evict_test();
 }
