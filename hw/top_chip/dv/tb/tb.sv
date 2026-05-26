@@ -15,6 +15,8 @@ module tb;
   import top_chip_dv_env_pkg::SW_DV_START_ADDR;
   import top_chip_dv_env_pkg::SW_DV_TEST_STATUS_ADDR;
   import top_chip_dv_env_pkg::SW_DV_LOG_ADDR;
+  import top_chip_dv_env_pkg::SW_DV_HW_ID_ADDR;
+  import top_chip_dv_env_pkg::SW_DV_HW_ID;
 
   // Macro includes
   `include "uvm_macros.svh"
@@ -277,6 +279,8 @@ module tb;
     // Set base of SW DV special write locations
     `SIM_SRAM_IF.start_addr                              = SW_DV_START_ADDR;
     `SIM_SRAM_IF.sw_dv_size                              = SW_DV_SIZE;
+    `SIM_SRAM_IF.hw_id                                   = SW_DV_HW_ID;
+    `SIM_SRAM_IF.hw_id_addr                              = SW_DV_HW_ID_ADDR;
     `SIM_SRAM_IF.u_sw_test_status_if.sw_test_status_addr = SW_DV_TEST_STATUS_ADDR;
     `SIM_SRAM_IF.u_sw_logger_if.sw_log_addr              = SW_DV_LOG_ADDR;
 

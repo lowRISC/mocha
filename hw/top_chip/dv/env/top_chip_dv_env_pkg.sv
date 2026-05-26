@@ -41,11 +41,15 @@ package top_chip_dv_env_pkg;
   // 50 MHz Peripheral clock
   parameter int unsigned PeriClkFreq = 50_000_000;
 
-  // SW DV special write locations for test status and logging will always fit in 32-bits
+  // SW-DV special locations for test status, logging, and platform identification.
+  // In simulation, sim_sram_axi_sink is connected to the dedicated sw_dv crossbar port.
   parameter bit [31:0] SW_DV_START_ADDR       = 'h2002_0000;
   parameter bit [31:0] SW_DV_SIZE             = 'h0000_0100;        // 256 bytes reserved for SW DV
   parameter bit [31:0] SW_DV_TEST_STATUS_ADDR = SW_DV_START_ADDR + 'h00;
-  parameter bit [31:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h04;
+  parameter bit [31:0] SW_DV_HW_ID_ADDR       = SW_DV_START_ADDR + 'h04;
+  parameter bit [31:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h08;
+
+  parameter bit [31:0] SW_DV_HW_ID            = top_pkg::HwIdSimUvm;
 
   // File includes
   `include "mem_clear_util.sv"
