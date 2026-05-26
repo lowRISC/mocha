@@ -13,7 +13,7 @@ elif "io" in all_clks:
 else:
     assert 0, "No preferred clock available"
 
-preferred_rst_n = f"rst_lc_{preferred_domain}_n"
+preferred_rst_n = f"rst_{preferred_domain}_n"
 %>\
 
 interface rstmgr_if (
