@@ -28,6 +28,9 @@ function top_chip_dv_base_test::new(string name = "", uvm_component parent = nul
 endfunction : new
 
 function void top_chip_dv_base_test::build_phase(uvm_phase phase);
+  axi4_vip_env_cfg axi_mgr_cfg[];
+  axi4_vip_env_cfg axi_sub_cfg[];
+
   dv_report_server m_dv_report_server = new();
   uvm_report_server::set_server(m_dv_report_server);
 
@@ -36,6 +39,104 @@ function void top_chip_dv_base_test::build_phase(uvm_phase phase);
   env     = top_chip_dv_env::type_id::create("env", this);
   env.cfg = top_chip_dv_env_cfg::type_id::create("cfg", this);
   env.cfg.initialize();
+
+  // AXI VIP configuration
+  axi_mgr_cfg = new[top_pkg::AxiXbarHosts];
+  axi_mgr_cfg[top_pkg::CVA6] = axi4_vip_env_cfg::type_id::create("m_axi_CVA6_cfg", this);
+  axi_mgr_cfg[top_pkg::CVA6].set_config(.inst_id                    ("CVA6"),
+                                        .has_manager                (1),
+                                        .manager_active_passive     (UVM_PASSIVE),
+                                        .has_subordinate            (0),
+                                        .subordinate_active_passive (UVM_PASSIVE),
+                                        .id_width                   (top_pkg::AxiIdWidth),
+                                        .addr_width                 (top_pkg::AxiAddrWidth),
+                                        .data_width                 (top_pkg::AxiDataWidth),
+                                        .user_width                 (top_pkg::AxiUserWidth),
+                                        .region_width               (4),
+                                        .qos_width                  (4));
+  uvm_config_db#(axi4_vip_env_cfg)::set(this, "env.m_mgr_axi_CVA6*", "m_cfg",
+                                        axi_mgr_cfg[top_pkg::CVA6]);
+  env.cfg.m_axi_mgr_cfg = axi_mgr_cfg;
+
+  axi_sub_cfg = new[top_pkg::AxiXbarDevices];
+  axi_sub_cfg[top_pkg::RomCtrlMem] = axi4_vip_env_cfg::type_id::create("m_axi_RomCtrlMem_cfg",
+                                                                       this);
+  axi_sub_cfg[top_pkg::RomCtrlMem].set_config(.inst_id                    ("RomCtrlMem"),
+                                              .has_manager                (0),
+                                              .manager_active_passive     (UVM_PASSIVE),
+                                              .has_subordinate            (1),
+                                              .subordinate_active_passive (UVM_PASSIVE),
+                                              .id_width                   (top_pkg::AxiIdWidth),
+                                              .addr_width                 (top_pkg::AxiAddrWidth),
+                                              .data_width                 (top_pkg::AxiDataWidth),
+                                              .user_width                 (top_pkg::AxiUserWidth),
+                                              .region_width               (4),
+                                              .qos_width                  (4));
+  uvm_config_db#(axi4_vip_env_cfg)::set(this, "env.m_sub_axi_RomCtrlMem*", "m_cfg",
+                                        axi_sub_cfg[top_pkg::RomCtrlMem]);
+
+  axi_sub_cfg[top_pkg::SRAM] = axi4_vip_env_cfg::type_id::create("m_axi_SRAM_cfg", this);
+  axi_sub_cfg[top_pkg::SRAM].set_config(.inst_id                    ("SRAM"),
+                                        .has_manager                (0),
+                                        .manager_active_passive     (UVM_PASSIVE),
+                                        .has_subordinate            (1),
+                                        .subordinate_active_passive (UVM_PASSIVE),
+                                        .id_width                   (top_pkg::AxiIdWidth),
+                                        .addr_width                 (top_pkg::AxiAddrWidth),
+                                        .data_width                 (top_pkg::AxiDataWidth),
+                                        .user_width                 (top_pkg::AxiUserWidth),
+                                        .region_width               (4),
+                                        .qos_width                  (4));
+  uvm_config_db#(axi4_vip_env_cfg)::set(this, "env.m_sub_axi_SRAM*", "m_cfg",
+                                        axi_sub_cfg[top_pkg::SRAM]);
+
+  axi_sub_cfg[top_pkg::Mailbox] = axi4_vip_env_cfg::type_id::create("m_axi_Mailbox_cfg", this);
+  axi_sub_cfg[top_pkg::Mailbox].set_config(.inst_id                    ("Mailbox"),
+                                           .has_manager                (0),
+                                           .manager_active_passive     (UVM_PASSIVE),
+                                           .has_subordinate            (1),
+                                           .subordinate_active_passive (UVM_PASSIVE),
+                                           .id_width                   (top_pkg::AxiIdWidth),
+                                           .addr_width                 (top_pkg::AxiAddrWidth),
+                                           .data_width                 (top_pkg::AxiDataWidth),
+                                           .user_width                 (top_pkg::AxiUserWidth),
+                                           .region_width               (4),
+                                           .qos_width                  (4));
+  uvm_config_db#(axi4_vip_env_cfg)::set(this, "env.m_sub_axi_Mailbox*", "m_cfg",
+                                        axi_sub_cfg[top_pkg::Mailbox]);
+
+  axi_sub_cfg[top_pkg::TlCrossbar] = axi4_vip_env_cfg::type_id::create(
+      "m_axi_TlCrossbar_cfg", this);
+  axi_sub_cfg[top_pkg::TlCrossbar].set_config(.inst_id                    ("TlCrossbar"),
+                                              .has_manager                (0),
+                                              .manager_active_passive     (UVM_PASSIVE),
+                                              .has_subordinate            (1),
+                                              .subordinate_active_passive (UVM_PASSIVE),
+                                              .id_width                   (top_pkg::AxiIdWidth),
+                                              .addr_width                 (top_pkg::AxiAddrWidth),
+                                              .data_width                 (top_pkg::AxiDataWidth),
+                                              .user_width                 (top_pkg::AxiUserWidth),
+                                              .region_width               (4),
+                                              .qos_width                  (4));
+  uvm_config_db#(axi4_vip_env_cfg)::set(this, "env.m_sub_axi_TlCrossbar*", "m_cfg",
+                                        axi_sub_cfg[top_pkg::TlCrossbar]);
+
+  axi_sub_cfg[top_pkg::DRAM] = axi4_vip_env_cfg::type_id::create("m_axi_DRAM_cfg", this);
+  axi_sub_cfg[top_pkg::DRAM].set_config(.inst_id                    ("DRAM"),
+                                        .has_manager                (0),
+                                        .manager_active_passive     (UVM_PASSIVE),
+                                        .has_subordinate            (1),
+                                        .subordinate_active_passive (UVM_PASSIVE),
+                                        .id_width                   (top_pkg::AxiIdWidth),
+                                        .addr_width                 (top_pkg::AxiAddrWidth),
+                                        .data_width                 (top_pkg::AxiDataWidth),
+                                        .user_width                 (top_pkg::AxiUserWidth),
+                                        .region_width               (4),
+                                        .qos_width                  (4));
+  uvm_config_db#(axi4_vip_env_cfg)::set(this, "env.m_sub_axi_DRAM*", "m_cfg",
+                                        axi_sub_cfg[top_pkg::DRAM]);
+  env.cfg.m_axi_sub_cfg = axi_sub_cfg;
+
 endfunction : build_phase
 
 function void top_chip_dv_base_test::connect_phase(uvm_phase phase);
