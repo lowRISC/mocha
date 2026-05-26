@@ -104,6 +104,20 @@
                  "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
+      name: test_framework_test
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["test_framework_test_vanilla_sram:5" "bootrom:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_test_vanilla_sram.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
+      name: test_framework_test_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["test_framework_test_cheri_sram:5" "bootrom:5"]
+      run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_test_cheri_sram.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
       name: test_framework_exception_test
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["test_framework_exception_test_vanilla_sram:5" "bootrom:5"]
@@ -346,6 +360,8 @@
         "rv_timer_smoke_cheri",
         "rv_timer_irq",
         "rv_timer_irq_cheri",
+        "test_framework_test",
+        "test_framework_test_cheri",
         "test_framework_exception_test",
         "test_framework_exception_test_cheri",
         "spi_device_smoke",
@@ -398,6 +414,8 @@
     {
       name: test_framework
       tests: [
+        "test_framework_test",
+        "test_framework_test_cheri",
         "test_framework_exception_test",
         "test_framework_exception_test_cheri"
       ]

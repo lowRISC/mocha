@@ -72,6 +72,11 @@ package top_pkg;
   localparam longint unsigned TlCrossbarLength   = 64'h1000_0000;
   localparam longint unsigned DRAMPhysicalLength = 64'h4000_0000;
 
+  // HW identifiers for the sw_dv window hw_id register
+  localparam logic [31:0] HwIdFpgaGenesys2 = 32'h0000_000A;
+  localparam logic [31:0] HwIdSimVerilator = 32'h0000_001A;
+  localparam logic [31:0] HwIdSimUvm       = 32'h0000_002A;
+
   // Memory address masks
   localparam longint unsigned RomCtrlMemMask = RomCtrlMemLength - 1;
   localparam longint unsigned SRAMMask       = SRAMLength - 1;
