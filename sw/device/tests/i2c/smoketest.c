@@ -44,6 +44,6 @@ bool test_main()
     i2c_init(i2c);
 
     // -- Configure IP for Controller mode --
-    enable_controller_mode(i2c);
+    i2c_enable_controller_mode(i2c);
     return as6212_test(i2c);
 }
