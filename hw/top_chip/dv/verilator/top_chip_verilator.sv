@@ -187,9 +187,15 @@ module top_chip_verilator (
   `define DUT               u_top_chip_system
   `define SIM_SRAM_IF       u_sim_sram.u_sim_sram_if
 
+  // Special addresses for SW-DV communication
   localparam bit [31:0] VERILATOR_SW_DV_START_ADDR       = 'h2002_0000;
   localparam bit [31:0] VERILATOR_SW_DV_SIZE             = 'h0000_0100;   // 256 bytes reserved
   localparam bit [31:0] VERILATOR_SW_DV_TEST_STATUS_ADDR = VERILATOR_SW_DV_START_ADDR + 'h00;
+  localparam bit [31:0] VERILATOR_SW_DV_HW_ID_ADDR       = VERILATOR_SW_DV_START_ADDR + 'h04;
+
+  // Specific ID for SW-DV to identify that it's running on Verilator. This can be used by
+  // SW to adapt its behavior when running on Verilator vs other simulators or real hardware.
+  localparam bit [31:0] VERILATOR_HW_ID                  = 32'h0000_001A;
 
   // Signals to connect the sink
   top_pkg::axi_req_t  sim_sram_cpu_req;
@@ -228,10 +234,12 @@ module top_chip_verilator (
     .data     (`SIM_SRAM_IF.req.w.data[15:0] )  // Test status is 16-bits wide
   );
 
-  // Set the start address and the size of the simulation SRAM
+  // Set special SW-DV registers
   initial begin
     `SIM_SRAM_IF.start_addr                 = VERILATOR_SW_DV_START_ADDR;
     `SIM_SRAM_IF.sw_dv_size                 = VERILATOR_SW_DV_SIZE;
+    `SIM_SRAM_IF.hw_id_addr                 = VERILATOR_SW_DV_HW_ID_ADDR;
+    `SIM_SRAM_IF.hw_id                      = VERILATOR_HW_ID;
     u_sw_test_status_if.sw_test_status_addr = VERILATOR_SW_DV_TEST_STATUS_ADDR;
   end
 

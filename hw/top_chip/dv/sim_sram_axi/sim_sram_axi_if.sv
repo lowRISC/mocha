@@ -15,6 +15,8 @@ interface sim_sram_axi_if (
   // Control signals set by the Testbench
   logic [31:0] start_addr;
   logic [31:0] sw_dv_size;
+  logic [31:0] hw_id_addr;
+  logic [31:0] hw_id;
 
   // Monitor signals driven by the Sink
   axi_req_t  req;
