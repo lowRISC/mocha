@@ -21,7 +21,7 @@ int main(void)
     timer_enable_write(timer, true);
 
     // Enable I2C in controller mode
-    enable_controller_mode(i2c);
+    i2c_enable_controller_mode(i2c);
 
     uprintf(uart, "Hello i2c Mocha!\n");
 

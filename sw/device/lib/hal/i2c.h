@@ -103,7 +103,7 @@ bool i2c_wait_read_finish(i2c_t i2c);
 bool i2c_wait_write_finish(i2c_t i2c);
 
 // Enable I2C in controller mode
-void enable_controller_mode(i2c_t i2c);
+void i2c_enable_controller_mode(i2c_t i2c);
 
 // Return the data in the target's tx fifo
 uint8_t i2c_rdata_byte(i2c_t i2c);

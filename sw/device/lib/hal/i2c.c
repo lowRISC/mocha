@@ -161,7 +161,7 @@ bool i2c_wait_read_finish(i2c_t i2c)
     }
 }
 
-void enable_controller_mode(i2c_t i2c)
+void i2c_enable_controller_mode(i2c_t i2c)
 {
     VOLATILE_WRITE(i2c->ctrl, i2c_ctrl_enablehost);
 }
