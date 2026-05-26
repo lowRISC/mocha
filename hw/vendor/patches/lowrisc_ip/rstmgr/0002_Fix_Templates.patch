@@ -1,0 +1,86 @@
+diff --git a/dv/env/rstmgr_if.sv.tpl b/dv/env/rstmgr_if.sv.tpl
+index cb2102d..25c6fe2 100644
+--- a/dv/env/rstmgr_if.sv.tpl
++++ b/dv/env/rstmgr_if.sv.tpl
+@@ -13,7 +13,7 @@ elif "io" in all_clks:
+ else:
+     assert 0, "No preferred clock available"
+ 
+-preferred_rst_n = f"rst_lc_{preferred_domain}_n"
++preferred_rst_n = f"rst_{preferred_domain}_n"
+ %>\
+ 
+ interface rstmgr_if (
+diff --git a/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl b/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl
+index 356807f..1670853 100644
+--- a/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl
++++ b/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl
+@@ -127,8 +127,8 @@ class rstmgr_reset_vseq extends rstmgr_base_vseq;
+     expected_cpu_enable = 0;
+ 
+     cfg.clk_rst_vif.wait_clks(8);
+-    // Wait till rst_lc_n is inactive for non-aon.
+-    `DV_WAIT(cfg.rstmgr_vif.resets_o.rst_lc_n[1])
++    // Wait till rst_io_n is inactive for non-aon.
++    `DV_WAIT(cfg.rstmgr_vif.resets_o.rst_io_n[1])
+ 
+     check_reset_info(get_reset_code(start_reset, 0), {reset_name[start_reset], " reset"});
+     check_alert_info_after_reset(expected_alert_dump, expected_alert_enable);
+@@ -184,7 +184,7 @@ class rstmgr_reset_vseq extends rstmgr_base_vseq;
+       reset_done();
+ 
+       cfg.${preferred_clk_rst_vif}.wait_clks(8);
+-      wait(cfg.rstmgr_vif.resets_o.rst_lc_n[1]);
++      wait(cfg.rstmgr_vif.resets_o.rst_io_n[1]);
+       check_reset_info(expected_reset_info_code);
+       check_alert_info_after_reset(.alert_dump(expected_alert_dump),
+                                    .enable(expected_alert_enable));
+diff --git a/dv/sva/rstmgr_cascading_sva_if.sv.tpl b/dv/sva/rstmgr_cascading_sva_if.sv.tpl
+index 143d0ed..1653cb6 100644
+--- a/dv/sva/rstmgr_cascading_sva_if.sv.tpl
++++ b/dv/sva/rstmgr_cascading_sva_if.sv.tpl
+@@ -183,17 +183,21 @@ interface rstmgr_cascading_sva_if (
+                     resets_o.rst_por_${clk + "_" if clk != "main" else ""}n[rstmgr_pkg::DomainAonSel], SyncCycles, clk_${clk}_i)
+ % endfor
+ 
+-  // Controlled by rst_lc_src_n.
+-  `CASCADED_ASSERTS(CascadeLcToLcAon, rst_lc_src_n[rstmgr_pkg::DomainAonSel],
+-                    resets_o.rst_lc_aon_n[rstmgr_pkg::DomainAonSel], SysCycles, clk_aon_i)
+-  `CASCADED_ASSERTS(CascadeLcToLc, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
+-                    resets_o.rst_lc_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
+-
+   // Controlled by rst_sys_src_n.
+-  `CASCADED_ASSERTS(CascadeSysToSys, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
+-                    resets_o.rst_sys_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_main_i)
+-  `CASCADED_ASSERTS(CascadeLcToLcShadowed, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
+-                    resets_o.rst_lc_shadowed_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
++  `CASCADED_ASSERTS(CascadeSysToMain_A, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_main_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_main_i)
++
++  `CASCADED_ASSERTS(CascadeSysToIO_A, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_io_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_io_i)
++
++  `CASCADED_ASSERTS(CascadeSysToSPIHost_A, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_spi_host_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_io_i)
++
++  `CASCADED_ASSERTS(CascadeSysToSPIDevice_A, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_spi_device_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_io_i)
++
++  `CASCADED_ASSERTS(CascadeSysToI2C_A, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_i2c_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_io_i)
+ 
+   `undef FALL_ASSERT
+   `undef RISE_ASSERTS
+diff --git a/dv/tb.sv.tpl b/dv/tb.sv.tpl
+index c2e8ce4..49dbb57 100644
+--- a/dv/tb.sv.tpl
++++ b/dv/tb.sv.tpl
+@@ -12,7 +12,7 @@ elif "io" in all_clks:
+ else:
+     assert 0, "No preferred clock available"
+ 
+-preferred_rst_n = f"rst_lc_{preferred_domain}_n"
++preferred_rst_n = f"rst_{preferred_domain}_n"
+ preferred_por_n = f"rst_por_{preferred_domain}_n"
+ %>\
+ module tb;
