@@ -411,7 +411,7 @@ def emit_device_register_field(device_name: str, reg: dict, type_name: str) -> s
     offsets = reg["offsets"]
     min_offset, max_offset = min(offsets), max(offsets)
     num_regs = len(offsets)
-    offset_string = hex(min_offset) if num_regs == 1 else f"{hex(min_offset)}-{hex(max_offset)}"
+    offset_string = f"{min_offset:#x}" if num_regs == 1 else f"{min_offset:#x}-{max_offset:#x}"
     return "\n".join(
         indent_lines(
             [
@@ -437,7 +437,7 @@ def emit_device_window_field(device_name: str, window: dict) -> str:
 
     offset = window["offset"]
     end = offset + window["size"] - mem_width_bytes
-    offset_string = hex(offset) if num_entries == 1 else f"{hex(offset)}-{hex(end)}"
+    offset_string = f"{offset:#x}" if num_entries == 1 else f"{offset:#x}-{end:#x}"
     return "\n".join(
         indent_lines(
             [
@@ -451,7 +451,7 @@ def emit_device_window_field(device_name: str, window: dict) -> str:
 
 def emit_device_register_padding_field(entry_num, end_of_last, start_of_next) -> str:
     """Emit a padding field in the device memory layout structure declaration."""
-    string = f"{hex(start_of_next)} - {hex(end_of_last)}"
+    string = f"{start_of_next:#x} - {end_of_last:#x}"
     return indent_lines([f"const uint8_t __reserved{entry_num}[{string}];"])[0]
 
 
@@ -532,14 +532,14 @@ def emit_assertions(
         reg_name = reg["name"].lower()
         offsetof_assertions.append(
             f"_Static_assert(__builtin_offsetof(struct {device_name}_memory_layout, {reg_name})"
-            f" == {hex(min(reg['offsets']))}ul,\n"
+            f" == {min(reg['offsets']):#x}ul,\n"
             f'               "incorrect register {reg_name} offset");\n'
         )
     for window in windows:
         window_name = window["name"].lower()
         offsetof_assertions.append(
             f"_Static_assert(__builtin_offsetof(struct {device_name}_memory_layout, {window_name})"
-            f" == {hex(window['offset'])}ul,\n"
+            f" == {window['offset']:#x}ul,\n"
             f'               "incorrect register window {window_name} offset");\n'
         )
 
