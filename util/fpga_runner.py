@@ -11,7 +11,6 @@ from pathlib import Path
 
 import serial
 import serial.tools.list_ports
-from elftools.elf.elffile import ELFFile
 
 FTDI_PID: int = 0x6010
 BAUD_RATE: int = 1_000_000
@@ -71,39 +70,18 @@ async def bootstrap(uart: serial.Serial | None) -> None:
     await set_pin(0, True)
 
 
-def get_load_addr(elf: Path) -> int:
-    try:
-        with elf.open("rb") as f:
-            elf = ELFFile(f)
-            load_addrs = [
-                seg["p_paddr"] for seg in elf.iter_segments() if seg["p_type"] == "PT_LOAD"
-            ]
-            if not load_addrs:
-                print(f"[{RUNNER}] no PT_LOAD segments found in ELF file {elf}")
-                sys.exit(1)
-            return min(load_addrs)
-    except OSError as e:
-        print(f"[{RUNNER}] error opening ELF file {elf}: {e}")
-        sys.exit(1)
-
-
 async def load_fpga_binary(path: Path, uart: serial.Serial | None) -> None:
-    load_address = get_load_addr(path)
-
     await bootstrap(uart)
 
     command = [
         "ftditool",
         "--pid",
         hex(FTDI_PID),
-        "bootstrap",
-        "--addr",
-        hex(load_address),
-        "--skip-erase",
+        "bootstrap-elf",
+        str(path),
         "--ftdi",
         FTDI_DEVICE_DESC,
     ]
-    command.append(str(path.with_suffix(".bin")))
 
     p = await asyncio.create_subprocess_exec(*command)
     if await p.wait() != 0:
