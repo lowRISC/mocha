@@ -49,16 +49,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1779281183,
-        "narHash": "sha256-1TcYeyfEQ8vDmtF0gVfW358oXYYRb43jR5u42JZ9fVk=",
+        "lastModified": 1780322259,
+        "narHash": "sha256-Mx5UpEs8guUhRdvaI2ua58SkO11VK57TjjQLhsAiKag=",
         "owner": "lowRISC",
         "repo": "ftditool",
-        "rev": "3f173a9debaa805926c0235e36ab2fa0bef0a7f1",
+        "rev": "feabaa5e4ae8da3bb70ab4a124fd695040368020",
         "type": "github"
       },
       "original": {
         "owner": "lowRISC",
-        "ref": "v0.3.1",
+        "ref": "v0.4.0",
         "repo": "ftditool",
         "type": "github"
       }
@@ -88,11 +88,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1778839577,
-        "narHash": "sha256-KtbcYK/X9MuJXvhHIjyd65j/QGWPFpHJr/yTy8W7xg8=",
+        "lastModified": 1780303090,
+        "narHash": "sha256-wSN5A+RmstGozf+wjtMagDYBXV8hpNoODWd0hl3ua18=",
         "owner": "lowRISC",
         "repo": "lowrisc-nix",
-        "rev": "d3ef4932bf95666853cb879468c4228ddc8104e6",
+        "rev": "3c33a8aa466ea802355d704a17d600117ddea8d3",
         "type": "github"
       },
       "original": {
@@ -146,11 +146,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1776659114,
-        "narHash": "sha256-qapCOQmR++yZSY43dzrp3wCrkOTLpod+ONtJWBk6iKU=",
+        "lastModified": 1779676664,
+        "narHash": "sha256-MbXylBTkWqVm8/VYjoULtMoVRgWBN1gSHbeRKsOsPlU=",
         "owner": "pyproject-nix",
         "repo": "build-system-pkgs",
-        "rev": "ffaa2161dd5d63e0e94591f86b54fc239660fb2e",
+        "rev": "7bff980f37fc24e09dbc986643719900c139bf12",
         "type": "github"
       },
       "original": {
@@ -236,11 +236,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1778664018,
-        "narHash": "sha256-ogNyNANNLo0SMFevIeUpbTMOL9uUDu/hXvp7JlOYbwQ=",
+        "lastModified": 1779411315,
+        "narHash": "sha256-IMFlxeyClau51KplhhSRGhdGTvD/knShHdybP1UOTuk=",
         "owner": "pyproject-nix",
         "repo": "uv2nix",
-        "rev": "b48abe99ef639cd100c224898529370e5d935294",
+        "rev": "fdf2a76275d7a9c27deb5d2f2ab33526ac9052ff",
         "type": "github"
       },
       "original": {
