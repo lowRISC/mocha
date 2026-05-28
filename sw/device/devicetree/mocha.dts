@@ -73,7 +73,7 @@
             mmc@0 {
                 compatible = "mmc-spi-slot";
                 reg = <0>;
-                gpios = <&gpio 9 1>; // Presence detect on GPIO 9
+                gpios = <&gpio 31 1>; // Presence detect on most-significant GPIO input
                 spi-max-frequency = <50000000>;
             };
         };
