@@ -112,7 +112,7 @@
         shadowed: false
         sw: false
         path: rstmgr_aon_resets.rst_main_n
-        parent: sys_src
+        parent: lc_src
         clock: main
       }
       {
@@ -126,7 +126,7 @@
         shadowed: false
         sw: false
         path: rstmgr_aon_resets.rst_io_n
-        parent: sys_src
+        parent: lc_src
         clock: io
       }
       {
@@ -140,7 +140,7 @@
         shadowed: false
         sw: true
         path: rstmgr_aon_resets.rst_spi_device_n
-        parent: sys_src
+        parent: lc_src
         clock: io
       }
       {
@@ -154,7 +154,7 @@
         shadowed: false
         sw: true
         path: rstmgr_aon_resets.rst_spi_host_n
-        parent: sys_src
+        parent: lc_src
         clock: io
       }
       {
@@ -168,8 +168,22 @@
         shadowed: false
         sw: true
         path: rstmgr_aon_resets.rst_i2c_n
-        parent: sys_src
+        parent: lc_src
         clock: io
+      }
+      {
+        name: debug
+        gen: true
+        type: top
+        domains:
+        [
+          Main
+        ]
+        shadowed: false
+        sw: false
+        path: rstmgr_aon_resets.rst_debug_n
+        parent: sys_src
+        clock: main
       }
     ]
     leaf_rsts:
@@ -213,7 +227,7 @@
         shadowed: false
         sw: false
         path: rstmgr_aon_resets.rst_main_n
-        parent: sys_src
+        parent: lc_src
         clock: main
       }
       {
@@ -227,7 +241,7 @@
         shadowed: false
         sw: false
         path: rstmgr_aon_resets.rst_io_n
-        parent: sys_src
+        parent: lc_src
         clock: io
       }
       {
@@ -241,7 +255,7 @@
         shadowed: false
         sw: true
         path: rstmgr_aon_resets.rst_spi_device_n
-        parent: sys_src
+        parent: lc_src
         clock: io
       }
       {
@@ -255,7 +269,7 @@
         shadowed: false
         sw: true
         path: rstmgr_aon_resets.rst_spi_host_n
-        parent: sys_src
+        parent: lc_src
         clock: io
       }
       {
@@ -269,8 +283,22 @@
         shadowed: false
         sw: true
         path: rstmgr_aon_resets.rst_i2c_n
-        parent: sys_src
+        parent: lc_src
         clock: io
+      }
+      {
+        name: debug
+        gen: true
+        type: top
+        domains:
+        [
+          Main
+        ]
+        shadowed: false
+        sw: false
+        path: rstmgr_aon_resets.rst_debug_n
+        parent: sys_src
+        clock: main
       }
     ]
     rst_ni: sys_src

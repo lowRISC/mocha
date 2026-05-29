@@ -29,6 +29,7 @@ package rstmgr_pkg;
     logic [PowerDomains-1:0] rst_spi_device_n;
     logic [PowerDomains-1:0] rst_spi_host_n;
     logic [PowerDomains-1:0] rst_i2c_n;
+    logic [PowerDomains-1:0] rst_debug_n;
   } rstmgr_out_t;
 
   // reset indication for alert handler
@@ -41,9 +42,10 @@ package rstmgr_pkg;
     prim_mubi_pkg::mubi4_t [PowerDomains-1:0] spi_device;
     prim_mubi_pkg::mubi4_t [PowerDomains-1:0] spi_host;
     prim_mubi_pkg::mubi4_t [PowerDomains-1:0] i2c;
+    prim_mubi_pkg::mubi4_t [PowerDomains-1:0] debug;
   } rstmgr_rst_en_t;
 
-  parameter int NumOutputRst = 8 * PowerDomains;
+  parameter int NumOutputRst = 9 * PowerDomains;
 
   // cpu reset requests and status
   typedef struct packed {

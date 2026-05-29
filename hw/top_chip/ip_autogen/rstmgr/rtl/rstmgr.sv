@@ -184,12 +184,12 @@ module rstmgr
   ////////////////////////////////////////////////////
 
   // consistency check errors
-  logic [6:0][PowerDomains-1:0] cnsty_chk_errs;
-  logic [6:0][PowerDomains-1:0] shadow_cnsty_chk_errs;
+  logic [7:0][PowerDomains-1:0] cnsty_chk_errs;
+  logic [7:0][PowerDomains-1:0] shadow_cnsty_chk_errs;
 
   // consistency sparse fsm errors
-  logic [6:0][PowerDomains-1:0] fsm_errs;
-  logic [6:0][PowerDomains-1:0] shadow_fsm_errs;
+  logic [7:0][PowerDomains-1:0] fsm_errs;
+  logic [7:0][PowerDomains-1:0] shadow_fsm_errs;
 
   assign hw2reg.err_code.reg_intg_err.d  = 1'b1;
   assign hw2reg.err_code.reg_intg_err.de = reg_intg_err;
@@ -370,7 +370,7 @@ module rstmgr
     .clk_i,
     .rst_ni,
     .leaf_clk_i(clk_main_i),
-    .parent_rst_ni(rst_sys_src_n[DomainMainSel]),
+    .parent_rst_ni(rst_lc_src_n[DomainMainSel]),
     .sw_rst_req_ni(1'b1),
     .scan_rst_ni,
     .scanmode_i,
@@ -404,7 +404,7 @@ module rstmgr
     .clk_i,
     .rst_ni,
     .leaf_clk_i(clk_io_i),
-    .parent_rst_ni(rst_sys_src_n[DomainMainSel]),
+    .parent_rst_ni(rst_lc_src_n[DomainMainSel]),
     .sw_rst_req_ni(1'b1),
     .scan_rst_ni,
     .scanmode_i,
@@ -438,7 +438,7 @@ module rstmgr
     .clk_i,
     .rst_ni,
     .leaf_clk_i(clk_io_i),
-    .parent_rst_ni(rst_sys_src_n[DomainMainSel]),
+    .parent_rst_ni(rst_lc_src_n[DomainMainSel]),
     .sw_rst_req_ni(reg2hw.sw_rst_ctrl_n[SPI_DEVICE].q),
     .scan_rst_ni,
     .scanmode_i,
@@ -472,7 +472,7 @@ module rstmgr
     .clk_i,
     .rst_ni,
     .leaf_clk_i(clk_io_i),
-    .parent_rst_ni(rst_sys_src_n[DomainMainSel]),
+    .parent_rst_ni(rst_lc_src_n[DomainMainSel]),
     .sw_rst_req_ni(reg2hw.sw_rst_ctrl_n[SPI_HOST].q),
     .scan_rst_ni,
     .scanmode_i,
@@ -506,7 +506,7 @@ module rstmgr
     .clk_i,
     .rst_ni,
     .leaf_clk_i(clk_io_i),
-    .parent_rst_ni(rst_sys_src_n[DomainMainSel]),
+    .parent_rst_ni(rst_lc_src_n[DomainMainSel]),
     .sw_rst_req_ni(reg2hw.sw_rst_ctrl_n[I2C].q),
     .scan_rst_ni,
     .scanmode_i,
@@ -524,6 +524,40 @@ module rstmgr
   end
   assign shadow_cnsty_chk_errs[6] = '0;
   assign shadow_fsm_errs[6] = '0;
+
+  // Generating resets for debug
+  // Power Domains: ['Main']
+  // Shadowed: False
+  assign resets_o.rst_debug_n[DomainAonSel] = '0;
+  assign cnsty_chk_errs[7][DomainAonSel] = '0;
+  assign fsm_errs[7][DomainAonSel] = '0;
+  assign rst_en_o.debug[DomainAonSel] = MuBi4True;
+  rstmgr_leaf_rst #(
+    .SecCheck(SecCheck),
+    .SecMaxSyncDelay(SecMaxSyncDelay),
+    .SwRstReq(1'b0)
+  ) u_dmain_debug (
+    .clk_i,
+    .rst_ni,
+    .leaf_clk_i(clk_main_i),
+    .parent_rst_ni(rst_sys_src_n[DomainMainSel]),
+    .sw_rst_req_ni(1'b1),
+    .scan_rst_ni,
+    .scanmode_i,
+    .rst_en_o(rst_en_o.debug[DomainMainSel]),
+    .leaf_rst_o(resets_o.rst_debug_n[DomainMainSel]),
+    .err_o(cnsty_chk_errs[7][DomainMainSel]),
+    .fsm_err_o(fsm_errs[7][DomainMainSel])
+  );
+
+  if (SecCheck) begin : gen_dmain_debug_assert
+  `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(
+    DMainDebugFsmCheck_A,
+    u_dmain_debug.gen_rst_chk.u_rst_chk.u_state_regs,
+    alert_tx_o[0])
+  end
+  assign shadow_cnsty_chk_errs[7] = '0;
+  assign shadow_fsm_errs[7] = '0;
 
 
   ////////////////////////////////////////////////////

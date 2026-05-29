@@ -37,6 +37,7 @@ package rstmgr_env_pkg;
   parameter string LIST_OF_LEAFS[] = {
     "u_daon_por",
     "u_daon_por_io",
+    "u_dmain_debug",
     "u_dmain_i2c",
     "u_dmain_io",
     "u_dmain_main",

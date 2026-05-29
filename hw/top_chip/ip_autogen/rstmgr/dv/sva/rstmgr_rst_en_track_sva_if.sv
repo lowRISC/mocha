@@ -133,4 +133,17 @@ interface rstmgr_rst_en_track_sva_if (
           clk_io_i,
           !rst_por_ni)
 
+  `ASSERT(DMainRstDebugEnTracksRstDebugActive_A,
+          $fell(resets_i.rst_debug_n[DomainMainSel]) |-> ##[0:DELAY]
+          reset_en_i.debug[DomainMainSel] == prim_mubi_pkg::MuBi4True,
+          clk_main_i,
+          !rst_por_ni)
+
+  `ASSERT(DMainRstDebugEnTracksRstDebugInactive_A,
+          $rose(resets_i.rst_debug_n[DomainMainSel]) |-> ##DELAY
+          !resets_i.rst_debug_n[DomainMainSel] ||
+          reset_en_i.debug[DomainMainSel] == prim_mubi_pkg::MuBi4False,
+          clk_main_i,
+          !rst_por_ni)
+
 endinterface

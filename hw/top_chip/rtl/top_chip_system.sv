@@ -1010,7 +1010,7 @@ module top_chip_system #(
     clkmgr_clocks.clk_main_hint | clkmgr_clocks.clk_io_peri |
     (|clkmgr_cg_en) |
     (|rstmgr_resets.rst_por_n) | (|rstmgr_resets.rst_spi_device_n) | (|rstmgr_resets.rst_spi_host_n) | (|rstmgr_resets.rst_i2c_n) |
-    (|rstmgr_rst_en);
+    (|rstmgr_resets.rst_debug_n) | (|rstmgr_rst_en);
 
   // Combine response and request between crossbar and atomics wrapper.
   AXI_BUS #(
