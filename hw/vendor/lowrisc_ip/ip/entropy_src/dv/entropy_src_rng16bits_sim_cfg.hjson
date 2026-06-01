@@ -7,7 +7,7 @@
   variant: rng_16bits
 
   // Import the base entropy_src sim_cfg file
-  import_cfgs: ["{proj_root}/hw/ip/entropy_src/dv/entropy_src_base_sim_cfg.hjson"]
+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/entropy_src_base_sim_cfg.hjson"]
 
   build_opts: ["+define+RNG_BUS_WIDTH=16",
                "+define+RNG_BUS_BIT_SEL_WIDTH=4",
