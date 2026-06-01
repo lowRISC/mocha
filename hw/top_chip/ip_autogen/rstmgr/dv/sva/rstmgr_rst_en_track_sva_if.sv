@@ -81,6 +81,32 @@ interface rstmgr_rst_en_track_sva_if (
           clk_main_i,
           !rst_por_ni)
 
+  `ASSERT(DAonRstMainEnTracksRstMainActive_A,
+          $fell(resets_i.rst_main_n[DomainAonSel]) |-> ##[0:DELAY]
+          reset_en_i.main[DomainAonSel] == prim_mubi_pkg::MuBi4True,
+          clk_main_i,
+          !rst_por_ni)
+
+  `ASSERT(DAonRstMainEnTracksRstMainInactive_A,
+          $rose(resets_i.rst_main_n[DomainAonSel]) |-> ##DELAY
+          !resets_i.rst_main_n[DomainAonSel] ||
+          reset_en_i.main[DomainAonSel] == prim_mubi_pkg::MuBi4False,
+          clk_main_i,
+          !rst_por_ni)
+
+  `ASSERT(DAonRstAonEnTracksRstAonActive_A,
+          $fell(resets_i.rst_aon_n[DomainAonSel]) |-> ##[0:DELAY]
+          reset_en_i.aon[DomainAonSel] == prim_mubi_pkg::MuBi4True,
+          clk_aon_i,
+          !rst_por_ni)
+
+  `ASSERT(DAonRstAonEnTracksRstAonInactive_A,
+          $rose(resets_i.rst_aon_n[DomainAonSel]) |-> ##DELAY
+          !resets_i.rst_aon_n[DomainAonSel] ||
+          reset_en_i.aon[DomainAonSel] == prim_mubi_pkg::MuBi4False,
+          clk_aon_i,
+          !rst_por_ni)
+
   `ASSERT(DMainRstIoEnTracksRstIoActive_A,
           $fell(resets_i.rst_io_n[DomainMainSel]) |-> ##[0:DELAY]
           reset_en_i.io[DomainMainSel] == prim_mubi_pkg::MuBi4True,
@@ -91,6 +117,19 @@ interface rstmgr_rst_en_track_sva_if (
           $rose(resets_i.rst_io_n[DomainMainSel]) |-> ##DELAY
           !resets_i.rst_io_n[DomainMainSel] ||
           reset_en_i.io[DomainMainSel] == prim_mubi_pkg::MuBi4False,
+          clk_io_i,
+          !rst_por_ni)
+
+  `ASSERT(DAonRstIoEnTracksRstIoActive_A,
+          $fell(resets_i.rst_io_n[DomainAonSel]) |-> ##[0:DELAY]
+          reset_en_i.io[DomainAonSel] == prim_mubi_pkg::MuBi4True,
+          clk_io_i,
+          !rst_por_ni)
+
+  `ASSERT(DAonRstIoEnTracksRstIoInactive_A,
+          $rose(resets_i.rst_io_n[DomainAonSel]) |-> ##DELAY
+          !resets_i.rst_io_n[DomainAonSel] ||
+          reset_en_i.io[DomainAonSel] == prim_mubi_pkg::MuBi4False,
           clk_io_i,
           !rst_por_ni)
 

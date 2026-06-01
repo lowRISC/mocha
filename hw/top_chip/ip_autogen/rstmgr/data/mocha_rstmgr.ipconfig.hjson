@@ -108,6 +108,7 @@
         domains:
         [
           Main
+          Aon
         ]
         shadowed: false
         sw: false
@@ -116,12 +117,27 @@
         clock: main
       }
       {
+        name: aon
+        gen: true
+        type: top
+        domains:
+        [
+          Aon
+        ]
+        shadowed: false
+        sw: false
+        path: rstmgr_aon_resets.rst_aon_n
+        parent: lc_src
+        clock: aon
+      }
+      {
         name: io
         gen: true
         type: top
         domains:
         [
           Main
+          Aon
         ]
         shadowed: false
         sw: false
@@ -229,6 +245,20 @@
         path: rstmgr_aon_resets.rst_main_n
         parent: lc_src
         clock: main
+      }
+      {
+        name: aon
+        gen: true
+        type: top
+        domains:
+        [
+          Aon
+        ]
+        shadowed: false
+        sw: false
+        path: rstmgr_aon_resets.rst_aon_n
+        parent: lc_src
+        clock: aon
       }
       {
         name: io

@@ -35,6 +35,7 @@ package rstmgr_env_pkg;
 
   // Sorted instances of rstmgr_leaf_rst instances with security checks enabled.
   parameter string LIST_OF_LEAFS[] = {
+    "u_daon_aon",
     "u_daon_por",
     "u_daon_por_io",
     "u_dmain_debug",
