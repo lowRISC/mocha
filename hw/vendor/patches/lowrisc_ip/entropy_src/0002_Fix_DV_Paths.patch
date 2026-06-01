@@ -1,0 +1,108 @@
+diff --git a/data/entropy_src_testplan.hjson b/data/entropy_src_testplan.hjson
+index 4d296d9..29a4c0c 100644
+--- a/data/entropy_src_testplan.hjson
++++ b/data/entropy_src_testplan.hjson
+@@ -3,11 +3,11 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name: "entropy_src"
+-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
++  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+                      "entropy_src_sec_cm_testplan.hjson"]
+   testpoints: [
+     {
+diff --git a/dv/entropy_src_base_sim_cfg.hjson b/dv/entropy_src_base_sim_cfg.hjson
+index 3a79a86..df6660a 100644
+--- a/dv/entropy_src_base_sim_cfg.hjson
++++ b/dv/entropy_src_base_sim_cfg.hjson
+@@ -18,22 +18,22 @@
+   fusesoc_core: lowrisc:dv:entropy_src_sim:0.1
+ 
+   // Testplan hjson file.
+-  testplan: "{proj_root}/hw/ip/entropy_src/data/entropy_src_testplan.hjson"
++  testplan: "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/data/entropy_src_testplan.hjson"
+ 
+   // RAL spec - used to generate the RAL model.
+-  ral_spec: "{proj_root}/hw/ip/entropy_src/data/entropy_src.hjson"
++  ral_spec: "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/data/entropy_src.hjson"
+ 
+   // Import additional common sim cfg files.
+   import_cfgs: [// Project wide common sim cfg file
+-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
+                 // Common CIP test lists
+-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/intr_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/alert_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/intr_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/alert_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+                 // TODO: import `stress_tests.hjson` once hanging issue is resolved.
+-                "{proj_root}/hw/dv/tools/dvsim/tests/stress_all_test.hjson"]
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_all_test.hjson"]
+ 
+   // Add additional tops for simulation.
+   sim_tops: ["entropy_src_bind", "entropy_src_cov_bind", "sec_cm_prim_onehot_check_bind"]
+@@ -43,18 +43,18 @@
+ 
+   xcelium_cov_refine_files: [
+   // TODO(#16276): Finalize coverage on ExtHT ports & remove the following exclusion file
+-  "{proj_root}/hw/ip/entropy_src/dv/cov/entropy_src_extht_exclusions.vRefine"
++  "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/cov/entropy_src_extht_exclusions.vRefine"
+   // Leave the following as a separate refinement, to support potential DV enhancements.
+   // (See the comments within the file for more detail)
+-  "{proj_root}/hw/ip/entropy_src/dv/cov/entropy_src_cnt_err_excl.vRefine",
++  "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/cov/entropy_src_cnt_err_excl.vRefine",
+   // Waive toggle coverage for the prim_count and fifo_cnt inputs.
+-  "{proj_root}/hw/ip/entropy_src/dv/cov/entropy_src_cnt_in_excl.vRefine",
++  "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/cov/entropy_src_cnt_in_excl.vRefine",
+   // Waive toggle coverage for the prim_count outputs.  (MoreSB's not exercised)
+-  "{proj_root}/hw/ip/entropy_src/dv/cov/entropy_src_cnt_out_excl.vRefine",
++  "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/cov/entropy_src_cnt_out_excl.vRefine",
+   // Output of --cov-unr, with `prim_count` error exclusions removed.
+-  "{proj_root}/hw/ip/entropy_src/dv/cov/entropy_src_UNR.vRefine",
++  "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/cov/entropy_src_UNR.vRefine",
+   // Waive toggle coverage for the prim_fifo_sync inputs.
+-  "{proj_root}/hw/ip/entropy_src/dv/cov/entropy_src_fifo_in_excl.vRefine",
++  "{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/cov/entropy_src_fifo_in_excl.vRefine",
+   ]
+ 
+   // Default UVM test and seq class name.
+diff --git a/dv/entropy_src_rng16bits_sim_cfg.hjson b/dv/entropy_src_rng16bits_sim_cfg.hjson
+index 0c2743b..bb36ab4 100644
+--- a/dv/entropy_src_rng16bits_sim_cfg.hjson
++++ b/dv/entropy_src_rng16bits_sim_cfg.hjson
+@@ -7,7 +7,7 @@
+   variant: rng_16bits
+ 
+   // Import the base entropy_src sim_cfg file
+-  import_cfgs: ["{proj_root}/hw/ip/entropy_src/dv/entropy_src_base_sim_cfg.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/entropy_src_base_sim_cfg.hjson"]
+ 
+   build_opts: ["+define+RNG_BUS_WIDTH=16",
+                "+define+RNG_BUS_BIT_SEL_WIDTH=4",
+diff --git a/dv/entropy_src_rng4bits_sim_cfg.hjson b/dv/entropy_src_rng4bits_sim_cfg.hjson
+index cc7ccb7..d0a21ca 100644
+--- a/dv/entropy_src_rng4bits_sim_cfg.hjson
++++ b/dv/entropy_src_rng4bits_sim_cfg.hjson
+@@ -7,7 +7,7 @@
+   variant: rng_4bits
+ 
+   // Import the base entropy_src sim_cfg file
+-  import_cfgs: ["{proj_root}/hw/ip/entropy_src/dv/entropy_src_base_sim_cfg.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/entropy_src/dv/entropy_src_base_sim_cfg.hjson"]
+ 
+   build_opts: ["+define+RNG_BUS_WIDTH=4",
+                "+define+RNG_BUS_BIT_SEL_WIDTH=2",
