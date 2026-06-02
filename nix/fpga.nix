@@ -8,12 +8,16 @@
 }: let
   bitstream_path = "build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado";
   bootrom_path = "build/sw/device/bootrom";
-  rom_init_path = "sw/device/tests/rom_ctrl";
+  hostcc = "${pkgs.llvmPackages_21.clang}/bin/clang";
+  hostcxx = "${pkgs.llvmPackages_21.clang}/bin/clang++";
 in {
   bitstream-hash = pkgs.writeShellApplication {
     name = "bitstream-hash";
     runtimeInputs = [pythonEnv llvm pkgs.gnumake pkgs.cmake pkgs.srecord];
     text = ''
+      export HOSTCC="${hostcc}"
+      export HOSTCXX="${hostcxx}"
+
       # Ask fusesoc to evaluate and generate the dependencies list.
       fusesoc --cores-root=. run --target=synth --setup lowrisc:mocha:chip_mocha_genesys2 1> /dev/null
 
@@ -31,6 +35,9 @@ in {
     name = "bitstream-build";
     runtimeInputs = [pythonEnv llvm pkgs.gnumake pkgs.cmake pkgs.srecord];
     text = ''
+      export HOSTCC="${hostcc}"
+      export HOSTCXX="${hostcxx}"
+
       cmake -B build/sw -S sw
       cmake --build build/sw --target bootrom
 

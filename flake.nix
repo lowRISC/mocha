@@ -71,36 +71,47 @@
         llvm = lrPkgs.llvm_cheri;
       };
       ftditool-cli = inputs.ftditool.packages.${system}.default;
-
-      commonPackages = with pkgs; [
-        bison
-        cmake
-        flex
-        gnumake
-        screen
-        picocom
-        gtkwave
-        openfpgaloader
-        ftditool-cli
-        openocd
-        uv
-        pythonEnv
-        verible
-        srecord
-        d2
-        dtc
-      ];
+      cheri-toolchain = pkgs.callPackage ./nix/cheri_toolchain.nix {inherit (lrPkgs) llvm_cheri;};
     in {
       formatter = pkgs.alejandra;
       devShells = rec {
-        default = cheri;
-        cheri = pkgs.mkShell {
-          name = "mocha-cheri";
+        default = baremetal;
+        baremetal = pkgs.mkShell {
+          name = "baremetal";
+          strictDeps = true;
+          hardeningDisable = ["all"];
           nativeBuildInputs =
-            commonPackages
+            (with pkgs; [
+              bison
+              cmake
+              flex
+              gnumake
+              picocom
+              gtkwave
+              openfpgaloader
+              ftditool-cli
+              openocd
+              uv
+              pythonEnv
+              verible
+              srecord
+              d2
+              dtc
+              autoconf
+              automake
+              bmake
+              byacc
+              libarchive
+              libarchive.dev
+              libelf
+              libtool
+              pkg-config
+              zlib
+              zlib.dev
+            ])
             ++ (with lrPkgs; [
-              llvm_cheri
               verilator_5_040
+              llvm_cheri
             ]);
           buildInputs = with pkgs; [libelf zlib];
           env = {
@@ -108,6 +119,15 @@
             UV_PYTHON_DOWNLOADS = "never";
             # Force uv to use nixpkgs Python interpreter
             UV_PYTHON = pythonSet.python.interpreter;
+
+            SYSROOT_PURECAP = "${cheri-toolchain.linux-headers-purecap}/usr/include";
+            COMPILER_RT_PURECAP = "${cheri-toolchain.compiler-rt-builtins-purecap}/lib";
+            LIBC_PURECAP_INCLUDE = "${cheri-toolchain.muslc-linux-riscv64-purecap}/include";
+            LIBC_PURECAP_LIB = "${cheri-toolchain.muslc-linux-riscv64-purecap}/lib";
+
+            HOSTCC = "${pkgs.llvmPackages_21.clang}/bin/clang";
+            HOSTCXX = "${pkgs.llvmPackages_21.clang}/bin/clang++";
+            HOSTLD = "${pkgs.llvmPackages_21.lld}/bin/ld.lld";
           };
         };
       };
