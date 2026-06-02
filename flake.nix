@@ -35,7 +35,6 @@
   };
 
   outputs = {
-    self,
     nixpkgs,
     flake-utils,
     lowrisc-nix,
@@ -52,7 +51,7 @@
 
       pythonSet =
         (pkgs.callPackage inputs.pyproject-nix.build.packages {
-          python = pkgs.python310;
+          python = pkgs.python312;
         }).overrideScope
         (
           pkgs.lib.composeManyExtensions [
@@ -67,8 +66,9 @@
       fpga = import nix/fpga.nix {
         inherit
           pkgs
-          pythonEnv;
-          llvm = lrPkgs.llvm_cheri;
+          pythonEnv
+          ;
+        llvm = lrPkgs.llvm_cheri;
       };
       ftditool-cli = inputs.ftditool.packages.${system}.default;
 
@@ -85,7 +85,6 @@
         openocd
         uv
         pythonEnv
-        verilator
         verible
         srecord
         d2
@@ -101,6 +100,7 @@
             commonPackages
             ++ (with lrPkgs; [
               llvm_cheri
+              verilator_5_040
             ]);
           buildInputs = with pkgs; [libelf zlib];
           env = {
