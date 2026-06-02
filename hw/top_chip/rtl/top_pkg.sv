@@ -7,6 +7,20 @@
 package top_pkg;
   import axi_pkg::*;
 
+  ////////////////////////////////////////////
+  // ROM Scrambling Parameters
+  // CRITICAL: CHANGE THE SECRET VALUES BELOW BEFORE ANY REAL-WORLD DEPLOYMENT!
+  ////////////////////////////////////////////
+  // Fixed nonce used for address / data scrambling
+  parameter bit [63:0] RndCnstRomCtrlScrNonce = {
+    64'hD35500E5_A51BBA34
+  };
+  // Randomised constant used as a scrambling key for ROM data
+  parameter bit [127:0] RndCnstRomCtrlScrKey = {
+    128'hA71D81E9_EB876B6F_1996B2BE_4B58DFCF
+  };
+  ////////////////////////////////////////////
+
   // TileLink parameters
   localparam int TL_AW  = 32;
   localparam int TL_DW  = 32; // = TL_DBW * 8; TL_DBW must be a power-of-two

@@ -116,6 +116,9 @@ cmake --build build/sw -j $(nproc)
 
 Outputs with the suffix "_sram" exist only for UVM-based tests, as they presently lack a DRAM backdoor-load mechanism.
 
+The boot-ROM output with the "_scrambled" suffix is the only binary run through the ROM image scrambling script.
+Attempting to run any unscrambled binary from the scrambled ROM will be blocked by the in-hardware ROM checker.
+
 ### Code Quality
 
 For software written in C, `clang-format` and `clang-tidy` are used to format and lint the code.
@@ -138,7 +141,7 @@ To build and run a Verilator simulation of Mocha, run:
 # Build simulator.
 fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="-j 4 --threads 2 --trace-threads 2" --make_options="-j 4"
 # Run simulator.
-build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -E build/sw/device/bootrom/bootrom -E build/sw/device/examples/hello_world
+build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -r build/sw/device/bootrom/bootrom_scrambled.vmem -E build/sw/device/examples/hello_world
 ```
 
 Note that the `-j 4` arguments speed up simulator building, while the `--threads 2 --trace-threads 2` arguments speed up simulator running.
@@ -173,7 +176,7 @@ usermod -a -G plugdev $USER
 
 To build a bitstream with the boot-ROM, make sure that Vivado is on your path, then run:
 ```sh
-fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --RomInitFile=$PWD/build/sw/device/bootrom/bootrom.vmem
+fusesoc --cores-root=. run --target=synth --setup --build lowrisc:mocha:chip_mocha_genesys2 --RomInitFile=$PWD/build/sw/device/bootrom/bootrom_scrambled.vmem
 # Nix alternative: `nix run .#bitstream-build`
 ```
 

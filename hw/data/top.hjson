@@ -1,0 +1,28 @@
+// Copyright lowRISC contributors (COSMIC Project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+//
+// Minimal hand-crafted top config HJSON file for scrambled ROM generation.
+//
+{
+  name: mocha
+  type: top
+  module:
+  [
+    {
+      name: rom_ctrl
+      type: rom_ctrl
+      param_decl:
+      {
+        SecDisableScrambling: 1'b0
+      }
+      param_list:
+      [
+        {
+          name: SecDisableScrambling
+          type: bit
+        }
+      ]
+    }
+  ]
+}

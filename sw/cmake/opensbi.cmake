@@ -88,7 +88,7 @@ function(mocha_opensbi_with_payload_test PAYLOAD_TARGET)
 
   add_test(
       NAME ${NAME}_sim_verilator
-      COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E $<TARGET_FILE:bootrom> -E ${NAME}/fw_payload.elf
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -r $<TARGET_FILE:bootrom>_scrambled.vmem -E ${NAME}/fw_payload.elf
   )
 
   add_test(

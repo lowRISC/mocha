@@ -36,7 +36,7 @@ endfunction()
 # for a given executable, add a test that runs the executable
 # in the Verilator simulation.
 function(mocha_add_verilator_test)
-    # Warning: If the BootROM and the test are compiled to the same memory address, the test will 
+    # Warning: If the BootROM and the test are compiled to the same memory address, the test will
     # effectively replace the BootROM. Because the BootROM is listed first in the arguments, it is
     # overwritten by the subsequent test image; the simulation will behave as if no BootROM is present
 
@@ -51,7 +51,7 @@ function(mocha_add_verilator_test)
 
     add_test(
         NAME ${NAME}_sim_verilator
-        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -E $<TARGET_FILE:${arg_ROM}> -E ${arg_NAME}
+        COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -r $<TARGET_FILE:${arg_ROM}>_scrambled.vmem -E ${arg_NAME}
     )
     set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
 
@@ -68,7 +68,7 @@ function(mocha_add_fpga_test)
 
     set(TEST ${arg_NAME}_fpga_genesys2)
     add_test(
-        NAME ${TEST} 
+        NAME ${TEST}
         COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py test ${arg_NAME}
     )
     set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})

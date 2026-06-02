@@ -84,7 +84,8 @@ module top_chip_system #(
   localparam int unsigned SPIDeviceIrqs  = 8;
   localparam int unsigned SPIHostIrqs    = 2;
   localparam int unsigned EntropySrcIrqs = 4;
-  localparam int unsigned KmacNumAppIntf = 1;
+  localparam int unsigned KmacNumAppIntf = 3; // system only needs 1 (rom_ctrl), but KMAC expects 3
+  localparam kmac_pkg::app_config_t KmacAppCfg[KmacNumAppIntf] = '{default: kmac_pkg::AppCfgRomCtrl};
 
   // CVA6 configuration
   function automatic config_pkg::cva6_cfg_t build_cva6_config(config_pkg::cva6_user_cfg_t CVA6UserCfg);
@@ -228,11 +229,16 @@ module top_chip_system #(
   top_pkg::axi_resp_t                           dram_cut_resp;
   top_pkg::axi_req_t                            tag_controller_isolated_req;
   top_pkg::axi_resp_t                           tag_controller_isolated_resp;
+  top_pkg::axi_req_t                            rom_mem_isolated_req;
+  top_pkg::axi_resp_t                           rom_mem_isolated_resp;
 
   // Tag controller isolation signals and registers
   logic tag_controller_isolate;
   logic tag_controller_isolate_reg;
   logic tag_controller_isolated;
+
+  // ROM Controller isolation signal
+  logic rom_mem_isolate;
 
   // IP block raised interrupts
   logic [GpioIrqs-1:0]       gpio_interrupts;
@@ -298,6 +304,7 @@ module top_chip_system #(
   pwrmgr_pkg::pwr_rst_req_t   pwrmgr_pwr_rst_req;
   pwrmgr_pkg::pwr_rst_rsp_t   pwrmgr_pwr_rst_rsp;
   logic                       pwrmgr_strap_en;
+  lc_ctrl_pkg::lc_tx_t        pwrmgr_fetch_en;
 
   // Define AXI Lite signals for the mailbox
   top_pkg::axi_lite_req_t  mailbox_main_req;
@@ -314,14 +321,18 @@ module top_chip_system #(
 
   // Unused rom_ctrl signals
   logic unused_rom_ctrl_output;
-  assign unused_rom_ctrl_output = (|rom_ctrl_keymgr_data) | (|kmac_app_req) | (|kmac_app_rsp);
+  assign unused_rom_ctrl_output = (|rom_ctrl_keymgr_data);
 
   // Assigning default values
   assign rom_cfg = prim_rom_pkg::ROM_CFG_DEFAULT;
-  for (genvar i = 0; i < KmacNumAppIntf; i++) begin : g_kmac_app_default
-    assign kmac_app_req[i] = kmac_pkg::APP_REQ_DEFAULT;
-    assign kmac_app_rsp[i] = kmac_pkg::APP_RSP_DEFAULT;
-  end
+
+  // Unused KMAC signals
+  logic unused_kmac_output;
+  assign unused_kmac_output = (|kmac_app_rsp[1]) | (|kmac_app_rsp[2]);
+
+  // Assigning default KMAC values
+  assign kmac_app_req[1] = kmac_pkg::APP_REQ_DEFAULT;
+  assign kmac_app_req[2] = kmac_pkg::APP_REQ_DEFAULT;
 
   // Instantiate CVA6-CHERI.
   cva6 #(
@@ -955,7 +966,7 @@ module top_chip_system #(
     .esc_rst_tx_i     (prim_esc_pkg::ESC_RX_DEFAULT),
     .esc_rst_rx_o     ( ),
     .pwr_cpu_i        ('0), // Core is not sleeping.
-    .fetch_en_o       ( ), // No fetch enable on CVA6.
+    .fetch_en_o       (pwrmgr_fetch_en), // Determined by ROM checker
     .wakeups_i        ('0), // Always wake up immediately.
     .rstreqs_i        ('0), // No reset requests yet.
     .ndmreset_req_i   ('0), // No debug module yet.
@@ -1137,6 +1148,30 @@ module top_chip_system #(
   );
 
   // TL ROM
+  // AXI isolator
+  axi_isolate #(
+    .TerminateTransaction ( 1'b0                  ),
+    .AtopSupport          ( 1'b0                  ),
+    .AxiAddrWidth         ( top_pkg::AxiAddrWidth ),
+    .AxiDataWidth         ( top_pkg::AxiDataWidth ),
+    .AxiIdWidth           ( top_pkg::AxiIdWidth   ),
+    .AxiUserWidth         ( top_pkg::AxiUserWidth ),
+    .axi_req_t            ( top_pkg::axi_req_t    ),
+    .axi_resp_t           ( top_pkg::axi_resp_t   )
+  ) u_rom_isolate (
+    .clk_i      (clkmgr_clocks.clk_main_infra),
+    .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
+    .slv_req_i  (xbar_device_req[top_pkg::RomCtrlMem]),
+    .slv_resp_o (xbar_device_resp[top_pkg::RomCtrlMem]),
+    .mst_req_o  (rom_mem_isolated_req),
+    .mst_resp_i (rom_mem_isolated_resp),
+    .isolate_i  (rom_mem_isolate),
+    .isolated_o ( )
+  );
+
+  // Isolate the ROM unless the ROM checker signals 'good' via pwrmgr.
+  assign rom_mem_isolate = lc_ctrl_pkg::lc_tx_test_false_loose(pwrmgr_fetch_en);
+
   // AXI to 64-bit mem for TLUL ROM
   axi_to_mem #(
     .axi_req_t  ( top_pkg::axi_req_t    ),
@@ -1151,8 +1186,8 @@ module top_chip_system #(
 
     // AXI interface.
     .busy_o     ( ),
-    .axi_req_i  (xbar_device_req[top_pkg::RomCtrlMem]),
-    .axi_resp_o (xbar_device_resp[top_pkg::RomCtrlMem]),
+    .axi_req_i  (rom_mem_isolated_req),
+    .axi_resp_o (rom_mem_isolated_resp),
 
     // Memory interface.
     .mem_req_o    (mem64_tl_rom_mem_req),
@@ -1225,16 +1260,16 @@ module top_chip_system #(
     .AlertAsyncOn         ( 1'b1        ),
     .AlertSkewCycles      ( 1           ),
     .FlopToKmac           ( 1'b0        ),
-    .RndCnstScrNonce      ( '0          ),
-    .RndCnstScrKey        ( '0          ),
-    .SecDisableScrambling ( 1'b1        ),
+    .RndCnstScrNonce      ( top_pkg::RndCnstRomCtrlScrNonce ),
+    .RndCnstScrKey        ( top_pkg::RndCnstRomCtrlScrKey ),
+    .SecDisableScrambling ( 1'b0        ),
     .MemSizeRom           ( 32'(top_pkg::RomCtrlMemLength) )
   ) u_rom_ctrl (
     // Clock and reset connections
     .clk_i  (clkmgr_clocks.clk_main_infra),
     .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
-    // Allert Signals
+    // Alert Signals
     .alert_tx_o  ( ),
     .alert_rx_i  (prim_alert_pkg::ALERT_RX_DEFAULT),
 
@@ -1242,12 +1277,53 @@ module top_chip_system #(
     .rom_cfg_i      (rom_cfg),
     .pwrmgr_data_o  (rom_ctrl_pwrmgr_data),
     .keymgr_data_o  (rom_ctrl_keymgr_data),
-    .kmac_data_o    (),
-    .kmac_data_i    (),
+    .kmac_data_o    (kmac_app_req[0]),
+    .kmac_data_i    (kmac_app_rsp[0]),
     .rom_tl_i       (tl_rom_ctrl_mem_h2d),
     .rom_tl_o       (tl_rom_ctrl_mem_d2h),
     .regs_tl_i      (tl_rom_ctrl_regs_h2d),
     .regs_tl_o      (tl_rom_ctrl_regs_d2h)
+  );
+
+  // Minimal KMAC instantiation for verifying ROM contents only
+  kmac #(
+    .EnMasking              ( 0              ),
+    .SwKeyMasked            ( 0              ),
+    .SecCmdDelay            ( 0              ),
+    .SecIdleAcceptSwMsg     ( 0              ),
+    .NumAppIntf             ( KmacNumAppIntf ),
+    .AppCfg                 ( KmacAppCfg     ),
+    .RndCnstLfsrPerm        ( 0              ),
+    .RndCnstLfsrSeed        ( 0              ),
+    .RndCnstBufferLfsrSeed  ( 0              ),
+    .RndCnstMsgPerm         ( 0              ),
+    .AlertAsyncOn           ( 1              ),
+    .AlertSkewCycles        ( 1              )
+  ) u_kmac (
+    .clk_i           (clkmgr_clocks.clk_main_infra),
+    .clk_edn_i       (clkmgr_clocks.clk_main_infra),
+    .rst_ni          (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
+    .rst_shadowed_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
+    .rst_edn_ni      (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
+    .idle_o          ( ), // unused clkmgr idle signal (useful if KMAC gets own hint-based clock)
+
+    // Application interface to rom_ctrl
+    .app_i (kmac_app_req),
+    .app_o (kmac_app_rsp),
+
+    // Unused Interfaces
+    .tl_i              (tlul_pkg::TL_H2D_DEFAULT),
+    .tl_o              ( ),
+    .alert_rx_i        ({prim_alert_pkg::ALERT_RX_DEFAULT, prim_alert_pkg::ALERT_RX_DEFAULT}),
+    .alert_tx_o        ( ),
+    .keymgr_key_i      (kmac_pkg::HW_KEY_REQ_DEFAULT),
+    .entropy_o         ( ),
+    .entropy_i         (kmac_pkg::EDN_RSP_DEFAULT),
+    .lc_escalate_en_i  (lc_ctrl_pkg::LC_TX_DEFAULT),
+    .intr_kmac_done_o  ( ),
+    .intr_fifo_empty_o ( ),
+    .intr_kmac_err_o   ( ),
+    .en_masking_o      ( )
   );
 
 endmodule

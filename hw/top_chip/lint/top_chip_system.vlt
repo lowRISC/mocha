@@ -131,6 +131,16 @@ lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*s
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*process_valid*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*absorb_valid*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_sha3*/rtl/sha3pad.sv" -match "*done_valid*"
+lint_off -rule VARHIDDEN -file "*/lowrisc_ip_kmac*/rtl/kmac_core.sv" -match "*StTerminalError*"
+lint_off -rule VARHIDDEN -file "*/lowrisc_ip_kmac*/rtl/kmac_errchk.sv" -match "*StIdle*"
+lint_off -rule VARHIDDEN -file "*/lowrisc_ip_kmac*/rtl/kmac_errchk.sv" -match "*StTerminalError*"
+lint_off -rule VARHIDDEN -file "*/lowrisc_ip_kmac*/rtl/kmac_entropy.sv" -match "*StTerminalError*"
+lint_off -rule VARHIDDEN -file "*/lowrisc_ip_sha3*/rtl/keccak_2share.sv" -match "*state*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac.sv" -match "*kmac_cmd*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac.sv" -match "*kmac_app_state_error*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac.sv" -match "*mux2fifo_valid*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*app_data_ready*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*fsm_data_ready*"
 
 // Memory downsizer truncates address bits
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/rtl/mem_downsizer.sv" -match "*mem64_addr_i*"
@@ -299,6 +309,7 @@ lint_off -rule CMPCONST -file "*/axi_riscv_atomics/src/axi_riscv_lrsc.sv"
 
 // prim_count.sv
 lint_off -rule WIDTHTRUNC -file "*/lowrisc_prim_count_0/rtl/prim_count.sv"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_prim_count_0/rtl/prim_count.sv" -match "*incr_en*"
 
 // rom_ctrl.sv
 lint_off -rule UNDRIVEN     -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*checker_rom_rdata_outer*"
@@ -308,6 +319,7 @@ lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -matc
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_vld_outer*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_last_outer*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_err*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*checker_alert*"
 
 // HPDCache
 lint_off -rule CASEINCOMPLETE -file "*/hpdcache/rtl/src/utils/hpdcache_mem_to_axi_write.sv" -match "*req_i*" // Default values specified outside case

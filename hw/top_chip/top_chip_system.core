@@ -16,6 +16,7 @@ filesets:
       - lowrisc:ip:xbar_peri
       - lowrisc:ip:rom_ctrl
       - lowrisc:ip:entropy_src
+      - lowrisc:ip:kmac
       - lowrisc:mocha_ip:clkmgr
       - lowrisc:mocha_ip:gpio
       - lowrisc:mocha_ip:pwrmgr

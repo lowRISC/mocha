@@ -49,14 +49,14 @@
       uvm_test_seq: top_chip_dv_uart_base_vseq
       sw_images: ["uart_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: uart_smoke_cheri
       uvm_test_seq: top_chip_dv_uart_base_vseq
       sw_images: ["uart_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/uart_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
 
     }
     {
@@ -64,7 +64,7 @@
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["plic_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
 
     }
     {
@@ -72,7 +72,7 @@
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["plic_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/plic_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
 
     }
     {
@@ -80,98 +80,98 @@
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["timer_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rv_timer_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["timer_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rv_timer_irq
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["timer_interrupt_test_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rv_timer_irq_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["timer_interrupt_test_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/timer_interrupt_test_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: test_framework_exception_test
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["test_framework_exception_test_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: test_framework_exception_test_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["test_framework_exception_test_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/test_framework_exception_test_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: spi_device_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["spi_device_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: spi_device_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["spi_device_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_device_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: spi_host_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["spi_host_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: spi_host_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["spi_host_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/spi_host_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: i2c_host_tx_rx
       uvm_test_seq: top_chip_dv_i2c_host_tx_rx_vseq
       sw_images: ["i2c_host_tx_rx_test_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_host_tx_rx_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
       }
     {
       name: i2c_device_tx_rx
       uvm_test_seq: top_chip_dv_i2c_device_tx_rx_vseq
       sw_images: ["i2c_device_tx_rx_test_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/i2c_device_tx_rx_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: gpio_smoke
       uvm_test_seq: top_chip_dv_gpio_smoke_vseq
       sw_images: ["gpio_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: gpio_smoke_cheri
       uvm_test_seq: top_chip_dv_gpio_smoke_vseq
       sw_images: ["gpio_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/gpio_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rom_ctrl_integrity_check
@@ -199,42 +199,42 @@
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["rstmgr_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/rstmgr_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rstmgr_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["rstmgr_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/rstmgr_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: clkmgr_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["clkmgr_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/clkmgr_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: clkmgr_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["clkmgr_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/clkmgr_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: pwrmgr_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["pwrmgr_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/pwrmgr_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: pwrmgr_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["pwrmgr_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/pwrmgr_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rv_dm_ndm_reset_req
@@ -242,7 +242,7 @@
       sw_images: ["rv_dm_ndm_reset_req_test_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+en_scb_tl_err_chk=0", "+use_jtag_dmi=1",
                  "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rv_dm_ndm_reset_req_when_cpu_halted
@@ -250,79 +250,79 @@
       sw_images: ["rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+use_jtag_dmi=1",
                  "+ChipMemSRAM_image_file={run_dir}/rv_dm_ndm_reset_req_when_cpu_halted_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rv_dm_access_after_wakeup
       uvm_test_seq: top_chip_dv_rv_dm_access_after_wakeup_vseq
       sw_images: ["rv_dm_access_after_wakeup_test_vanilla_sram:5" "bootrom:5"]
-      run_opts: ["+use_jtag_dmi=1", 
+      run_opts: ["+use_jtag_dmi=1",
                  "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_wakeup_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rv_dm_access_after_escalation_reset
       uvm_test_seq: "top_chip_dv_rv_dm_access_after_escalation_reset_vseq"
       sw_images: ["rv_dm_access_after_escalation_reset_test_vanilla_sram:5" "bootrom:5"]
-      run_opts: ["+use_jtag_dmi=1", 
+      run_opts: ["+use_jtag_dmi=1",
                  "+ChipMemSRAM_image_file={run_dir}/rv_dm_access_after_escalation_reset_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: mailbox_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["mailbox_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: mailbox_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["mailbox_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/mailbox_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: axi_sram_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["axi_sram_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: axi_sram_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["axi_sram_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: axi_sram_tag_test
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["axi_sram_tag_test_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: axi_sram_tag_test_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["axi_sram_tag_test_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/axi_sram_tag_test_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: entropy_src_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["entropy_src_smoketest_vanilla_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/entropy_src_smoketest_vanilla_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: entropy_src_smoke_cheri
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["entropy_src_smoketest_cheri_sram:5" "bootrom:5"]
       run_opts: ["+ChipMemSRAM_image_file={run_dir}/entropy_src_smoketest_cheri_sram.vmem",
-                 "+ChipMemROM_image_file={run_dir}/bootrom.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
   ]
 
