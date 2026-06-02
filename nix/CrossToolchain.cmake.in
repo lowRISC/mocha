@@ -1,0 +1,47 @@
+# Copyright lowRISC contributors.
+#
+# SPDX-License-Identifier: MIT
+
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR riscv64)
+
+set(CMAKE_C_COMPILER "@llvmCheri@/bin/clang")
+set(CMAKE_C_COMPILER_TARGET "riscv64-linux-musl")
+set(CMAKE_CXX_COMPILER "@llvmCheri@/bin/clang++")
+set(CMAKE_CXX_COMPILER_TARGET "riscv64-linux-musl")
+set(CMAKE_ASM_COMPILER "@llvmCheri@/bin/clang")
+set(CMAKE_ASM_COMPILER_TARGET "riscv64-linux-musl")
+
+set(CMAKE_AR
+    "@llvmCheri@/bin/llvm-ar"
+    CACHE FILEPATH "ar")
+set(CMAKE_RANLIB
+    "@llvmCheri@/bin/llvm-ranlib"
+    CACHE FILEPATH "ranlib")
+set(CMAKE_NM
+    "@llvmCheri@/bin/llvm-nm"
+    CACHE FILEPATH "nm")
+set(CMAKE_STRIP
+    "@llvmCheri@/bin/llvm-strip"
+    CACHE FILEPATH "strip")
+set(CMAKE_LINKER
+    "@llvmCheri@/bin/ld.lld"
+    CACHE FILEPATH "linker")
+
+set(CHERI_COMMON_FLAGS
+    "-target riscv64-linux-musl -B@llvmCheri@/bin -march=rv64imafdczcherihybrid_zcherilevels -mabi=l64pc128d -mno-relax -Xclang -target-feature -Xclang +cheri-bounded-vararg -Xclang -target-feature -Xclang +cheri-bounded-memarg-caller -Xclang -target-feature -Xclang +cheri-bounded-memarg-callee -isystem @linuxHeadersPurecap@/usr/include -ggdb -gz -Wno-error=unused-command-line-argument -ffreestanding -Werror=implicit-function-declaration -Werror=format -Werror=incompatible-pointer-types -Werror=cheri-capability-misuse -Werror=cheri-bitwise-operations -Werror=pass-failed -Werror=cheri-prototypes -Werror=undefined-internal"
+)
+
+set(CHERI_LINKER_FLAGS "${CHERI_COMMON_FLAGS} -fuse-ld=lld")
+
+set(CMAKE_C_FLAGS_INIT "${CHERI_COMMON_FLAGS}")
+set(CMAKE_CXX_FLAGS_INIT "${CHERI_COMMON_FLAGS}")
+set(CMAKE_ASM_FLAGS_INIT "${CHERI_COMMON_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "${CHERI_LINKER_FLAGS}")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CHERI_LINKER_FLAGS}")
+set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CHERI_LINKER_FLAGS}")
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
