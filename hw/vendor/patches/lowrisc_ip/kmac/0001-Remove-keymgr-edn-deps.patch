@@ -1,0 +1,167 @@
+diff --git a/kmac.core b/kmac.core
+index c4472c4e..6551e023 100644
+--- a/kmac.core
++++ b/kmac.core
+@@ -17,10 +17,7 @@ filesets:
+       - lowrisc:prim:trivium
+       - lowrisc:prim:mubi
+       - lowrisc:ip:tlul
+-      - lowrisc:ip:keymgr_pkg
+       - lowrisc:ip:sha3
+-      - lowrisc:ip:edn_pkg
+-      - lowrisc:prim:edn_req
+       - lowrisc:ip:kmac_pkg
+       - lowrisc:ip:lc_ctrl_pkg
+       - lowrisc:prim:lc_sync
+diff --git a/rtl/kmac.sv b/rtl/kmac.sv
+index eb719248..17526815 100644
+--- a/rtl/kmac.sv
++++ b/rtl/kmac.sv
+@@ -57,15 +57,15 @@ module kmac
+   output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
+
+   // KeyMgr sideload (secret key) interface
+-  input keymgr_pkg::hw_key_req_t keymgr_key_i,
++  input hw_key_req_t keymgr_key_i,
+
+   // KeyMgr KDF data path
+   input  app_req_t [NumAppIntf-1:0] app_i,
+   output app_rsp_t [NumAppIntf-1:0] app_o,
+
+   // EDN interface
+-  output edn_pkg::edn_req_t entropy_o,
+-  input  edn_pkg::edn_rsp_t entropy_i,
++  output edn_req_t entropy_o,
++  input  edn_rsp_t entropy_i,
+
+   // Life cycle
+   input  lc_ctrl_pkg::lc_tx_t lc_escalate_en_i,
+@@ -1224,12 +1224,12 @@ module kmac
+   if (EnMasking == 1) begin : gen_entropy
+
+     logic entropy_req, entropy_ack;
+-    logic [edn_pkg::ENDPOINT_BUS_WIDTH-1:0] entropy_data;
++    logic [ENDPOINT_BUS_WIDTH-1:0] entropy_data;
+     logic unused_entropy_fips;
+
+     // Synchronize EDN interface
+     prim_sync_reqack_data #(
+-      .Width(edn_pkg::ENDPOINT_BUS_WIDTH),
++      .Width(ENDPOINT_BUS_WIDTH),
+       .DataSrc2Dst(1'b0),
+       .DataReg(1'b0)
+     ) u_prim_sync_reqack_data (
+@@ -1310,7 +1310,7 @@ module kmac
+     );
+   end else begin : gen_empty_entropy
+     // If Masking is not used, no need of entropy. Ignore inputs and config; tie output to 0.
+-    edn_pkg::edn_rsp_t unused_entropy_input;
++    edn_rsp_t          unused_entropy_input;
+     entropy_mode_e     unused_entropy_mode;
+     logic              unused_entropy_fast_process;
+
+diff --git a/rtl/kmac_app.sv b/rtl/kmac_app.sv
+index 54303868..3be7586b 100644
+--- a/rtl/kmac_app.sv
++++ b/rtl/kmac_app.sv
+@@ -38,7 +38,7 @@ module kmac_app
+   output logic         sw_ready_o,
+
+   // KeyMgr Sideload Key interface
+-  input keymgr_pkg::hw_key_req_t keymgr_key_i,
++  input hw_key_req_t keymgr_key_i,
+
+   // Application Message in/ Digest out interface + control signals
+   input  app_req_t [NumAppIntf-1:0] app_i,
+@@ -774,7 +774,7 @@ module kmac_app
+   end else begin : g_unmasked_key
+     always_comb begin
+       keymgr_key[0] = '0;
+-      for (int i = 0; i < keymgr_pkg::Shares; i++) begin
++      for (int i = 0; i < Shares; i++) begin
+         keymgr_key[0][KeyMgrKeyW-1:0] ^= keymgr_key_i.key[i];
+       end
+     end
+diff --git a/rtl/kmac_entropy.sv b/rtl/kmac_entropy.sv
+index 07d1cbcd..7caa7345 100644
+--- a/rtl/kmac_entropy.sv
++++ b/rtl/kmac_entropy.sv
+@@ -20,7 +20,7 @@ module kmac_entropy
+   // EDN interface
+   output logic                            entropy_req_o,
+   input                                   entropy_ack_i,
+-  input [edn_pkg::ENDPOINT_BUS_WIDTH-1:0] entropy_data_i,
++  input [ENDPOINT_BUS_WIDTH-1:0]          entropy_data_i,
+
+   // Entropy to internal
+   output logic                          rand_valid_o,
+@@ -194,7 +194,7 @@ module kmac_entropy
+   // SW configures to use EDN or ENTROPY_SEED register as PRNG seed
+   logic seed_en, seed_done;
+   logic seed_req, seed_ack;
+-  logic [edn_pkg::ENDPOINT_BUS_WIDTH-1:0] seed;
++  logic [ENDPOINT_BUS_WIDTH-1:0] seed;
+   logic prng_en;
+   logic [EntropyOutputW-1:0] prng_data, prng_data_permuted;
+
+@@ -359,7 +359,7 @@ module kmac_entropy
+    .OutputWidth           (EntropyOutputW),
+    .StrictLockupProtection(1),
+    .SeedType              (prim_trivium_pkg::SeedTypeStatePartial),
+-   .PartialSeedWidth      (edn_pkg::ENDPOINT_BUS_WIDTH),
++   .PartialSeedWidth      (ENDPOINT_BUS_WIDTH),
+    .RndCnstTriviumLfsrSeed(RndCnstLfsrSeed)
+   ) u_prim_trivium (
+    .clk_i (clk_i),
+@@ -758,7 +758,7 @@ module kmac_entropy
+
+   // The EDN bus width needs to be equal to the width of the ENTROPY_SEED
+   // register as this module doesn't perform width adaption.
+-  `ASSERT_INIT(EdnBusWidth_A, edn_pkg::ENDPOINT_BUS_WIDTH == 32)
++  `ASSERT_INIT(EdnBusWidth_A, ENDPOINT_BUS_WIDTH == 32)
+
+ // the code below is not meant to be synthesized,
+ // but it is intended to be used in simulation and FPV
+diff --git a/rtl/kmac_pkg.sv b/rtl/kmac_pkg.sv
+index 10a03442..208be1c4 100644
+--- a/rtl/kmac_pkg.sv
++++ b/rtl/kmac_pkg.sv
+@@ -474,4 +474,38 @@ package kmac_pkg;
+     conv_endian32 = (swap) ? conv_data : v ;
+   endfunction : conv_endian32
+
++
++  ///////////////////////
++  // KEYMGR Copy-Paste //
++  ///////////////////////
++
++  parameter int KeyWidth = 256;
++  parameter int Shares = 2;
++  typedef struct packed {
++    logic valid;
++    logic [Shares-1:0][KeyWidth-1:0] key;
++  } hw_key_req_t;
++
++  parameter hw_key_req_t HW_KEY_REQ_DEFAULT = '{
++    valid: 1'b0,
++    key: {Shares{KeyWidth'(32'hDEADBEEF)}}
++  };
++
++  ////////////////////
++  // EDN Copy-Paste //
++  ////////////////////
++
++  parameter int unsigned   ENDPOINT_BUS_WIDTH = 32;
++
++  typedef struct packed {
++    logic                                 edn_req;
++  } edn_req_t;
++  typedef struct packed {
++    logic                                 edn_ack;
++    logic                                 edn_fips;
++    logic [ENDPOINT_BUS_WIDTH-1:0]        edn_bus;
++  } edn_rsp_t;
++
++  parameter edn_rsp_t EDN_RSP_DEFAULT = '0;
++
+ endpackage : kmac_pkg
