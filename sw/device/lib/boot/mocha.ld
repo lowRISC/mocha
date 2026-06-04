@@ -30,6 +30,17 @@ SECTIONS {
         . = ALIGN(8);
     } > ram
 
+    /* DV simulation log database. Each call site puts a log_fields_t entry here.
+     * extract_sw_logs.py reads the ELF section to produce a .logs.txt database
+     * consumed by sw_logger_if at simulation start. The first word is the section
+     * load address (header used by extract_sw_logs.py to map each entry to its
+     * runtime address). */
+    .logs.fields : {
+        QUAD(LOADADDR(.logs.fields));
+        KEEP(*(.logs.fields))
+        . = ALIGN(8);
+    } > ram
+
     /* capability relocation entries */
     /* __start___cap_relocs and __stop___cap_relocs are provided by the toolchain */
     __cap_relocs : {

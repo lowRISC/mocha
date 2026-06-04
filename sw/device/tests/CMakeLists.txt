@@ -6,6 +6,7 @@ set(LIBS hal runtime startup test_framework)
 
 mocha_add_test(NAME test_framework_test SOURCES test_framework/smoketest.c LIBRARIES ${LIBS} VERILATOR_TIMEOUT 20 FPGA_TIMEOUT 10)
 mocha_add_test(NAME test_framework_exception_test SOURCES test_framework/exception.c LIBRARIES ${LIBS})
+mocha_add_test(NAME dv_log_smoketest SOURCES test_framework/dv_log_smoketest.c LIBRARIES ${LIBS} SKIP_VERILATOR SKIP_FPGA)
 mocha_add_test(NAME axi_sram_smoketest SOURCES axi_sram/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME axi_sram_tag_test SOURCES axi_sram/tag_test.c LIBRARIES ${LIBS})
 mocha_add_test(NAME entropy_src_smoketest SOURCES entropy_src/smoketest.c LIBRARIES ${LIBS})

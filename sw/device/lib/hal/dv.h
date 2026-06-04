@@ -37,7 +37,10 @@ typedef volatile struct [[gnu::aligned(4)]] dv_window_memory_layout {
     /* hw_id (0x4) */
     const uint32_t hw_id;
 
-    const uint8_t __reserved0[0x100 - 0x08];
+    /* log (0x8)*/
+    uint32_t log;
+
+    const uint8_t __reserved0[0x100 - 0x0c];
 } *dv_window_t;
 
 
@@ -45,3 +48,5 @@ _Static_assert(__builtin_offsetof(struct dv_window_memory_layout, test_status) =
                "incorrect register test_status offset");
 _Static_assert(__builtin_offsetof(struct dv_window_memory_layout, hw_id) == 0x4ul,
                "incorrect register hw_id offset");
+_Static_assert(__builtin_offsetof(struct dv_window_memory_layout, log) == 0x8ul,
+               "incorrect register log offset");
