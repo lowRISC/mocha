@@ -1,0 +1,87 @@
+diff --git a/extract_sw_logs.py b/extract_sw_logs.py
+--- a/extract_sw_logs.py
++++ b/extract_sw_logs.py
+@@ -173,6 +173,33 @@
+     raise KeyError(f"string at addr {str_addr:x} not found")
+ 
+ 
++# CHERI __cap_relocs entry: five little-endian uint64 words.
++_CAP_RELOC_FMT = '<QQQQQ'
++_CAP_RELOC_SIZE = struct.calcsize(_CAP_RELOC_FMT)
++
++
++def get_cap_relocs(elf):
++    '''Build a {capability_location: target_addr} map from __cap_relocs.
++
++    On CHERI targets, pointer fields in initialised data (such as the file and
++    format pointers of the log_fields_t entries in .logs.fields) are stored as
++    capabilities whose address is materialised at runtime. The static ELF only
++    holds a placeholder, while the real target is recorded in __cap_relocs. Each
++    entry is five uint64 words: (location, object, offset, size, perms); the
++    resolved target address is object + offset. Returns an empty dict on
++    non-CHERI ELFs, where the section is absent or empty.'''
++    section = elf.get_section_by_name('__cap_relocs')
++    relocs = {}
++    if section is None:
++        return relocs
++    data = section.data()
++    for off in range(0, len(data), _CAP_RELOC_SIZE):
++        location, obj, offset, _size, _perms = struct.unpack(
++            _CAP_RELOC_FMT, data[off:off + _CAP_RELOC_SIZE])
++        relocs[location] = obj + offset
++    return relocs
++
++
+ def extract_sw_logs(elf_file, logs_fields_section):
+     '''This function extracts contents from the logs fields section, and the
+     read only sections, processes them and generates a tuple of (results) -
+@@ -222,17 +249,42 @@
+                 logs_fields_section, elf_file))
+             sys.exit(1)
+ 
+-        header_size = 4
+-        logs_offset, = struct.unpack('I', logs_data[0:header_size])
++        # Determine the log_fields_t binary layout, which depends on the target.
++        #  - rv32:  20-byte entries (all uint32) behind a 4-byte header.
++        #  - rv64:  32-byte entries with 8-byte pointer fields, 8-byte header.
++        #  - CHERI: file/format pointers are 16-byte capabilities, which forces
++        #           16-byte section alignment and 64-byte entries behind a
++        #           16-byte header. The capabilities hold placeholders in the
++        #           static image; their target addresses come from __cap_relocs
++        #           (see get_cap_relocs), keyed by the in-image slot location.
++        cap_relocs = get_cap_relocs(elf)
++        is_cheri = int(section.header['sh_addralign']) >= 16
++        if is_cheri:
++            sec_addr = int(section.header['sh_addr'])
++            header_size, entry_size = 16, 64
++            file_off, format_off = 0x10, 0x30
++            logs_offset = sec_addr
++        elif elf.elfclass == 64:
++            header_size, entry_size, entry_fmt = 8, 32, '<I4xQIIQ'
++            logs_offset, = struct.unpack('<Q', logs_data[0:header_size])
++        else:
++            header_size, entry_size, entry_fmt = 4, LOGS_FIELDS_SIZE, '<IIIII'
++            logs_offset, = struct.unpack('<I', logs_data[0:header_size])
+ 
+         # Dump the logs with fields.
+         result = ""
+-        num_logs = (logs_size - header_size) // LOGS_FIELDS_SIZE
++        num_logs = (logs_size - header_size) // entry_size
+         for i in range(num_logs):
+-            start = header_size + i * LOGS_FIELDS_SIZE
+-            end = start + LOGS_FIELDS_SIZE
+-            severity, file_addr, line, nargs, format_addr = struct.unpack(
+-                'IIIII', logs_data[start:end])
++            start = header_size + i * entry_size
++            if is_cheri:
++                severity, = struct.unpack('<I', logs_data[start:start + 4])
++                line, nargs = struct.unpack(
++                    '<II', logs_data[start + 0x20:start + 0x28])
++                file_addr = cap_relocs[sec_addr + start + file_off]
++                format_addr = cap_relocs[sec_addr + start + format_off]
++            else:
++                severity, file_addr, line, nargs, format_addr = struct.unpack(
++                    entry_fmt, logs_data[start:start + entry_size])
+             result += "addr: {}\n".format(hex(logs_offset + start)[2:])
+             result += "severity: {}\n".format(severity)
+             result += "file: {}\n".format(
