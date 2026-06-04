@@ -57,15 +57,15 @@ module kmac
   output prim_alert_pkg::alert_tx_t [NumAlerts-1:0] alert_tx_o,
 
   // KeyMgr sideload (secret key) interface
-  input keymgr_pkg::hw_key_req_t keymgr_key_i,
+  input hw_key_req_t keymgr_key_i,
 
   // KeyMgr KDF data path
   input  app_req_t [NumAppIntf-1:0] app_i,
   output app_rsp_t [NumAppIntf-1:0] app_o,
 
   // EDN interface
-  output edn_pkg::edn_req_t entropy_o,
-  input  edn_pkg::edn_rsp_t entropy_i,
+  output edn_req_t entropy_o,
+  input  edn_rsp_t entropy_i,
 
   // Life cycle
   input  lc_ctrl_pkg::lc_tx_t lc_escalate_en_i,
@@ -1224,12 +1224,12 @@ module kmac
   if (EnMasking == 1) begin : gen_entropy
 
     logic entropy_req, entropy_ack;
-    logic [edn_pkg::ENDPOINT_BUS_WIDTH-1:0] entropy_data;
+    logic [ENDPOINT_BUS_WIDTH-1:0] entropy_data;
     logic unused_entropy_fips;
 
     // Synchronize EDN interface
     prim_sync_reqack_data #(
-      .Width(edn_pkg::ENDPOINT_BUS_WIDTH),
+      .Width(ENDPOINT_BUS_WIDTH),
       .DataSrc2Dst(1'b0),
       .DataReg(1'b0)
     ) u_prim_sync_reqack_data (
@@ -1310,7 +1310,7 @@ module kmac
     );
   end else begin : gen_empty_entropy
     // If Masking is not used, no need of entropy. Ignore inputs and config; tie output to 0.
-    edn_pkg::edn_rsp_t unused_entropy_input;
+    edn_rsp_t          unused_entropy_input;
     entropy_mode_e     unused_entropy_mode;
     logic              unused_entropy_fast_process;
 

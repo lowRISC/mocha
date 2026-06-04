@@ -20,7 +20,7 @@ module kmac_entropy
   // EDN interface
   output logic                            entropy_req_o,
   input                                   entropy_ack_i,
-  input [edn_pkg::ENDPOINT_BUS_WIDTH-1:0] entropy_data_i,
+  input [ENDPOINT_BUS_WIDTH-1:0]          entropy_data_i,
 
   // Entropy to internal
   output logic                          rand_valid_o,
@@ -194,7 +194,7 @@ module kmac_entropy
   // SW configures to use EDN or ENTROPY_SEED register as PRNG seed
   logic seed_en, seed_done;
   logic seed_req, seed_ack;
-  logic [edn_pkg::ENDPOINT_BUS_WIDTH-1:0] seed;
+  logic [ENDPOINT_BUS_WIDTH-1:0] seed;
   logic prng_en;
   logic [EntropyOutputW-1:0] prng_data, prng_data_permuted;
 
@@ -359,7 +359,7 @@ module kmac_entropy
    .OutputWidth           (EntropyOutputW),
    .StrictLockupProtection(1),
    .SeedType              (prim_trivium_pkg::SeedTypeStatePartial),
-   .PartialSeedWidth      (edn_pkg::ENDPOINT_BUS_WIDTH),
+   .PartialSeedWidth      (ENDPOINT_BUS_WIDTH),
    .RndCnstTriviumLfsrSeed(RndCnstLfsrSeed)
   ) u_prim_trivium (
    .clk_i (clk_i),
@@ -758,7 +758,7 @@ module kmac_entropy
 
   // The EDN bus width needs to be equal to the width of the ENTROPY_SEED
   // register as this module doesn't perform width adaption.
-  `ASSERT_INIT(EdnBusWidth_A, edn_pkg::ENDPOINT_BUS_WIDTH == 32)
+  `ASSERT_INIT(EdnBusWidth_A, ENDPOINT_BUS_WIDTH == 32)
 
 // the code below is not meant to be synthesized,
 // but it is intended to be used in simulation and FPV

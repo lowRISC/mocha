@@ -474,4 +474,38 @@ package kmac_pkg;
     conv_endian32 = (swap) ? conv_data : v ;
   endfunction : conv_endian32
 
+
+  ///////////////////////
+  // KEYMGR Copy-Paste //
+  ///////////////////////
+
+  parameter int KeyWidth = 256;
+  parameter int Shares = 2;
+  typedef struct packed {
+    logic valid;
+    logic [Shares-1:0][KeyWidth-1:0] key;
+  } hw_key_req_t;
+
+  parameter hw_key_req_t HW_KEY_REQ_DEFAULT = '{
+    valid: 1'b0,
+    key: {Shares{KeyWidth'(32'hDEADBEEF)}}
+  };
+
+  ////////////////////
+  // EDN Copy-Paste //
+  ////////////////////
+
+  parameter int unsigned   ENDPOINT_BUS_WIDTH = 32;
+
+  typedef struct packed {
+    logic                                 edn_req;
+  } edn_req_t;
+  typedef struct packed {
+    logic                                 edn_ack;
+    logic                                 edn_fips;
+    logic [ENDPOINT_BUS_WIDTH-1:0]        edn_bus;
+  } edn_rsp_t;
+
+  parameter edn_rsp_t EDN_RSP_DEFAULT = '0;
+
 endpackage : kmac_pkg

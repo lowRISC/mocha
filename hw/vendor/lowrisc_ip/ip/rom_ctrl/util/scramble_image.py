@@ -12,6 +12,15 @@ from typing import Dict, IO, Optional, Tuple
 import hjson  # type: ignore
 from Crypto.Hash import cSHAKE256
 
+# Add to the PATH the directory that this script and its "mem" dependency
+# expect to be able to use relative paths to import other dependencies from.
+from pathlib import Path
+PROJECT_ROOT = Path.resolve(Path(__file__)).parent.parent.parent.parent.parent.parent.parent
+LOWRISC_IP_ROOT = PROJECT_ROOT / Path("hw/vendor/lowrisc_ip")
+print("PROJECT_ROOT: ", PROJECT_ROOT)
+print("LOWRISC_IP_ROOT:", LOWRISC_IP_ROOT)
+sys.path.append(str(LOWRISC_IP_ROOT))
+
 from mem import MemChunk, MemFile
 from util.design.prince import prince, sbox  # type: ignore
 from util.design.secded_gen import ecc_encode_some  # type: ignore
