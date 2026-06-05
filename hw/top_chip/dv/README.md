@@ -72,8 +72,11 @@ For more details, see: [sim_sram_axi/README.md](./sim_sram_axi/README.md)
 
 * **Test Status:** The SW writes Pass/Fail status to `SW_DV_TEST_STATUS_ADDR`.
   The `sw_test_status_if` detects this and signals the UVM environment to terminate the simulation.
-* **Logging:** The SW writes debug strings to `SW_DV_LOG_ADDR`.
-  The `sw_logger_if` captures these characters and prints them to the simulation log, avoiding the latency of the UART peripheral.
+* **Logging:** The SW uses the `DV_LOG_INFO` / `DV_LOG_WARNING` / `DV_LOG_ERROR` / `DV_LOG_FATAL` macros (defined in `sw/device/lib/test_framework/dv_log.h`) to emit log messages.
+  Each call allocates a static `log_fields_t` struct (severity, file, line, argument count, format string) in the `.logs.fields` ELF section, then writes its address followed by any variadic arguments to `SW_DV_LOG_ADDR`.
+  At build time, `util/build_sw_collateral_for_sim.py` invokes `extract_sw_logs.py` on the firmware ELF to produce a `<name>.logs.txt` database mapping each struct address to its decoded fields.
+  At simulation time, `sw_logger_if` intercepts the write, looks up the struct address in the database, substitutes the arguments into the format string, and prints the fully formatted message to the simulation log.
+  This bypasses the slowness of the UART peripheral and requires no string formatting on the CPU.
 
 ## Simulation commands
 
