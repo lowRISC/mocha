@@ -10,7 +10,7 @@ Slight modification to the stages and checklists were made to meet the requireme
 
 This table shows the current design and verification stage for each block in Mocha.
 
-| **Block name**    | **Design stage** | **Verification stage** |
+| **DUT name**      | **Design stage** | **Verification stage** |
 |-------------------|------------------|------------------------|
 | AXI crossbar      | D0               | V0                     |
 | Clock manager     | D0               | V0                     |
@@ -32,8 +32,13 @@ This table shows the current design and verification stage for each block in Moc
 | TileLink crossbar | D0               | V0                     |
 | Timer             | D0               | V0                     |
 | [UART][]          | D1               | V0                     |
+|                   |                  |                        |
+| Top chip          | N/A*             | V0                     |
 
 [UART]: uart.md
+
+*The top chip integration has no design stage.
+Its verification stages are defined separately in [Top-level chip verification](#top-level-chip-verification).
 
 ## Sign-off procedure
 
@@ -42,7 +47,7 @@ A [checklist template](checklist_template.md) is provided as a starting point.
 This pull request must be approved by at least three people, one of whom should ideally be someone who has not been involved in the design and the verification of the block.
 It should also update [the table](#current-status) documenting the current status of each block.
 
-## Design stages
+## IP block design stages
 
 These are the stages each block goes through.
 
@@ -72,7 +77,7 @@ Checklists for signing off a block at D1.
 
 *D2 and D3 checklists to be added.*
 
-## Verification stages
+## IP block verification stages
 
 These are the verification stages each block goes through.
 Some items are marked as only for *simulation* or only for *formal* depending on which approaches are used in the verification process.
@@ -108,3 +113,98 @@ Checklist for signing off a block at V1.
 | FPV_REGRESSION_SETUP | *Formal* | An FPV regression has been set up and added to `top_chip_fpv_ip_cfgs.hjson` |
 
 *V2 and V3 checklists to be added.*
+
+## Top-level chip verification
+
+These stages apply to the `top_chip` integration testbench.
+The two key documents governing chip-level verification are:
+
+- **Verification plan** (primary): [`hw/top_chip/dv/data/top_mocha_vplan.hjson`](../../hw/top_chip/dv/data/top_mocha_vplan.hjson) - defines the coverage metrics and their mapping to tests.
+- **Testplan**: [`hw/top_chip/data/chip_testplan.hjson`](../../hw/top_chip/data/chip_testplan.hjson) - captures individual testpoints and their associated tests.
+
+Both documents must be kept consistent as milestones progress.
+
+Two standing constraints apply throughout all chip-level milestones:
+- **IP floor:** all integrated IP blocks must have reached the corresponding IP verification stage (V1 for chip V1, and so on). Blocks below the floor require a written waiver signed off by the DV lead.
+- **Dual firmware mode:** both vanilla (non-CHERI) and CHERI firmware images must pass all applicable tests. A milestone is not met if only one mode passes.
+
+### What top-level tests cover
+
+Top-level tests target integration paths that cannot be observed in any individual IP testbench:
+
+- **Pin connectivity:** IP outputs reach the correct chip pins and external stimulus on input pins is correctly delivered to the right IP.
+- **Interrupt routing:** each IP's interrupt signal propagates through the PLIC and arrives as a trap at the CPU. This path crosses multiple IPs and is untestable below the chip level.
+- **Cross-IP data paths:** data flowing between two or more IPs - for example the entropy source feeding KMAC masking logic, the ROM controller using the KMAC application interface at boot, or the alert handler forwarding escalation to the reset manager.
+- **Clock and reset distribution:** the reset tree and clock gating logic correctly propagate resets and enable/disable clocks across the chip.
+- **Boot sequence:** the ROM controller runs its startup routine, passes the integrity check, and transfers execution to the SRAM image before the CPU runs any firmware.
+- **CPU integration:** the CPU core is correctly wired into the memory subsystem, interrupt infrastructure, and debug module. End-to-end tests exercise the full path from a firmware action (instruction fetch, memory access, trap) through the chip fabric and back, confirming the CPU's bus transactions, interrupt acknowledgements, and exception handling are correctly handled by the surrounding logic. Examples include verifying that a memory access produces the expected transaction on the fabric, or that a store correctly updates state in a downstream controller (e.g. setting a tag bit) and a subsequent access reflects that change.
+
+### What top-level tests do not cover
+
+Top-level tests intentionally do not re-verify IP-internal behaviour:
+
+- **CSR correctness:** register reset values, read/write semantics, bit-bash - verified at block level.
+- **Protocol compliance:** SPI timing, I2C ACK/NACK handling, UART framing - verified at block level.
+- **Error injection and recovery within an IP** - verified at block level.
+- **Functional coverage of individual IP RTL** - tracked and closed at block level.
+
+A test that could pass or fail based solely on IP-internal behaviour, with no observable effect at the chip level, does not belong in the chip-level testplan.
+
+| **Stage** | **Name** | **Definition** |
+|-----------|----------|----------------|
+| V0 | Initial Work | <ul> <li> Chip-level testbench being set up </li> <li> Chip-level verification plan being written </li> <li> Chip-level testplan being written </li> </ul> |
+| V1 | Smoke Passing | <ul> <li> All IPs smoke-tested at chip level </li> <li> Testbench infrastructure validated </li> <li> CI smoke regression running </li> </ul> |
+| V2 | Integration Complete | <ul> <li> All planned chip-level tests passing </li> <li> All chip interfaces connected to an active agent and exercised end-to-end </li> <li> End-to-end interrupt routing confirmed for all interrupt-capable IPs </li> <li> Cross-IP integration paths and reset sequences exercised </li> <li> Chip-level coverage targets met </li> </ul> |
+| V3 | Verification Complete | <ul> <li> 100% regression with soak </li> <li> 100% planned coverage </li> <li> All open issues closed </li> <li> X-propagation clean </li> </ul> |
+
+### Smoke test expectations
+
+A chip-level smoke test verifies one IP at a time and must demonstrate three things:
+
+1. **Register reachability:** SW writes and reads at least one CSR, confirming correct address-map wiring through the crossbar.
+2. **One integration-unique functional path:** one transaction that exercises a path only present at the chip level. The chip's external ports relevant to the IP under test must be connected to a UVM agent or a component that actively drives or passively observes them; a port left undriven or tied off does not count as exercised. This distinguishes a chip-level smoke from an IP-level smoke.
+3. **At least one interrupt delivery** (where the IP can generate an interrupt): one full machine-mode claim/complete cycle through the PLIC, confirming IP to PLIC to CPU wiring.
+
+Smoke tests must be short and deterministic. A smoke test that fails only because of an IP-internal bug (not a wiring or routing bug) indicates the IP has not yet reached its own V1 milestone and should not be blocking chip V1.
+
+### Top-level V1 sign-off checklist
+
+| **Item name** | **Description** |
+|---------------|-----------------|
+| TOP_DV_DOC_DRAFTED | DV document drafted covering testbench architecture, agent topology, firmware-driven stimulus model, and chip-level coverage intent. |
+| TOP_VPLAN_COMPLETED | Verification plan (`top_mocha_vplan.hjson`) complete with the metric-to-test mapping for each coverage item and milestone specified. Reviewed by designers, a peer DV engineer, firmware author, and chip architect. |
+| TOP_TESTPLAN_COMPLETED | Chip-level testplan (`chip_testplan.hjson`) complete with at least one testpoint per integrated IP. Reviewed by designers, a peer DV engineer, firmware author, and chip architect. |
+| TOP_TB_COMPLETED | Top-level testbench instantiates the DUT with all chip interfaces connected to a UVM agent, an interface or a module that can actively drive or passively observe them. Tie-offs are only permitted for interfaces that are architecturally unused; each must be documented with justification. |
+| TOP_BOOT_INFRA_PASSING | The SW-to-DV pass/fail signalling mechanism is confirmed working before any other firmware-driven test result is trusted. |
+| TOP_ALL_TESTS_PASSING_V1 | All V1 testpoints in the testplan passing. |
+| TOP_VPLAN_COVERAGE_V1 | All V1 items defined in the verification plan achieved. |
+| TOP_SMOKE_REGRESSION_IN_CI | V1 smoke suite runs automatically on PRs touching top-level RTL or testbench and failures block merge. |
+| TOP_WEEKLY_REGRESSION | Full test suite runs on a weekly schedule. This is not a randomness exercise but a health check to detect regressions in non-smoke tests as RTL development progresses between PRs. |
+
+### Top-level V2 sign-off checklist
+
+| **Item name** | **Description** |
+|---------------|-----------------|
+| TOP_DV_DOC_COMPLETED | DV document fully written including testbench architecture, agent topology, and checking strategy. |
+| TOP_ALL_INTERFACES_EXERCISED | Every chip-level interface is connected to a UVM agent, or an interface or a module that actively drives or observes it, and exercised by at least one passing test. Tie-offs are only permitted for interfaces that are architecturally unused on this chip variant; each must be documented with justification. |
+| TOP_INDEPENDENT_CHECKING | Where feasible at the chip level, test outcomes are independently confirmed by UVM scoreboards, protocol checkers, or assertions. SW-side pass/fail is accepted as the primary checking mechanism where independent observation is not practical. |
+| TOP_INTERRUPT_ROUTING | Every interrupt-capable IP has had at least one full end-to-end delivery confirmed: IP source to PLIC to CPU trap, then PLIC claim, interrupt clear, and PLIC complete. Both machine-mode and supervisor-mode paths exercised where applicable. |
+| TOP_CROSS_IP_PATHS | Cross-IP integration paths exercised (eg: entropy source to KMAC masking), alert sources through alert handler to escalation and reset manager. |
+| TOP_RESET_PATHS | Software reset, NDM reset via the debug module, and alert-escalation reset each exercised: correct reset cause register state confirmed after each. |
+| TOP_ALL_TESTS_PASSING_V2 | All V1 and V2 testpoints in the testplan passing; no regression on V1 tests. |
+| TOP_VPLAN_COVERAGE_V2 | All V1 and V2 items defined in the verification plan achieved. |
+| TOP_GLUE_CODE_COVERAGE_90 | ≥90% line, branch, toggle and FSM code coverage on the top-level glue logic. IP blocks verified at block level are black-boxed; only the integration logic is in scope. |
+| TOP_NO_HIGH_PRIORITY_ISSUES | All P0 and P1 bugs closed. |
+
+### Top-level V3 sign-off checklist
+
+| **Item name** | **Description** |
+|---------------|-----------------|
+| TOP_ALL_TESTS_PASSING_V3 | All testpoints passing; no regression on prior milestone tests. |
+| TOP_VPLAN_COVERAGE_V3 | All items defined in the verification plan achieved. |
+| TOP_GLUE_CODE_COVERAGE_100 | 100% line, branch, toggle and FSM code coverage on the top-level glue logic. IP blocks verified at block level are black-boxed; only the integration logic is in scope. Exclusions reviewed and justified. |
+| TOP_XPROP_CLEAN | X-propagation enabled in simulation with no X sources in driven logic. |
+| TOP_NO_TOOL_WARNINGS | No compile-time or run-time simulator warnings in passing regressions. |
+| TOP_TB_LINT_COMPLETE | Testbench lint flow clean; all waiver files reviewed. |
+| TOP_NO_TODOS | No TODO comments remaining in testbench code or testplan. |
+| TOP_NO_ISSUES_PENDING | All bugs closed; no open issues against top-level DV or RTL. |
