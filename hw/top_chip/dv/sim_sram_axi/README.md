@@ -69,7 +69,10 @@ These signals are used to generate the `wr_valid` signal, qualifying valid AXI w
 
 In the Testbench Top (`tb.sv`), higher-level verification interfaces are `bind`-ed to this signal and their virtual handle is added into the `uvm_config_db`:
 1.  **`sw_test_status_if`**: Monitors writes to `SW_DV_TEST_STATUS_ADDR` to detect if the test Passed or Failed.
-2.  **`sw_logger_if`**: Monitors writes to `SW_DV_LOG_ADDR` to capture `printf` characters and display them in the simulation log.
+2.  **`sw_logger_if`**: Monitors writes to `SW_DV_LOG_ADDR` to decode SW log messages.
+    The SW writes the address of a static `log_fields_t` struct (severity, file, line, nargs, format string) plus any variadic arguments.
+    A pre-generated `<name>.logs.txt` database (produced by `extract_sw_logs.py` at build time) maps each struct address to its fields;
+    the interface looks up the address, substitutes the arguments, and prints the formatted message to the simulation log.
 
 ## Usage
 
