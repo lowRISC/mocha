@@ -6,7 +6,7 @@ set(NAME bootrom)
 add_executable(${NAME} bootrom.c data_load.S ../devicetree/mocha.S)
 target_link_libraries(${NAME} hal_vanilla runtime_vanilla startup_vanilla)
 target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
-target_link_options(${NAME} PUBLIC 
+target_link_options(${NAME} PUBLIC
   "-nodefaultlibs"
   "-T${CMAKE_CURRENT_SOURCE_DIR}/rom.ld"
   "-L${LDS_DIR}"
