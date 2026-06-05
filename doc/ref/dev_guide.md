@@ -194,6 +194,8 @@ Then, to load and run a single software binary on FPGA, first build the software
 ./util/fpga_runner.py run build/sw/device/examples/hello_world
 ```
 
+Replace `run` above with `test` to see UART output in-line, or open a separate UART terminal (instructions below).
+
 Or, to run all the FPGA tests, first build the software, then run:
 ```sh
 ctest --test-dir build/sw -R fpga_genesys2
@@ -208,7 +210,7 @@ To run U-Boot (wrapped in the OpenSBI firmware and bootloader) on the Genesys 2 
 
 ### Standalone UART
 
-The UART output will be automatically presented when using `fpga_runner.py` or `ctest`, but otherwise requires a UART terminal.
+The UART output will be automatically presented when using `fpga_runner.py test` or `ctest`, but otherwise requires a UART terminal.
 
 Open a UART terminal with 1Mbps baud rate:
 ```sh
