@@ -26,7 +26,7 @@ uint16_t i2c_calc_scl_high_cycles(uint16_t rise_cycles, uint16_t fall_cycles,
                                   uint16_t scl_period_cycles, uint16_t scl_low_cycles,
                                   uint16_t scl_high_cycles_min)
 {
-    // scl_high_time should be atleast 4 cycles to aid correct clock streching
+    // scl_high_time should be at least 4 cycles to aid correct clock stretching
     scl_high_cycles_min = (scl_high_cycles_min < 4u) ? 4u : scl_high_cycles_min;
 
     // An SCL period duration is divided into 4 segments:
@@ -51,8 +51,8 @@ uint16_t i2c_calc_scl_high_cycles(uint16_t rise_cycles, uint16_t fall_cycles,
 // specification "UM10204" Table 10 (rev. 6) / Table 11 (rev. 7).
 //
 // The values for Rise and Fall times for Fast mode are taken as spec minimum. For Fast plus mode,
-// the values are taken from OT's i2c_host_tx_rx_test.c test.
-i2c_timing_params_t compute_minimum_timing_paramaters(i2c_speed_mode_t speed)
+// the values are taken from OpenTitan's i2c_host_tx_rx_test.c test.
+static i2c_timing_params_t compute_minimum_timing_parameters(i2c_speed_mode_t speed)
 {
     switch (speed) {
     case i2c_speed_mode_standard:
@@ -104,7 +104,7 @@ i2c_timing_params_t compute_minimum_timing_paramaters(i2c_speed_mode_t speed)
 
 void i2c_init(i2c_t i2c, i2c_speed_mode_t speed_mode)
 {
-    i2c_timing_params_t timing_params = compute_minimum_timing_paramaters(speed_mode);
+    i2c_timing_params_t timing_params = compute_minimum_timing_parameters(speed_mode);
 
     timing_params.scl_high_cycles =
         i2c_calc_scl_high_cycles(timing_params.rise_cycles, timing_params.fall_cycles,
