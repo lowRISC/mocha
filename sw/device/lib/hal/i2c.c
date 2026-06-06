@@ -200,8 +200,7 @@ bool i2c_wait_write_finish(i2c_t i2c)
             return false; // Transaction failed
         }
         if (i2c_intr_state_reg & i2c_intr_cmd_complete) {
-            i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
-            if (i2c_status_reg & i2c_status_fmtempty) {
+            if (VOLATILE_READ(i2c->status) & i2c_status_fmtempty) {
                 return true; // Transaction succeeded
             }
         }
@@ -223,8 +222,7 @@ bool i2c_wait_read_finish(i2c_t i2c)
             // treat a halt event as a failure, we intentionally skip clearing it.
             return false; // Transaction failed
         }
-        i2c_status i2c_status_reg = VOLATILE_READ(i2c->status);
-        if (i2c_status_reg & i2c_status_fmtempty) {
+        if (VOLATILE_READ(i2c->status) & i2c_status_fmtempty) {
             return true;
         }
     }
