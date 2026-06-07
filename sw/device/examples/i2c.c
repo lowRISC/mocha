@@ -31,9 +31,9 @@ int main(void)
         uint8_t w_data = 0;
         // Read current temperature from an AS6212 I^2C-bus sensor and print the value
         i2c_write_bytes(i2c, 0x48u, &w_data, 1);
-        if (i2c_wait_write_finish(i2c)) { // select TVAL reg; also a presence check
+        if (i2c_wait_transfer_finish(i2c)) { // select TVAL reg; also a presence check
             i2c_read_bytes(i2c, 0x48u, 1);
-            if (i2c_wait_read_finish(i2c)) {
+            if (i2c_wait_transfer_finish(i2c)) {
                 uint16_t sensor_reading = i2c_rdata_byte(i2c); // read TVAl reg
                 uprintf(uart, "Temperature: 0x%x degC\n",
                         (sensor_reading << 1)); // no decimal printf
