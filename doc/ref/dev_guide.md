@@ -151,6 +151,11 @@ For maximum non-tracing performance, or when using Verilator v5.048 onwards, omi
 One specific feature of our simulator is that you can exit the simulation by using the following magic string:
 `Safe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7`
 
+To connect to the debug module, run in another terminal:
+```sh
+openocd -f util/verilator-openocd-cfg.tcl
+```
+
 To run the Verilator tests, first build the software, then run:
 ```sh
 ctest --test-dir build/sw -R sim_verilator
