@@ -35,7 +35,11 @@ class axi4_vip_env_cfg extends uvm_object;
 
   // Set the configuration with a single function call.
   //
-  // Width arguments use zero to mean the maximum supported width.
+  // Most arguments translate directly to class variables, but widths have special treatment. A
+  // value of zero means the maximum supported width. For example, passing id_width = 0 is the same
+  // as passing id_width = `AXI4_MAX_ID_WIDTH.
+  //
+  // The arguments all have default values that behave the same as the initial values for the class.
   extern virtual function void
     set_config(string                  inst_id = "AXI4",
                bit                     has_manager = 0,

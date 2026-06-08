@@ -95,6 +95,13 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
 endfunction : build_phase
 
 function void top_chip_dv_env::connect_phase(uvm_phase phase);
+  import top_pkg::CVA6;
+  import top_pkg::DRAM;
+  import top_pkg::Mailbox;
+  import top_pkg::RomCtrlMem;
+  import top_pkg::SRAM;
+  import top_pkg::TlCrossbar;
+
   super.connect_phase(phase);
   // Track specific agent sequencers in the virtual sequencer.
   // Allows virtual sequences to use the agents to drive RX items.
@@ -104,12 +111,12 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Allows virtual sequences to check TX items.
   m_uart_agent.monitor.tx_analysis_port.connect(top_vsqr.uart_tx_fifo.analysis_export);
 
-  m_mgr_axi[top_pkg::CVA6].m_manager.m_monitor.tx_ap.connect(m_axi_scb.mgr0_cva6_imp);
-  m_sub_axi[top_pkg::RomCtrlMem].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub0_romctrlmem_imp);
-  m_sub_axi[top_pkg::SRAM].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub1_sram_imp);
-  m_sub_axi[top_pkg::Mailbox].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub2_mailbox_imp);
-  m_sub_axi[top_pkg::TlCrossbar].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub3_tlcrossbar_imp);
-  m_sub_axi[top_pkg::DRAM].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub4_dram_imp);
+  m_mgr_axi[CVA6].m_manager.m_monitor.tx_ap.connect(m_axi_scb.mgr0_cva6_imp);
+  m_sub_axi[RomCtrlMem].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub0_romctrlmem_imp);
+  m_sub_axi[SRAM].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub1_sram_imp);
+  m_sub_axi[Mailbox].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub2_mailbox_imp);
+  m_sub_axi[TlCrossbar].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub3_tlcrossbar_imp);
+  m_sub_axi[DRAM].m_subordinate.m_monitor.tx_ap.connect(m_axi_scb.sub4_dram_imp);
 endfunction : connect_phase
 
 task top_chip_dv_env::load_memories();
