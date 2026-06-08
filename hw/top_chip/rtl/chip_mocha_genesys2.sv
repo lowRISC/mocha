@@ -289,7 +289,14 @@ module chip_mocha_genesys2 #(
     .rest_of_chip_resp_i (xbar_host_resp[top_pkg::MochaAXICrossbar]),
 
     // Ethernet IRQ
-    .ethernet_irq_i (ethernet_irq)
+    .ethernet_irq_i (ethernet_irq),
+
+    // Debug module JTAG tie-off
+    .dm_jtag_tck    (1'b0),
+    .dm_jtag_tms    (1'b0),
+    .dm_jtag_tdi    (1'b0),
+    .dm_jtag_tdo    ( ),
+    .dm_jtag_trst_n (1'b0)
   );
 
   // GPIO tri-state output drivers
