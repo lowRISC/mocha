@@ -8,7 +8,7 @@ module dram_wrapper_sim (
   input  logic rst_ni,
 
   // AXI interface
-  // ID is 1 bit wider than normal
+  // ID is 1 bit wider than the crossbar device-side ID
   input  top_pkg::axi_dram_req_t  axi_req_i,
   output top_pkg::axi_dram_resp_t axi_resp_o
 );
@@ -32,7 +32,7 @@ module dram_wrapper_sim (
     .axi_resp_t ( top_pkg::axi_dram_resp_t ),
     .AddrWidth  ( top_pkg::AxiAddrWidth    ),
     .DataWidth  ( top_pkg::AxiDataWidth    ),
-    .IdWidth    ( top_pkg::AxiIdWidth + 1  ),
+    .IdWidth    ( top_pkg::AxiDramIdWidth  ),
     .NumBanks   ( 1                        )
   ) u_ext_mem_axi_to_mem (
     .clk_i  (clk_i),

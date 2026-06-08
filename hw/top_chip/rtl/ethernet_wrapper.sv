@@ -14,8 +14,8 @@ module ethernet_wrapper (
   input logic rst_eth_ni,       // Ethernet MAC reset, deassertion synchronous to clk_125m_i
 
   // AXI device interface
-  input  top_pkg::axi_req_t  axi_req_i,
-  output top_pkg::axi_resp_t axi_resp_o,
+  input  top_pkg::axi_dev_req_t  axi_req_i,
+  output top_pkg::axi_dev_resp_t axi_resp_o,
 
   // Interrupt out
   output logic ethernet_irq_o,
@@ -31,8 +31,8 @@ module ethernet_wrapper (
   output logic       eth_rgmii_mdc_o
 );
   // AXI signals from CDC FIFO to axi_to_mem, synchronous to clk_125m
-  top_pkg::axi_req_t  eth_125m_req;
-  top_pkg::axi_resp_t eth_125m_resp;
+  top_pkg::axi_dev_req_t  eth_125m_req;
+  top_pkg::axi_dev_resp_t eth_125m_resp;
 
   // Framing top 64-bit memory format signals
   logic                               eth_en;
@@ -51,15 +51,15 @@ module ethernet_wrapper (
 
   // Async AXI FIFO from clk_axi_i to clk_125m_i
   axi_cdc #(
-    .aw_chan_t  ( top_pkg::axi_aw_chan_t ),
-    .w_chan_t   ( top_pkg::axi_w_chan_t  ),
-    .b_chan_t   ( top_pkg::axi_b_chan_t  ),
-    .ar_chan_t  ( top_pkg::axi_ar_chan_t ),
-    .r_chan_t   ( top_pkg::axi_r_chan_t  ),
-    .axi_req_t  ( top_pkg::axi_req_t     ),
-    .axi_resp_t ( top_pkg::axi_resp_t    ),
-    .LogDepth   ( 3                      ),
-    .SyncStages ( 2                      )  // Needs to be 2 for prim_flop_2sync
+    .aw_chan_t  ( top_pkg::axi_dev_aw_chan_t ),
+    .w_chan_t   ( top_pkg::axi_w_chan_t      ),
+    .b_chan_t   ( top_pkg::axi_dev_b_chan_t  ),
+    .ar_chan_t  ( top_pkg::axi_dev_ar_chan_t ),
+    .r_chan_t   ( top_pkg::axi_dev_r_chan_t  ),
+    .axi_req_t  ( top_pkg::axi_dev_req_t     ),
+    .axi_resp_t ( top_pkg::axi_dev_resp_t    ),
+    .LogDepth   ( 3                          ),
+    .SyncStages ( 2                          )  // Needs to be 2 for prim_flop_2sync
   ) u_eth_async_axi_fifo (
     .src_clk_i  (clk_axi_i),
     .src_rst_ni (rst_axi_ni),
@@ -73,12 +73,12 @@ module ethernet_wrapper (
 
   // AXI to mem for framing top
   axi_to_mem #(
-    .axi_req_t  ( top_pkg::axi_req_t    ),
-    .axi_resp_t ( top_pkg::axi_resp_t   ),
-    .AddrWidth  ( top_pkg::AxiAddrWidth ),
-    .DataWidth  ( top_pkg::AxiDataWidth ),
-    .IdWidth    ( top_pkg::AxiIdWidth   ),
-    .NumBanks   ( 1                     )
+    .axi_req_t  ( top_pkg::axi_dev_req_t  ),
+    .axi_resp_t ( top_pkg::axi_dev_resp_t ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth   ),
+    .DataWidth  ( top_pkg::AxiDataWidth   ),
+    .IdWidth    ( top_pkg::AxiDevIdWidth  ),
+    .NumBanks   ( 1                       )
   ) u_eth_axi_to_mem (
     .clk_i  (clk_125m_i),
     .rst_ni (rst_eth_ni),
