@@ -70,7 +70,14 @@ module top_chip_system #(
   input  top_pkg::axi_resp_t rest_of_chip_resp_i,
 
   // Ethernet IRQ in
-  input  logic ethernet_irq_i
+  input  logic ethernet_irq_i,
+
+  // Debug module JTAG signals.
+  input  logic dm_jtag_tck,
+  input  logic dm_jtag_tms,
+  input  logic dm_jtag_tdi,
+  output logic dm_jtag_tdo,
+  input  logic dm_jtag_trst_n
 );
 
   // Local parameters.
@@ -97,6 +104,8 @@ module top_chip_system #(
     cfg.CvxifEn                     = bit'(0);
     // Memory map
     cfg.DmBaseAddress               = top_pkg::DebugMemBase;
+    cfg.HaltAddress                 = dm::HaltAddress;
+    cfg.ExceptionAddress            = dm::ExceptionAddress;
     cfg.NrExecuteRegionRules        = unsigned'(4);
     cfg.ExecuteRegionAddrBase       = 1024'({top_pkg::DRAMBase,
                                              top_pkg::DebugMemBase,
@@ -142,6 +151,7 @@ module top_chip_system #(
   assign addr_map = '{
     '{ idx: top_pkg::RomCtrlMem, start_addr: top_pkg::RomCtrlMemBase, end_addr: top_pkg::RomCtrlMemBase + top_pkg::RomCtrlMemLength },
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
+    '{ idx: top_pkg::DM_DEV,     start_addr: top_pkg::DebugMemBase,   end_addr: top_pkg::DebugMemBase   + top_pkg::DebugMemLength   },
     '{ idx: top_pkg::Mailbox,    start_addr: top_pkg::MailboxBase,    end_addr: top_pkg::MailboxBase    + top_pkg::MailboxLength    },
     '{ idx: top_pkg::RestOfChip, start_addr: top_pkg::RestOfChipBase, end_addr: top_pkg::RestOfChipBase + top_pkg::RestOfChipLength },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
@@ -288,6 +298,7 @@ module top_chip_system #(
   // Interrupts to the CVA6
   logic       intr_timer;
   logic [1:0] intr;
+  logic       debug_req_irq;
 
   // Signals to intercept AXI traffic from CVA6 for DV puprose
   top_pkg::axi_req_t  cva6_to_sim_req;
@@ -305,6 +316,36 @@ module top_chip_system #(
   pwrmgr_pkg::pwr_rst_rsp_t   pwrmgr_pwr_rst_rsp;
   logic                       pwrmgr_strap_en;
   lc_ctrl_pkg::lc_tx_t        pwrmgr_fetch_en;
+
+  // Debug module host interface signals
+  logic                      dm_host_req;
+  logic [CVA6Cfg.XLEN-1:0]   dm_host_addr;
+  logic                      dm_host_we;
+  logic [CVA6Cfg.XLEN-1:0]   dm_host_wdata;
+  logic [CVA6Cfg.XLEN/8-1:0] dm_host_be;
+  logic                      dm_host_gnt;
+  logic                      dm_host_r_valid;
+  logic [CVA6Cfg.XLEN-1:0]   dm_host_r_rdata;
+
+  // Debug module device interface signals
+  logic                      dm_device_req;
+  logic                      dm_device_we;
+  logic [CVA6Cfg.XLEN-1:0]   dm_device_addr;
+  logic [CVA6Cfg.XLEN/8-1:0] dm_device_be;
+  logic [CVA6Cfg.XLEN-1:0]   dm_device_wdata;
+  logic                      dm_device_rvalid;
+  logic [CVA6Cfg.XLEN-1:0]   dm_device_rdata;
+
+  // JTAG to DMI signals
+  logic          debug_req_valid;
+  logic          debug_req_ready;
+  dm::dmi_req_t  debug_req;
+  logic          debug_resp_valid;
+  logic          debug_resp_ready;
+  dm::dmi_resp_t debug_resp;
+
+  // Non-debug-module reset request
+  logic ndmreset_req;
 
   // Define AXI Lite signals for the mailbox
   top_pkg::axi_lite_req_t  mailbox_main_req;
@@ -352,12 +393,139 @@ module top_chip_system #(
     .irq_i         (intr),
     .ipi_i         (1'b0),
     .time_irq_i    (intr_timer),
-    .debug_req_i   (1'b0),
+    .debug_req_i   (debug_req_irq),
     .rvfi_probes_o ( ),
     .cvxif_req_o   ( ),
     .cvxif_resp_i  ('0),
     .noc_req_o     (cva6_to_sim_req),
     .noc_resp_i    (sim_to_cva6_resp)
+  );
+
+  // JTAG to DMI bridge
+  dmi_jtag u_dmi_jtag (
+    .clk_i            (clkmgr_clocks.clk_main_infra),
+    .rst_ni           (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
+    .testmode_i       (1'b0),
+    .test_rst_ni      (1'b1),
+    .dmi_rst_no       ( ),
+    .dmi_req_valid_o  (debug_req_valid),
+    .dmi_req_ready_i  (debug_req_ready),
+    .dmi_req_o        (debug_req),
+    .dmi_resp_valid_i (debug_resp_valid),
+    .dmi_resp_ready_o (debug_resp_ready),
+    .dmi_resp_i       (debug_resp),
+    .tck_i            (dm_jtag_tck),
+    .tms_i            (dm_jtag_tms),
+    .trst_ni          (dm_jtag_trst_n),
+    .td_i             (dm_jtag_tdi),
+    .td_o             (dm_jtag_tdo),
+    .tdo_oe_o         ( )
+  );
+
+  // Debug Module AXI Adapter
+  axi_adapter #(
+    .CVA6Cfg    ( CVA6Cfg             ),
+    .DATA_WIDTH ( CVA6Cfg.XLEN        ),
+    .axi_req_t  ( top_pkg::axi_req_t  ),
+    .axi_rsp_t  ( top_pkg::axi_resp_t )
+  ) u_dm_host_axi_adapter (
+    .clk_i                 (clkmgr_clocks.clk_main_infra),
+    .rst_ni                (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
+    .req_i                 (dm_host_req),
+    .type_i                (ariane_pkg::SINGLE_REQ),
+    .amo_i                 (ariane_pkg::AMO_NONE),
+    .gnt_o                 (dm_host_gnt),
+    .addr_i                (dm_host_addr),
+    .we_i                  (dm_host_we),
+    .wdata_i               (dm_host_wdata),
+    .be_i                  (dm_host_be),
+    .size_i                (2'b11), // XLEN=64
+    .id_i                  ('0),
+    .valid_o               (dm_host_r_valid),
+    .rdata_o               (dm_host_r_rdata),
+    .id_o                  ( ),
+    .critical_word_o       ( ),
+    .critical_word_valid_o ( ),
+    .axi_req_o             (xbar_host_req[top_pkg::DM_HOST]),
+    .axi_resp_i            (xbar_host_resp[top_pkg::DM_HOST])
+  );
+
+  // Debug Module AXI Adapter
+  axi_to_mem #(
+    .axi_req_t  ( top_pkg::axi_req_t    ),
+    .axi_resp_t ( top_pkg::axi_resp_t   ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth ),
+    .DataWidth  ( top_pkg::AxiDataWidth ),
+    .IdWidth    ( top_pkg::AxiIdWidth   ),
+    .NumBanks   ( 1                     )
+  ) u_dm_device_axi_to_mem (
+    .clk_i  (clkmgr_clocks.clk_main_infra),
+    .rst_ni (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
+
+    // AXI interface.
+    .busy_o     ( ),
+    .axi_req_i  (xbar_device_req[top_pkg::DM_DEV]),
+    .axi_resp_o (xbar_device_resp[top_pkg::DM_DEV]),
+
+    // Memory interface.
+    .mem_req_o    (dm_device_req),
+    .mem_gnt_i    (1'b1),
+    .mem_addr_o   (dm_device_addr),
+    .mem_wdata_o  (dm_device_wdata),
+    .mem_strb_o   (dm_device_be),
+    .mem_atop_o   ( ), // Atomics not used
+    .mem_we_o     (dm_device_we),
+    .mem_rvalid_i (dm_device_rvalid),
+    .mem_rdata_i  (dm_device_rdata)
+  );
+
+  always_ff @(posedge clkmgr_clocks.clk_main_infra or negedge rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]) begin
+    if (!rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]) begin
+      dm_device_rvalid <= 1'b0;
+    end else begin
+      dm_device_rvalid <= dm_device_req; // Generate rvalid strobes even for writes
+    end
+  end
+
+  // Instantiate Debug Module
+  dm_top #(
+    .NrHarts         ( 1                       ),
+    .BusWidth        ( CVA6Cfg.XLEN            ),
+    .DmBaseAddress   ( top_pkg::DebugMemBase32 ),
+    .SelectableHarts ( 1'b1                    ),
+    .ReadByteEnable  ( 1                       )
+  ) u_dm_top (
+    .clk_i                (clkmgr_clocks.clk_main_infra),
+    .rst_ni               (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
+    .testmode_i           (1'b0),
+    .ndmreset_o           (ndmreset_req),
+    .dmactive_o           ( ), // active debug session
+    .debug_req_o          (debug_req_irq),
+    .unavailable_i        (1'b0),
+    .hartinfo_i           ({ariane_pkg::DebugHartInfo}),
+    .slave_req_i          (dm_device_req),
+    .slave_we_i           (dm_device_we),
+    .slave_addr_i         (dm_device_addr),
+    .slave_be_i           (dm_device_be),
+    .slave_wdata_i        (dm_device_wdata),
+    .slave_rdata_o        (dm_device_rdata),
+    .master_req_o         (dm_host_req),
+    .master_add_o         (dm_host_addr),
+    .master_we_o          (dm_host_we),
+    .master_wdata_o       (dm_host_wdata),
+    .master_be_o          (dm_host_be),
+    .master_gnt_i         (dm_host_gnt),
+    .master_r_valid_i     (dm_host_r_valid),
+    .master_r_err_i       ('0),
+    .master_r_other_err_i ('0),
+    .master_r_rdata_i     (dm_host_r_rdata),
+    .dmi_rst_ni           (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
+    .dmi_req_valid_i      (debug_req_valid),
+    .dmi_req_ready_o      (debug_req_ready),
+    .dmi_req_i            (debug_req),
+    .dmi_resp_valid_o     (debug_resp_valid),
+    .dmi_resp_ready_i     (debug_resp_ready),
+    .dmi_resp_o           (debug_resp)
   );
 
   // Interception point for connecting simulation SRAM by disconnecting the AXI output. The
@@ -969,7 +1137,7 @@ module top_chip_system #(
     .fetch_en_o       (pwrmgr_fetch_en), // Determined by ROM checker
     .wakeups_i        ('0), // Always wake up immediately.
     .rstreqs_i        ('0), // No reset requests yet.
-    .ndmreset_req_i   ('0), // No debug module yet.
+    .ndmreset_req_i   (ndmreset_req), // From debug module
     .strap_o          (pwrmgr_strap_en),
     .low_power_o      ( ), // Low power not yet supported.
     .rom_ctrl_i       (rom_ctrl_pwrmgr_data),

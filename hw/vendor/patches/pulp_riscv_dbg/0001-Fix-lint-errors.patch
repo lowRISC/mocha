@@ -1,0 +1,77 @@
+diff --git a/src/dm_mem.sv b/src/dm_mem.sv
+index 9ff3c86..2b4497e 100755
+--- a/src/dm_mem.sv
++++ b/src/dm_mem.sv
+@@ -82,7 +82,11 @@ module dm_mem #(
+   localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h110;
+   localparam logic [DbgAddressBits-1:0] ExceptionAddr = 'h118;
+ 
+-  logic [dm::ProgBufSize/2-1:0][63:0]   progbuf;
++  // Prog buff size after repacking the 32bit array into a 64bit array.
++  localparam int unsigned ProgBuf64Size = dm::ProgBufSize / 2;
++  localparam int unsigned ProgBuf64AddrSize = $clog2(ProgBuf64Size);
++
++  logic [ProgBuf64Size-1:0][63:0] progbuf;
+   logic [7:0][63:0]   abstract_cmd;
+   logic [NrHarts-1:0] halted_d, halted_q;
+   logic [NrHarts-1:0] resuming_d, resuming_q;
+@@ -265,12 +269,13 @@ module dm_mem #(
+           // core can write data registers
+           [DataBaseAddr:DataEndAddr]: begin
+             data_valid_o = 1'b1;
+-            for (int dc = 0; dc < dm::DataCount; dc++) begin
++            for (int unsigned dc = 0; dc < dm::DataCount; dc++) begin
+               if ((addr_i[DbgAddressBits-1:2] - DataBaseAddr[DbgAddressBits-1:2]) == dc) begin
+-                for (int i = 0; i < $bits(be_i); i++) begin
++                for (int unsigned i = 0; i < $bits(be_i); i++) begin
+                   if (be_i[i]) begin
+                     if (i>3) begin // for upper 32bit data write (only used for BusWidth ==  64)
+-                      if ((dc+1) < dm::DataCount) begin // ensure we write to an implemented data register
++                      // ensure we write to an implemented data register
++                      if (dc < (dm::DataCount - 1)) begin
+                         data_bits[dc+1][(i-4)*8+:8] = wdata_i[i*8+:8];
+                       end
+                     end else begin // for lower 32bit data write
+@@ -310,14 +315,17 @@ module dm_mem #(
+ 
+           [DataBaseAddr:DataEndAddr]: begin
+             rdata_d = {
+-                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1) + 1'b1)],
+-                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3] - DataBaseAddr[DbgAddressBits-1:3]) << 1))]
++                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3]
++                                                      - DataBaseAddr[DbgAddressBits-1:3]) << 1)
++                                                    + 1'b1)],
++                      data_i[$clog2(dm::DataCount)'(((addr_i[DbgAddressBits-1:3]
++                                                      - DataBaseAddr[DbgAddressBits-1:3]) << 1))]
+                       };
+           end
+ 
+           [ProgBufBaseAddr:ProgBufEndAddr]: begin
+-            rdata_d = progbuf[$clog2(dm::ProgBufSize)'(addr_i[DbgAddressBits-1:3] -
+-                          ProgBufBaseAddr[DbgAddressBits-1:3])];
++            rdata_d = progbuf[ProgBuf64AddrSize'(addr_i[DbgAddressBits-1:3] -
++                                                 ProgBufBaseAddr[DbgAddressBits-1:3])];
+           end
+ 
+           // two slots for abstract command
+diff --git a/src/dmi_jtag.sv b/src/dmi_jtag.sv
+index 577c3fd..24edad0 100644
+--- a/src/dmi_jtag.sv
++++ b/src/dmi_jtag.sv
+@@ -58,6 +58,7 @@ module dmi_jtag #(
+   logic tdi;
+ 
+   logic dtmcs_select;
++  dm::dtmcs_t dtmcs_d, dtmcs_q;
+ 
+   assign dmi_clear = jtag_dmi_clear || (dtmcs_select && update && dtmcs_q.dmihardreset);
+ 
+@@ -65,8 +66,6 @@ module dmi_jtag #(
+   // Debug Module Control and Status
+   // -------------------------------
+ 
+-  dm::dtmcs_t dtmcs_d, dtmcs_q;
+-
+   always_comb begin
+     dtmcs_d = dtmcs_q;
+     if (capture) begin

@@ -32,27 +32,31 @@ package top_pkg;
   localparam int TL_SZW = $clog2($clog2(TL_DBW)+1);
 
   // Mocha AXI crossbar parameters
-  localparam int AxiXbarHosts   = 1;
-  localparam int AxiXbarDevices = 6;
+  localparam int AxiXbarHosts   = 2;
+  localparam int AxiXbarDevices = 7;
 
   // Mocha AXI crossbar hosts and devices
   typedef enum int unsigned {
-    CVA6 = 0
+    CVA6 = 0,
+    DM_HOST = 1
   } axi_hosts_t;
 
   typedef enum int unsigned {
     RomCtrlMem = 0,
     SRAM       = 1,
-    Mailbox    = 2,
-    RestOfChip = 3,
-    TlCrossbar = 4,
-    DRAM       = 5
+    DM_DEV     = 2,
+    Mailbox    = 3,
+    RestOfChip = 4,
+    TlCrossbar = 5,
+    DRAM       = 6
   } axi_devices_t;
+
+  parameter int unsigned DebugMemBase32 = 32'h2000_0000;
 
   typedef enum longint unsigned {
     RomCtrlMemBase = 64'h0008_0000,
     SRAMBase       = 64'h1000_0000,
-    DebugMemBase   = 64'h2000_0000,
+    DebugMemBase   = {32'h0, DebugMemBase32},
     MailboxBase    = 64'h2001_0000,
     RestOfChipBase = 64'h3000_0000,
     TlCrossbarBase = 64'h4000_0000,
@@ -116,7 +120,7 @@ package top_pkg;
   localparam int     unsigned TagCacheNumBlocks        = 4;   // Number of words in a cache line
 
   // AXI parameters
-  localparam AxiIdWidth   = cva6_config_pkg::CVA6ConfigAxiIdWidth;
+  localparam AxiIdWidth   = cva6_config_pkg::CVA6ConfigAxiIdWidth + 1;
   localparam AxiUserWidth = cva6_config_pkg::CVA6ConfigDataUserWidth;
   localparam AxiAddrWidth = cva6_config_pkg::CVA6ConfigAxiAddrWidth;
   localparam AxiDataWidth = cva6_config_pkg::CVA6ConfigAxiDataWidth;
