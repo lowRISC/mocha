@@ -410,7 +410,9 @@ module top_chip_system #(
   );
 
   // JTAG to DMI bridge
-  dmi_jtag i_dmi_jtag (
+  dmi_jtag  #(
+      .IdcodeValue(jtag_id_pkg::RV_DM_JTAG_IDCODE)
+    ) i_dmi_jtag (
     .clk_i           ( clkmgr_clocks.clk_main_infra ),
     .rst_ni          ( rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel] ),
     .testmode_i      ( 1'b0            ),
