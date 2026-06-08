@@ -13,7 +13,7 @@
 
 static const uintptr_t rom_base = 0x80000ul;
 static const uintptr_t mailbox_base = 0x20010000ul;
-static const uintptr_t dv_test_status_base = 0x20020000ul;
+static const uintptr_t dv_window_base = 0x20020000ul;
 static const uintptr_t ethernet_base = 0x30000000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
@@ -193,11 +193,12 @@ void *mocha_system_dram(void)
 #endif /* defined(__riscv_zcherihybrid) */
 }
 
-void *mocha_system_dv_test_status(void)
+dv_window_t mocha_system_dv_window(void)
 {
 #if defined(__riscv_zcherihybrid)
-    return create_mmio_capability(dv_test_status_base, 0x100u);
+    return (
+        dv_window_t)create_mmio_capability(dv_window_base, sizeof(struct dv_window_memory_layout));
 #else /* !defined(__riscv_zcherihybrid) */
-    return (void *)dv_test_status_base;
+    return (dv_window_t)dv_window_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
