@@ -54,6 +54,13 @@ module top_chip_verilator (
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;
 
+  // JTAG signals
+  logic jtag_tck;
+  logic jtag_tms;
+  logic jtag_tdi;
+  logic jtag_tdo;
+  logic jtag_trst_n;
+
   // CHERI Mocha top
   top_chip_system #(
     .SramInitFile(""),
@@ -107,7 +114,13 @@ module top_chip_verilator (
     .rest_of_chip_req_o  ( ), // Rest of chip AXI tie-off
     .rest_of_chip_resp_i ('0),
 
-    .ethernet_irq_i ('0) // Ethernet interrupt in tie-off.
+    .ethernet_irq_i ('0), // Ethernet interrupt in tie-off.
+
+    .dm_jtag_tck    (jtag_tck),
+    .dm_jtag_tms    (jtag_tms),
+    .dm_jtag_tdi    (jtag_tdi),
+    .dm_jtag_tdo    (jtag_tdo),
+    .dm_jtag_trst_n (jtag_trst_n)
   );
 
   // No support for dual or quad SPI in loopback mode right now.
@@ -154,6 +167,22 @@ module top_chip_verilator (
     .active(1'b1),
     .tx_o  (uart_rx),
     .rx_i  (uart_tx)
+  );
+
+  // Virtual jtag
+  jtagdpi #(
+    .Name       ( "jtag0" ),
+    .ListenPort ( 44853   )
+  ) u_jtagdpi (
+    .clk_i,
+    .rst_ni,
+    .active      (1'b1),
+    .jtag_tck    (jtag_tck),
+    .jtag_tms    (jtag_tms),
+    .jtag_tdi    (jtag_tdi),
+    .jtag_tdo    (jtag_tdo),
+    .jtag_trst_n (jtag_trst_n),
+    .jtag_srst_n ( )
   );
 
   // Virtual SPI host
