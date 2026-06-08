@@ -13,8 +13,8 @@ module axi_sram #(
   input  logic rst_ni,
 
   // Capability AXI interface
-  input  top_pkg::axi_req_t  axi_req_i,
-  output top_pkg::axi_resp_t axi_resp_o
+  input  top_pkg::axi_dev_req_t  axi_req_i,
+  output top_pkg::axi_dev_resp_t axi_resp_o
 );
 
   // Every tag entry can store AxiDataWidth capability tags
@@ -43,12 +43,12 @@ module axi_sram #(
 
   // AXI to 64-bit mem for SRAM
   axi_to_detailed_mem #(
-    .axi_req_t  ( top_pkg::axi_req_t    ),
-    .axi_resp_t ( top_pkg::axi_resp_t   ),
-    .AddrWidth  ( top_pkg::AxiAddrWidth ),
-    .DataWidth  ( top_pkg::AxiDataWidth ),
-    .IdWidth    ( top_pkg::AxiIdWidth   ),
-    .NumBanks   ( 1                     )
+    .axi_req_t  ( top_pkg::axi_dev_req_t  ),
+    .axi_resp_t ( top_pkg::axi_dev_resp_t ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth   ),
+    .DataWidth  ( top_pkg::AxiDataWidth   ),
+    .IdWidth    ( top_pkg::AxiDevIdWidth  ),
+    .NumBanks   ( 1                       )
   ) u_axi_to_detailed_mem (
     .clk_i  (clk_i),
     .rst_ni (rst_ni),

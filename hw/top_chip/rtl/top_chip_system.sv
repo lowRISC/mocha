@@ -66,8 +66,8 @@ module top_chip_system #(
   input  top_pkg::axi_dram_resp_t dram_resp_i,
 
   // Rest of chip AXI interface.
-  output top_pkg::axi_req_t  rest_of_chip_req_o,
-  input  top_pkg::axi_resp_t rest_of_chip_resp_i,
+  output top_pkg::axi_dev_req_t  rest_of_chip_req_o,
+  input  top_pkg::axi_dev_resp_t rest_of_chip_resp_i,
 
   // Ethernet IRQ in
   input  logic ethernet_irq_i,
@@ -138,7 +138,7 @@ module top_chip_system #(
     FallThrough:        1'b0,
     LatencyMode:        axi_pkg::CUT_ALL_AX,
     PipelineStages:     32'd1,
-    AxiIdWidthSlvPorts: 32'd4,
+    AxiIdWidthSlvPorts: int'(top_pkg::AxiIdWidth),
     AxiIdUsedSlvPorts:  32'd1,
     UniqueIds:          1'b0,
     AxiAddrWidth:       int'(top_pkg::AxiAddrWidth),
@@ -229,18 +229,18 @@ module top_chip_system #(
   logic [TlDataWidth-1:0]     mem32_tl_rom_mem_rdata;
 
   // AXI signals
-  top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
-  top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
-  top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
-  top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
-  top_pkg::axi_req_t                            dram_post_atomics_req;
-  top_pkg::axi_resp_t                           dram_post_atomics_resp;
-  top_pkg::axi_req_t                            dram_cut_req;
-  top_pkg::axi_resp_t                           dram_cut_resp;
-  top_pkg::axi_req_t                            tag_controller_isolated_req;
-  top_pkg::axi_resp_t                           tag_controller_isolated_resp;
-  top_pkg::axi_req_t                            rom_mem_isolated_req;
-  top_pkg::axi_resp_t                           rom_mem_isolated_resp;
+  top_pkg::axi_req_t      [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
+  top_pkg::axi_resp_t     [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
+  top_pkg::axi_dev_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
+  top_pkg::axi_dev_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
+  top_pkg::axi_dev_req_t                            dram_post_atomics_req;
+  top_pkg::axi_dev_resp_t                           dram_post_atomics_resp;
+  top_pkg::axi_dev_req_t                            dram_cut_req;
+  top_pkg::axi_dev_resp_t                           dram_cut_resp;
+  top_pkg::axi_dev_req_t                            tag_controller_isolated_req;
+  top_pkg::axi_dev_resp_t                           tag_controller_isolated_resp;
+  top_pkg::axi_dev_req_t                            rom_mem_isolated_req;
+  top_pkg::axi_dev_resp_t                           rom_mem_isolated_resp;
 
   // Tag controller isolation signals and registers
   logic tag_controller_isolate;
@@ -454,12 +454,12 @@ module top_chip_system #(
 
   // Debug Module AXI Adapter
   axi_to_mem #(
-    .axi_req_t  ( top_pkg::axi_req_t    ),
-    .axi_resp_t ( top_pkg::axi_resp_t   ),
-    .AddrWidth  ( top_pkg::AxiAddrWidth ),
-    .DataWidth  ( top_pkg::AxiDataWidth ),
-    .IdWidth    ( top_pkg::AxiIdWidth   ),
-    .NumBanks   ( 1                     )
+    .axi_req_t  ( top_pkg::axi_dev_req_t  ),
+    .axi_resp_t ( top_pkg::axi_dev_resp_t ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth   ),
+    .DataWidth  ( top_pkg::AxiDataWidth   ),
+    .IdWidth    ( top_pkg::AxiDevIdWidth  ),
+    .NumBanks   ( 1                       )
   ) u_dm_device_axi_to_mem (
     .clk_i  (clkmgr_clocks.clk_main_infra),
     .rst_ni (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
@@ -562,22 +562,22 @@ module top_chip_system #(
 
   // Primary AXI crossbar
   axi_xbar #(
-    .Cfg          (xbar_cfg               ),
-    .ATOPs        (1'b0                   ),
-    .slv_aw_chan_t(top_pkg::axi_aw_chan_t ),
-    .mst_aw_chan_t(top_pkg::axi_aw_chan_t ),
-    .w_chan_t     (top_pkg::axi_w_chan_t  ),
-    .slv_b_chan_t (top_pkg::axi_b_chan_t  ),
-    .mst_b_chan_t (top_pkg::axi_b_chan_t  ),
-    .slv_ar_chan_t(top_pkg::axi_ar_chan_t ),
-    .mst_ar_chan_t(top_pkg::axi_ar_chan_t ),
-    .slv_r_chan_t (top_pkg::axi_r_chan_t  ),
-    .mst_r_chan_t (top_pkg::axi_r_chan_t  ),
-    .slv_req_t    (top_pkg::axi_req_t     ),
-    .slv_resp_t   (top_pkg::axi_resp_t    ),
-    .mst_req_t    (top_pkg::axi_req_t     ),
-    .mst_resp_t   (top_pkg::axi_resp_t    ),
-    .rule_t       (axi_pkg::xbar_rule_64_t)
+    .Cfg          ( xbar_cfg                   ),
+    .ATOPs        ( 1'b0                       ),
+    .slv_aw_chan_t( top_pkg::axi_aw_chan_t     ),
+    .mst_aw_chan_t( top_pkg::axi_dev_aw_chan_t ),
+    .w_chan_t     ( top_pkg::axi_w_chan_t      ),
+    .slv_b_chan_t ( top_pkg::axi_b_chan_t      ),
+    .mst_b_chan_t ( top_pkg::axi_dev_b_chan_t  ),
+    .slv_ar_chan_t( top_pkg::axi_ar_chan_t     ),
+    .mst_ar_chan_t( top_pkg::axi_dev_ar_chan_t ),
+    .slv_r_chan_t ( top_pkg::axi_r_chan_t      ),
+    .mst_r_chan_t ( top_pkg::axi_dev_r_chan_t  ),
+    .slv_req_t    ( top_pkg::axi_req_t         ),
+    .slv_resp_t   ( top_pkg::axi_resp_t        ),
+    .mst_req_t    ( top_pkg::axi_dev_req_t     ),
+    .mst_resp_t   ( top_pkg::axi_dev_resp_t    ),
+    .rule_t       ( axi_pkg::xbar_rule_64_t    )
   ) u_axi_xbar (
     .clk_i                (clkmgr_clocks.clk_main_infra),
     .rst_ni               (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
@@ -593,16 +593,16 @@ module top_chip_system #(
 
   // Mailbox: main AXI to AXI Lite adapter
   axi_to_axi_lite #(
-    .AxiAddrWidth   ( top_pkg::AxiAddrWidth ),
-    .AxiDataWidth   ( top_pkg::AxiDataWidth ),
-    .AxiIdWidth     ( top_pkg::AxiIdWidth   ),
-    .AxiUserWidth   ( top_pkg::AxiUserWidth ),
+    .AxiAddrWidth   ( top_pkg::AxiAddrWidth  ),
+    .AxiDataWidth   ( top_pkg::AxiDataWidth  ),
+    .AxiIdWidth     ( top_pkg::AxiDevIdWidth ),
+    .AxiUserWidth   ( top_pkg::AxiUserWidth  ),
     .AxiMaxWriteTxns( 32'd1 ),
     .AxiMaxReadTxns ( 32'd1 ),
     .FullBW         ( 32'd1 ), // TODO: Tune me
     .FallThrough    ( 32'd0 ), // TODO: Tune me
-    .full_req_t     ( top_pkg::axi_req_t  ),
-    .full_resp_t    ( top_pkg::axi_resp_t ),
+    .full_req_t     ( top_pkg::axi_dev_req_t   ),
+    .full_resp_t    ( top_pkg::axi_dev_resp_t  ),
     .lite_req_t     ( top_pkg::axi_lite_req_t  ),
     .lite_resp_t    ( top_pkg::axi_lite_resp_t )
   ) u_axi_to_axi_lite_mailbox_main (
@@ -659,12 +659,12 @@ module top_chip_system #(
 
   // AXI to 64-bit mem for TLUL crossbar
   axi_to_mem #(
-    .axi_req_t  ( top_pkg::axi_req_t    ),
-    .axi_resp_t ( top_pkg::axi_resp_t   ),
-    .AddrWidth  ( top_pkg::AxiAddrWidth ),
-    .DataWidth  ( top_pkg::AxiDataWidth ),
-    .IdWidth    ( top_pkg::AxiIdWidth   ),
-    .NumBanks   ( 1                     )
+    .axi_req_t  ( top_pkg::axi_dev_req_t  ),
+    .axi_resp_t ( top_pkg::axi_dev_resp_t ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth   ),
+    .DataWidth  ( top_pkg::AxiDataWidth   ),
+    .IdWidth    ( top_pkg::AxiDevIdWidth  ),
+    .NumBanks   ( 1                       )
   ) u_tl_xbar_axi_to_mem (
     .clk_i  (clkmgr_clocks.clk_main_infra),
     .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
@@ -1198,32 +1198,32 @@ module top_chip_system #(
 
   // Combine response and request between crossbar and atomics wrapper.
   AXI_BUS #(
-    .AXI_ADDR_WIDTH ( top_pkg::AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( top_pkg::AxiDataWidth ),
-    .AXI_ID_WIDTH   ( top_pkg::AxiIdWidth   ),
-    .AXI_USER_WIDTH ( top_pkg::AxiUserWidth )
+    .AXI_ADDR_WIDTH ( top_pkg::AxiAddrWidth  ),
+    .AXI_DATA_WIDTH ( top_pkg::AxiDataWidth  ),
+    .AXI_ID_WIDTH   ( top_pkg::AxiDevIdWidth ),
+    .AXI_USER_WIDTH ( top_pkg::AxiUserWidth  )
   ) xbar_device_dram();
   `AXI_ASSIGN_FROM_REQ(xbar_device_dram, xbar_device_req[top_pkg::DRAM])
   `AXI_ASSIGN_TO_RESP(xbar_device_resp[top_pkg::DRAM], xbar_device_dram)
 
   // Split response and request between atomics wrapper and cut.
   AXI_BUS #(
-    .AXI_ADDR_WIDTH ( top_pkg::AxiAddrWidth ),
-    .AXI_DATA_WIDTH ( top_pkg::AxiDataWidth ),
-    .AXI_ID_WIDTH   ( top_pkg::AxiIdWidth   ),
-    .AXI_USER_WIDTH ( top_pkg::AxiUserWidth )
+    .AXI_ADDR_WIDTH ( top_pkg::AxiAddrWidth  ),
+    .AXI_DATA_WIDTH ( top_pkg::AxiDataWidth  ),
+    .AXI_ID_WIDTH   ( top_pkg::AxiDevIdWidth ),
+    .AXI_USER_WIDTH ( top_pkg::AxiUserWidth  )
   ) dram_post_atomics();
   `AXI_ASSIGN_TO_REQ(dram_post_atomics_req, dram_post_atomics)
   `AXI_ASSIGN_FROM_RESP(dram_post_atomics, dram_post_atomics_resp)
 
   // AXI atomics wrapper to handle swaps before going to the tag controller.
   axi_riscv_atomics_wrap #(
-    .AXI_ADDR_WIDTH     ( top_pkg::AxiAddrWidth ),
-    .AXI_DATA_WIDTH     ( top_pkg::AxiDataWidth ),
-    .AXI_ID_WIDTH       ( top_pkg::AxiIdWidth   ),
-    .AXI_USER_WIDTH     ( top_pkg::AxiUserWidth ),
-    .AXI_MAX_WRITE_TXNS ( 1                     ),
-    .RISCV_WORD_WIDTH   ( 64                    )
+    .AXI_ADDR_WIDTH     ( top_pkg::AxiAddrWidth  ),
+    .AXI_DATA_WIDTH     ( top_pkg::AxiDataWidth  ),
+    .AXI_ID_WIDTH       ( top_pkg::AxiDevIdWidth ),
+    .AXI_USER_WIDTH     ( top_pkg::AxiUserWidth  ),
+    .AXI_MAX_WRITE_TXNS ( 1                      ),
+    .RISCV_WORD_WIDTH   ( 64                     )
   ) u_axi_riscv_atomics (
     .clk_i  (clkmgr_clocks.clk_main_infra),
     .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
@@ -1233,13 +1233,13 @@ module top_chip_system #(
 
   // Cut combinatorial path between atomics and isolation.
   axi_cut #(
-    .aw_chan_t  ( top_pkg::axi_aw_chan_t ),
-    .w_chan_t   ( top_pkg::axi_w_chan_t  ),
-    .b_chan_t   ( top_pkg::axi_b_chan_t  ),
-    .ar_chan_t  ( top_pkg::axi_ar_chan_t ),
-    .r_chan_t   ( top_pkg::axi_r_chan_t  ),
-    .axi_req_t  ( top_pkg::axi_req_t     ),
-    .axi_resp_t ( top_pkg::axi_resp_t    )
+    .aw_chan_t  ( top_pkg::axi_dev_aw_chan_t ),
+    .w_chan_t   ( top_pkg::axi_w_chan_t      ),
+    .b_chan_t   ( top_pkg::axi_dev_b_chan_t  ),
+    .ar_chan_t  ( top_pkg::axi_dev_ar_chan_t ),
+    .r_chan_t   ( top_pkg::axi_dev_r_chan_t  ),
+    .axi_req_t  ( top_pkg::axi_dev_req_t     ),
+    .axi_resp_t ( top_pkg::axi_dev_resp_t    )
   ) u_axi_cut (
     .clk_i      (clkmgr_clocks.clk_main_infra),
     .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
@@ -1251,14 +1251,14 @@ module top_chip_system #(
 
   // AXI Isolator for tag controller
   axi_isolate #(
-    .TerminateTransaction ( 1'b0                  ),
-    .AtopSupport          ( 1'b1                  ),
-    .AxiAddrWidth         ( top_pkg::AxiAddrWidth ),
-    .AxiDataWidth         ( top_pkg::AxiDataWidth ),
-    .AxiIdWidth           ( top_pkg::AxiIdWidth   ),
-    .AxiUserWidth         ( top_pkg::AxiUserWidth ),
-    .axi_req_t            ( top_pkg::axi_req_t    ),
-    .axi_resp_t           ( top_pkg::axi_resp_t   )
+    .TerminateTransaction ( 1'b0                    ),
+    .AtopSupport          ( 1'b1                    ),
+    .AxiAddrWidth         ( top_pkg::AxiAddrWidth   ),
+    .AxiDataWidth         ( top_pkg::AxiDataWidth   ),
+    .AxiIdWidth           ( top_pkg::AxiDevIdWidth  ),
+    .AxiUserWidth         ( top_pkg::AxiUserWidth   ),
+    .axi_req_t            ( top_pkg::axi_dev_req_t  ),
+    .axi_resp_t           ( top_pkg::axi_dev_resp_t )
   ) u_tag_controller_isolate (
     .clk_i      (clkmgr_clocks.clk_main_infra),
     .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
@@ -1276,8 +1276,8 @@ module top_chip_system #(
 
   always_ff @(posedge clkmgr_clocks.clk_main_infra or negedge rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]) begin
     if (!rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]) tag_controller_isolate_reg <= 1'b0;
-    else if (tag_controller_isolate)                       tag_controller_isolate_reg <= 1'b1;
-    else if (tag_controller_isolated)                      tag_controller_isolate_reg <= 1'b0;
+    else if (tag_controller_isolate)                          tag_controller_isolate_reg <= 1'b1;
+    else if (tag_controller_isolated)                         tag_controller_isolate_reg <= 1'b0;
   end
 
   // Define types for tag controller
@@ -1292,13 +1292,13 @@ module top_chip_system #(
     .SetAssociativity ( top_pkg::TagCacheSetAssociativity ),
     .NumLines         ( top_pkg::TagCacheNumLines         ),
     .NumBlocks        ( top_pkg::TagCacheNumBlocks        ),
-    .AxiIdWidth       ( top_pkg::AxiIdWidth               ),
+    .AxiIdWidth       ( top_pkg::AxiDevIdWidth            ), // ID width of the device interface
     .AxiAddrWidth     ( top_pkg::AxiAddrWidth             ),
     .AxiDataWidth     ( top_pkg::AxiDataWidth             ),
     .AxiUserWidth     ( top_pkg::AxiUserWidth             ),
-    .slv_req_t        ( top_pkg::axi_req_t                ),
-    .slv_resp_t       ( top_pkg::axi_resp_t               ),
-    .mst_req_t        ( top_pkg::axi_dram_req_t           ), // ID is 1 bit wider than normal AXI types
+    .slv_req_t        ( top_pkg::axi_dev_req_t            ),
+    .slv_resp_t       ( top_pkg::axi_dev_resp_t           ),
+    .mst_req_t        ( top_pkg::axi_dram_req_t           ),
     .mst_resp_t       ( top_pkg::axi_dram_resp_t          ),
     .reg_req_t        ( conf_req_t                        ),
     .reg_resp_t       ( conf_rsp_t                        ),
@@ -1320,14 +1320,14 @@ module top_chip_system #(
   // TL ROM
   // AXI isolator
   axi_isolate #(
-    .TerminateTransaction ( 1'b0                  ),
-    .AtopSupport          ( 1'b0                  ),
-    .AxiAddrWidth         ( top_pkg::AxiAddrWidth ),
-    .AxiDataWidth         ( top_pkg::AxiDataWidth ),
-    .AxiIdWidth           ( top_pkg::AxiIdWidth   ),
-    .AxiUserWidth         ( top_pkg::AxiUserWidth ),
-    .axi_req_t            ( top_pkg::axi_req_t    ),
-    .axi_resp_t           ( top_pkg::axi_resp_t   )
+    .TerminateTransaction ( 1'b0                    ),
+    .AtopSupport          ( 1'b0                    ),
+    .AxiAddrWidth         ( top_pkg::AxiAddrWidth   ),
+    .AxiDataWidth         ( top_pkg::AxiDataWidth   ),
+    .AxiIdWidth           ( top_pkg::AxiDevIdWidth  ),
+    .AxiUserWidth         ( top_pkg::AxiUserWidth   ),
+    .axi_req_t            ( top_pkg::axi_dev_req_t  ),
+    .axi_resp_t           ( top_pkg::axi_dev_resp_t )
   ) u_rom_isolate (
     .clk_i      (clkmgr_clocks.clk_main_infra),
     .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
@@ -1344,12 +1344,12 @@ module top_chip_system #(
 
   // AXI to 64-bit mem for TLUL ROM
   axi_to_mem #(
-    .axi_req_t  ( top_pkg::axi_req_t    ),
-    .axi_resp_t ( top_pkg::axi_resp_t   ),
-    .AddrWidth  ( top_pkg::AxiAddrWidth ),
-    .DataWidth  ( top_pkg::AxiDataWidth ),
-    .IdWidth    ( top_pkg::AxiIdWidth   ),
-    .NumBanks   ( 1                     )
+    .axi_req_t  ( top_pkg::axi_dev_req_t  ),
+    .axi_resp_t ( top_pkg::axi_dev_resp_t ),
+    .AddrWidth  ( top_pkg::AxiAddrWidth   ),
+    .DataWidth  ( top_pkg::AxiDataWidth   ),
+    .IdWidth    ( top_pkg::AxiDevIdWidth  ),
+    .NumBanks   ( 1                       )
   ) u_tl_rom_axi_to_mem (
     .clk_i      (clkmgr_clocks.clk_main_infra),
     .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),

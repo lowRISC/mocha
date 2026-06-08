@@ -86,7 +86,7 @@ module chip_mocha_genesys2 #(
     FallThrough:        1'b0,
     LatencyMode:        axi_pkg::CUT_ALL_AX,
     PipelineStages:     32'd1,
-    AxiIdWidthSlvPorts: 32'd4,
+    AxiIdWidthSlvPorts: int'(top_pkg::AxiDevIdWidth),
     AxiIdUsedSlvPorts:  32'd1,
     UniqueIds:          1'b0,
     AxiAddrWidth:       int'(top_pkg::AxiAddrWidth),
@@ -147,10 +147,10 @@ module chip_mocha_genesys2 #(
   top_pkg::axi_dram_req_t  mig_req;
   top_pkg::axi_dram_resp_t mig_resp;
   // Rest of chip AXI crossbar host and devices
-  top_pkg::axi_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
-  top_pkg::axi_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
-  top_pkg::axi_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
-  top_pkg::axi_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
+  top_pkg::axi_dev_req_t  [xbar_cfg.NoSlvPorts-1:0] xbar_host_req;
+  top_pkg::axi_dev_resp_t [xbar_cfg.NoSlvPorts-1:0] xbar_host_resp;
+  top_pkg::axi_dev_req_t  [xbar_cfg.NoMstPorts-1:0] xbar_device_req;
+  top_pkg::axi_dev_resp_t [xbar_cfg.NoMstPorts-1:0] xbar_device_resp;
 
   // Ethernet interrupt line
   logic ethernet_irq;
@@ -508,22 +508,22 @@ module chip_mocha_genesys2 #(
 
   // Rest of chip AXI crossbar
   axi_xbar #(
-    .Cfg          (xbar_cfg               ),
-    .ATOPs        (1'b0                   ),
-    .slv_aw_chan_t(top_pkg::axi_aw_chan_t ),
-    .mst_aw_chan_t(top_pkg::axi_aw_chan_t ),
-    .w_chan_t     (top_pkg::axi_w_chan_t  ),
-    .slv_b_chan_t (top_pkg::axi_b_chan_t  ),
-    .mst_b_chan_t (top_pkg::axi_b_chan_t  ),
-    .slv_ar_chan_t(top_pkg::axi_ar_chan_t ),
-    .mst_ar_chan_t(top_pkg::axi_ar_chan_t ),
-    .slv_r_chan_t (top_pkg::axi_r_chan_t  ),
-    .mst_r_chan_t (top_pkg::axi_r_chan_t  ),
-    .slv_req_t    (top_pkg::axi_req_t     ),
-    .slv_resp_t   (top_pkg::axi_resp_t    ),
-    .mst_req_t    (top_pkg::axi_req_t     ),
-    .mst_resp_t   (top_pkg::axi_resp_t    ),
-    .rule_t       (axi_pkg::xbar_rule_64_t)
+    .Cfg          ( xbar_cfg                   ),
+    .ATOPs        ( 1'b0                       ),
+    .slv_aw_chan_t( top_pkg::axi_dev_aw_chan_t ),
+    .mst_aw_chan_t( top_pkg::axi_dev_aw_chan_t ),
+    .w_chan_t     ( top_pkg::axi_w_chan_t      ),
+    .slv_b_chan_t ( top_pkg::axi_dev_b_chan_t  ),
+    .mst_b_chan_t ( top_pkg::axi_dev_b_chan_t  ),
+    .slv_ar_chan_t( top_pkg::axi_dev_ar_chan_t ),
+    .mst_ar_chan_t( top_pkg::axi_dev_ar_chan_t ),
+    .slv_r_chan_t ( top_pkg::axi_dev_r_chan_t  ),
+    .mst_r_chan_t ( top_pkg::axi_dev_r_chan_t  ),
+    .slv_req_t    ( top_pkg::axi_dev_req_t     ),
+    .slv_resp_t   ( top_pkg::axi_dev_resp_t    ),
+    .mst_req_t    ( top_pkg::axi_dev_req_t     ),
+    .mst_resp_t   ( top_pkg::axi_dev_resp_t    ),
+    .rule_t       ( axi_pkg::xbar_rule_64_t    )
   ) u_rest_of_chip_axi_xbar (
     .clk_i                (u_top_chip_system.clkmgr_clocks.clk_main_infra),
     .rst_ni               (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
