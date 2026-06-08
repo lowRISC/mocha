@@ -26,6 +26,7 @@ filesets:
       - lowrisc:tlul:adapter_host
       - lowrisc:tlul:adapter_reg
       - lowrisc:mocha_constants:top_racl_pkg
+      - lowrisc:mocha_constants:jtag_id_pkg
       - pulp-platform.org::axi
       - pulp-platform.org::riscv_dbg
       - lowrisc:common_cells:all
