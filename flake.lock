@@ -88,11 +88,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1780410653,
-        "narHash": "sha256-GgjcPoL9ZDuasunwIP0I9JTkP2oGvoZ93Vzwbwz1ldI=",
+        "lastModified": 1780500542,
+        "narHash": "sha256-XKbtr82IfB5RXhBzWgsTnuZcS230Lq9NdFE13IM/Zi8=",
         "owner": "lowRISC",
         "repo": "lowrisc-nix",
-        "rev": "560d419c61cb216001f05db14ac64a310b64e4af",
+        "rev": "c134ded39dab6c6dc15ad4675a446269c12756ff",
         "type": "github"
       },
       "original": {

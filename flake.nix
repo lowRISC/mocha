@@ -72,6 +72,8 @@
       };
       ftditool-cli = inputs.ftditool.packages.${system}.default;
 
+      cheri-toolchain = pkgs.callPackage ./nix/cheri_toolchain.nix {inherit (lrPkgs) llvm_cheri;};
+
       commonPackages = with pkgs; [
         bison
         cmake
@@ -93,8 +95,8 @@
     in {
       formatter = pkgs.alejandra;
       devShells = rec {
-        default = cheri;
-        cheri = pkgs.mkShell {
+        default = baremetal;
+        baremetal = pkgs.mkShell {
           name = "mocha-cheri";
           nativeBuildInputs =
             commonPackages
@@ -110,6 +112,36 @@
             UV_PYTHON = pythonSet.python.interpreter;
           };
         };
+        linux =
+          (pkgs.buildFHSEnv {
+            name = "mocha-linux";
+            targetPkgs = pkgs:
+              commonPackages
+              ++ (with pkgs; [
+                cheri-toolchain.cheriStdenv.cc
+                autoconf
+                automake
+                bc
+                bison
+                bmake
+                byacc
+                flex
+                libarchive
+                libarchive.dev
+                libelf
+                libtool
+                pkg-config
+                zlib
+                zlib.dev
+              ]);
+            profile = ''
+              export HOSTCC="${pkgs.llvmPackages_21.clang}/bin/clang";
+              export HOSTCXX="${pkgs.llvmPackages_21.clang}/bin/clang++";
+              export HOSTLD="${pkgs.llvmPackages_21.lld}/bin/ld.lld";
+              export LLVM=1
+              export ARCH=riscv
+            '';
+          }).env;
       };
 
       apps = {
