@@ -7,6 +7,7 @@
 #pragma once
 
 #include "hal/clkmgr.h"
+#include "hal/dv.h"
 #include "hal/entropy_src.h"
 #include "hal/ethernet.h"
 #include "hal/gpio.h"
@@ -50,5 +51,4 @@ timer_t mocha_system_timer(void);
 spi_host_t mocha_system_spi_host(void);
 plic_t mocha_system_plic(void);
 void *mocha_system_dram(void);
-
-void *mocha_system_dv_test_status(void);
+dv_window_t mocha_system_dv_window(void);
