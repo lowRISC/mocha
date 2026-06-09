@@ -26,14 +26,14 @@ static bool write_transfer(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t
 {
     // Start a write transfer
     i2c_write_bytes(i2c, addr, data, num_bytes);
-    return i2c_wait_transfer_finish(i2c);
+    return i2c_host_wait_transfer_finish(i2c);
 }
 
 static bool read_transfer(i2c_t i2c, uint8_t addr, uint8_t num_bytes)
 {
     // Start a read transfer
     i2c_read_bytes(i2c, addr, num_bytes);
-    return i2c_wait_transfer_finish(i2c);
+    return i2c_host_wait_transfer_finish(i2c);
 }
 
 static bool drive_transfer(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_bytes)
