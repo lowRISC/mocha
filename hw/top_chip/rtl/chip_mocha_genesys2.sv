@@ -296,7 +296,7 @@ module chip_mocha_genesys2 #(
     .dm_jtag_tms    (1'b0),
     .dm_jtag_tdi    (1'b0),
     .dm_jtag_tdo    ( ),
-    .dm_jtag_trst_n (1'b1)
+    .dm_jtag_trst_n (1'b0)
   );
 
   // GPIO tri-state output drivers

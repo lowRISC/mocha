@@ -123,7 +123,7 @@ module tb;
     .dm_jtag_tms          (1'b0             ),
     .dm_jtag_tdi          (1'b0             ),
     .dm_jtag_tdo          (                 ),
-    .dm_jtag_trst_n       (1'b1             )
+    .dm_jtag_trst_n       (1'b0             )
   );
 
   // Assignment to the GPIO pads. If dut_gpio_en_o[i] is disabled, then let the gpio_pad[i] float so
