@@ -21,7 +21,7 @@ target create $_TARGETNAME riscv -chain-position $_TARGETNAME
 
 # adapter speed 10000
 
-riscv set_mem_access sysbus
+riscv set_mem_access sysbus progbuf
 gdb_report_data_abort enable
 gdb_report_register_access_error enable
 gdb_breakpoint_override hard
