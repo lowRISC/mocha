@@ -17,7 +17,7 @@ static bool as6212_test(i2c_t i2c)
     i2c_write_bytes(i2c, 0x48u, &w_data, 1);
 
     // Check if the write was successful
-    if (!i2c_wait_transfer_finish(i2c)) {
+    if (!i2c_host_wait_transfer_finish(i2c)) {
         return false;
     }
 
@@ -25,7 +25,7 @@ static bool as6212_test(i2c_t i2c)
     i2c_read_bytes(i2c, 0x48u, 1);
 
     // Check if the read was successful
-    if (!i2c_wait_transfer_finish(i2c)) {
+    if (!i2c_host_wait_transfer_finish(i2c)) {
         return false;
     }
 
