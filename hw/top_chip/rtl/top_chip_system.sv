@@ -104,6 +104,8 @@ module top_chip_system #(
     cfg.CvxifEn                     = bit'(0);
     // Memory map
     cfg.DmBaseAddress               = top_pkg::DebugMemBase;
+    cfg.HaltAddress                 = dm::HaltAddress;
+    cfg.ExceptionAddress            = dm::ExceptionAddress;
     cfg.NrExecuteRegionRules        = unsigned'(4);
     cfg.ExecuteRegionAddrBase       = 1024'({top_pkg::DRAMBase,
                                              top_pkg::DebugMemBase,
