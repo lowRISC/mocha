@@ -184,7 +184,7 @@ void i2c_read_bytes(i2c_t i2c, uint8_t addr, uint8_t num_bytes)
     VOLATILE_WRITE(i2c->fdata, fdata_reg);
 }
 
-bool i2c_wait_transfer_finish(i2c_t i2c)
+bool i2c_host_wait_transfer_finish(i2c_t i2c)
 {
     // Wait for transaction to complete and report simple succeed / fail
     while (true) {
