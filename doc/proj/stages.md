@@ -31,7 +31,7 @@ This table shows the current design and verification stage for each block in Moc
 | Tag controller        | D0               | V0                     |
 | [TileLink crossbar][] | D0               | V1                     |
 | Timer                 | D0               | V0                     |
-| [UART][]              | D1               | V0                     |
+| [UART][]              | D1               | V1                     |
 
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md

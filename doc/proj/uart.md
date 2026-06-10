@@ -38,26 +38,26 @@ The sign-off checklist items are described in the [D1 design sign-off checklist]
 
 ### V1
 
-<!-- Link the git hash this sign-off was based on. -->
 All checklist items refer to the [V1 verification sign-off checklist][V1 checklist].
+This sign-off is based on commit [`a413a52`][V1 commit].
 
-| Type          | Item                               | Status      | Note/Collaterals |
-|---------------|------------------------------------|-------------|------------------|
-| Documentation | DV_DOC_DRAFT_COMPLETED             | Not Started |
-| Documentation | TESTPLAN_COMPLETED                 | Not Started |
-| Testbench     | TB_TOP_CREATED                     | Not Started |
-| Testbench     | PRELIMINARY_ASSERTION_CHECKS_ADDED | Not Started |
-| Integration   | PRE_VERIFIED_SUB_MODULES_V1        | Not Started |
-| Review        | DESIGN_SPEC_REVIEWED               | Not Started |
-| Review        | TESTPLAN_REVIEWED                  | Not Started |
-| Review        | STD_TEST_CATEGORIES_PLANNED        | Not Started |
-| Simulation    | SIM_TB_ENV_CREATED                 | Not Started | <!-- Set to N/A if formal-only -->
-| Tests         | SIM_SMOKE_TEST_PASSING             | Not Started | <!-- Set to N/A if formal-only -->
-| Regression    | SIM_SMOKE_REGRESSION_SETUP         | Not Started | <!-- Set to N/A if formal-only -->
-| Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Not Started | <!-- Set to N/A if formal-only -->
-| Coverage      | SIM_COVERAGE_MODEL_ADDED           | Not Started | <!-- Set to N/A if formal-only -->
-| Tests         | FPV_MAIN_ASSERTIONS_PROVEN         | Not Started | <!-- Set to N/A if simulation-only -->
-| Regression    | FPV_REGRESSION_SETUP               | Not Started | <!-- Set to N/A if simulation-only -->
+| Type          | Item                               | Status | Note/Collaterals |
+|---------------|------------------------------------|--------|------------------|
+| Documentation | DV_DOC_DRAFT_COMPLETED             | Done   | [UART DV document][] describes the goals, testbench architecture, stimulus, coverage and checking strategy |
+| Documentation | TESTPLAN_COMPLETED                 | Done   | [UART testplan][] defines the V1 smoke test and post-V1 functional, error, performance and stress testpoints |
+| Testbench     | TB_TOP_CREATED                     | Done   | `hw/vendor/lowrisc_ip/ip/uart/dv/tb/tb.sv` instantiates the DUT and connects clock/reset, TileLink, UART, interrupt and alert interfaces |
+| Testbench     | PRELIMINARY_ASSERTION_CHECKS_ADDED | Done   | `uart_bind.sv` binds the TLUL protocol and CSR assertions; the UART RTL checks that outputs are known after reset |
+| Integration   | PRE_VERIFIED_SUB_MODULES_V1        | Waived | UART and its primitive submodules are vendored from OpenTitan, where UART reached V3 ([OpenTitan UART sign-off][]); Mocha applies no functional RTL patches |
+| Review        | DESIGN_SPEC_REVIEWED               | Waived | The specification was reviewed through the OpenTitan sign-off process and the block is imported without functional changes |
+| Review        | TESTPLAN_REVIEWED                  | Done   | The vendored [OpenTitan UART checklist][] records the testplan review as complete |
+| Review        | STD_TEST_CATEGORIES_PLANNED        | Done   | Error scenarios, performance and stress tests are covered in the [UART testplan][]; security bus-integrity testing is currently out of scope for Mocha; power and debug are N/A |
+| Simulation    | SIM_TB_ENV_CREATED                 | Done   | CIP-based UVM environment with TL and UART agents; both agents feed the end-to-end `uart_scoreboard` |
+| Tests         | SIM_SMOKE_TEST_PASSING             | Done   | `uart_smoke`: 1/1 passed with Xcelium on June 10, 2026 at commit `a413a52` |
+| Regression    | SIM_SMOKE_REGRESSION_SETUP         | Done   | `smoke` regression in `uart_sim_cfg.hjson` selects `uart_smoke`; the aggregate Mocha config imports the UART simulation config |
+| Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Done   | UART is included in `mocha_sim_cfgs.hjson`; results are published on the [COSMIC reports dashboard][] |
+| Coverage      | SIM_COVERAGE_MODEL_ADDED           | Done   | UART interface coverage is in `uart_agent_cov.sv`; block-level coverage is in `uart_env_cov.sv` |
+| Tests         | FPV_MAIN_ASSERTIONS_PROVEN         | N/A    | This V1 sign-off uses simulation; TLUL and CSR assertions are enabled in the simulation testbench |
+| Regression    | FPV_REGRESSION_SETUP               | N/A    | No UART FPV regression is configured in Mocha |
 
 ### V2
 
@@ -78,3 +78,9 @@ All checklist items refer to the [V1 verification sign-off checklist][V1 checkli
 [design stages]: stages.md#design-stages
 [V1 checklist]: stages.md#v1-verification-sign-off-checklist
 [verification stages]: stages.md#verification-stages
+[V1 commit]: https://github.com/lowRISC/mocha/commit/a413a5274bfbdc119dabf16c5ba27d3580b68903
+[UART DV document]: ../../hw/vendor/lowrisc_ip/ip/uart/dv/README.md
+[UART testplan]: ../../hw/vendor/lowrisc_ip/ip/uart/data/uart_testplan.hjson
+[OpenTitan UART checklist]: ../../hw/vendor/lowrisc_ip/ip/uart/doc/checklist.md
+[OpenTitan UART sign-off]: https://github.com/lowRISC/opentitan/pull/615
+[COSMIC reports dashboard]: https://dashboard.reports.lowrisc.org/cosmic/mocha/dashboard.html
