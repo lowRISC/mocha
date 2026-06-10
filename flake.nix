@@ -75,20 +75,22 @@
       commonPackages = with pkgs; [
         bison
         cmake
-        flex
-        gnumake
-        screen
-        picocom
-        gtkwave
-        openfpgaloader
-        ftditool-cli
-        openocd
-        uv
-        pythonEnv
-        verible
-        srecord
         d2
         dtc
+        flex
+        ftditool-cli
+        gnumake
+        gtkwave
+        openfpgaloader
+        openocd
+        picocom
+        pythonEnv
+        screen
+        srecord
+        uv
+        verilator
+        verible
+        wget
       ];
     in {
       formatter = pkgs.alejandra;
