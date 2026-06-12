@@ -10,6 +10,7 @@ package top_chip_dv_env_pkg;
   import sw_test_status_pkg::*;
   import uart_agent_pkg::*;
   import gpio_env_pkg::NUM_GPIOS;
+  import axi4_vip_pkg::*;
 
   // Macro includes
   `include "uvm_macros.svh"
@@ -22,13 +23,20 @@ package top_chip_dv_env_pkg;
 
   typedef chip_mem_e chip_mem_list_t[$];
 
+  // Local Address Map Struct
+  typedef struct {
+    string     subordinate_name;
+    bit [63:0] start_addr;
+    bit [63:0] end_addr;
+  } axi_addr_range_t;
+
   // Generate the list of all chip_mem_e values, this helps to simplify iterating over them with
   // foreach loops.
   const chip_mem_list_t CHIP_MEM_LIST = chip_mem_values();
 
   function automatic chip_mem_list_t chip_mem_values;
     chip_mem_list_t list;
-    chip_mem_e tmp = tmp.first;
+    chip_mem_e      tmp = tmp.first;
     do begin
       list.push_back(tmp);
       tmp = tmp.next;
@@ -52,6 +60,7 @@ package top_chip_dv_env_pkg;
   `include "top_chip_dv_env_cfg.sv"
   `include "top_chip_dv_env_cov.sv"
   `include "top_chip_dv_virtual_sequencer.sv"
+  `include "top_chip_dv_axi_scoreboard.sv"
   `include "top_chip_dv_env.sv"
   `include "top_chip_dv_vseq_list.sv"
 endpackage : top_chip_dv_env_pkg
