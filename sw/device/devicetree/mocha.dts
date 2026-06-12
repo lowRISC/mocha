@@ -79,14 +79,15 @@
         };
 
         plic: interrupt-controller@48000000 {
+            // Compatible with the standard and SiFive PLIC memory layout
             compatible = "lowrisc,opentitan-plic",
-                         "sifive,plic-1.0.0"; // Compatible with the SiFive PLIC memory layout
+                         "sifive,plic-1.0.0";
             interrupt-controller;
             #address-cells = <0>;
             #interrupt-cells = <1>;
             reg = <0x0 0x48000000 0x0 0x4000000>;
-            interrupts-extended = <&cpu0intc 9>, // S-mode external interrupt
-                                  <&cpu0intc 11>; // M-mode external interrupt
+            interrupts-extended = <&cpu0intc 11>, // Context 0: M-mode external interrupt
+                                  <&cpu0intc 9>; // Context 1: S-mode external interrupt
             riscv,ndev = <32>;
         };
 
