@@ -724,6 +724,6 @@ addrmap rv_plic #(
             reset = 0x0;
             desc = "Interrupt Enable of Source";
         } E_31[31:31];
-    } IE1[1] @ 0x2100;
+    } IE1[1] @ 0x2080;
 
 };

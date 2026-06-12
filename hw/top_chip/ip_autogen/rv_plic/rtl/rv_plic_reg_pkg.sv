@@ -141,7 +141,7 @@ package rv_plic_reg_pkg;
   parameter logic [BlockAw-1:0] RV_PLIC_PRIO_31_OFFSET = 27'h 7c;
   parameter logic [BlockAw-1:0] RV_PLIC_IP_OFFSET = 27'h 1000;
   parameter logic [BlockAw-1:0] RV_PLIC_IE0_OFFSET = 27'h 2000;
-  parameter logic [BlockAw-1:0] RV_PLIC_IE1_OFFSET = 27'h 2100;
+  parameter logic [BlockAw-1:0] RV_PLIC_IE1_OFFSET = 27'h 2080;
   parameter logic [BlockAw-1:0] RV_PLIC_THRESHOLD0_OFFSET = 27'h 200000;
   parameter logic [BlockAw-1:0] RV_PLIC_CC0_OFFSET = 27'h 200004;
   parameter logic [BlockAw-1:0] RV_PLIC_THRESHOLD1_OFFSET = 27'h 201000;

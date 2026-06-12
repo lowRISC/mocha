@@ -157,7 +157,7 @@
         ],
       }
     }
-    { skipto: "0x2100" }
+    { skipto: "0x2080" }
     { multireg: {
         name: "IE1",
         desc: "Interrupt Enable for Target 1",

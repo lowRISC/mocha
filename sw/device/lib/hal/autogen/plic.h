@@ -62,12 +62,12 @@ typedef volatile struct [[gnu::aligned(4)]] plic_memory_layout {
     /* plic.ie0 (0x2000) */
     uint32_t ie0;
 
-    const uint8_t __reserved2[0x2100 - 0x2004];
+    const uint8_t __reserved2[0x2080 - 0x2004];
 
-    /* plic.ie1 (0x2100) */
+    /* plic.ie1 (0x2080) */
     uint32_t ie1;
 
-    const uint8_t __reserved3[0x200000 - 0x2104];
+    const uint8_t __reserved3[0x200000 - 0x2084];
 
     /* plic.threshold0 (0x200000) */
     plic_threshold0 threshold0;
@@ -103,7 +103,7 @@ _Static_assert(__builtin_offsetof(struct plic_memory_layout, ip) == 0x1000ul,
                "incorrect register ip offset");
 _Static_assert(__builtin_offsetof(struct plic_memory_layout, ie0) == 0x2000ul,
                "incorrect register ie0 offset");
-_Static_assert(__builtin_offsetof(struct plic_memory_layout, ie1) == 0x2100ul,
+_Static_assert(__builtin_offsetof(struct plic_memory_layout, ie1) == 0x2080ul,
                "incorrect register ie1 offset");
 _Static_assert(__builtin_offsetof(struct plic_memory_layout, threshold0) == 0x200000ul,
                "incorrect register threshold0 offset");
