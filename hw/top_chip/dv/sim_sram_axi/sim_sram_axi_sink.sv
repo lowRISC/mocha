@@ -68,6 +68,17 @@ module sim_sram_axi_sink #(
   logic [top_pkg::AxiDataWidth-1:0] mem_rdata;
   logic [top_pkg::AxiStrbWidth-1:0] mem_be;
 
+  // True when the access targets the read-only HW_ID register.
+  logic hw_id_sel;
+  assign hw_id_sel = (mem_addr[31:0] == u_sim_sram_if.hw_id_addr);
+
+  // Insert one cycle delay to align with mem_req_d
+  logic hw_id_sel_d;
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) hw_id_sel_d <= 1'b0;
+    else         hw_id_sel_d <= mem_req && !mem_we && hw_id_sel;
+  end
+
   axi_to_mem #(
     .axi_req_t    (top_pkg::axi_req_t     ),
     .axi_resp_t   (top_pkg::axi_resp_t    ),
@@ -102,9 +113,9 @@ module sim_sram_axi_sink #(
     end
   end : delayed_mem_req
 
-  // Assert Error if ErrOnRead is set and a read occurs
+  // Assert Error if ErrOnRead is set and a read occurs to a non-HW_ID address.
   if (ErrOnRead) begin : gen_err_on_read
-    `ASSERT(ErrOnRead_A, mem_req |-> mem_we, clk_i, !rst_ni)
+    `ASSERT(ErrOnRead_A, (mem_req && !hw_id_sel) |-> mem_we, clk_i, !rst_ni)
   end : gen_err_on_read
 
   // Conditional SRAM Instantiation
@@ -138,9 +149,8 @@ module sim_sram_axi_sink #(
     );
   end : gen_sram
   else begin : gen_no_sram
-    // If no SRAM, return 0s on read.
-    // Handshaking is handled by the common logic and axi_to_mem.
-    assign mem_rdata = '0;
+    // If no SRAM, return hw_id for RO register reads, 0 otherwise.
+    assign mem_rdata = hw_id_sel_d ? {{(AxiDataWidth-32){1'b0}}, u_sim_sram_if.hw_id} : '0;
   end : gen_no_sram
 
   // Simulation SRAM Interface Instance
