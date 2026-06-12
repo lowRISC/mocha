@@ -222,17 +222,30 @@ def extract_sw_logs(elf_file, logs_fields_section):
                 logs_fields_section, elf_file))
             sys.exit(1)
 
-        header_size = 4
-        logs_offset, = struct.unpack('I', logs_data[0:header_size])
+        # rv64 ELF: struct layout is 32 bytes with 8-byte pointer fields and a
+        # QUAD section-address header.  rv32 ELF: 20 bytes, all uint32, LONG header.
+        is_64bit = elf.elfclass == 64
+        if is_64bit:
+            header_size = 8
+            entry_size  = 32
+            header_fmt  = '<Q'
+            entry_fmt   = '<I4xQIIQ'
+        else:
+            header_size = 4
+            entry_size  = LOGS_FIELDS_SIZE   # 20
+            header_fmt  = '<I'
+            entry_fmt   = '<IIIII'
+
+        logs_offset, = struct.unpack(header_fmt, logs_data[0:header_size])
 
         # Dump the logs with fields.
         result = ""
-        num_logs = (logs_size - header_size) // LOGS_FIELDS_SIZE
+        num_logs = (logs_size - header_size) // entry_size
         for i in range(num_logs):
-            start = header_size + i * LOGS_FIELDS_SIZE
-            end = start + LOGS_FIELDS_SIZE
+            start = header_size + i * entry_size
+            end = start + entry_size
             severity, file_addr, line, nargs, format_addr = struct.unpack(
-                'IIIII', logs_data[start:end])
+                entry_fmt, logs_data[start:end])
             result += "addr: {}\n".format(hex(logs_offset + start)[2:])
             result += "severity: {}\n".format(severity)
             result += "file: {}\n".format(

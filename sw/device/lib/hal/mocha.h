@@ -52,3 +52,4 @@ plic_t mocha_system_plic(void);
 void *mocha_system_dram(void);
 
 void *mocha_system_dv_test_status(void);
+void *mocha_system_dv_log(void);

@@ -41,11 +41,13 @@ package top_chip_dv_env_pkg;
   // 50 MHz Peripheral clock
   parameter int unsigned PeriClkFreq = 50_000_000;
 
-  // SW DV special write locations for test status and logging will always fit in 32-bits
+  // SW DV special write locations for test status and logging will always fit in 32-bits.
+  // Addresses must be 8-byte aligned: AxiDataWidth=64, so a 32-bit store at offset 4
+  // within a bus word lands in req.w.data[63:32] (upper lane), not req.w.data[31:0].
   parameter bit [31:0] SW_DV_START_ADDR       = 'h2002_0000;
   parameter bit [31:0] SW_DV_SIZE             = 'h0000_0100;        // 256 bytes reserved for SW DV
   parameter bit [31:0] SW_DV_TEST_STATUS_ADDR = SW_DV_START_ADDR + 'h00;
-  parameter bit [31:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h04;
+  parameter bit [31:0] SW_DV_LOG_ADDR         = SW_DV_START_ADDR + 'h08;
 
   // File includes
   `include "mem_clear_util.sv"
