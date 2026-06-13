@@ -1,0 +1,22 @@
+CAPI=2:
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:mocha_dv:axi_agent:0.1"
+description: "AXI agent"
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:dv:dv_utils
+    files:
+      - axi_read_data_if.sv
+      - axi_read_request_if.sv
+      - axi_write_data_if.sv
+      - axi_write_request_if.sv
+      - axi_write_response_if.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv
