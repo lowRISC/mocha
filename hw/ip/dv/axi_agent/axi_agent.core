@@ -14,6 +14,12 @@ filesets:
       - axi_write_data_if.sv
       - axi_write_request_if.sv
       - axi_write_response_if.sv
+
+      - axi_agent_pkg.sv
+
+      - axi_txn_request_item.svh: {is_include_file: true}
+      - axi_read_data_item.svh: {is_include_file: true}
+
     file_type: systemVerilogSource
 
 targets:
