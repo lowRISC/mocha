@@ -17,4 +17,7 @@ package axi_agent_pkg;
 
   `include "axi_txn_request_item.svh"
   `include "axi_read_data_item.svh"
+
+  `include "axi_write_data_item.svh"
+  `include "axi_write_response_item.svh"
 endpackage
