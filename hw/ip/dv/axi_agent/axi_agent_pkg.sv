@@ -22,4 +22,10 @@ package axi_agent_pkg;
   `include "axi_write_response_item.svh"
 
   `include "axi_response_accept_item.svh"
+
+  `include "axi_status_item.svh"
+
+  `include "axi_mgr_write_request_driver.svh"
+  `include "axi_mgr_write_data_driver.svh"
+  `include "axi_mgr_write_response_driver.svh"
 endpackage
