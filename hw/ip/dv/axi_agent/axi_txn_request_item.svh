@@ -8,7 +8,7 @@
 class axi_txn_request_item extends uvm_sequence_item;
   `uvm_object_utils(axi_txn_request_item)
 
-  // Transaction identifier for the read channel
+  // Transaction identifier for the read or write channel
   //
   // This is sent over the AxID signal, whose width is configurable, based on the ID_x_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
@@ -48,9 +48,9 @@ class axi_txn_request_item extends uvm_sequence_item;
 
   // Extra user bits
   //
-  // This is sent over the ARUSER signal, whose width is configurable, based on the USER_REQ_WIDTH
-  // property. The representation in the item uses a max footprint approach but the driver will fail
-  // with an error if bits above the top of the signal are nonzero.
+  // This is sent over the ARUSER or AWUSER signal, whose widths are configurable, based on the
+  // USER_REQ_WIDTH property. The representation in the item uses a max footprint approach but the
+  // driver will fail with an error if bits above the top of the signal are nonzero.
   rand bit [127:0] m_user;
 
   extern function new(string name = "");
