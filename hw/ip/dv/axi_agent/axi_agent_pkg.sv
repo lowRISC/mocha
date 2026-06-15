@@ -50,4 +50,6 @@ package axi_agent_pkg;
 
   `include "axi_agent_cfg.svh"
   `include "axi_agent.svh"
+
+  `include "seq_lib/axi_mgr_txn_request_seq.svh"
 endpackage
