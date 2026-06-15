@@ -32,6 +32,7 @@ module dm_top #(
   input  logic                  rst_ni,
   input  logic                  testmode_i,
   output logic                  ndmreset_o,  // non-debug module reset
+  input  logic                  ndmreset_ack_i, // acknowledement of non-debug module reset
   output logic                  dmactive_o,  // debug module is active
   output logic [NrHarts-1:0]    debug_req_o, // async debug request
   // communicate whether the hart is unavailable (e.g.: power down)
@@ -87,6 +88,8 @@ module dm_top #(
   logic [dm::DataCount-1:0][31:0]   data_mem_csrs;
   logic                             data_valid;
   logic                             ndmreset;
+  logic                             ndmreset_pending;
+  logic                             ndmreset_ack;
   logic [19:0]                      hartsel;
   // System Bus Access Module
   logic [BusWidth-1:0]              sbaddress_csrs_sba;
@@ -123,6 +126,7 @@ module dm_top #(
     .dmi_resp_ready_i,
     .dmi_resp_o,
     .ndmreset_o              ( ndmreset              ),
+    .ndmreset_ack_i          ( ndmreset_ack          ),
     .dmactive_o,
     .hartsel_o               ( hartsel               ),
     .hartinfo_i,
@@ -226,5 +230,21 @@ module dm_top #(
     .be_i                    ( slave_be_i            ),
     .rdata_o                 ( slave_rdata_o         )
   );
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin : handle_reset_pending
+    if (!rst_ni) begin
+      ndmreset_pending <= 1'b0;
+    end else begin
+      if (ndmreset) begin
+        ndmreset_pending <= 1'b1;
+      end else if (ndmreset_ack) begin
+        ndmreset_pending <= 1'b0;
+      end
+    end
+  end
+
+  // Gate the acknowledgement input on whether a reset is pending and if there
+  // is not another non-debug module reset being requested immediately.
+  assign ndmreset_ack = ndmreset_pending & !ndmreset & ndmreset_ack_i;
 
 endmodule : dm_top

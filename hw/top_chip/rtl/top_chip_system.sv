@@ -501,6 +501,7 @@ module top_chip_system #(
     .rst_ni               (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
     .testmode_i           (1'b0),
     .ndmreset_o           (ndmreset_req),
+    .ndmreset_ack_i       (!rom_mem_isolate),
     .dmactive_o           ( ), // active debug session
     .debug_req_o          (debug_req_irq),
     .unavailable_i        (1'b0),
