@@ -28,4 +28,7 @@ package axi_agent_pkg;
   `include "axi_mgr_write_request_driver.svh"
   `include "axi_mgr_write_data_driver.svh"
   `include "axi_mgr_write_response_driver.svh"
+
+  `include "axi_mgr_read_request_driver.svh"
+  `include "axi_mgr_read_data_driver.svh"
 endpackage

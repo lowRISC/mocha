@@ -2,18 +2,18 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// A driver for axi_write_request_if, used when the testbench is acting as an AXI Manager that is
-// requesting write transactions.
+// A driver for axi_read_request_if, used when the testbench is acting as an AXI Manager that is
+// requesting read transactions.
 //
-// Note: This is very similar to axi_mgr_read_request_driver (because the read and write request
+// Note: This is very similar to axi_mgr_write_request_driver (because the read and write request
 // interfaces are very similar). Separating the interfaces and classes will allow future versions of
 // the agent to support signals that only appear on one side, like the "stash" signals on the write
 // side.
 
-class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi_status_item);
-  `uvm_component_utils(axi_mgr_write_request_driver)
+class axi_mgr_read_request_driver extends uvm_driver#(axi_txn_request_item, axi_status_item);
+  `uvm_component_utils(axi_mgr_read_request_driver)
 
-  local virtual axi_write_request_if m_vif;
+  local virtual axi_read_request_if m_vif;
 
   // True if the interface is currently in reset. Maintained by monitor_reset().
   //
@@ -26,7 +26,7 @@ class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi
   extern virtual task run_phase(uvm_phase phase);
 
   // Set m_vif. This must be called before run_phase.
-  extern function void set_vif(virtual axi_write_request_if vif);
+  extern function void set_vif(virtual axi_read_request_if vif);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -47,16 +47,16 @@ class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi
   // Set data values in the interface based on the req item. This task runs in zero time (but uses
   // clocking block drives, so cannot be a function).
   //
-  // This task also checks sizes against the ID_W_WIDTH, ADDR_WIDTH and USER_REQ_WIDTH properties
+  // This task also checks sizes against the ID_R_WIDTH, ADDR_WIDTH and USER_REQ_WIDTH properties
   // that are configured in the interface.
   extern local task set_data_from_req();
 endclass
 
-function axi_mgr_write_request_driver::new(string name, uvm_component parent);
+function axi_mgr_read_request_driver::new(string name, uvm_component parent);
   super.new(name, parent);
 endfunction
 
-function void axi_mgr_write_request_driver::set_vif(virtual axi_write_request_if vif);
+function void axi_mgr_read_request_driver::set_vif(virtual axi_read_request_if vif);
   if (m_vif != null) begin
     `uvm_fatal(get_full_name(), "Cannot call set_vif: there is already an interface.")
     return;
@@ -72,14 +72,14 @@ function void axi_mgr_write_request_driver::set_vif(virtual axi_write_request_if
   m_vif = vif;
 endfunction
 
-task axi_mgr_write_request_driver::run_phase(uvm_phase phase);
+task axi_mgr_read_request_driver::run_phase(uvm_phase phase);
   if (m_vif == null) begin
     `uvm_fatal(get_full_name(), "Cannot drive interface: vif is null.")
     return;
   end
 
-  // Start by clearing the data (and, importantly, setting m_vif.mgr_cb.awvalid = 0). From now,
-  // awvalid will be zero unless $isunknown on all the data fields is false.
+  // Start by clearing the data (and, importantly, setting m_vif.mgr_cb.arvalid = 0). From now,
+  // arvalid will be zero unless $isunknown on all the data fields is false.
   clear_data();
 
   fork
@@ -88,7 +88,7 @@ task axi_mgr_write_request_driver::run_phase(uvm_phase phase);
   join
 endtask
 
-task axi_mgr_write_request_driver::get_and_drive();
+task axi_mgr_read_request_driver::get_and_drive();
   axi_status_item status_item;
   forever begin
     seq_item_port.get_next_item(req);
@@ -99,7 +99,7 @@ task axi_mgr_write_request_driver::get_and_drive();
   end
 endtask
 
-task axi_mgr_write_request_driver::monitor_reset();
+task axi_mgr_read_request_driver::monitor_reset();
   wait(!$isunknown(m_vif.rst_ni));
   m_in_reset = !m_vif.rst_ni;
   forever begin
@@ -111,24 +111,24 @@ task axi_mgr_write_request_driver::monitor_reset();
   end
 endtask
 
-task axi_mgr_write_request_driver::clear_data();
-  m_vif.mgr_cb.awvalid  <= 1'b0;
-  m_vif.mgr_cb.awid     <= 'x;
-  m_vif.mgr_cb.awaddr   <= 'x;
-  m_vif.mgr_cb.awregion <= 'x;
-  m_vif.mgr_cb.awlen    <= 'x;
-  m_vif.mgr_cb.awsize   <= 'x;
-  m_vif.mgr_cb.awburst  <= 'x;
-  m_vif.mgr_cb.awlock   <= 'x;
-  m_vif.mgr_cb.awcache  <= 'x;
-  m_vif.mgr_cb.awprot   <= 'x;
-  m_vif.mgr_cb.awqos    <= 'x;
-  m_vif.mgr_cb.awuser   <= 'x;
+task axi_mgr_read_request_driver::clear_data();
+  m_vif.mgr_cb.arvalid  <= 1'b0;
+  m_vif.mgr_cb.arid     <= 'x;
+  m_vif.mgr_cb.araddr   <= 'x;
+  m_vif.mgr_cb.arregion <= 'x;
+  m_vif.mgr_cb.arlen    <= 'x;
+  m_vif.mgr_cb.arsize   <= 'x;
+  m_vif.mgr_cb.arburst  <= 'x;
+  m_vif.mgr_cb.arlock   <= 'x;
+  m_vif.mgr_cb.arcache  <= 'x;
+  m_vif.mgr_cb.arprot   <= 'x;
+  m_vif.mgr_cb.arqos    <= 'x;
+  m_vif.mgr_cb.aruser   <= 'x;
 endtask
 
-task axi_mgr_write_request_driver::drive_req(output bit item_sent);
+task axi_mgr_read_request_driver::drive_req(output bit item_sent);
   // If we are currently in reset, there is nothing to do. This check avoids a possible race if
-  // reset is asserted at the same time as the request appears: we don't want to set awvalid after
+  // reset is asserted at the same time as the request appears: we don't want to set arvalid after
   // monitor_reset has called clear_data.
   if (m_in_reset) return;
 
@@ -137,9 +137,9 @@ task axi_mgr_write_request_driver::drive_req(output bit item_sent);
       wait(m_in_reset);
       begin
         set_data_from_req();
-        m_vif.mgr_cb.awvalid <= 1;
+        m_vif.mgr_cb.arvalid <= 1;
 
-        do @(m_vif.mgr_cb); while (m_vif.mgr_cb.awready !== 1'b1);
+        do @(m_vif.mgr_cb); while (m_vif.mgr_cb.arready !== 1'b1);
 
         clear_data();
 
@@ -152,14 +152,14 @@ task axi_mgr_write_request_driver::drive_req(output bit item_sent);
   end join
 endtask
 
-task axi_mgr_write_request_driver::set_data_from_req();
+task axi_mgr_read_request_driver::set_data_from_req();
   // Check that configurable-length item fields actually fit in the interface signals. Note: we can
   // safely drive all the bits in the clocking block here anyway: they will be truncated in the
   // interface when being reflected in the "*_internal" signal.
-  if (|(req.m_id >> m_vif.id_w_width)) begin
+  if (|(req.m_id >> m_vif.id_r_width)) begin
     `uvm_error(get_full_name(),
-               $sformatf("Cannot represent req.m_id = 0x%0h. The interface ID_W_WIDTH is %0d.",
-                         req.m_id, m_vif.id_w_width))
+               $sformatf("Cannot represent req.m_id = 0x%0h. The interface ID_R_WIDTH is %0d.",
+                         req.m_id, m_vif.id_r_width))
   end
   if (|(req.m_addr >> m_vif.addr_width)) begin
     `uvm_error(get_full_name(),
@@ -173,15 +173,15 @@ task axi_mgr_write_request_driver::set_data_from_req();
                          req.m_user, m_vif.user_req_width))
   end
 
-  m_vif.mgr_cb.awid     <= req.m_id;
-  m_vif.mgr_cb.awaddr   <= req.m_addr;
-  m_vif.mgr_cb.awregion <= req.m_region;
-  m_vif.mgr_cb.awlen    <= req.m_len;
-  m_vif.mgr_cb.awsize   <= req.m_size;
-  m_vif.mgr_cb.awburst  <= req.m_burst;
-  m_vif.mgr_cb.awlock   <= req.m_lock;
-  m_vif.mgr_cb.awcache  <= req.m_cache;
-  m_vif.mgr_cb.awprot   <= req.m_prot;
-  m_vif.mgr_cb.awqos    <= req.m_qos;
-  m_vif.mgr_cb.awuser   <= req.m_user;
+  m_vif.mgr_cb.arid     <= req.m_id;
+  m_vif.mgr_cb.araddr   <= req.m_addr;
+  m_vif.mgr_cb.arregion <= req.m_region;
+  m_vif.mgr_cb.arlen    <= req.m_len;
+  m_vif.mgr_cb.arsize   <= req.m_size;
+  m_vif.mgr_cb.arburst  <= req.m_burst;
+  m_vif.mgr_cb.arlock   <= req.m_lock;
+  m_vif.mgr_cb.arcache  <= req.m_cache;
+  m_vif.mgr_cb.arprot   <= req.m_prot;
+  m_vif.mgr_cb.arqos    <= req.m_qos;
+  m_vif.mgr_cb.aruser   <= req.m_user;
 endtask

@@ -27,6 +27,8 @@ filesets:
       - axi_mgr_write_request_driver.svh: {is_include_file: true}
       - axi_mgr_write_data_driver.svh: {is_include_file: true}
       - axi_mgr_write_response_driver.svh: {is_include_file: true}
+      - axi_mgr_read_request_driver.svh: {is_include_file: true}
+      - axi_mgr_read_data_driver.svh: {is_include_file: true}
 
     file_type: systemVerilogSource
 
