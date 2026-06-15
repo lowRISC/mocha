@@ -56,4 +56,8 @@ package axi_agent_pkg;
   `include "seq_lib/axi_mgr_write_single_data_seq.svh"
   `include "seq_lib/axi_mgr_write_response_seq.svh"
   `include "seq_lib/axi_mgr_read_data_seq.svh"
+
+  `include "axi_fixed_write_req_item.svh"
+  `include "axi_fixed_write_rsp_item.svh"
+  `include "seq_lib/axi_mgr_write_fixed_vseq.svh"
 endpackage
