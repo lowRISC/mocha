@@ -26,6 +26,9 @@ filesets:
       - axi_write_data_item.svh: {is_include_file: true}
       - axi_write_response_item.svh: {is_include_file: true}
 
+      - axi_fixed_write_req_item.svh: {is_include_file: true}
+      - axi_fixed_write_rsp_item.svh: {is_include_file: true}
+
       - axi_reset_monitor_aw.svh: {is_include_file: true}
       - axi_reset_monitor_w.svh: {is_include_file: true}
       - axi_reset_monitor_b.svh: {is_include_file: true}
@@ -47,6 +50,8 @@ filesets:
       - seq_lib/axi_mgr_write_single_data_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_write_response_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_read_data_seq.svh: {is_include_file: true}
+
+      - seq_lib/axi_mgr_write_fixed_vseq.svh: {is_include_file: true}
 
     file_type: systemVerilogSource
 
