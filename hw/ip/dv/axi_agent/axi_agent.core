@@ -16,6 +16,7 @@ filesets:
       - axi_write_response_if.sv
 
       - axi_agent_pkg.sv
+      - axi_agent_cfg.svh: {is_include_file: true}
 
       - axi_reset_item.svh: {is_include_file: true}
       - axi_status_item.svh: {is_include_file: true}
@@ -38,6 +39,8 @@ filesets:
       - axi_mgr_read_data_driver.svh: {is_include_file: true}
 
       - axi_response_router.svh: {is_include_file: true}
+
+      - axi_agent.svh: {is_include_file: true}
 
     file_type: systemVerilogSource
 
