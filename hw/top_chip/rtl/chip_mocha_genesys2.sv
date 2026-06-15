@@ -97,8 +97,7 @@ module chip_mocha_genesys2 #(
   // Rest of chip AXI crossbar address mapping
   axi_pkg::xbar_rule_64_t [xbar_cfg.NoAddrRules-1:0] addr_map;
   assign addr_map = '{
-    '{ idx: top_pkg::SwDvWindowDevIdx, start_addr: top_pkg::SwDvWindowBase, end_addr: top_pkg::SwDvWindowBase + top_pkg::SwDvWindowLength },
-    '{ idx: top_pkg::Ethernet,         start_addr: top_pkg::EthernetBase,   end_addr: top_pkg::EthernetBase   + top_pkg::EthernetLength   }
+    '{ idx: top_pkg::Ethernet, start_addr: top_pkg::EthernetBase, end_addr: top_pkg::EthernetBase + top_pkg::EthernetLength }
   };
 
   // Internal clock signals
@@ -158,6 +157,8 @@ module chip_mocha_genesys2 #(
   logic ethernet_irq;
 
   // SW-DV window AXI subordinate memory interface acting as a sink
+  top_pkg::axi_dev_req_t            sw_dv_req;
+  top_pkg::axi_dev_resp_t           sw_dv_resp;
   logic                             hw_id_mem_req;
   logic                             hw_id_mem_req_q;
   logic                             hw_id_mem_we;
@@ -600,18 +601,18 @@ module chip_mocha_genesys2 #(
   // Uses the same axi_to_mem + 1-cycle loopback pattern as sim_sram_axi_sink.
   // Writes are accepted and discarded. Reads return HwIdFpgaGenesys2 at offset +0x04, 0 elsewhere.
   axi_to_mem #(
-    .axi_req_t    (top_pkg::axi_req_t   ),
-    .axi_resp_t   (top_pkg::axi_resp_t  ),
-    .DataWidth    (top_pkg::AxiDataWidth),
-    .AddrWidth    (top_pkg::AxiAddrWidth),
-    .IdWidth      (top_pkg::AxiIdWidth  ),
-    .NumBanks     (1                    )
+    .axi_req_t    (top_pkg::axi_dev_req_t ),
+    .axi_resp_t   (top_pkg::axi_dev_resp_t),
+    .DataWidth    (top_pkg::AxiDataWidth  ),
+    .AddrWidth    (top_pkg::AxiAddrWidth  ),
+    .IdWidth      (top_pkg::AxiDevIdWidth ),
+    .NumBanks     (1                      )
   ) u_hw_id_axi_to_mem (
     .clk_i        (u_top_chip_system.clkmgr_clocks.clk_main_infra                       ),
     .rst_ni       (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
     .busy_o       (                                                                     ),
-    .axi_req_i    (xbar_device_req [top_pkg::SwDvWindowDevIdx]                          ),
-    .axi_resp_o   (xbar_device_resp[top_pkg::SwDvWindowDevIdx]                          ),
+    .axi_req_i    (sw_dv_req                                                            ),
+    .axi_resp_o   (sw_dv_resp                                                           ),
     .mem_req_o    (hw_id_mem_req                                                        ),
     .mem_gnt_i    (1'b1                                                                 ),
     .mem_addr_o   (hw_id_mem_addr                                                       ),
