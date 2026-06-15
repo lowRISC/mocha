@@ -18,6 +18,7 @@ filesets:
       - axi_agent_pkg.sv
 
       - axi_txn_request_item.svh: {is_include_file: true}
+      - axi_response_accept_item.svh: {is_include_file: true}
       - axi_read_data_item.svh: {is_include_file: true}
       - axi_write_data_item.svh: {is_include_file: true}
       - axi_write_response_item.svh: {is_include_file: true}

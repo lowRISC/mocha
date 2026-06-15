@@ -20,4 +20,6 @@ package axi_agent_pkg;
 
   `include "axi_write_data_item.svh"
   `include "axi_write_response_item.svh"
+
+  `include "axi_response_accept_item.svh"
 endpackage
