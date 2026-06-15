@@ -505,6 +505,7 @@ module top_chip_system #(
     .debug_req_o          (debug_req_irq),
     .unavailable_i        (1'b0),
     .hartinfo_i           ({ariane_pkg::DebugHartInfo}),
+    .fetch_enable_i       (!rom_mem_isolate),
     .slave_req_i          (dm_device_req),
     .slave_we_i           (dm_device_we),
     .slave_addr_i         (dm_device_addr),
