@@ -57,14 +57,15 @@ Because simulating the CPU boot ROM process is slow, we load the software binary
 ## SW-to-DV Communication
 
 To facilitate interactions between the Software and the DV environment, we utilize the **`sim_sram_axi`** module.
-This is a special hardware block inserted only during simulation that intercepts AXI traffic.
 
 For more details, see: [sim_sram_axi/README.md](./sim_sram_axi/README.md)
 
 ### Mechanism
 
-1. **Interception:** The module "swallows" traffic destined for a specific Simulation Address Range (`SW_DV_START_ADDR`).
-   Traffic outside this range is transparently forwarded to the AXI Crossbar.
+1. **Dedicated crossbar port:** The SW-DV window (`0x2002_0000`, 256 bytes) is a first-class device on the main AXI crossbar inside `top_chip_system`.
+   The crossbar routes all accesses to this range out via the `sw_dv_req_o`/`sw_dv_resp_i` port pair, keeping it completely separate from the rest-of-chip bus.
+   In simulation, `tb.sv` connects `sim_sram_axi_sink` to this port as a plain AXI slave.
+   On FPGA, `chip_mocha_genesys2` connects the same port to its hardware ID logic.
 2. **Binding:** In `tb.sv`, we `bind` verification interfaces (`sw_test_status_if` and `sw_logger_if`) to this module.
 
 ### Use Cases

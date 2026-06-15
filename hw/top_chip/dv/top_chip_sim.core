@@ -40,17 +40,9 @@ targets:
 
   sim:
     <<: *default_target
-    parameters:
-      - INST_SIM_SRAM=false
     filesets:
       - files_dv
     toplevel: tb
     # This is required as DVSim always expects a scr file, but in practice we are only running
     # fusesoc up to the point it generates the filelist file.
     default_tool: vcs
-
-parameters:
-  INST_SIM_SRAM:
-    datatype: bool
-    paramtype: vlogdefine
-    description: Disconnect the AXI data output of CVA6 core so that we can attach the simulation SRAM.

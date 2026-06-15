@@ -6,14 +6,12 @@ SPDX-License-Identifier: Apache-2.0
 
 # Simulation SRAM AXI
 
-The `sim_sram_axi_sink` module intercepts an outbound AXI interface to carve out a chunk of "fake" memory used for simulation purposes only.
-This chunk of memory must not overlap with any device on the system address map - it must be an invalid address range from the system's perspective.
+The `sim_sram_axi_sink` module is a plain AXI subordinate that provides a chunk of "fake" memory used for simulation purposes only.
+It is attached to the `SwDvWindow` device port of the main AXI crossbar inside `top_chip_system` - a dedicated, first-class entry in the crossbar's address map - so it only ever sees traffic the crossbar has already routed to that range.
 
-It has 4 interfaces - clock, reset, input AXI interface from the CVA6 CPU (`cpu_req_i` and `cpu_resp_o`) and the output AXI interface to the AXI Crossbar (`xbar_req_o` and `xbar_resp_i`).
-It instantiates a [1:2 AXI Demultiplexer](../../../vendor/pulp_axi/doc/axi_demux.md) to split the incoming AXI access into two.
-One of the outputs of the socket is sinked within the module while the other is returned back.
+It has 3 interfaces - clock, reset, and a single AXI slave port (`axi_req_i` and `axi_resp_o`) fed exclusively by the crossbar's `SwDvWindow` device.
 
-If the user chooses to instantiate an actual SRAM instance (`InstantiateSram=1`), the sinked AXI interface is connected to the AXI to SRAM adapter `axi_to_mem` which converts the AXI access into a SRAM access.
+If the user chooses to instantiate an actual SRAM instance (`InstantiateSram=1`), the AXI interface is connected to the AXI to SRAM adapter `axi_to_mem` which converts the AXI access into a SRAM access.
 The [technology-independent](../../../ip/prim/README.md) `prim_ram_1p` module is used for instantiating the memory.
 
 ![Block Diagram](./doc/sim_sram_axi.svg)
@@ -31,8 +29,7 @@ In DV, this is envisioned to be used for the following purposes:
 These usecases apply to Verilator as well.
 However, at this time, the Verilator based simulations rely on the on-device UART for logging.
 
-This module must be instantiated before any XBAR / bus fabric element in the design which can return an error response when it sees an access to an invalid address range.
-Ideally, it should be placed as close to the CPU (or equivalent) as possible to reduce the simulation time.
+This module is attached as a subordinate device on the main AXI crossbar via the dedicated `SwDvWindow` port, so its position in the design is fixed by the crossbar's address map rather than by where it is instantiated.
 
 ## Customizations
 
@@ -76,22 +73,11 @@ In the Testbench Top (`tb.sv`), higher-level verification interfaces are `bind`-
 
 ## Usage
 
-This module needs to be instantiated on an existing outbound AXI connection, possibly deep in an existing design hierarchy while also abiding by these guidelines:
-- Design sources must not depend on simulation components.
-- Design sources must not directly instantiate simulation components, even with `ifdefs`.
-- Synthesis of the design must not disturbed whatsoever.
-- We must be able to run simulations with Verilator (which prevents us from using forces for example).
+`sim_sram_axi_sink` is instantiated purely in the testbench, never in synthesizable RTL, so design sources never depend on or instantiate simulation components.
 
-One way of achieving this is by disconnecting an outbound AXI interface in the design source where `sim_sram_axi_sink` needs to be inserted.
-The disconnection must be made in the desired design block ONLY if `` `SYNTHESIS`` is NOT defined and a special macro (user's choice on the name) is defined for simulations.
+Isolation from the design is achieved at the crossbar level rather than by cutting and forcing signals:
+- `top_pkg.sv` reserves `SwDvWindow` as a first-class device on the main AXI crossbar inside `top_chip_system`, with its own fixed base address and length.
+- `top_chip_system` exposes that device directly as a chip-level port pair, `sw_dv_req_o`/`sw_dv_resp_i`, alongside the other chip-level AXI ports (DRAM, rest-of-chip, etc).
+- Each testbench top (`tb.sv` for UVM/DV, `top_chip_verilator.sv` for Verilator) connects `sim_sram_axi_sink` to that port pair as a plain AXI subordinate.
 
-The sim_sram_axi_sink is always instantiated in the testbench.
-The connection method changes based on the simulation mode:
-
-- Verilator (`` `INST_SIM_SRAM`` is defined):
-The TB connects to the DUT's internal signals via hierarchical references (assign).
-Since the RTL connection was "cut" (see above), there is no contention, and force is not required.
-
-- UVM (`` `INST_SIM_SRAM`` is **NOT** defined):
-The RTL connection is intact.
-The TB uses force statements to override the internal wires at runtime, effectively inserting the sink without modifying the compiled RTL logic.
+Because the crossbar - not the sink - decides which traffic reaches this module, no `ifdefs`, forces, or synthesis-only disconnection tricks are needed, and the same connection method works identically for UVM and Verilator.

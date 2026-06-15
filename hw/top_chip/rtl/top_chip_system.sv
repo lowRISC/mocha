@@ -65,6 +65,10 @@ module top_chip_system #(
   output top_pkg::axi_dram_req_t  dram_req_o,
   input  top_pkg::axi_dram_resp_t dram_resp_i,
 
+  // SW-DV window AXI interface.
+  output top_pkg::axi_dev_req_t  sw_dv_req_o,
+  input  top_pkg::axi_dev_resp_t sw_dv_resp_i,
+
   // Rest of chip AXI interface.
   output top_pkg::axi_dev_req_t  rest_of_chip_req_o,
   input  top_pkg::axi_dev_resp_t rest_of_chip_resp_i,
@@ -153,6 +157,7 @@ module top_chip_system #(
     '{ idx: top_pkg::SRAM,       start_addr: top_pkg::SRAMBase,       end_addr: top_pkg::SRAMBase       + top_pkg::SRAMLength       },
     '{ idx: top_pkg::DM_DEV,     start_addr: top_pkg::DebugMemBase,   end_addr: top_pkg::DebugMemBase   + top_pkg::DebugMemLength   },
     '{ idx: top_pkg::Mailbox,    start_addr: top_pkg::MailboxBase,    end_addr: top_pkg::MailboxBase    + top_pkg::MailboxLength    },
+    '{ idx: top_pkg::SwDvWindow, start_addr: top_pkg::SwDvWindowBase, end_addr: top_pkg::SwDvWindowBase + top_pkg::SwDvWindowLength },
     '{ idx: top_pkg::RestOfChip, start_addr: top_pkg::RestOfChipBase, end_addr: top_pkg::RestOfChipBase + top_pkg::RestOfChipLength },
     '{ idx: top_pkg::TlCrossbar, start_addr: top_pkg::TlCrossbarBase, end_addr: top_pkg::TlCrossbarBase + top_pkg::TlCrossbarLength },
     '{ idx: top_pkg::DRAM,       start_addr: top_pkg::DRAMBase,       end_addr: top_pkg::DRAMBase       + top_pkg::DRAMUsableLength }
@@ -300,9 +305,6 @@ module top_chip_system #(
   logic [1:0] intr;
   logic       debug_req_irq;
 
-  // Signals to intercept AXI traffic from CVA6 for DV puprose
-  top_pkg::axi_req_t  cva6_to_sim_req;
-  top_pkg::axi_resp_t sim_to_cva6_resp;
 
   // Define the signals used by the clock, reset and power managers.
   clkmgr_pkg::clkmgr_cg_en_t  clkmgr_cg_en;
@@ -397,8 +399,8 @@ module top_chip_system #(
     .rvfi_probes_o ( ),
     .cvxif_req_o   ( ),
     .cvxif_resp_i  ('0),
-    .noc_req_o     (cva6_to_sim_req),
-    .noc_resp_i    (sim_to_cva6_resp)
+    .noc_req_o     (xbar_host_req[top_pkg::CVA6]),
+    .noc_resp_i    (xbar_host_resp[top_pkg::CVA6])
   );
 
   // JTAG to DMI bridge
@@ -531,19 +533,6 @@ module top_chip_system #(
     .dmi_resp_o           (debug_resp)
   );
 
-  // Interception point for connecting simulation SRAM by disconnecting the AXI output. The
-  // disconnection is done only if `SYNTHESIS is NOT defined AND `INST_SIM_SRAM is defined.
-  // This define is used only for Verilator as it does not support forces.
-`ifdef INST_SIM_SRAM
-`ifdef SYNTHESIS
-  // Induce a compilation error by instantiating a non-existent module.
-  illegal_preprocessor_branch_taken u_illegal_preprocessor_branch_taken ();
-`endif
-`else
-  assign xbar_host_req[top_pkg::CVA6] = cva6_to_sim_req;
-  assign sim_to_cva6_resp             = xbar_host_resp[top_pkg::CVA6];
-`endif
-
   // AXI SRAM
   axi_sram #(
     .AddrWidth   ( SramAddrWidth         ),
@@ -556,6 +545,10 @@ module top_chip_system #(
     .axi_req_i  (xbar_device_req[top_pkg::SRAM]),
     .axi_resp_o (xbar_device_resp[top_pkg::SRAM])
   );
+
+  // SW-DV window AXI passthrough
+  assign sw_dv_req_o                           = xbar_device_req[top_pkg::SwDvWindow];
+  assign xbar_device_resp[top_pkg::SwDvWindow] = sw_dv_resp_i;
 
   // Rest of chip AXI passthrough
   assign rest_of_chip_req_o                    = xbar_device_req[top_pkg::RestOfChip];

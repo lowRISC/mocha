@@ -19,8 +19,8 @@ interface sim_sram_axi_if (
   logic [31:0] hw_id;
 
   // Monitor signals driven by the Sink
-  axi_req_t  req;
-  axi_resp_t resp;
+  axi_dev_req_t  req;
+  axi_dev_resp_t resp;
 
   // Logic to qualify a valid "Simulation Write"
   logic wr_valid;
