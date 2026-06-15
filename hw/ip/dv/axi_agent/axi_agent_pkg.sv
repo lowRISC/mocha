@@ -52,4 +52,6 @@ package axi_agent_pkg;
   `include "axi_agent.svh"
 
   `include "seq_lib/axi_mgr_txn_request_seq.svh"
+  `include "seq_lib/axi_mgr_write_data_seq.svh"
+  `include "seq_lib/axi_mgr_write_single_data_seq.svh"
 endpackage
