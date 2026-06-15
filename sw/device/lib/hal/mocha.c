@@ -14,6 +14,7 @@
 static const uintptr_t rom_base = 0x80000ul;
 static const uintptr_t mailbox_base = 0x20010000ul;
 static const uintptr_t dv_test_status_base = 0x20020000ul;
+static const uintptr_t dv_log_base = 0x20020008ul;
 static const uintptr_t ethernet_base = 0x30000000ul;
 static const uintptr_t gpio_base = 0x40000000ul;
 static const uintptr_t clkmgr_base = 0x40020000ul;
@@ -199,5 +200,14 @@ void *mocha_system_dv_test_status(void)
     return create_mmio_capability(dv_test_status_base, 0x100u);
 #else /* !defined(__riscv_zcherihybrid) */
     return (void *)dv_test_status_base;
+#endif /* defined(__riscv_zcherihybrid) */
+}
+
+void *mocha_system_dv_log(void)
+{
+#if defined(__riscv_zcherihybrid)
+    return create_mmio_capability(dv_log_base, 0x4u);
+#else /* !defined(__riscv_zcherihybrid) */
+    return (void *)dv_log_base;
 #endif /* defined(__riscv_zcherihybrid) */
 }
