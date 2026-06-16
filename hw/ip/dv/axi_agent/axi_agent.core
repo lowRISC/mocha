@@ -17,12 +17,19 @@ filesets:
 
       - axi_agent_pkg.sv
 
+      - axi_reset_item.svh: {is_include_file: true}
       - axi_status_item.svh: {is_include_file: true}
       - axi_txn_request_item.svh: {is_include_file: true}
       - axi_response_accept_item.svh: {is_include_file: true}
       - axi_read_data_item.svh: {is_include_file: true}
       - axi_write_data_item.svh: {is_include_file: true}
       - axi_write_response_item.svh: {is_include_file: true}
+
+      - axi_reset_monitor_aw.svh: {is_include_file: true}
+      - axi_reset_monitor_w.svh: {is_include_file: true}
+      - axi_reset_monitor_b.svh: {is_include_file: true}
+      - axi_reset_monitor_ar.svh: {is_include_file: true}
+      - axi_reset_monitor_r.svh: {is_include_file: true}
 
       - axi_mgr_write_request_driver.svh: {is_include_file: true}
       - axi_mgr_write_data_driver.svh: {is_include_file: true}
