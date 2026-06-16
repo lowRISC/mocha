@@ -17,7 +17,7 @@ This table shows the current design and verification stage for each block in Moc
 | [CVA6-CHERI][]        | D1               | V0                     |
 | [Debug module][]      | D1               | V0                     |
 | [Entropy source][]    | D1               | V0                     |
-| [GPIO][]              | D1               | V0                     |
+| [GPIO][]              | D1               | V1                     |
 | [KMAC][]              | D1               | V0                     |
 | [I2C][]               | D1               | V0                     |
 | [Mailbox][]           | D1               | V0                     |
