@@ -45,6 +45,9 @@ filesets:
 
       - axi_response_router.svh: {is_include_file: true}
 
+      - axi_reg_op_item.svh: {is_include_file: true}
+      - axi_reg_adapter.svh: {is_include_file: true}
+
       - axi_agent.svh: {is_include_file: true}
 
       - seq_lib/axi_mgr_txn_request_seq.svh: {is_include_file: true}
@@ -55,6 +58,8 @@ filesets:
 
       - seq_lib/axi_mgr_write_fixed_vseq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_read_fixed_vseq.svh: {is_include_file: true}
+
+      - seq_lib/axi_mgr_register_layer_vseq.svh: {is_include_file: true}
 
     file_type: systemVerilogSource
 

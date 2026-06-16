@@ -8,6 +8,8 @@
 class axi_agent extends uvm_agent;
   `uvm_component_utils(axi_agent)
 
+  typedef uvm_sequencer #(axi_reg_op_item) layered_reg_sequencer_t;
+
   // The agent config object, which allows the testbench to supply virtual interfaces. This can
   // either be set by calling set_cfg() before the build phase, or provided through uvm_config_db.
   local axi_agent_cfg m_cfg;
@@ -42,6 +44,15 @@ class axi_agent extends uvm_agent;
 
   // A response router for reads
   local axi_response_router m_read_response_router;
+
+  // A reg adapter. This is stateless, so gets created in build_phase whenever the agent is active.
+  // It's useful in conjunction with a layered sequencer (which is created by
+  // run_layered_register_vseq and can be retrieved with get_register_layering_sequencer).
+  local axi_reg_adapter m_reg_adapter;
+
+  // A sequencer that controls access to an instance of axi_mgr_register_layer_vseq that is
+  // currently running.
+  local layered_reg_sequencer_t m_layered_reg_sequencer;
 
   extern function new (string name, uvm_component parent);
   extern function void build_phase(uvm_phase phase);
@@ -95,6 +106,19 @@ class axi_agent extends uvm_agent;
   // Get the read response router. Can only be called after build_phase, and the
   // agent must be active.
   extern function axi_response_router get_read_response_router();
+
+  // Get the reg adapter. Can only be called after build_phase, and the agent must be active.
+  extern function axi_reg_adapter get_layered_reg_adapter();
+
+  // Run the layered register vseq, which shouldn't already be running.
+  //
+  // This sequence will run forever and its layering sequencer can be retrieved with
+  // get_register_layering_sequencer().
+  extern task run_layered_register_vseq();
+
+  // Get a handle a the sequencer for a layered register vseq that is currently running. If there is
+  // not yet one running, this returns null.
+  extern function layered_reg_sequencer_t get_register_layering_sequencer();
 endclass
 
 function axi_agent::new(string name, uvm_component parent);
@@ -119,6 +143,8 @@ function void axi_agent::build_phase(uvm_phase phase);
     // Create routers for write and read responses
     m_write_response_router = axi_response_router::type_id::create("m_write_response_router", this);
     m_read_response_router = axi_response_router::type_id::create("m_read_response_router", this);
+
+    m_reg_adapter = axi_reg_adapter::type_id::create("m_reg_adapter");
 
     // Generate drivers and sequencers for the five channels
     // The write request channel (AW)
@@ -261,4 +287,39 @@ function axi_response_router axi_agent::get_read_response_router();
   if (m_read_response_router == null)
     `uvm_fatal(get_full_name(), "m_read_response_router is null.")
   return m_read_response_router;
+endfunction
+
+function axi_reg_adapter axi_agent::get_layered_reg_adapter();
+  if (m_reg_adapter == null) `uvm_fatal(get_full_name(), "m_reg_adapter is null.")
+  return m_reg_adapter;
+endfunction
+
+task axi_agent::run_layered_register_vseq();
+  axi_mgr_register_layer_vseq layer_vseq;
+
+  if (m_layered_reg_sequencer != null) begin
+    `uvm_fatal(get_full_name(), "Overlapping runs of layered register vseq.")
+  end
+
+  m_layered_reg_sequencer =
+    layered_reg_sequencer_t::type_id::create("m_layered_reg_sequencer", this);
+
+  layer_vseq = axi_mgr_register_layer_vseq::type_id::create("layer_vseq");
+
+  layer_vseq.set_sequencers(m_layered_reg_sequencer,
+                            m_write_request_sequencer,
+                            m_write_data_sequencer,
+                            m_write_response_sequencer,
+                            m_read_request_sequencer,
+                            m_read_data_sequencer);
+  layer_vseq.set_response_routers(m_read_response_router, m_write_response_router);
+
+  layer_vseq.start(null);
+
+  // Because layer_vseq never completes, we don't expect to get her.
+  `uvm_fatal(get_full_name(), "Instance of axi_mgr_register_layer_vseq ran to completion.")
+endtask
+
+function axi_agent::layered_reg_sequencer_t axi_agent::get_register_layering_sequencer();
+  return m_layered_reg_sequencer;
 endfunction
