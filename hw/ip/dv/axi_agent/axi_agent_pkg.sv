@@ -31,4 +31,14 @@ package axi_agent_pkg;
 
   `include "axi_mgr_read_request_driver.svh"
   `include "axi_mgr_read_data_driver.svh"
+
+  `include "axi_reset_item.svh"
+
+  // Reset monitors for the five interfaces (all essentially the same thing, but the interface types
+  // are different so we have to copy-paste the classes)
+  `include "axi_reset_monitor_aw.svh"
+  `include "axi_reset_monitor_w.svh"
+  `include "axi_reset_monitor_b.svh"
+  `include "axi_reset_monitor_ar.svh"
+  `include "axi_reset_monitor_r.svh"
 endpackage
