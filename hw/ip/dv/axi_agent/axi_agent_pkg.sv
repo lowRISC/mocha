@@ -42,14 +42,16 @@ package axi_agent_pkg;
   `include "axi_reset_monitor_ar.svh"
   `include "axi_reset_monitor_r.svh"
 
+  `include "axi_reg_op_item.svh"
+  `include "axi_reg_adapter.svh"
+
   typedef uvm_sequencer#(axi_txn_request_item, axi_status_item)       write_request_sequencer_t;
   typedef uvm_sequencer#(axi_write_data_item, axi_status_item)        write_data_sequencer_t;
   typedef uvm_sequencer#(axi_response_accept_item, uvm_sequence_item) write_response_sequencer_t;
   typedef uvm_sequencer#(axi_txn_request_item, axi_status_item)       read_request_sequencer_t;
   typedef uvm_sequencer#(axi_response_accept_item, uvm_sequence_item) read_data_sequencer_t;
 
-  `include "axi_agent_cfg.svh"
-  `include "axi_agent.svh"
+  `include "axi_response_router.svh"
 
   `include "seq_lib/axi_mgr_txn_request_seq.svh"
   `include "seq_lib/axi_mgr_write_data_seq.svh"
@@ -64,4 +66,8 @@ package axi_agent_pkg;
   `include "axi_fixed_read_req_item.svh"
   `include "axi_fixed_read_rsp_item.svh"
   `include "seq_lib/axi_mgr_read_fixed_vseq.svh"
+
+  `include "seq_lib/axi_mgr_register_layer_vseq.svh"
+
+  `include "axi_agent.svh"
 endpackage
