@@ -1,0 +1,10 @@
+--- a/key_sideload_agent/key_sideload_agent.core
++++ b/key_sideload_agent/key_sideload_agent.core
+@@ -9,6 +9,7 @@
+     depend:
+       - lowrisc:dv:dv_utils
+       - lowrisc:dv:dv_lib
++      - lowrisc:ip:kmac_pkg
+     files:
+       - key_sideload_if.sv
+       - key_sideload_agent_pkg.sv
