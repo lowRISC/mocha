@@ -1,7 +1,7 @@
-diff --git a/dv/base_sim_cfg.hjson b/dv/base_sim_cfg.hjson
+diff --git a/base_sim_cfg.hjson b/base_sim_cfg.hjson
 index 8bbf40c..58e9c99 100644
---- a/dv/base_sim_cfg.hjson
-+++ b/dv/base_sim_cfg.hjson
+--- a/base_sim_cfg.hjson
++++ b/base_sim_cfg.hjson
 @@ -12,7 +12,7 @@
    tb: tb
 

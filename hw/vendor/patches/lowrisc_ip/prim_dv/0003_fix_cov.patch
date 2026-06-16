@@ -1,7 +1,7 @@
-diff --git a/dv/prim_alert/prim_alert_sim_cfg.hjson b/dv/prim_alert/prim_alert_sim_cfg.hjson
+diff --git a/prim_alert/prim_alert_sim_cfg.hjson b/prim_alert/prim_alert_sim_cfg.hjson
 index e768cd3..8c1cb12 100644
---- a/dv/prim_alert/prim_alert_sim_cfg.hjson
-+++ b/dv/prim_alert/prim_alert_sim_cfg.hjson
+--- a/prim_alert/prim_alert_sim_cfg.hjson
++++ b/prim_alert/prim_alert_sim_cfg.hjson
 @@ -6,7 +6,7 @@
    name: prim_alert
 
@@ -20,10 +20,10 @@ index e768cd3..8c1cb12 100644
      }
    ]
  }
-diff --git a/dv/prim_esc/prim_esc_sim_cfg.hjson b/dv/prim_esc/prim_esc_sim_cfg.hjson
+diff --git a/prim_esc/prim_esc_sim_cfg.hjson b/prim_esc/prim_esc_sim_cfg.hjson
 index a102b9b..42d0543 100644
---- a/dv/prim_esc/prim_esc_sim_cfg.hjson
-+++ b/dv/prim_esc/prim_esc_sim_cfg.hjson
+--- a/prim_esc/prim_esc_sim_cfg.hjson
++++ b/prim_esc/prim_esc_sim_cfg.hjson
 @@ -6,7 +6,7 @@
    name: prim_esc
 
@@ -43,10 +43,10 @@ index a102b9b..42d0543 100644
 +    }
    ]
  }
-diff --git a/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson b/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
+diff --git a/prim_lfsr/prim_lfsr_sim_cfg.hjson b/prim_lfsr/prim_lfsr_sim_cfg.hjson
 index 0a33d8f..5f9be63 100644
---- a/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
-+++ b/dv/prim_lfsr/prim_lfsr_sim_cfg.hjson
+--- a/prim_lfsr/prim_lfsr_sim_cfg.hjson
++++ b/prim_lfsr/prim_lfsr_sim_cfg.hjson
 @@ -6,7 +6,7 @@
    name: prim_lfsr
 
@@ -68,11 +68,11 @@ index 0a33d8f..5f9be63 100644
 +    }
 +  ]
  }
-diff --git a/dv/prim_alert/data/prim_alert_cover.ccf b/dv/prim_alert/data/prim_alert_cover.ccf
+diff --git a/prim_alert/data/prim_alert_cover.ccf b/prim_alert/data/prim_alert_cover.ccf
 new file mode 100644
 index 0000000..343d8f2
 --- /dev/null
-+++ b/dv/prim_alert/data/prim_alert_cover.ccf
++++ b/prim_alert/data/prim_alert_cover.ccf
 @@ -0,0 +1,9 @@
 +// Copyright lowRISC contributors (OpenTitan project).
 +// Licensed under the Apache License, Version 2.0, see LICENSE for details.
@@ -83,11 +83,11 @@ index 0000000..343d8f2
 +
 +select_coverage -all -module prim_alert_sender
 +select_coverage -all -module prim_alert_receiver
-diff --git a/dv/prim_esc/data/prim_esc_cover.ccf b/dv/prim_esc/data/prim_esc_cover.ccf
+diff --git a/prim_esc/data/prim_esc_cover.ccf b/prim_esc/data/prim_esc_cover.ccf
 new file mode 100644
 index 0000000..8264faf
 --- /dev/null
-+++ b/dv/prim_esc/data/prim_esc_cover.ccf
++++ b/prim_esc/data/prim_esc_cover.ccf
 @@ -0,0 +1,9 @@
 +// Copyright lowRISC contributors (OpenTitan project).
 +// Licensed under the Apache License, Version 2.0, see LICENSE for details.
@@ -98,11 +98,11 @@ index 0000000..8264faf
 +
 +select_coverage -all -module prim_esc_sender
 +select_coverage -all -module prim_esc_receiver
-diff --git a/dv/prim_lfsr/data/prim_lfsr_cover.ccf b/dv/prim_lfsr/data/prim_lfsr_cover.ccf
+diff --git a/prim_lfsr/data/prim_lfsr_cover.ccf b/prim_lfsr/data/prim_lfsr_cover.ccf
 new file mode 100644
 index 0000000..d709b33
 --- /dev/null
-+++ b/dv/prim_lfsr/data/prim_lfsr_cover.ccf
++++ b/prim_lfsr/data/prim_lfsr_cover.ccf
 @@ -0,0 +1,8 @@
 +// Copyright lowRISC contributors (OpenTitan project).
 +// Licensed under the Apache License, Version 2.0, see LICENSE for details.

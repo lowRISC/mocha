@@ -1,7 +1,7 @@
-diff --git a/dv/base_sim_cfg.hjson b/dv/base_sim_cfg.hjson
+diff --git a/base_sim_cfg.hjson b/base_sim_cfg.hjson
 index d018345..8bbf40c 100644
---- a/dv/base_sim_cfg.hjson
-+++ b/dv/base_sim_cfg.hjson
+--- a/base_sim_cfg.hjson
++++ b/base_sim_cfg.hjson
 @@ -33,9 +33,7 @@
                  "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/intr_test.hjson",
                  "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson"

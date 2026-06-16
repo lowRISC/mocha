@@ -1,23 +1,21 @@
-diff --git a/data/spi_device_testplan.hjson b/data/spi_device_testplan.hjson
-index 1092cc1..352fc89 100644
---- a/data/spi_device_testplan.hjson
-+++ b/data/spi_device_testplan.hjson
-@@ -3,12 +3,12 @@
+diff --git a/data/entropy_src_testplan.hjson b/data/entropy_src_testplan.hjson
+index 4d296d9..29a4c0c 100644
+--- a/data/entropy_src_testplan.hjson
++++ b/data/entropy_src_testplan.hjson
+@@ -3,11 +3,11 @@
  // SPDX-License-Identifier: Apache-2.0
  {
-   name: "spi_device"
+   name: "entropy_src"
 -  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/mem_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
 -                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
 -                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
 -                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
 +  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/mem_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
 +                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
 +                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
 +                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
-                      "spi_device_sec_cm_testplan.hjson"]
+                      "entropy_src_sec_cm_testplan.hjson"]
    testpoints: [
      {

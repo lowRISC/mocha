@@ -1,7 +1,7 @@
-diff --git a/dv/env/rom_ctrl_bkdr_util.core b/dv/env/rom_ctrl_bkdr_util.core
+diff --git a/env/rom_ctrl_bkdr_util.core b/env/rom_ctrl_bkdr_util.core
 index 70a2dd6..6cfdfbc 100644
---- a/dv/env/rom_ctrl_bkdr_util.core
-+++ b/dv/env/rom_ctrl_bkdr_util.core
+--- a/env/rom_ctrl_bkdr_util.core
++++ b/env/rom_ctrl_bkdr_util.core
 @@ -15,8 +15,9 @@ filesets:
        - lowrisc:prim:secded:0.1
        - lowrisc:dv:digestpp_dpi:0.1

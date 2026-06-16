@@ -1,7 +1,7 @@
-diff --git a/dv/sva/rstmgr_cascading_sva_if.sv.tpl b/dv/sva/rstmgr_cascading_sva_if.sv.tpl
+diff --git a/sva/rstmgr_cascading_sva_if.sv.tpl b/sva/rstmgr_cascading_sva_if.sv.tpl
 index 143d0ed5..f8853b04 100644
---- a/dv/sva/rstmgr_cascading_sva_if.sv.tpl
-+++ b/dv/sva/rstmgr_cascading_sva_if.sv.tpl
+--- a/sva/rstmgr_cascading_sva_if.sv.tpl
++++ b/sva/rstmgr_cascading_sva_if.sv.tpl
 @@ -184,16 +184,22 @@ interface rstmgr_cascading_sva_if (
  % endfor
  

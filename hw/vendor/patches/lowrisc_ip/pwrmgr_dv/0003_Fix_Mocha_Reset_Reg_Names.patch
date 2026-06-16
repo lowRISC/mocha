@@ -1,7 +1,7 @@
-diff --git a/dv/env/pwrmgr_if.sv b/dv/env/pwrmgr_if.sv
+diff --git a/env/pwrmgr_if.sv b/env/pwrmgr_if.sv
 index 00ec532..5f6ace2 100644
---- a/dv/env/pwrmgr_if.sv
-+++ b/dv/env/pwrmgr_if.sv
+--- a/env/pwrmgr_if.sv
++++ b/env/pwrmgr_if.sv
 @@ -87,12 +87,8 @@ interface pwrmgr_if (
    always_comb lowpwr_cfg_wen = `PATH_TO_DUT.lowpwr_cfg_wen;
  
