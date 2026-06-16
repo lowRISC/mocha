@@ -1,7 +1,7 @@
-diff --git a/dv/env/rstmgr_if.sv.tpl b/dv/env/rstmgr_if.sv.tpl
+diff --git a/env/rstmgr_if.sv.tpl b/env/rstmgr_if.sv.tpl
 index cb2102d..25c6fe2 100644
---- a/dv/env/rstmgr_if.sv.tpl
-+++ b/dv/env/rstmgr_if.sv.tpl
+--- a/env/rstmgr_if.sv.tpl
++++ b/env/rstmgr_if.sv.tpl
 @@ -13,7 +13,7 @@ elif "io" in all_clks:
  else:
      assert 0, "No preferred clock available"
@@ -11,10 +11,10 @@ index cb2102d..25c6fe2 100644
  %>\
  
  interface rstmgr_if (
-diff --git a/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl b/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl
+diff --git a/env/seq_lib/rstmgr_reset_vseq.sv.tpl b/env/seq_lib/rstmgr_reset_vseq.sv.tpl
 index 356807f..1670853 100644
---- a/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl
-+++ b/dv/env/seq_lib/rstmgr_reset_vseq.sv.tpl
+--- a/env/seq_lib/rstmgr_reset_vseq.sv.tpl
++++ b/env/seq_lib/rstmgr_reset_vseq.sv.tpl
 @@ -127,8 +127,8 @@ class rstmgr_reset_vseq extends rstmgr_base_vseq;
      expected_cpu_enable = 0;
  
@@ -35,10 +35,10 @@ index 356807f..1670853 100644
        check_reset_info(expected_reset_info_code);
        check_alert_info_after_reset(.alert_dump(expected_alert_dump),
                                     .enable(expected_alert_enable));
-diff --git a/dv/tb.sv.tpl b/dv/tb.sv.tpl
+diff --git a/tb.sv.tpl b/tb.sv.tpl
 index c2e8ce4..49dbb57 100644
---- a/dv/tb.sv.tpl
-+++ b/dv/tb.sv.tpl
+--- a/tb.sv.tpl
++++ b/tb.sv.tpl
 @@ -12,7 +12,7 @@ elif "io" in all_clks:
  else:
      assert 0, "No preferred clock available"

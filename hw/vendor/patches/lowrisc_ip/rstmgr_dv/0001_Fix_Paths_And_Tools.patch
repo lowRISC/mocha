@@ -1,31 +1,7 @@
-diff --git a/data/rstmgr_testplan.hjson b/data/rstmgr_testplan.hjson
-index be44e83..0fdfd52 100644
---- a/data/rstmgr_testplan.hjson
-+++ b/data/rstmgr_testplan.hjson
-@@ -3,12 +3,12 @@
- // SPDX-License-Identifier: Apache-2.0
- {
-   name: "rstmgr"
--  import_testplans: ["hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/sec_cm_fsm_testplan.hjson",
-+  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_fsm_testplan.hjson",
-                      "rstmgr_sec_cm_testplan.hjson"]
-
-   testpoints: [
-
-diff --git a/dv/rstmgr_sim_cfg.hjson.tpl b/dv/rstmgr_sim_cfg.hjson.tpl
+diff --git a/rstmgr_sim_cfg.hjson.tpl b/rstmgr_sim_cfg.hjson.tpl
 index b12e73a..3c50439 100644
---- a/dv/rstmgr_sim_cfg.hjson.tpl
-+++ b/dv/rstmgr_sim_cfg.hjson.tpl
+--- a/rstmgr_sim_cfg.hjson.tpl
++++ b/rstmgr_sim_cfg.hjson.tpl
 @@ -12,7 +12,7 @@
    tb: tb
 
@@ -58,10 +34,10 @@ index b12e73a..3c50439 100644
                  ]
 
    // Specific exclusion files.
-diff --git a/dv/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl b/dv/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl
+diff --git a/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl b/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl
 index 42f8b22..1107fe8 100644
---- a/dv/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl
-+++ b/dv/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl
+--- a/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl
++++ b/rstmgr_cnsty_chk/rstmgr_cnsty_chk_sim_cfg.hjson.tpl
 @@ -21,7 +21,7 @@
    testplan: "{self_dir}/data/rstmgr_cnsty_chk_testplan.hjson"
 

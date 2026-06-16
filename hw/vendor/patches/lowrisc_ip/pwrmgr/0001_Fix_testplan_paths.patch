@@ -1,23 +1,23 @@
-diff --git a/data/spi_device_testplan.hjson b/data/spi_device_testplan.hjson
-index 1092cc1..352fc89 100644
---- a/data/spi_device_testplan.hjson
-+++ b/data/spi_device_testplan.hjson
+diff --git a/data/pwrmgr_testplan.hjson b/data/pwrmgr_testplan.hjson
+index 1bdb7ab..5366ffb 100644
+--- a/data/pwrmgr_testplan.hjson
++++ b/data/pwrmgr_testplan.hjson
 @@ -3,12 +3,12 @@
  // SPDX-License-Identifier: Apache-2.0
  {
-   name: "spi_device"
+   name: "pwrmgr"
 -  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/mem_testplan.hjson",
--                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
 -                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
 -                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
 -                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/sec_cm_fsm_testplan.hjson",
 +  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/mem_testplan.hjson",
-+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
 +                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
 +                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
 +                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
-                      "spi_device_sec_cm_testplan.hjson"]
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_fsm_testplan.hjson",
+                      "pwrmgr_sec_cm_testplan.hjson"]
    testpoints: [
      {

@@ -1,8 +1,8 @@
-diff --git a/dv/env/sram_scrambler_pkg.sv b/dv/env/sram_scrambler_pkg.sv
+diff --git a/env/sram_scrambler_pkg.sv b/env/sram_scrambler_pkg.sv
 new file mode 100644
 index 0000000..a76718d
 --- /dev/null
-+++ b/dv/env/sram_scrambler_pkg.sv
++++ b/env/sram_scrambler_pkg.sv
 @@ -0,0 +1,368 @@
 +// Copyright lowRISC contributors (OpenTitan project).
 +// Licensed under the Apache License, Version 2.0, see LICENSE for details.

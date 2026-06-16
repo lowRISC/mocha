@@ -1,0 +1,49 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "lowrisc_ip_dv",
+  target_dir: "lowrisc_ip",
+  patch_dir: "patches/lowrisc_ip",
+
+  upstream: {
+    url: "https://github.com/lowRISC/opentitan"
+    // Pinned revision of main branch
+    rev: "master"
+  }
+
+  mapping: [
+    // Shared DV infrastructure.
+    {from: "hw/dv/dpi/gpiodpi", to: "dv/dpi/gpiodpi", patch_dir: "gpiodpi"},
+    {from: "hw/dv/dpi/spidpi",  to: "dv/dpi/spidpi"},
+    {from: "hw/dv/dpi/uartdpi", to: "dv/dpi/uartdpi"},
+    {from: "hw/dv/sv",          to: "dv/sv", patch_dir: "dv_sv"},
+    {from: "hw/dv/verilator",   to: "dv/verilator", patch_dir: "dv_verilator"},
+    {from: "hw/dv/tools",       to: "dv/tools",     patch_dir: "dv_tools"},
+    {from: "hw/formal/tools",   to: "formal/tools", patch_dir: "formal_tools"},
+
+    // Per-IP DV environments.
+    {from: "hw/ip/entropy_src/dv", to: "ip/entropy_src/dv", patch_dir: "entropy_src_dv"},
+    {from: "hw/ip/i2c/dv",        to: "ip/i2c/dv",        patch_dir: "i2c_dv"},
+    {from: "hw/ip/kmac/dv",       to: "ip/kmac/dv"},
+    {from: "hw/ip/lc_ctrl/dv",    to: "ip/lc_ctrl/dv"},
+    {from: "hw/ip/prim/dv",       to: "ip/prim/dv",        patch_dir: "prim_dv"},
+    {from: "hw/ip/rom_ctrl/dv",   to: "ip/rom_ctrl/dv",   patch_dir: "rom_ctrl_dv"},
+    {from: "hw/ip/rv_timer/dv",   to: "ip/rv_timer/dv",   patch_dir: "rv_timer_dv"},
+    {from: "hw/ip/spi_device/dv", to: "ip/spi_device/dv", patch_dir: "spi_device_dv"},
+    {from: "hw/ip/spi_host/dv",   to: "ip/spi_host/dv",   patch_dir: "spi_host_dv"},
+    {from: "hw/ip/uart/dv",       to: "ip/uart/dv",        patch_dir: "uart_dv"},
+
+    // Per-IP-template DV environments.
+    {from: "hw/ip_templates/alert_handler/dv", to: "ip_templates/alert_handler/dv"},
+    {from: "hw/ip_templates/clkmgr/dv",        to: "ip_templates/clkmgr/dv"},
+    {from: "hw/ip_templates/gpio/dv",          to: "ip_templates/gpio/dv",   patch_dir: "gpio_dv"},
+    {from: "hw/ip_templates/pwrmgr/dv",        to: "ip_templates/pwrmgr/dv", patch_dir: "pwrmgr_dv"},
+    {from: "hw/ip_templates/rstmgr/dv",        to: "ip_templates/rstmgr/dv", patch_dir: "rstmgr_dv"},
+  ],
+
+  exclude_from_upstream: [
+    "**/BUILD",
+    "hw/dv/tools/vcs",
+  ],
+}

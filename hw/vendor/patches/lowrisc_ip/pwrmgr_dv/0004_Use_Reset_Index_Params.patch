@@ -1,7 +1,7 @@
-diff --git a/dv/env/seq_lib/pwrmgr_glitch_vseq.sv b/dv/env/seq_lib/pwrmgr_glitch_vseq.sv
+diff --git a/env/seq_lib/pwrmgr_glitch_vseq.sv b/env/seq_lib/pwrmgr_glitch_vseq.sv
 index b7369f1..1a21ff7 100644
---- a/dv/env/seq_lib/pwrmgr_glitch_vseq.sv
-+++ b/dv/env/seq_lib/pwrmgr_glitch_vseq.sv
+--- a/env/seq_lib/pwrmgr_glitch_vseq.sv
++++ b/env/seq_lib/pwrmgr_glitch_vseq.sv
 @@ -30,7 +30,7 @@ class pwrmgr_glitch_vseq extends pwrmgr_base_vseq;
        cfg.clk_rst_vif.wait_clks(cycles_before_reset);
  
@@ -11,10 +11,10 @@ index b7369f1..1a21ff7 100644
                     "checker timeout : fast_state %s, pwr_rst_req 0x%x",
                     cfg.pwrmgr_vif.fast_state.name,
                     cfg.pwrmgr_vif.pwr_rst_req.rstreqs
-diff --git a/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv b/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv
+diff --git a/env/seq_lib/pwrmgr_global_esc_vseq.sv b/env/seq_lib/pwrmgr_global_esc_vseq.sv
 index 1209fa5..7ec133e 100644
---- a/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv
-+++ b/dv/env/seq_lib/pwrmgr_global_esc_vseq.sv
+--- a/env/seq_lib/pwrmgr_global_esc_vseq.sv
++++ b/env/seq_lib/pwrmgr_global_esc_vseq.sv
 @@ -37,7 +37,7 @@ class pwrmgr_global_esc_vseq extends pwrmgr_base_vseq;
      while (trans_cnt < num_trans) begin
        @(cfg.clk_rst_vif.cb);
@@ -24,10 +24,10 @@ index 1209fa5..7ec133e 100644
        trans_cnt++;
  
        // Make sure previous dut_init is done
-diff --git a/dv/sva/pwrmgr_bind.sv.tpl b/dv/sva/pwrmgr_bind.sv.tpl
+diff --git a/sva/pwrmgr_bind.sv.tpl b/sva/pwrmgr_bind.sv.tpl
 index 59865e7..3117bf8 100644
---- a/dv/sva/pwrmgr_bind.sv.tpl
-+++ b/dv/sva/pwrmgr_bind.sv.tpl
+--- a/sva/pwrmgr_bind.sv.tpl
++++ b/sva/pwrmgr_bind.sv.tpl
 @@ -63,10 +63,10 @@ module pwrmgr_bind;
  % if 'io' in src_clks:
      .io_clk_en(pwr_clk_o.io_ip_clk_en),
