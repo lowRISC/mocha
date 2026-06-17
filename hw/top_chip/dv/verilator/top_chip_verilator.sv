@@ -277,7 +277,7 @@ module top_chip_verilator (
   `undef SIM_SRAM_IF
 
   // Mock AXI external memory
-  dram_wrapper_sim u_dram_wrapper(
+  sim_dram_wrapper u_dram_wrapper(
     .clk_i  (u_top_chip_system.clkmgr_clocks.clk_main_infra),
     .rst_ni (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
