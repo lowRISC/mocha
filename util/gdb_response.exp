@@ -1,0 +1,52 @@
+#!/usr/bin/env -S expect -f
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+#
+# On timeout just wait indefinitely.
+set timeout 20
+expect_before {
+    timeout { puts "Error: GDB didn't print the expected response within teh timeout"; exit 2 }
+    eof { puts "Error: GDB unexpectedly terminated"; exit 1}
+}
+spawn gdb build/sw/device/examples/infinite_loop
+expect "Reading symbols from \[32;49;22;23;24;27mbuild/sw/device/examples/infinite_loop\[m...\r"
+# Connect to OpenOCD.
+expect "(gdb) "
+send "target extended-remote localhost:3333\r"
+# Inspect a register.
+expect "(gdb) "
+send "info reg t6\r"
+expect "t6"
+expect "0x0"
+expect "0"
+# Inspect memory.
+expect "(gdb) "
+send "x/x 0x00080000\r"
+expect "0xbebacafe"
+expect "(gdb) "
+send "x/x 0x80001000\r"
+expect "0x00000000"
+expect "(gdb) "
+send "set *0x80001000 = 0xdeadbeef\r"
+expect "(gdb) "
+send "x/x 0x80001000\r"
+expect "0xdeadbeef"
+expect "(gdb) "
+send "set *0x80001000 = 0x00000000\r"
+# Breakpoints.
+expect "(gdb) "
+send "break *0x100000d0\r"
+expect "Breakpoint 1"
+expect "(gdb) "
+send "run\r"
+expect "Start it from the beginning? (y or n) "
+send "y\r"
+expect "Starting program"
+expect "Breakpoint 1"
+# Exiting with confirm off.
+expect "(gdb) "
+send "set confirm off\r"
+expect "(gdb) "
+send "exit\r"
+expect eof
