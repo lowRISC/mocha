@@ -26,13 +26,13 @@ filesets:
       - lowrisc:dv_dpi_c:jtagdpi:0.1
       - lowrisc:dv_dpi_sv:jtagdpi:0.1
       - lowrisc:mocha_dv:sim_sram_axi:0.1
+      - lowrisc:mocha_dv:sim_dram_axi:0.1
       - lowrisc:dv:sw_test_status
       - lowrisc:dv:dv_test_status
       - lowrisc:sonata:i2cdpi
       - lowrisc:sonata:spidevicedpi
 
     files:
-      - dram_wrapper_sim.sv:    { file_type: systemVerilogSource }
       - top_chip_verilator.sv:  { file_type: systemVerilogSource }
       - top_chip_verilator.cc:  { file_type: cppSource }
       - top_chip_verilator.vlt: { file_type: vlt }

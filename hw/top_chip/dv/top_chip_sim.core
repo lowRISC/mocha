@@ -13,6 +13,7 @@ filesets:
   files_dv:
     depend:
       - lowrisc:mocha_dv:sim_sram_axi:0.1
+      - lowrisc:mocha_dv:sim_dram_axi:0.1
       - lowrisc:dv:sw_test_status
       - lowrisc:dv:sw_logger_if
       - lowrisc:mocha_dv:top_chip_dv_test
@@ -29,7 +30,6 @@ filesets:
     files:
       - tb/tb.sv
       - tb/chip_hier_macros.svh: {is_include_file: true}
-      - verilator/dram_wrapper_sim.sv
     file_type: systemVerilogSource
 
 

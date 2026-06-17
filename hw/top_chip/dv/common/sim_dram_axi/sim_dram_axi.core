@@ -1,0 +1,20 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:sim_dram_axi:0.1"
+description: "DRAM simulation wrapper providing an AXI-accessible mock memory for chip-level simulation."
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:prim:ram_1p
+      - lowrisc:mocha:top_chip_system
+    files:
+      - sim_dram_wrapper.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv

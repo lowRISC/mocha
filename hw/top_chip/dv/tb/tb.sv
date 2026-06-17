@@ -66,7 +66,7 @@ module tb;
   top_pkg::axi_dev_req_t  sw_dv_req;
   top_pkg::axi_dev_resp_t sw_dv_resp;
 
-  dram_wrapper_sim u_dram_wrapper (
+  sim_dram_wrapper u_dram_wrapper (
     // Clock and reset.
     .clk_i      (dut.clkmgr_clocks.clk_main_infra),
     .rst_ni     (dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
