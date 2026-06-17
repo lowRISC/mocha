@@ -92,6 +92,8 @@
               openfpgaloader
               ftditool-cli
               openocd
+              gdb
+              expect
               uv
               pythonEnv
               verible
