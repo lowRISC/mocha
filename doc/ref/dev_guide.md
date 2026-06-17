@@ -236,6 +236,19 @@ Some peripheral tests require additional hardware to be connected to the Genesys
 - SPI Host: a FAT32-formatted SDHC/SDXC microSD card containing the "lorem.ips" file inserted in the onboard microSD slot.
   - See "lorem_text.h" for details on the file contents.
 
+## Debugging
+
+You can connect to OpenOCD using GDB.
+Currently we only support connecting to JTAG out of the box in Verilator simulation and FPGA debugging is unsupported.
+You can build a custom FPGA bitstream by using the patch that is located in the [Genesys2 TCL script](../../util/genesys2-openocd-cfg.tcl).
+
+Once you have connected OpenOCD to your hardware target you can connect GDB by using the following command:
+```sh
+gdb-multiarch --eval-command="target extended-remote localhost:3333" build/sw/device/examples/infinite_loop
+```
+
+You can then read registers using `info reg`, read memory (e.g. `x/x 0x00080000`), write memory (e.g. `set *0x80001000 = 0xdeadbeef`), set break points (e.g. `break *0x100000d0`) and continue running until that breakpoint with `run`.
+
 ## Verification
 
 To run block-level verification you can use the following command:
