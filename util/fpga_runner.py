@@ -78,14 +78,35 @@ async def bootstrap(uart: serial.Serial | None) -> None:
     await set_pin(0, True)
 
 
-async def load_fpga_binary(path: Path, uart: serial.Serial | None) -> None:
-    await bootstrap(uart)
-    command = ftditool_command("bootstrap-elf")
+async def load_elf(path: Path) -> None:
+    command = ftditool_command("load-elf")
     command.append(str(path))
 
     p = await asyncio.create_subprocess_exec(*command)
     if await p.wait() != 0:
-        error("ftditool bootstrap-elf", f"exited with non-zero exit code {p.returncode}")
+        error("ftditool load-elf", f"exited with non-zero exit code {p.returncode}")
+        sys.exit(1)
+
+
+async def load_binary(path: Path, address: int) -> None:
+    command = ftditool_command("load-file")
+    command.extend([str(path), "--addr", hex(address)])
+
+    p = await asyncio.create_subprocess_exec(*command)
+    if await p.wait() != 0:
+        error("ftditool load-file", f"exited with non-zero exit code {p.returncode}")
+        sys.exit(1)
+
+
+async def exit_bootstrap() -> None:
+    """
+    Exit SPI bootstrap mode on the FPGA by sending a flash reset command to the
+    emulated flash, causing the board to jump into uploaded code.
+    """
+    command = ftditool_command("flash-reset")
+    p = await asyncio.create_subprocess_exec(*command)
+    if await p.wait() != 0:
+        error("ftditool flash-reset", f"exited with non-zero exit code {p.returncode}")
         sys.exit(1)
 
 
@@ -107,14 +128,31 @@ def find_uart(vid: int = 0x0403, pid: int = 0x6001) -> str | None:
     return None
 
 
+async def do_fpga_load(args) -> None:
+    """
+    Load all binaries and ELFs provided by the '-f' and '-e' flags onto the
+    FPGA, and then send a reset command to the emulated flash to exit SPI
+    bootstrap mode.
+    """
+    for binary, address in args.bins:
+        print(f"loading binary '{binary}' at address 0x{address:x}...")
+        await load_binary(binary, address)
+    for elf in args.elfs:
+        print(f"loading ELF '{elf}'...")
+        await load_elf(elf)
+    await exit_bootstrap()
+
+
 async def do_fpga_test(args) -> None:
     """
     Test subcommand.
-    Load the binary onto the FPGA, then poll for the test result pattern.
+    Load the binaries/ELFs onto the FPGA, then poll for the test result pattern.
     """
     if uart_tty := find_uart():
         with serial.Serial(uart_tty, BAUD_RATE, timeout=0) as uart:
-            await load_fpga_binary(args.path, uart)
+            print("bootstrapping...")
+            await bootstrap(uart)
+            await do_fpga_load(args)
             result = await poll_uart_checking_for(uart, TEST_PATTERN)
             if "PASSED" in result:
                 sys.exit(0)  # test success
@@ -127,11 +165,32 @@ async def do_fpga_test(args) -> None:
 async def do_fpga_run(args) -> None:
     """
     Run subcommand.
-    Just load the binary onto the FPGA without opening the UART,
+    Just load the binaries/ELFs onto the FPGA without opening the UART,
     so that it can remain open in a separate application (e.g screen).
     """
-    await load_fpga_binary(args.path, None)
+    print("bootstrapping...")
+    await bootstrap(None)
+    await do_fpga_load(args)
     sys.exit(0)
+
+
+class BinaryAddressPairAction(argparse.Action):
+    """
+    Parser append action for binary/address pairs for the '-f' flag.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        binary, address = values
+        try:
+            result = (Path(binary), int(address, 0))
+        except ValueError as e:
+            raise argparse.ArgumentError(self, f"Invalid address '{address}'") from e
+
+        val = getattr(namespace, self.dest, None)
+        if val is None:
+            val = []
+        val.append(result)
+        setattr(namespace, self.dest, val)
 
 
 def main() -> None:
@@ -139,25 +198,47 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True, help="Subcommands")
 
     test_help = (
-        "Load a binary on the FPGA, then poll the UART for a test result. "
+        "Load binaries/ELFs onto the FPGA, then poll the UART for a test result. "
         "Captures output from the UART."
     )
 
     test_parser = subparsers.add_parser("test", help=test_help, description=("test: " + test_help))
-    test_parser.add_argument("path", type=Path, help="Path to test ELF to test on the FPGA")
     test_parser.set_defaults(func=do_fpga_test)
 
     run_help = (
-        "Load a binary on the FPGA, then exit. This subcommand does not use the UART, "
+        "Load binaries/ELFs onto the FPGA, then exit. This subcommand does not use the UART, "
         "so that it can be kept open in a separate program (e.g screen, picocom) for "
         "interactive use."
     )
 
     run_parser = subparsers.add_parser("run", help=run_help, description=("run: " + run_help))
-    run_parser.add_argument("path", type=Path, help="Path to program ELF to load on the FPGA")
     run_parser.set_defaults(func=do_fpga_run)
 
+    for p in [test_parser, run_parser]:
+        p.add_argument(
+            "-e",
+            "--elf",
+            dest="elfs",
+            action="append",
+            metavar="elf",
+            default=[],
+            help="ELF file to load.",
+        )
+        p.add_argument(
+            "-f",
+            "--file",
+            dest="bins",
+            action=BinaryAddressPairAction,
+            nargs=2,
+            metavar=("binary", "address"),
+            default=[],
+            help="Binary file to load at given address.",
+        )
+
     args = parser.parse_args()
+    if not args.elfs and not args.bins:
+        parser.error("At least one binary or ELF file to load must be provided with '-e' or '-f'")
+
     try:
         asyncio.run(args.func(args))
     except KeyboardInterrupt:  # Suppress error traceback if interrupted by user with ctrl-c.
