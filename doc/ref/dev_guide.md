@@ -114,8 +114,6 @@ cmake -B build/sw -S sw
 cmake --build build/sw -j $(nproc)
 ```
 
-Outputs with the suffix "_sram" exist only for UVM-based tests, as they presently lack a DRAM backdoor-load mechanism.
-
 The boot-ROM output with the "_scrambled" suffix is the only binary run through the ROM image scrambling script.
 Attempting to run any unscrambled binary from the scrambled ROM will be blocked by the in-hardware ROM checker.
 
