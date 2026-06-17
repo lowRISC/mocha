@@ -52,7 +52,7 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
 
   // Initialize the sw logger interface.
   foreach (cfg.mem_image_files[i]) begin
-    if (i inside {ChipMemSRAM}) begin
+    if (i inside {ChipMemSRAM, ChipMemDRAM}) begin
       cfg.sw_logger_vif.add_sw_log_db(cfg.mem_image_files[i]);
     end
   end
