@@ -19,29 +19,37 @@ FTDI_DEVICE_DESC = "Digilent"
 MOCHA_BOOTSTAP_PATTERN = re.compile(r"Entering SPI bootstrap")
 TEST_PATTERN = re.compile(r"TEST RESULT: (PASSED|FAILED)", re.IGNORECASE)
 
-RUNNER: str = Path(__file__).name
+RUNNER: str = Path(__file__).stem
 
 
-async def set_pin(pin: int, val: bool) -> None:
-    command = [
+def error(what: str, why: str) -> None:
+    print(f"[{RUNNER}]: {what}: {why}", file=sys.stderr)
+
+
+def ftditool_command(cmd: str) -> list[str]:
+    """Common `ftditool` commandline arguments."""
+    return [
         "ftditool",
         "--pid",
         hex(FTDI_PID),
-        "gpio-write",
-        str(pin),
-        str(int(val)),
+        cmd,
         "--ftdi",
         FTDI_DEVICE_DESC,
     ]
+
+
+async def set_pin(pin: int, val: bool) -> None:
+    command = ftditool_command("gpio-write")
+    command.extend([str(pin), str(int(val))])
 
     p = await asyncio.create_subprocess_exec(*command)
     try:
         res = await asyncio.wait_for(p.wait(), FTDITOOL_WAIT_TIME)
         if res:
-            print(f"[{RUNNER}] gpio-write command exited with non-zero exit code {p.returncode}")
+            error("ftditool gpio-write", f"exited with non-zero exit code {p.returncode}")
             sys.exit(1)
     except TimeoutError:
-        print(f"[{RUNNER}] gpio-write timed out after {FTDITOOL_WAIT_TIME} seconds")
+        error("ftditool gpio-write", f"timed out after {FTDITOOL_WAIT_TIME} seconds")
         await p.terminate()  # or maybe p.kill()
         sys.exit(1)
 
@@ -72,20 +80,12 @@ async def bootstrap(uart: serial.Serial | None) -> None:
 
 async def load_fpga_binary(path: Path, uart: serial.Serial | None) -> None:
     await bootstrap(uart)
-
-    command = [
-        "ftditool",
-        "--pid",
-        hex(FTDI_PID),
-        "bootstrap-elf",
-        str(path),
-        "--ftdi",
-        FTDI_DEVICE_DESC,
-    ]
+    command = ftditool_command("bootstrap-elf")
+    command.append(str(path))
 
     p = await asyncio.create_subprocess_exec(*command)
     if await p.wait() != 0:
-        print(f"[{RUNNER}] SPI load command exited with non-zero exit code {p.returncode}")
+        error("ftditool bootstrap-elf", f"exited with non-zero exit code {p.returncode}")
         sys.exit(1)
 
 
@@ -120,7 +120,7 @@ async def do_fpga_test(args) -> None:
                 sys.exit(0)  # test success
             sys.exit(1)
 
-    print(f"[{RUNNER}] Error: UART device not found")
+    error("test", "UART not found")
     sys.exit(1)
 
 
