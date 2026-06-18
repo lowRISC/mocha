@@ -9,6 +9,13 @@ target_compile_options(${NAME} PUBLIC ${CHERI_FLAGS})
 target_link_options(${NAME} PUBLIC "-T${LDS_DIR}/mocha_sram.ld" "-L${LDS_DIR}")
 mocha_add_executable_artefacts(NAME ${NAME})
 
+set(NAME infinite_loop)
+add_executable(${NAME} infinite_loop.c)
+target_link_libraries(${NAME} hal_cheri startup_cheri runtime_cheri)
+target_compile_options(${NAME} PUBLIC ${CHERI_FLAGS})
+target_link_options(${NAME} PUBLIC "-T${LDS_DIR}/mocha_sram.ld" "-L${LDS_DIR}")
+mocha_add_executable_artefacts(NAME ${NAME})
+
 set(NAME spi)
 add_executable(${NAME} spi.c)
 target_link_libraries(${NAME} hal_vanilla startup_vanilla runtime_vanilla)
