@@ -15,3 +15,4 @@ echo "exit: $?"
 # The pkill command is not available in GitHub actions.
 #pkill openocd
 #pkill -P $$
+kill -SIGTERM $(jobs -p)
