@@ -82,6 +82,7 @@
           hardeningDisable = ["all"];
           nativeBuildInputs =
             (with pkgs; [
+              bc
               bison
               cmake
               flex
