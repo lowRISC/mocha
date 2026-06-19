@@ -19,6 +19,7 @@ include(ExternalProject)
 
 add_subdirectory(device)
 
+include(cmake/busybox.cmake)
 include(cmake/linux.cmake)
 include(cmake/opensbi.cmake)
 include(cmake/uboot.cmake)
