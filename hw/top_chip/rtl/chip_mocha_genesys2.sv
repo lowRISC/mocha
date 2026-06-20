@@ -76,6 +76,7 @@ module chip_mocha_genesys2 #(
 );
   // Local parameters
   localparam int unsigned InitialResetCycles = 4;
+  localparam bit [31:0]   FpgaHwId           = 32'h0000_000A;   // FpgaGenesys2
 
   // Rest of chip AXI crossbar configuration
   localparam axi_pkg::xbar_cfg_t xbar_cfg = '{
@@ -154,6 +155,16 @@ module chip_mocha_genesys2 #(
 
   // Ethernet interrupt line
   logic ethernet_irq;
+
+  // SW-DV window AXI subordinate memory interface acting as a sink
+  top_pkg::axi_req_t                sw_dv_req;
+  top_pkg::axi_resp_t               sw_dv_resp;
+  logic                             hw_id_mem_req;
+  logic                             hw_id_mem_req_q;
+  logic                             hw_id_mem_we;
+  logic [top_pkg::AxiAddrWidth-1:0] hw_id_mem_addr;
+  logic [top_pkg::AxiDataWidth-1:0] hw_id_mem_rdata;
+  logic                             hw_id_sel_q;
 
   // Clock generation
   clkgen_xil7series u_clk_gen (
@@ -283,6 +294,10 @@ module chip_mocha_genesys2 #(
     // DRAM
     .dram_req_o  (dram_req),
     .dram_resp_i (dram_resp),
+
+    // SW-DV window AXI
+    .sw_dv_req_o  (sw_dv_req ),
+    .sw_dv_resp_i (sw_dv_resp),
 
     // Rest of chip AXI
     .rest_of_chip_req_o  (xbar_host_req[top_pkg::MochaAXICrossbar]),
@@ -561,5 +576,45 @@ module chip_mocha_genesys2 #(
     .eth_rgmii_mdio_io  (eth_mdio),
     .eth_rgmii_mdc_o    (eth_mdc)
   );
+
+  // SW-DV window: read-only HW_ID register.
+  // Uses the same axi_to_mem + 1-cycle loopback pattern as sim_sram_axi_sink.
+  // Writes are accepted and discarded. Reads return FpgaHwId at offset +0x04, 0 elsewhere.
+  axi_to_mem #(
+    .axi_req_t    (top_pkg::axi_req_t   ),
+    .axi_resp_t   (top_pkg::axi_resp_t  ),
+    .DataWidth    (top_pkg::AxiDataWidth),
+    .AddrWidth    (top_pkg::AxiAddrWidth),
+    .IdWidth      (top_pkg::AxiIdWidth  ),
+    .NumBanks     (1                    )
+  ) u_hw_id_axi_to_mem (
+    .clk_i        (u_top_chip_system.clkmgr_clocks.clk_main_infra                       ),
+    .rst_ni       (u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
+    .busy_o       (                                                                     ),
+    .axi_req_i    (sw_dv_req                                                            ),
+    .axi_resp_o   (sw_dv_resp                                                           ),
+    .mem_req_o    (hw_id_mem_req                                                        ),
+    .mem_gnt_i    (1'b1                                                                 ),
+    .mem_addr_o   (hw_id_mem_addr                                                       ),
+    .mem_wdata_o  (                                                                     ),  // Ignored: RO register
+    .mem_strb_o   (                                                                     ),  // Ignored: RO register
+    .mem_atop_o   (                                                                     ),  // Not used
+    .mem_we_o     (hw_id_mem_we                                                         ),
+    .mem_rvalid_i (hw_id_mem_req_q                                                      ),
+    .mem_rdata_i  (hw_id_mem_rdata                                                      )
+  );
+
+  always_ff @(posedge u_top_chip_system.clkmgr_clocks.clk_main_infra
+              or negedge u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]) begin
+    if (!u_top_chip_system.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]) begin
+      hw_id_mem_req_q <= 1'b0;
+      hw_id_sel_q     <= 1'b0;
+    end else begin
+      hw_id_mem_req_q <= hw_id_mem_req;
+      hw_id_sel_q     <= hw_id_mem_req && !hw_id_mem_we && (hw_id_mem_addr[7:0] == 8'h00);
+    end
+  end
+
+  assign hw_id_mem_rdata = hw_id_sel_q ? {FpgaHwId, {(top_pkg::AxiDataWidth-32){1'b0}}} : '0;
 
 endmodule

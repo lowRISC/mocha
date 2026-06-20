@@ -15,6 +15,8 @@ module tb;
   import top_chip_dv_env_pkg::SW_DV_START_ADDR;
   import top_chip_dv_env_pkg::SW_DV_TEST_STATUS_ADDR;
   import top_chip_dv_env_pkg::SW_DV_LOG_ADDR;
+  import top_chip_dv_env_pkg::SW_DV_HW_ID_ADDR;
+  import top_chip_dv_env_pkg::SW_DV_HW_ID;
 
   // Macro includes
   `include "uvm_macros.svh"
@@ -59,6 +61,10 @@ module tb;
   // ------ Mock DRAM ------
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;
+
+  // ------ SW-DV window ------
+  top_pkg::axi_req_t  sw_dv_req;
+  top_pkg::axi_resp_t sw_dv_resp;
 
   dram_wrapper_sim u_dram_wrapper (
     // Clock and reset.
@@ -133,6 +139,9 @@ module tb;
     // DRAM.
     .dram_req_o           (dram_req         ),
     .dram_resp_i          (dram_resp        ),
+    // SW-DV window AXI.
+    .sw_dv_req_o          (sw_dv_req        ),
+    .sw_dv_resp_i         (sw_dv_resp       ),
     // Rest of chip AXI tie-off.
     .rest_of_chip_req_o   (                 ),
     .rest_of_chip_resp_i  ('0               ),
@@ -150,43 +159,13 @@ module tb;
   assign (strong0, weak1) scl = (scl_en_o) ? scl_o : 1'b1;
   assign (strong0, weak1) sda = (sda_en_o) ? sda_o : 1'b1;
 
-  // Signals to connect the sink
-  logic               sim_sram_clk;
-  logic               sim_sram_rst;
-  top_pkg::axi_req_t  sim_sram_cpu_req;
-  top_pkg::axi_resp_t sim_sram_cpu_resp;
-  top_pkg::axi_req_t  sim_sram_xbar_req;
-  top_pkg::axi_resp_t sim_sram_xbar_resp;
-
-  // CVA6 and Xbar uses clk_main_infra from clock manager and their request and response ports are
-  // interfaced in sim_sram_axi_sink module. Thus, use the same clock and reset as them to stay in
-  // sync.
-  assign sim_sram_clk = dut.clkmgr_clocks.clk_main_infra;
-  assign sim_sram_rst = dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel];
-
-  // Instantiate the AXI sink to intercept the AXI traffic within the simulation memory range
-  // to provide a dedicated channel for SW-to-DV communication.
+  // SW-DV sink: receives only SW-DV window traffic from the crossbar.
   sim_sram_axi_sink u_sim_sram (
-    .clk_i          (sim_sram_clk       ),
-    .rst_ni         (sim_sram_rst       ),
-    .cpu_req_i      (sim_sram_cpu_req   ),
-    .cpu_resp_o     (sim_sram_cpu_resp  ),
-    .xbar_req_o     (sim_sram_xbar_req  ),
-    .xbar_resp_i    (sim_sram_xbar_resp )
+    .clk_i      (dut.clkmgr_clocks.clk_main_infra                       ),
+    .rst_ni     (dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
+    .axi_req_i  (sw_dv_req                                              ),
+    .axi_resp_o (sw_dv_resp                                             )
   );
-
-  // Capture inputs FROM the DUT (Monitoring)
-  assign sim_sram_cpu_req   = dut.cva6_to_sim_req;
-  assign sim_sram_xbar_resp = dut.xbar_host_resp[top_pkg::CVA6];
-
-  // Force outputs INTO the DUT (Overriding)
-  // We break the direct connection inside the RTL using forces
-  initial begin
-    // Ensure we wait for build/elaboration phases if necessary,
-    // though force on static hierarchy works at time 0.
-    force dut.xbar_host_req[top_pkg::CVA6] = sim_sram_xbar_req;
-    force dut.sim_to_cva6_resp             = sim_sram_cpu_resp;
-  end
 
   // ------ Memory backdoor accesses ------
   if (prim_pkg::PrimTechName == "Generic") begin : gen_mem_bkdr_utils
@@ -271,6 +250,8 @@ module tb;
     // Set base of SW DV special write locations
     `SIM_SRAM_IF.start_addr                              = SW_DV_START_ADDR;
     `SIM_SRAM_IF.sw_dv_size                              = SW_DV_SIZE;
+    `SIM_SRAM_IF.hw_id                                   = SW_DV_HW_ID;
+    `SIM_SRAM_IF.hw_id_addr                              = SW_DV_HW_ID_ADDR;
     `SIM_SRAM_IF.u_sw_test_status_if.sw_test_status_addr = SW_DV_TEST_STATUS_ADDR;
     `SIM_SRAM_IF.u_sw_logger_if.sw_log_addr              = SW_DV_LOG_ADDR;
 

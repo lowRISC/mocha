@@ -14,50 +14,13 @@ module sim_sram_axi_sink #(
   input logic clk_i,
   input logic rst_ni,
 
-  // Interface from CVA6 CPU
-  input  top_pkg::axi_req_t  cpu_req_i,
-  output top_pkg::axi_resp_t cpu_resp_o,
-
-  // Interface to AXI Crossbar
-  output top_pkg::axi_req_t  xbar_req_o,
-  input  top_pkg::axi_resp_t xbar_resp_i
+  // AXI slave port: receives only SW-DV window traffic from the crossbar
+  input  top_pkg::axi_req_t  axi_req_i,
+  output top_pkg::axi_resp_t axi_resp_o
 );
 
   import top_pkg::*;
   import cva6_config_pkg::*;
-
-  // Internal AXI signals for the intercepted path
-  axi_req_t  sim_req;
-  axi_resp_t sim_resp;
-
-  logic aw_select;
-  logic ar_select;
-
-  // Selection Logic
-  assign aw_select  = (cpu_req_i.aw.addr >= u_sim_sram_if.start_addr) &&
-                      (cpu_req_i.aw.addr < u_sim_sram_if.start_addr + u_sim_sram_if.sw_dv_size);
-  assign ar_select  = (cpu_req_i.ar.addr >= u_sim_sram_if.start_addr) &&
-                      (cpu_req_i.ar.addr < u_sim_sram_if.start_addr + u_sim_sram_if.sw_dv_size);
-
-  // AXI Demux: index 0 = System Bus, index 1 = Sim Sink
-  axi_demux_simple #(
-    .AxiIdWidth       (AxiIdWidth             ),
-    .AtopSupport      (1'b0                   ),
-    .axi_req_t        (axi_req_t              ),
-    .axi_resp_t       (axi_resp_t             ),
-    .NoMstPorts       (2                      ),
-    .MaxTrans         (8                      )
-  ) i_axi_demux (
-    .clk_i,
-    .rst_ni,
-    .test_i           (1'b0                   ),
-    .slv_req_i        (cpu_req_i              ),
-    .slv_aw_select_i  (aw_select              ),
-    .slv_ar_select_i  (ar_select              ),
-    .slv_resp_o       (cpu_resp_o             ),
-    .mst_reqs_o       ({sim_req,  xbar_req_o} ),
-    .mst_resps_i      ({sim_resp, xbar_resp_i})
-  );
 
   // AXI Protocol conversion to memory interface
   logic                             mem_req;
@@ -67,6 +30,19 @@ module sim_sram_axi_sink #(
   logic [top_pkg::AxiDataWidth-1:0] mem_wdata;
   logic [top_pkg::AxiDataWidth-1:0] mem_rdata;
   logic [top_pkg::AxiStrbWidth-1:0] mem_be;
+
+  // True when the access targets the read-only HW_ID register.
+  // axi_to_mem aligns addresses to AxiDataWidth/8 bytes, so compare against the
+  // 8-byte aligned hw_id_addr (clearing the lower 3 bits for a 64-bit bus).
+  logic hw_id_sel;
+  assign hw_id_sel = (mem_addr[31:0] == {u_sim_sram_if.hw_id_addr[31:3], 3'b000});
+
+  // Insert one cycle delay to align with mem_req_d
+  logic hw_id_sel_d;
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) hw_id_sel_d <= 1'b0;
+    else         hw_id_sel_d <= mem_req && !mem_we && hw_id_sel;
+  end
 
   axi_to_mem #(
     .axi_req_t    (top_pkg::axi_req_t     ),
@@ -79,8 +55,8 @@ module sim_sram_axi_sink #(
     .clk_i        (clk_i        ),
     .rst_ni       (rst_ni       ),
     .busy_o       (             ),  // Not used
-    .axi_req_i    (sim_req      ),
-    .axi_resp_o   (sim_resp     ),
+    .axi_req_i    (axi_req_i    ),
+    .axi_resp_o   (axi_resp_o   ),
     .mem_req_o    (mem_req      ),
     .mem_gnt_i    (1'b1         ),  // ALWAYS GRANT: Sim SRAM is never busy
     .mem_addr_o   (mem_addr     ),
@@ -102,9 +78,9 @@ module sim_sram_axi_sink #(
     end
   end : delayed_mem_req
 
-  // Assert Error if ErrOnRead is set and a read occurs
+  // Assert Error if ErrOnRead is set and a read occurs to a non-HW_ID address.
   if (ErrOnRead) begin : gen_err_on_read
-    `ASSERT(ErrOnRead_A, mem_req |-> mem_we, clk_i, !rst_ni)
+    `ASSERT(ErrOnRead_A, (mem_req && !hw_id_sel) |-> mem_we, clk_i, !rst_ni)
   end : gen_err_on_read
 
   // Conditional SRAM Instantiation
@@ -138,14 +114,14 @@ module sim_sram_axi_sink #(
     );
   end : gen_sram
   else begin : gen_no_sram
-    // If no SRAM, return 0s on read.
-    // Handshaking is handled by the common logic and axi_to_mem.
-    assign mem_rdata = '0;
+    // If no SRAM, return hw_id for RO register reads, 0 otherwise.
+    // hw_id at byte offset 4 occupies the upper 32 bits of the 64-bit AXI word [63:32].
+    assign mem_rdata = hw_id_sel_d ? {u_sim_sram_if.hw_id, {(AxiDataWidth-32){1'b0}}} : '0;
   end : gen_no_sram
 
   // Simulation SRAM Interface Instance
   sim_sram_axi_if u_sim_sram_if (.clk_i, .rst_ni);
-  assign u_sim_sram_if.req  = sim_req;
-  assign u_sim_sram_if.resp = sim_resp;
+  assign u_sim_sram_if.req  = axi_req_i;
+  assign u_sim_sram_if.resp = axi_resp_o;
 
 endmodule : sim_sram_axi_sink
