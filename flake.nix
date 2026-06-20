@@ -85,6 +85,7 @@
               bc
               bison
               cmake
+              cpio
               flex
               gnumake
               picocom

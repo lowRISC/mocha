@@ -1,0 +1,8 @@
+# Licenses and Copyright information for files in the root filesystem.
+
+version = 1
+
+[[annotations]]
+path = ["*", "root/**"]
+SPDX-FileCopyrightText = "lowRISC Contributors (COSMIC project)."
+SPDX-License-Identifier = "Apache-2.0"

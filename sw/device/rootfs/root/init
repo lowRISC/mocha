@@ -1,0 +1,31 @@
+#!/bin/busybox sh
+# Copyright lowRISC contributors.
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# A minimal init script.
+
+echo "init started..."
+
+PATH=/bin
+export PATH
+
+# Install symlinks to all commands at runtime.
+/bin/busybox --install -s /bin
+
+# Mount filesystems, making the mountpoints first.
+mkdir -p /dev /proc /sys
+mount -t devtmpfs none /dev
+mount -t proc none /proc
+mount -t sysfs none /sys
+
+# Make sure the console is stdin, stdout, and stderr.
+if [ -c /dev/console ]; then
+    exec </dev/console >/dev/console 2>&1
+fi
+
+while true; do
+    echo "Welcome to CHERI Mocha!"
+    /bin/sh
+    sleep 1
+done
