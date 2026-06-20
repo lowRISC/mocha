@@ -29,20 +29,20 @@ class top_chip_dv_base_vseq extends uvm_sequence;
   // In the extended test vseq, add this function call to the start of body().
   extern function void sw_symbol_backdoor_access(input string symbol,
                                                  inout bit [7:0] data[],
-                                                 input chip_mem_e mem = ChipMemSRAM,
+                                                 input chip_mem_e mem = ChipMemDRAM,
                                                  input bit does_not_exist_ok = 0,
                                                  input bit is_write = 0);
   // Backdoor-read a const symbol in SW to make decisions based on SW constants.
   // Wrapper function for reads via sw_symbol_backdoor_access.
   extern function void sw_symbol_backdoor_read(input string symbol,
                                                inout bit [7:0] data[],
-                                               input chip_mem_e mem = ChipMemSRAM,
+                                               input chip_mem_e mem = ChipMemDRAM,
                                                input bit does_not_exist_ok = 0);
   // Backdoor-override a const symbol in SW to modify the behavior of the test.
   // Wrapper function for writes via sw_symbol_backdoor_access.
   extern function void sw_symbol_backdoor_overwrite(input string symbol,
                                                     input bit [7:0] data[],
-                                                    input chip_mem_e mem = ChipMemSRAM,
+                                                    input chip_mem_e mem = ChipMemDRAM,
                                                     input bit does_not_exist_ok = 0);
   // General-use function to backdoor write a byte of data to any selected memory type
   extern function void mem_bkdr_write8(input chip_mem_e mem,
@@ -118,7 +118,7 @@ endtask : wait_for_sw_test_done
 function void top_chip_dv_base_vseq::sw_symbol_backdoor_access(
   input string symbol,
   inout bit [7:0] data[],
-  input chip_mem_e mem = ChipMemSRAM,
+  input chip_mem_e mem = ChipMemDRAM,
   input bit does_not_exist_ok = 0,
   input bit is_write = 0);
 
@@ -179,7 +179,7 @@ endfunction : sw_symbol_backdoor_access
 
 function void top_chip_dv_base_vseq::sw_symbol_backdoor_read(input string symbol,
                                               inout bit [7:0] data[],
-                                              input chip_mem_e mem = ChipMemSRAM,
+                                              input chip_mem_e mem = ChipMemDRAM,
                                               input bit does_not_exist_ok = 0);
 
   sw_symbol_backdoor_access(symbol, data, mem, does_not_exist_ok, 0);
@@ -188,7 +188,7 @@ endfunction : sw_symbol_backdoor_read
 
 function void top_chip_dv_base_vseq::sw_symbol_backdoor_overwrite(input string symbol,
                                                    input bit [7:0] data[],
-                                                   input chip_mem_e mem = ChipMemSRAM,
+                                                   input chip_mem_e mem = ChipMemDRAM,
                                                    input bit does_not_exist_ok = 0);
 
   sw_symbol_backdoor_access(symbol, data, mem, does_not_exist_ok, 1);
@@ -198,7 +198,7 @@ function void top_chip_dv_base_vseq::mem_bkdr_write8(input chip_mem_e mem,
                                       input bit [bus_params_pkg::BUS_AW-1:0] addr,
                                       input byte data);
   byte prev_data;
-  if (mem == ChipMemSRAM) begin
+  if (mem inside {ChipMemSRAM, ChipMemDRAM}) begin
     prev_data = p_sequencer.mem_bkdr_util_h[mem].read8(addr);
     p_sequencer.mem_bkdr_util_h[mem].write8(addr, data);
   end else begin
@@ -210,7 +210,7 @@ endfunction : mem_bkdr_write8
 function void top_chip_dv_base_vseq::mem_bkdr_read8(input chip_mem_e mem,
                                      input bit [bus_params_pkg::BUS_AW-1:0] addr,
                                      output byte data);
-  if (mem == ChipMemSRAM) begin
+  if (mem inside {ChipMemSRAM, ChipMemDRAM}) begin
     data = p_sequencer.mem_bkdr_util_h[mem].read8(addr);
   end else begin
     `dv_fatal($sformatf("Backdoor %0s access not yet supported", mem.name()))

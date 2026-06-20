@@ -60,7 +60,7 @@ module tb;
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;
 
-  dram_wrapper_sim u_dram_wrapper (
+  sim_dram_wrapper u_dram_wrapper (
     // Clock and reset.
     .clk_i      (dut.clkmgr_clocks.clk_main_infra),
     .rst_ni     (dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
@@ -204,21 +204,37 @@ module tb;
         .system_base_addr     (top_pkg::SRAMBase                  )
       );
 
-      // Zero-initialising the SRAM ensures valid BSS.
+      // Zero-initialise SRAM to prevent X-propagation through its AXI path.
       m_mem_bkdr_util[ChipMemSRAM].clear_mem();
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemSRAM], `SRAM_MEM_HIER)
 
       m_mem_bkdr_util[ChipMemROM] = new(
         .name                 ("mem_bkdr_util[ChipMemROM]"        ),
-        .path                 (`DV_STRINGIFY(`ROM_MEM_HIER)        ),
-        .depth                ($size(`ROM_MEM_HIER)                ),
-        .n_bits               ($bits(`ROM_MEM_HIER)                ),
+        .path                 (`DV_STRINGIFY(`ROM_MEM_HIER)       ),
+        .depth                ($size(`ROM_MEM_HIER)               ),
+        .n_bits               ($bits(`ROM_MEM_HIER)               ),
         .err_detection_scheme (mem_bkdr_util_pkg::ErrDetectionNone),
-        .system_base_addr     (top_pkg::RomCtrlMemBase             )
+        .system_base_addr     (top_pkg::RomCtrlMemBase            )
       );
 
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemROM], `ROM_MEM_HIER)
 
+      // Zero-init DRAM with a direct SV loop (not clear_mem) before loading the vmem: prim_ram_1p
+      // starts as X, and reads outside the binary range propagate into tag-controller FIFOs (DataKnown_A).
+      for (int unsigned dram_init_i = 0; dram_init_i < $size(`DRAM_MEM_HIER); dram_init_i++) begin
+        `DRAM_MEM_HIER[dram_init_i] = '0;
+      end
+
+      m_mem_bkdr_util[ChipMemDRAM] = new(
+        .name                 ("mem_bkdr_util[ChipMemDRAM]"       ),
+        .path                 (`DV_STRINGIFY(`DRAM_MEM_HIER)      ),
+        .depth                ($size(`DRAM_MEM_HIER)              ),
+        .n_bits               (longint'($size(`DRAM_MEM_HIER))*$bits(`DRAM_MEM_HIER[0])),
+        .err_detection_scheme (mem_bkdr_util_pkg::ErrDetectionNone),
+        .system_base_addr     (top_pkg::DRAMBase                  )
+      );
+
+      `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemDRAM], `DRAM_MEM_HIER)
 
       // TODO MVy, see if required
       // Zero-initialise the SRAM Capability tags, otherwise TL-UL FIFO assertions will fire;
