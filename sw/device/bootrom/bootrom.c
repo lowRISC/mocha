@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #define MAJOR "00"
-#define MINOR "01"
+#define MINOR "02"
 #define PATCH "00"
 
 const uintptr_t boot_slots[] = { 0x10000000, 0x80000000 };
@@ -45,6 +45,7 @@ static void clear_slots();
 // TODO: Add support to cheri mode
 int boot_main(void)
 {
+    uint32_t boot_addr;
     struct boot_context boot_ctx = (struct boot_context){
         .console = mocha_system_uart(),
         .timer = mocha_system_timer(),
@@ -56,14 +57,13 @@ int boot_main(void)
 
     timer_init(boot_ctx.timer);
     timer_enable_write(boot_ctx.timer, true);
-    if (bootstrap_requested(&boot_ctx)) {
+    if (bootstrap_requested(&boot_ctx) || !get_boot_addr(&boot_addr)) {
         uprintf(boot_ctx.console, "Entering SPI bootstrap\n");
         clear_slots(); // Cleaning slots from previeous boot.
         // Spin polling the spi_dev and processing incoming data until a reset command is received.
         spi_boot_strap(&boot_ctx);
     }
 
-    uint32_t boot_addr;
     if (!get_boot_addr(&boot_addr)) {
         uprintf(boot_ctx.console, "No valid slot found, default to DRAM\n");
         boot_addr = dram_base;
