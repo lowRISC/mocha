@@ -120,6 +120,8 @@ lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramCmdFifoIdx*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_spi_device*/rtl/spi_device_pkg.sv" -match "*SramAddrFifoIdx*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_spi_device*/rtl/spi_readcmd.sv" -match "*addr_cnt_d*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_spi_device*/rtl/spid_dpram.sv" -match "*spi2sys_wr_addr*"
+lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_spi_device*/rtl/spid_dpram.sv" -match "*spi2sys_rd_addr*"
 
 // Mute RTL style warning from lowRISC Entropy source IP
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_ip_entropy_src*/rtl/entropy_src_markov_ht.sv" -match "*rng_bit_sel_i == i*"
@@ -141,8 +143,14 @@ lint_off -rule VARHIDDEN -file "*/lowrisc_ip_sha3*/rtl/keccak_2share.sv" -match 
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac.sv" -match "*kmac_cmd*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac.sv" -match "*kmac_app_state_error*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac.sv" -match "*mux2fifo_valid*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac.sv" -match "*mux2fifo_ready*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*app_data_ready*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*fsm_data_ready*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*pending_digest_rsp_d*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*err_sha3_during_app_d*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*__VdfgExtracted*"
+lint_off -rule SELRANGE -file "*/lowrisc_ip_kmac*/rtl/kmac_app.sv" -match "*kmac_data_o*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_sha3*/rtl/sha3.sv" -match "*process_i*"
 
 // Memory downsizer truncates address bits
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_mocha_top_chip_system*/rtl/mem_downsizer.sv" -match "*mem64_addr_i*"
@@ -322,6 +330,7 @@ lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -matc
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_rom_last_outer*"
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*kmac_err*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl.sv" -match "*checker_alert*"
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_rom_ctrl*/rtl/rom_ctrl_fsm.sv" -match "*fsm_alert*"
 
 // HPDCache
 lint_off -rule CASEINCOMPLETE -file "*/hpdcache/rtl/src/utils/hpdcache_mem_to_axi_write.sv" -match "*req_i*" // Default values specified outside case

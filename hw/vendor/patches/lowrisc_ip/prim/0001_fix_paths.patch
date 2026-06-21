@@ -10,7 +10,7 @@ index 4febee8..e768cd3 100644
 +  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"]
 
    // Default iterations for all tests - each test entry can override this.
-   reseed: 20
+   reseed: 10
 diff --git a/dv/prim_esc/prim_esc_sim_cfg.hjson b/dv/prim_esc/prim_esc_sim_cfg.hjson
 index 23d297e..a102b9b 100644
 --- a/dv/prim_esc/prim_esc_sim_cfg.hjson
@@ -36,7 +36,7 @@ index ea96e83..0a33d8f 100644
 +  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"]
 
    // Default iterations for all tests - each test entry can override this.
-   reseed: 50
+   reseed: 1
 diff --git a/dv/prim_present/prim_present_sim_cfg.hjson b/dv/prim_present/prim_present_sim_cfg.hjson
 index 03c62c6..1fe2df0 100644
 --- a/dv/prim_present/prim_present_sim_cfg.hjson
@@ -49,4 +49,4 @@ index 03c62c6..1fe2df0 100644
 +  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"]
 
    // Default iterations for all tests - each test entry can override this.
-   reseed: 50
+   reseed: 1

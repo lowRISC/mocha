@@ -49,7 +49,7 @@ index 941e953..a0b4a0a 100644
 -  import_cfgs: ["{proj_root}/hw/ip/rom_ctrl/dv/rom_ctrl_base_sim_cfg.hjson"]
 +  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/rom_ctrl_base_sim_cfg.hjson"]
 
-   build_opts: ["+define+ROM_BYTE_ADDR_WIDTH=15"]
+   build_opts: ["+define+ROM_SIZE_BYTES=2**15"]
  }
 diff --git a/dv/rom_ctrl_base_sim_cfg.hjson b/dv/rom_ctrl_base_sim_cfg.hjson
 index 9062c0f..228a0ec 100644

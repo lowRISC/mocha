@@ -66,4 +66,4 @@ index c27bc3f..d8df8d1 100644
 +  xcelium_cov_refine_files: ["{proj_root}/hw/vendor/lowrisc_ip/ip/spi_host/dv/cov/spi_host_unr_excl.vRefine"]
 
    // Default iterations for all tests - each test entry can override this.
-   reseed: 50
+   reseed: 10
