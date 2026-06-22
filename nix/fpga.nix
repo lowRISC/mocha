@@ -5,6 +5,7 @@
   pkgs,
   pythonEnv,
   llvm,
+  ftditool,
 }: let
   bitstream_path = "build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado";
   bootrom_path = "build/sw/device/bootrom";
@@ -55,4 +56,15 @@ in {
       openFPGALoader -b genesys2 "$bitstream"
     '';
   };
+
+  fpga-runner = let
+    python312 = pkgs.python312.withPackages (ps: [ps.pyserial]);
+  in
+    pkgs.writeShellApplication {
+      name = "fpga-runner";
+      runtimeInputs = [python312 ftditool];
+      text = ''
+        python3 util/fpga_runner.py "$@"
+      '';
+    };
 }

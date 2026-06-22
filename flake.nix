@@ -69,6 +69,7 @@
           pythonEnv
           ;
         llvm = lrPkgs.llvm_cheri;
+        ftditool = ftditool-cli;
       };
       ftditool-cli = inputs.ftditool.packages.${system}.default;
       cheri-toolchain = pkgs.callPackage ./nix/cheri_toolchain.nix {inherit (lrPkgs) llvm_cheri;};
@@ -145,6 +146,9 @@
         };
         bitstream-load = flake-utils.lib.mkApp {
           drv = fpga.bitstream-load;
+        };
+        fpga-runner = flake-utils.lib.mkApp {
+          drv = fpga.fpga-runner;
         };
       };
     };
