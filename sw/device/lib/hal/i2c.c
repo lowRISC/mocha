@@ -217,3 +217,68 @@ uint8_t i2c_rdata_byte(i2c_t i2c)
     i2c_rdata rdata_reg = VOLATILE_READ(i2c->rdata);
     return rdata_reg.rdata;
 }
+
+void i2c_enable_target_mode(i2c_t i2c)
+{
+    VOLATILE_WRITE(i2c->ctrl, i2c_ctrl_enabletarget);
+}
+
+i2c_acqdata i2c_read_acqdata(i2c_t i2c)
+{
+    return VOLATILE_READ(i2c->acqdata);
+}
+
+void i2c_set_target_id(i2c_t i2c, uint8_t addr0, uint8_t mask0, uint8_t addr1, uint8_t mask1)
+{
+    i2c_target_id target_id = {
+        .address0 = addr0, .mask0 = mask0, .address1 = addr1, .mask1 = mask1
+    };
+    VOLATILE_WRITE(i2c->target_id, target_id);
+}
+
+void i2c_write_tx_data(i2c_t i2c, uint8_t data)
+{
+    i2c_txdata txdata = { .txdata = data };
+    VOLATILE_WRITE(i2c->txdata, txdata);
+}
+
+void i2c_clear_cmd_complete(i2c_t i2c)
+{
+    VOLATILE_WRITE(i2c->intr_state, i2c_intr_cmd_complete);
+}
+
+i2c_intr i2c_read_intr_state(i2c_t i2c)
+{
+    return VOLATILE_READ(i2c->intr_state);
+}
+
+i2c_status i2c_read_status(i2c_t i2c)
+{
+    return VOLATILE_READ(i2c->status);
+}
+
+bool i2c_target_drain_start_sig_acq_data(i2c_t i2c)
+{
+    // ACQ FIFO fills the byte and the signal information from the start till the end of
+    // the transfer.
+    i2c_acqdata acq_data = i2c_read_acqdata(i2c);
+
+    if (!(acq_data.signal == start)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool i2c_target_drain_end_sig_acq_data(i2c_t i2c)
+{
+    // ACQ FIFO fills the byte and the signal information from the start till the end of
+    // the transfer.
+    i2c_acqdata acq_data = i2c_read_acqdata(i2c);
+
+    if (!(acq_data.signal == stop)) {
+        return false;
+    }
+
+    return true;
+}
