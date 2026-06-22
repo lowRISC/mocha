@@ -39,11 +39,12 @@ class top_chip_dv_i2c_tx_rx_vseq extends top_chip_dv_base_vseq;
 
   // Number of bytes to read / write in a transfer. This will overwrite a SW symbol so that
   // the SW will read / write bytes based on xfer_bytes count
-  local rand bit [7:0] xfer_bytes[1];
+  protected rand bit [7:0] xfer_bytes[1];
 
   // Declare the device_addr as a byte size array because sw_symbol_backdoor_overwrite() expects the
   // data that is going to overwrite the SW symbol to be an array
-  local rand bit [7:0] device_addr[1];
+  protected rand bit [7:0] device_addr0[1];
+  protected rand bit [7:0] device_addr1[1];
 
   extern constraint xfer_bytes_c;
   extern constraint device_addr_c;
@@ -82,7 +83,8 @@ constraint top_chip_dv_i2c_tx_rx_vseq::xfer_bytes_c {
 }
 
 constraint top_chip_dv_i2c_tx_rx_vseq::device_addr_c {
-  device_addr[0] inside {[8'h00 : 8'h7F]};
+  device_addr0[0] inside {[8'h00 : 8'h7F]};
+  device_addr1[0] inside {[8'h00 : 8'h7F]};
 }
 
 function top_chip_dv_i2c_tx_rx_vseq::new(string name = "");
@@ -149,7 +151,8 @@ task top_chip_dv_i2c_tx_rx_vseq::dut_init(string reset_kind = "HARD");
 
   // Overwrite the SW symbol with the randomized value
   sw_symbol_backdoor_overwrite("byte_count", xfer_bytes);
-  sw_symbol_backdoor_overwrite("device_addr0", device_addr);
+  sw_symbol_backdoor_overwrite("device_addr0", device_addr0);
+  sw_symbol_backdoor_overwrite("device_addr1", device_addr1);
 
   // Read the timing parameters through SW backdoor load
   sw_symbol_backdoor_read("sys_clk_period_ns", sw_sys_clk_period_ns);

@@ -19,6 +19,7 @@ class top_chip_dv_virtual_sequencer extends uvm_sequencer;
   // FIFOs for monitor output. Used by some virtual sequences to check
   // TX (from-chip) items.
   uvm_tlm_analysis_fifo #(uart_item) uart_tx_fifo;
+  uvm_tlm_analysis_fifo #(i2c_item)  i2c_rd_xfer_fifo;
 
   // Standard SV/UVM methods
   extern function new(string name = "", uvm_component parent = null);
@@ -33,5 +34,6 @@ endfunction : new
 function void top_chip_dv_virtual_sequencer::build_phase(uvm_phase phase);
   super.build_phase(phase);
   // Construct monitor output FIFOs
-  uart_tx_fifo = new("uart_tx_fifo", this);
+  uart_tx_fifo     = new("uart_tx_fifo", this);
+  i2c_rd_xfer_fifo = new("i2c_rd_xfer_fifo", this);
 endfunction : build_phase
