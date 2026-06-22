@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #define MAJOR "00"
-#define MINOR "01"
+#define MINOR "02"
 #define PATCH "00"
 
 const uintptr_t boot_slots[] = { 0x10000000, 0x80000000 };
@@ -56,6 +56,8 @@ int boot_main(void)
 
     timer_init(boot_ctx.timer);
     timer_enable_write(boot_ctx.timer, true);
+    led_init(boot_ctx.gpio);
+
     if (bootstrap_requested(&boot_ctx)) {
         uprintf(boot_ctx.console, "Entering SPI bootstrap\n");
         clear_slots(); // Cleaning slots from previeous boot.
@@ -107,8 +109,6 @@ bool get_boot_addr(uint32_t *addr)
 
 bool spi_boot_strap(struct boot_context *ctx)
 {
-    led_init(ctx->gpio);
-
     spi_device_t spid = mocha_system_spi_device();
     spi_device_init(spid);
     spi_device_enable_set(spid, true);
@@ -223,9 +223,37 @@ bool bootstrap_requested(struct boot_context *ctx)
     return false;
 }
 
-// TODO: Catch exceptions properly.
-void _trap_handler(struct trap_registers *registers, struct trap_context *context)
+static void _exception_handler(struct trap_registers *registers, struct trap_context *context)
 {
     (void)registers;
-    (void)context;
+
+    uart_t console = mocha_system_uart();
+    timer_t timer = mocha_system_timer();
+    gpio_t gpio = mocha_system_gpio();
+    uart_puts(console, "Exception!\n");
+    uprintf(console, "\tepc:   %lx\n", (unsigned long)context->epc);
+    uprintf(console, "\tcause: %lx\n", context->cause);
+    uprintf(console, "\ttval:  %lx\n", context->tval);
+    uprintf(console, "\ttval2: %lx\n", context->tval2);
+
+    uint32_t pattern = 0x55;
+
+    while (true) {
+        gpio_write(gpio, pattern);
+        pattern ^= 0xff;
+        uint64_t timeout = timer_value_read_us(timer) + led_animation_period_us / 2;
+        while (timer_value_read_us(timer) < timeout) {
+        };
+    };
+}
+void _trap_handler(struct trap_registers *registers, struct trap_context *context)
+{
+    if (context->cause & (1ul << 63)) {
+        /* trap cause is interrupt */
+        while (true) {
+        };
+    } else {
+        /* trap cause is exception */
+        _exception_handler(registers, context);
+    }
 }
