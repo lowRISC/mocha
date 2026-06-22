@@ -26,8 +26,12 @@ const uint16_t setup_stop_time_ns = 4000;
 const uint16_t bus_free_time_ns = 4700;
 const uint16_t rise_time_ns = I2C_RISE_NS;
 const uint16_t fall_time_ns = I2C_FALL_NS;
+const uint8_t device_mask0 = 0x7F;
+const uint8_t device_mask1 = 0x7F;
 
 // The symbols below are going to be overwritten through sw_symbol_backdoor_overwrite() in
 // top_chip_dv_i2c_tx_rx_vseq.sv
-volatile const uint8_t device_addr = 0x0;
+volatile const uint8_t device_addr0 = 0x0;
+volatile const uint8_t device_addr1 = 0x0;
 volatile const uint8_t byte_count = TX_FIFO_DEPTH;
+volatile uint8_t tx_fifo_wr_done = 0x0;

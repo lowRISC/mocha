@@ -41,7 +41,7 @@ static bool host_tx_rx_test(i2c_t i2c)
         data_bytes[i] = 1u << (i % 8);
     }
 
-    if (!drive_transfer(i2c, device_addr, data_bytes, byte_count)) {
+    if (!drive_transfer(i2c, device_addr0, data_bytes, byte_count)) {
         return false;
     }
 

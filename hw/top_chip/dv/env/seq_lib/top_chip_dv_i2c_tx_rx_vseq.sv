@@ -149,7 +149,7 @@ task top_chip_dv_i2c_tx_rx_vseq::dut_init(string reset_kind = "HARD");
 
   // Overwrite the SW symbol with the randomized value
   sw_symbol_backdoor_overwrite("byte_count", xfer_bytes);
-  sw_symbol_backdoor_overwrite("device_addr", device_addr);
+  sw_symbol_backdoor_overwrite("device_addr0", device_addr);
 
   // Read the timing parameters through SW backdoor load
   sw_symbol_backdoor_read("sys_clk_period_ns", sw_sys_clk_period_ns);
