@@ -2,20 +2,22 @@
 
 The CHERI Mocha project is a reference design for an integrated SoC subsystem for secure enclaves that use CHERI.
 Secure enclaves are usually part of a larger SoC and are tasked with security critical tasks like user authentication, password storage, etc.
-These enclave systems often include application class processors because they need to support an MMU-enabled operating system, usually based on L4 or something clean slate, as opposed to real-time operating systems.
-CHERI is an important technology to evaluate in these systems because of the high-level of confidentiality, integrity and availability that is required here.
-This open-source design is meant to be a reference for ASICs with any proprietary primitives clearly stubbed out and isolated.
-Specifically, any hardware that requires changes with respect to CHERI should be in the open source since this is critical to providing a production-grade CHERI-enabled subsystem that can be integrated into an ASIC.
+Resolving memory safety issues is paramount in the security-critical use cases that need to run on secure enclave systems.
+This is why we designed CHERI into Mocha to deterministically guarantee spatial and temporal memory safety.
+CHERI Mocha is a reference design for ASICs that demonstrates how a CHERI-enabled core, bus and memories can be instantiated in a subsystem SoC with commercial-grade verification.
 
 If you want to try out using Mocha, we currently support the [Genesys 2 FPGA board][] and simulation using Verilator or Xcelium.
+For more details head to our [release page](https://github.com/lowRISC/mocha/releases) and [development guide](doc/ref/dev_guide.md).
 
 CHERI Mocha is part of the [COSMIC project](https://cosmic-project.lowrisc.org/), which is a collaboration between lowRISC, Capabilities Limited and Oxford University Innovation.
 It is work that is funded by Innovate UK and the Department for Science, Innovation and Technology (grant number 10168492).
 
 ## Architecture
 
-The planned block diagram of the Mocha SoC is depicted below.
-We are re-using a lot of [OpenTitan](https://opentitan.org/) blocks since they are open-source and commercial grade.
+The block diagram of the Mocha SoC is depicted below.
+We are re-using numerous [OpenTitan](https://opentitan.org/) blocks since they are open-source and commercial grade.
+Mocha includes an application class processor to support operating systems that need a memory management unit (MMU).
+This is because enclave systems usually run operating systems that need virtual memory, like those based on L4, as opposed to real-time operating systems.
 For more detailed discussion on the architecture including clock domains and memory map, please look at the [architecture documentation](doc/ref/arch.md).
 
 ![Mocha block diagram](doc/img/mocha_architecture_paths_only.svg)
@@ -27,13 +29,8 @@ As we launch this project, we expect the following release schedule:
 | Release | Date | Details |
 |--|--|--|
 | 0.0.1 (MVP-1) | March 2026 | *Available now.* First minimal viable product (MVP-1) which includes essential IP blocks and access to SRAM as well as DRAM. It supports baremetal testing in both CHERI and integer modes. |
-| 0.0.2 (MVP-2) | June 2026 | Second minimal viable product (MVP-2) with all blocks integrated, as well as support for CHERI-Linux or CheriBSD. |
-| 0.1.0 (RC-1) | Dec 2026 | First release candidate (RC-1) including initial design and verification sign-offs. |
-
-## Quick start
-
-Please follow the [quick start guide](doc/ref/dev_guide.md#quick-start-from-release) to see how to run simulations and program your FPGA based on our latest release.
-To use our FPGA build you will need to order a [Genesys 2 FPGA board][].
+| 0.1.0 (MVP-2) | June 2026 | Second minimal viable product (MVP-2) with all blocks integrated, as well as support for booting CHERI-Linux. |
+| RC-1 | Dec 2026 | First release candidate (RC-1) including initial design and verification sign-offs. |
 
 ## Verification
 
