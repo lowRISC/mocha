@@ -10,6 +10,7 @@ permissions:
 on:
   release:
     types: [created]
+  workflow_dispatch:
 
 jobs:
   # This job will only succeed if a bitstream was published by a previous CI run to make sure it
