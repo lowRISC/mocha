@@ -17,6 +17,12 @@ class top_chip_dv_i2c_tx_rx_vseq extends top_chip_dv_base_vseq;
   protected bit [15:0] scl_low_cycles;
   protected bit [15:0] sda_hold_cycles;
 
+  // Number of bytes to read / write in a transfer. This is going to overwrite a SW symbol so that
+  // the SW will read / write bytes based on the xfer_bytes count
+  protected rand bit [7:0] xfer_bytes[1];
+
+  extern constraint xfer_bytes_c;
+
   extern function new(string name="");
 
   // Returns the ceiling of (a / b), converting a timing parameter "a" in nanoseconds to an integer
@@ -27,6 +33,12 @@ class top_chip_dv_i2c_tx_rx_vseq extends top_chip_dv_base_vseq;
   extern protected function void configure_agent_timing();
   extern protected function void print_i2c_timing_cfg();
 endclass : top_chip_dv_i2c_tx_rx_vseq
+
+// SW will perform a comparison on each byte that was read and written. To do this accurately,
+// the number of bytes should be within the depth of TX / RX FIFO of target and host respectively.
+constraint top_chip_dv_i2c_tx_rx_vseq::xfer_bytes_c {
+  xfer_bytes[0] inside {[1 : FifoDepth]};
+}
 
 function top_chip_dv_i2c_tx_rx_vseq::new(string name = "");
   super.new(name);

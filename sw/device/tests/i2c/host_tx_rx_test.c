@@ -8,6 +8,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define TX_FIFO_DEPTH (64)
+
 // The const variables below are treated as symbols read by top_chip_dv_i2c_host_tx_rx_vseq in order
 // to calculate agent timing parameters.
 const uint8_t sys_clk_period_ns = SYSCLK_NS;
@@ -17,10 +19,10 @@ const uint8_t sys_clk_period_ns = SYSCLK_NS;
 const uint16_t scl_low_time_ns = 4700;
 const uint16_t hold_data_time_ns = 1;
 
-enum : uint8_t {
-    device_addr = 0x3A,
-    num_bytes = 0x8,
-};
+// The symbols below are going to be overwritten through sw_symbol_backdoor_overwrite() in
+// top_chip_dv_i2c_host_tx_rx_vseq.sv
+volatile const uint8_t byte_count = TX_FIFO_DEPTH;
+volatile const uint8_t device_addr = 0x0;
 
 static bool write_transfer(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_bytes)
 {
@@ -47,18 +49,18 @@ static bool drive_transfer(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t
 static bool host_tx_rx_test(i2c_t i2c)
 {
     // Data bytes to send to the target's receiver.
-    uint8_t data_bytes[num_bytes];
+    uint8_t data_bytes[byte_count];
 
     // Write walking 1's pattern
-    for (uint8_t i = 0; i < num_bytes; i++) {
+    for (uint8_t i = 0; i < byte_count; i++) {
         data_bytes[i] = 1u << (i % 8);
     }
 
-    if (!drive_transfer(i2c, device_addr, data_bytes, num_bytes)) {
+    if (!drive_transfer(i2c, device_addr, data_bytes, byte_count)) {
         return false;
     }
 
-    for (uint8_t i = 0; i < num_bytes; i++) {
+    for (uint8_t i = 0; i < byte_count; i++) {
         if (data_bytes[i] != i2c_rdata_byte(i2c)) {
             return false;
         }
