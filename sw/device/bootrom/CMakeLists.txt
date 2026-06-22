@@ -32,6 +32,6 @@ add_custom_command(
     VERBATIM
 )
 
-install(TARGETS ${NAME})
+install(TARGETS ${NAME} DESTINATION . COMPONENT ${NAME})
 install(FILES "$<TARGET_FILE:${NAME}>_scrambled.vmem" DESTINATION . COMPONENT ${NAME})
 install(FILES "$<TARGET_FILE:${NAME}>.bin" DESTINATION . COMPONENT ${NAME})

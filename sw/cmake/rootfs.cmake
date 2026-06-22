@@ -16,6 +16,7 @@ function(mocha_rootfs)
 
   add_custom_target(mocha_rootfs ALL
       DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/rootfs_uboot_image)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/rootfs_uboot_image DESTINATION . COMPONENT boot)
 endfunction()
 
 mocha_rootfs()

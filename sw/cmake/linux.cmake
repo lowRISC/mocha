@@ -29,14 +29,14 @@ function(mocha_linux OUTPUT_NAME)
       HOSTCC=gcc
   )
 
-  # Built kernel images.
-  set(LINUX_IMAGES
+  # Built kernel image.
+  set(LINUX_IMAGE
       arch/riscv/boot/Image
   )
 
-  # install command - copy the kernel images to the root of the external project directory.
+  # install command - copy the kernel image to the root of the external project directory.
   set(INSTALL_COMMAND
-      cp ${LINUX_IMAGES} <INSTALL_DIR>
+      cp ${LINUX_IMAGE} <INSTALL_DIR>/linux_image
   )
 
   ExternalProject_Add(
@@ -61,6 +61,12 @@ function(mocha_linux OUTPUT_NAME)
       LOG_INSTALL true
       LOG_MERGED_STDOUTERR true
       LOG_OUTPUT_ON_FAILURE true
+  )
+
+  install(FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/${LINUX_BUILD_NAME}/linux_image
+      DESTINATION .
+      COMPONENT boot
   )
 endfunction()
 

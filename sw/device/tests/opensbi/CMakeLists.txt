@@ -13,4 +13,10 @@ target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
 # using just a few large pages. This is a requirement for Linux too,
 # see https://docs.kernel.org/arch/riscv/boot.html#kernel-location.
 target_link_options(${NAME} PUBLIC "-Wl,--Ttext=0x80200000")
-mocha_add_executable_artefacts(NAME ${NAME})
+# Objcopy to a binary, to be used as the OpenSBI payload.
+add_custom_command(
+    TARGET ${NAME} POST_BUILD
+    COMMAND ${CMAKE_OBJCOPY} -O binary "$<TARGET_FILE:${NAME}>"
+            "$<TARGET_FILE:${NAME}>.bin"
+    VERBATIM
+)

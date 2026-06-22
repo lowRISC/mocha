@@ -3,11 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Function that builds OpenSBI with a specific payload for Mocha.
-function(mocha_opensbi_with_payload PAYLOAD_TARGET)
+function(mocha_opensbi_with_payload)
+  set(options TEST)
+  set(one_value_args TARGET)
+  cmake_parse_arguments(arg "${options}" "${one_value_args}" "" ${ARGN})
+
   # find the target payload file.
-  set(PAYLOAD "$<TARGET_FILE:${PAYLOAD_TARGET}>.bin")
+  set(PAYLOAD "$<TARGET_FILE:${arg_TARGET}>.bin")
   # name of the target OpenSBI build.
-  set(NAME opensbi_with_${PAYLOAD_TARGET})
+  set(NAME opensbi_with_${arg_TARGET})
 
   # OpenSBI repository and tag to use.
   set(OPENSBI_REPOSITORY https://github.com/lowrisc/opensbi)
@@ -40,16 +44,15 @@ function(mocha_opensbi_with_payload PAYLOAD_TARGET)
       FW_OPTIONS=0x2
   )
 
-  # Built firmware binaries to copy into the root of the external project directory.
-  # These consist of OpenSBI + the provided payload for the next stage.
-  set(FIRMWARES
+  # Built firmware binary to copy into the root of the external project directory.
+  # This consists of OpenSBI + the provided payload for the next stage.
+  set(FIRMWARE
       build/platform/generic/firmware/fw_payload.elf
-      build/platform/generic/firmware/fw_payload.bin
   )
 
   # install command - copy the firmware binaries to the root of the external project directory.
   set(INSTALL_COMMAND
-      cp ${FIRMWARES} <INSTALL_DIR>
+      cp ${FIRMWARE} <INSTALL_DIR>/${NAME}_fw_payload.elf
   )
 
   ExternalProject_Add(
@@ -75,6 +78,22 @@ function(mocha_opensbi_with_payload PAYLOAD_TARGET)
       LOG_MERGED_STDOUTERR true
       LOG_OUTPUT_ON_FAILURE true
   )
+
+  add_dependencies(${NAME} ${arg_TARGET})
+
+  if(${arg_TEST})
+      install(FILES
+          ${CMAKE_CURRENT_BINARY_DIR}/${NAME}/${NAME}_fw_payload.elf
+          DESTINATION .
+          COMPONENT ${NAME}
+      )
+  else()
+      install(FILES
+          ${CMAKE_CURRENT_BINARY_DIR}/${NAME}/${NAME}_fw_payload.elf
+          DESTINATION .
+          COMPONENT boot
+      )
+  endif()
 endfunction()
 
 # Like mocha_opensbi_with_payload, but also adds a test for
@@ -84,16 +103,16 @@ function(mocha_opensbi_with_payload_test PAYLOAD_TARGET)
   # name of the target OpenSBI build.
   set(NAME opensbi_with_${PAYLOAD_TARGET})
 
-  mocha_opensbi_with_payload(${PAYLOAD_TARGET})
+  mocha_opensbi_with_payload(TARGET ${PAYLOAD_TARGET} TEST)
 
   add_test(
       NAME ${NAME}_sim_verilator
-      COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -r $<TARGET_FILE:bootrom>_scrambled.vmem -E ${NAME}/fw_payload.elf
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -r $<TARGET_FILE:bootrom>_scrambled.vmem -E ${NAME}/${NAME}_fw_payload.elf
   )
 
   add_test(
       NAME ${NAME}_fpga_genesys2
-      COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py test -e ${NAME}/fw_payload.elf
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py test -e ${NAME}/${NAME}_fw_payload.elf
   )
 
   set_property(TEST ${NAME}_sim_verilator PROPERTY TIMEOUT 7200)

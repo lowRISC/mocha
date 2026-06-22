@@ -56,4 +56,4 @@ endfunction()
 
 mocha_uboot(uboot)
 
-mocha_opensbi_with_payload(uboot)
+mocha_opensbi_with_payload(TARGET uboot)

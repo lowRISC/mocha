@@ -54,13 +54,11 @@ function(mocha_add_verilator_test)
         COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -r $<TARGET_FILE:${arg_ROM}>_scrambled.vmem -E ${arg_NAME}
     )
     set_tests_properties(${TEST} PROPERTIES TIMEOUT ${arg_TIMEOUT})
-
 endfunction()
 
 function(mocha_add_fpga_test)
     set(one_value_args NAME TIMEOUT)
     cmake_parse_arguments(arg "" "${one_value_args}" "" ${ARGN})
-
 
     if(NOT arg_TIMEOUT)
         set(arg_TIMEOUT 15)  # default
@@ -101,7 +99,6 @@ function(mocha_add_test)
         target_link_options(${NAME} PUBLIC
           "-Tmocha_dram.ld" "-L${LDS_DIR}"
         )
-
         # create artefacts
         mocha_add_executable_artefacts(NAME ${NAME})
 
