@@ -51,7 +51,8 @@ in {
     name = "bitstream-load";
     runtimeInputs = [pkgs.openfpgaloader];
     text = ''
-      openFPGALoader -b genesys2 ${bitstream_path}/lowrisc_mocha_chip_mocha_genesys2_0.bit
+      bitstream=''${1:-${bitstream_path}/lowrisc_mocha_chip_mocha_genesys2_0.bit}
+      openFPGALoader -b genesys2 "$bitstream"
     '';
   };
 }
