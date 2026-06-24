@@ -6,7 +6,7 @@ function(mocha_linux OUTPUT_NAME)
   set(LINUX_BUILD_NAME ${OUTPUT_NAME})
   # Linux repository and tag to use.
   set(LINUX_REPOSITORY https://github.com/lowRISC/linux)
-  set(LINUX_TAG mocha-devel)
+  set(LINUX_TAG mocha-mvp2)
 
   # configure command - load Mocha defconfig file.
   set(CONFIGURE_COMMAND
