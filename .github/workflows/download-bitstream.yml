@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Restore bitstream from cache
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ${{ env.BITSTREAM }}
@@ -33,7 +33,7 @@ jobs:
 
       - name: Upload bitstream as artifact
         id: upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bitstream-${{ inputs.hash }}
           path: |
