@@ -90,7 +90,7 @@ async def load_elf(path: Path) -> None:
 
 async def load_binary(path: Path, address: int) -> None:
     command = ftditool_command("load-file")
-    command.extend([str(path), "--addr", hex(address)])
+    command.extend(["--skip-erase", str(path), "--addr", hex(address)])
 
     p = await asyncio.create_subprocess_exec(*command)
     if await p.wait() != 0:
