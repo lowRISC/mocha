@@ -5,10 +5,8 @@
 function(mocha_busybox OUTPUT_NAME)
   set(BUSYBOX_BUILD_NAME ${OUTPUT_NAME}_build)
   # Busybox repository and tag to use.
-  #TODO change this URL to https://github.com/lowrisc/busybox
-  # once the mocha-devel branch is pushed there.
-  set(BUSYBOX_REPOSITORY https://github.com/ziuziakowska/busybox)
-  set(BUSYBOX_TAG mocha-devel)
+  set(BUSYBOX_REPOSITORY https://github.com/lowRISC/busybox)
+  set(BUSYBOX_TAG mocha-mvp2)
 
   # configure command - load Mocha defconfig file.
   set(CONFIGURE_COMMAND

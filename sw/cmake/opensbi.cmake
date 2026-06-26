@@ -14,8 +14,8 @@ function(mocha_opensbi_with_payload)
   set(NAME opensbi_with_${arg_TARGET})
 
   # OpenSBI repository and tag to use.
-  set(OPENSBI_REPOSITORY https://github.com/lowrisc/opensbi)
-  set(OPENSBI_TAG mocha-devel)
+  set(OPENSBI_REPOSITORY https://github.com/lowRISC/opensbi)
+  set(OPENSBI_TAG mocha-mvp2)
 
   # build command - run make with build options.
   set(BUILD_COMMAND
