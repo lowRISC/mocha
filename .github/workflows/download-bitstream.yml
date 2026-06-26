@@ -1,0 +1,49 @@
+# Copyright lowRISC Contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: Download Bitstream
+
+on:
+  workflow_dispatch:
+    inputs:
+      hash:
+        description: 'Bitstream cache hash'
+        required: true
+        type: string
+
+env:
+  BITSTREAM: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.bit
+  UTILIZATION_FILE: build/lowrisc_mocha_chip_mocha_genesys2_0/synth-vivado/lowrisc_mocha_chip_mocha_genesys2_0.runs/impl_1/chip_mocha_genesys2_utilization_placed.rpt
+
+jobs:
+  download-bitstream:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore bitstream from cache
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.BITSTREAM }}
+            ${{ env.UTILIZATION_FILE }}
+          key: ${{ inputs.hash }}
+          fail-on-cache-miss: true
+
+      - name: Upload bitstream as artifact
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: bitstream-${{ inputs.hash }}
+          path: |
+            ${{ env.BITSTREAM }}
+            ${{ env.UTILIZATION_FILE }}
+
+      - name: Output download link
+        run: |
+          echo "## Bitstream Download" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Hash:** \`${{ inputs.hash }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[Download Artifact](${{ steps.upload.outputs.artifact-url }})" >> $GITHUB_STEP_SUMMARY
