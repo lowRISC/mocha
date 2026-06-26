@@ -29,7 +29,7 @@ This table shows the current design and verification stage for each block in Moc
 | SPI host              | D0               | V0                     |
 | SRAM                  | D0               | V0                     |
 | Tag controller        | D0               | V0                     |
-| [TileLink crossbar][] | D0               | V1                     |
+| [TileLink crossbar][] | D1               | V1                     |
 | Timer                 | D0               | V0                     |
 | [UART][]              | D1               | V1                     |
 
