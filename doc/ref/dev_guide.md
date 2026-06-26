@@ -149,7 +149,7 @@ ctest --test-dir build/sw -R fpga_genesys2
 
 To run CHERI Linux on the Genesys 2 board, run:
 ```sh
-util/fpga_runner.py run -e build/sw/opensbi_with_uboot/opensbi_with_uboot_fw_payload.elf -f build/sw/linux/linux_image 0x90000000 -f build/sw/rootfs_uboot_image 0xa0000000
+util/fpga_runner.py run -e build/sw/opensbi/opensbi_fw_jump.elf -e build/sw/uboot/u-boot -f build/sw/linux/linux_image 0x90000000 -f build/sw/rootfs_uboot_image 0xa0000000
 ```
 
 ### Standalone UART

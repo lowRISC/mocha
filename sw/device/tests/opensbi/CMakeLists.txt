@@ -12,11 +12,7 @@ target_compile_options(${NAME} PUBLIC ${VANILLA_FLAGS})
 # so that S-mode software can map itself into virtual memory
 # using just a few large pages. This is a requirement for Linux too,
 # see https://docs.kernel.org/arch/riscv/boot.html#kernel-location.
-target_link_options(${NAME} PUBLIC "-Wl,--Ttext=0x80200000")
-# Objcopy to a binary, to be used as the OpenSBI payload.
-add_custom_command(
-    TARGET ${NAME} POST_BUILD
-    COMMAND ${CMAKE_OBJCOPY} -O binary "$<TARGET_FILE:${NAME}>"
-            "$<TARGET_FILE:${NAME}>.bin"
-    VERBATIM
+target_link_options(${NAME} PUBLIC
+    "-Wl,--Ttext=0x80200000"
+    "-Tmocha_dram.ld" "-L${LDS_DIR}"
 )

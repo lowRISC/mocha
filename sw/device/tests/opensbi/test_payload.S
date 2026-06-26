@@ -15,7 +15,9 @@
 
 .section .text
 
+.globl _init_vector
 .globl _start
+_init_vector:
 _start:
     /* Perform an SBI call to print test_status_string. */
     li a7, SBI_DEBUG_CONSOLE

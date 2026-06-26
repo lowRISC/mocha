@@ -2,17 +2,8 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-# Function that builds OpenSBI with a specific payload for Mocha.
-function(mocha_opensbi_with_payload)
-  set(options TEST)
-  set(one_value_args TARGET)
-  cmake_parse_arguments(arg "${options}" "${one_value_args}" "" ${ARGN})
-
-  # find the target payload file.
-  set(PAYLOAD "$<TARGET_FILE:${arg_TARGET}>.bin")
-  # name of the target OpenSBI build.
-  set(NAME opensbi_with_${arg_TARGET})
-
+# Function that builds OpenSBI for Mocha.
+function(mocha_opensbi OPENSBI_NAME)
   # OpenSBI repository and tag to use.
   set(OPENSBI_REPOSITORY https://github.com/lowrisc/opensbi)
   set(OPENSBI_TAG mocha-devel)
@@ -30,11 +21,9 @@ function(mocha_opensbi_with_payload)
       PLATFORM=generic
       # Use the Mocha defconfig file.
       PLATFORM_DEFCONFIG=mocha_defconfig
-      # Build a 'payload' firmware.
-      FW_PAYLOAD=y
-      FW_JUMP=n
-      # Build with the given payload.
-      FW_PAYLOAD_PATH=${PAYLOAD}
+      # Build a 'jump' firmware.
+      FW_JUMP=y
+      FW_PAYLOAD=n
       # Disable position-independent code and link to DRAM base,
       # as loading position-independent executables is not supported by
       # our Verilator ELF loader.
@@ -47,16 +36,16 @@ function(mocha_opensbi_with_payload)
   # Built firmware binary to copy into the root of the external project directory.
   # This consists of OpenSBI + the provided payload for the next stage.
   set(FIRMWARE
-      build/platform/generic/firmware/fw_payload.elf
+      build/platform/generic/firmware/fw_jump.elf
   )
 
   # install command - copy the firmware binaries to the root of the external project directory.
   set(INSTALL_COMMAND
-      cp ${FIRMWARE} <INSTALL_DIR>/${NAME}_fw_payload.elf
+      cp ${FIRMWARE} <INSTALL_DIR>/${OPENSBI_NAME}_fw_jump.elf
   )
 
   ExternalProject_Add(
-      ${NAME} PREFIX ${NAME}
+      ${OPENSBI_NAME} PREFIX ${OPENSBI_NAME}
       GIT_REPOSITORY ${OPENSBI_REPOSITORY}
       GIT_TAG ${OPENSBI_TAG}
       # OpenSBI builds in its own 'build' sub-directory.
@@ -66,8 +55,6 @@ function(mocha_opensbi_with_payload)
       CONFIGURE_COMMAND "" # no configure step needed, do nothing here.
       BUILD_COMMAND ${BUILD_COMMAND}
       INSTALL_COMMAND ${INSTALL_COMMAND}
-      # depend on the given payload target.
-      DEPENDS ${PAYLOAD_TARGET}
       # suppress output from stdout.
       LOG_DOWNLOAD true
       LOG_UPDATE true
@@ -79,46 +66,39 @@ function(mocha_opensbi_with_payload)
       LOG_OUTPUT_ON_FAILURE true
   )
 
-  add_dependencies(${NAME} ${arg_TARGET})
-
-  if(${arg_TEST})
-      install(FILES
-          ${CMAKE_CURRENT_BINARY_DIR}/${NAME}/${NAME}_fw_payload.elf
-          DESTINATION .
-          COMPONENT ${NAME}
-      )
-  else()
-      install(FILES
-          ${CMAKE_CURRENT_BINARY_DIR}/${NAME}/${NAME}_fw_payload.elf
-          DESTINATION .
-          COMPONENT boot
-      )
-  endif()
+  install(FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/${OPENSBI_NAME}/${OPENSBI_NAME}_fw_jump.elf
+      DESTINATION .
+      COMPONENT boot
+  )
 endfunction()
 
-# Like mocha_opensbi_with_payload, but also adds a test for
-# Verilator and FPGA environments.
-# TODO: Integrate this with the build system better.
-function(mocha_opensbi_with_payload_test PAYLOAD_TARGET)
-  # name of the target OpenSBI build.
-  set(NAME opensbi_with_${PAYLOAD_TARGET})
+function(mocha_opensbi_test OPENSBI_NAME TARGET_NAME)
 
-  mocha_opensbi_with_payload(TARGET ${PAYLOAD_TARGET} TEST)
+  add_dependencies(${TARGET_NAME} ${OPENSBI_NAME})
+  set(TEST_NAME opensbi_with_${TARGET_NAME})
 
   add_test(
-      NAME ${NAME}_sim_verilator
-      COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh -r $<TARGET_FILE:bootrom>_scrambled.vmem -E ${NAME}/${NAME}_fw_payload.elf
+      NAME ${TEST_NAME}_sim_verilator
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/verilator_runner.sh
+          -r $<TARGET_FILE:bootrom>_scrambled.vmem
+          -E ${OPENSBI_NAME}/${OPENSBI_NAME}_fw_jump.elf
+          -E $<TARGET_FILE:${TARGET_NAME}>
   )
 
   add_test(
-      NAME ${NAME}_fpga_genesys2
-      COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py test -e ${NAME}/${NAME}_fw_payload.elf
+      NAME ${TEST_NAME}_fpga_genesys2
+      COMMAND ${PROJECT_SOURCE_DIR}/../util/fpga_runner.py test
+          -e ${OPENSBI_NAME}/${OPENSBI_NAME}_fw_jump.elf
+          -e $<TARGET_FILE:${TARGET_NAME}>
   )
 
-  set_property(TEST ${NAME}_sim_verilator PROPERTY TIMEOUT 7200)
-  set_property(TEST ${NAME}_sim_verilator PROPERTY LABELS opensbi verilator slow)
-  set_property(TEST ${NAME}_fpga_genesys2 PROPERTY TIMEOUT 60)
-  set_property(TEST ${NAME}_fpga_genesys2 PROPERTY LABELS opensbi fpga)
+  set_property(TEST ${TEST_NAME}_sim_verilator PROPERTY TIMEOUT 7200)
+  set_property(TEST ${TEST_NAME}_sim_verilator PROPERTY LABELS opensbi verilator slow)
+  set_property(TEST ${TEST_NAME}_fpga_genesys2 PROPERTY TIMEOUT 60)
+  set_property(TEST ${TEST_NAME}_fpga_genesys2 PROPERTY LABELS opensbi fpga)
 endfunction()
 
-mocha_opensbi_with_payload_test(opensbi_test_payload)
+mocha_opensbi(opensbi)
+
+mocha_opensbi_test(opensbi opensbi_test_payload)
