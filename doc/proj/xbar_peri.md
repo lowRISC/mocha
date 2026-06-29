@@ -11,20 +11,20 @@ The testbench reuses the generic TLUL XBAR DV infrastructure from [hw/vendor/low
 
 ### D1
 
-<!-- Link the git hash this sign-off was based on. -->
 The sign-off checklist items are described in the [D1 design sign-off checklist][D1 checklist].
+This sign-off is based on commit [`5d06b0e`][d1-commit] (nightly 2026-06-25).
 
 | Type          | Item                       | Status      | Note/Collaterals |
 |---------------|----------------------------|-------------|------------------|
-| Documentation | SPEC_COMPLETED             | Not Started |                  |
-| Documentation | CSR_DEFINED                | Not Started |                  |
-| RTL           | CLKRST_CONNECTED           | Not Started |                  |
-| RTL           | IP_TOP                     | Not Started |                  |
-| RTL           | IP_INSTANTIABLE            | Not Started |                  |
-| RTL           | PHYSICAL_MACROS_DEFINED_80 | Not Started |                  |
-| RTL           | FUNC_IMPLEMENTED           | Not Started |                  |
-| RTL           | ASSERT_KNOWN_ADDED         | Not Started |                  |
-| Code Quality  | LINT_SETUP                 | Not Started |                  |
+| Documentation | SPEC_COMPLETED             | Done        | [TLUL XBAR design doc][]
+| Documentation | CSR_DEFINED                | N/A         | The TLUL crossbar has no CSRs.
+| RTL           | CLKRST_CONNECTED           | Done        | Module `xbar_peri` checked. Sub-modules checked: `tlul_fifo_async`, `prim_fifo_async`, `prim_flop_2sync`, `prim_cdc_rand_delay`, `prim_flop`, `tlul_socket_1n`, `tlul_fifo_sync`, `prim_fifo_sync`, `prim_fifo_sync_cnt`, `prim_count` and `tlul_err_resp`. Modules without clocks and resets are confirmed to be purely combinational: `prim_buf`, `tlul_rsp_intg_gen`, `prim_secded_inv_64_57_enc`, `tlul_data_integ_enc` and `prim_secded_inv_39_32_enc`.
+| RTL           | IP_TOP                     | Done        | This module is defined in `xbar_peri.sv`.
+| RTL           | IP_INSTANTIABLE            | Done        | This module is instantiated in `top_chip_system.sv`.
+| RTL           | PHYSICAL_MACROS_DEFINED_80 | Done        | Request and response FIFO depths are fixed to constants in `xbar_peri.sv`. Data widths are specified in `top_pkg.sv`.
+| RTL           | FUNC_IMPLEMENTED           | Done        | All functionality already implemented.
+| RTL           | ASSERT_KNOWN_ADDED         | Done        | Output known assertions are in [`prim_fifo_sync.sv`][sync_assert_known] and [`prim_fifo_async.sv`][async_assert_known].
+| Code Quality  | LINT_SETUP                 | Done        | Linting is done with Verilator. No lint warning has been waived.
 
 ### D2
 
@@ -75,7 +75,11 @@ This sign-off is based on commit [`d051a93`][v1-commit] (nightly 2026-05-20).
 
 [OpenTitan]:               https://github.com/lowRISC/opentitan
 [lowRISC/opentitan#10352]: https://github.com/lowRISC/opentitan/pull/10352
+[d1-commit]:               https://github.com/lowRISC/mocha/commit/5d06b0e
 [v1-commit]:               https://github.com/lowRISC/mocha/commit/d051a93
 
-[TLUL XBAR DV doc]: ../../hw/vendor/lowrisc_ip/ip/tlul/doc/dv/README.md
-[TLUL testplan]:    ../../hw/vendor/lowrisc_ip/ip/tlul/data/tlul_testplan.hjson
+[TLUL XBAR design doc]: ../../hw/vendor/lowrisc_ip/ip/tlul/README.md
+[TLUL XBAR DV doc]:     ../../hw/vendor/lowrisc_ip/ip/tlul/doc/dv/README.md
+[TLUL testplan]:        ../../hw/vendor/lowrisc_ip/ip/tlul/data/tlul_testplan.hjson
+[sync_assert_known]:    ../../hw/vendor/lowrisc_ip/ip/prim/rtl/prim_fifo_sync.sv#L224-L227
+[async_assert_known]:   ../../hw/vendor/lowrisc_ip/ip/prim/rtl/prim_fifo_async.sv#L302-L306
