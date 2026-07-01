@@ -5,8 +5,8 @@
 # Function that builds OpenSBI for Mocha.
 function(mocha_opensbi OPENSBI_NAME)
   # OpenSBI repository and tag to use.
-  set(OPENSBI_REPOSITORY https://github.com/lowrisc/opensbi)
-  set(OPENSBI_TAG mocha-devel)
+  set(OPENSBI_REPOSITORY https://github.com/lowRISC/opensbi)
+  set(OPENSBI_TAG mocha-mvp2)
 
   # build command - run make with build options.
   set(BUILD_COMMAND

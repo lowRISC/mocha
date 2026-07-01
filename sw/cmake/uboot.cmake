@@ -5,8 +5,8 @@
 # Function that builds U-Boot, creating a target with the given output name.
 function(mocha_uboot UBOOT_NAME)
   # U-Boot repository and tag to use.
-  set(UBOOT_REPOSITORY https://github.com/lowrisc/u-boot)
-  set(UBOOT_TAG mocha-devel)
+  set(UBOOT_REPOSITORY https://github.com/lowRISC/u-boot)
+  set(UBOOT_TAG mocha-mvp2)
 
   # configure command - load Mocha defconfig file.
   set(CONFIGURE_COMMAND
