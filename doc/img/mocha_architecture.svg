@@ -185,7 +185,7 @@
        id="path13" /><g
        id="g19"
        transform="translate(-1.926712)"><rect
-         style="fill:#e0384f;fill-opacity:1;stroke:#21272d;stroke-width:0.999999;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0"
+         style="fill:#ffffff;fill-opacity:1;stroke:#21272d;stroke-width:0.5;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0"
          id="rect6-7-5"
          width="20.5"
          height="25.000004"
@@ -198,10 +198,10 @@
          y="153.45554"
          id="text6-3-3"><tspan
            id="tspan6-6-8"
-           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:5.64444px;font-family:'Exo 2';-inkscape-font-specification:'Exo 2 Semi-Bold';fill:#ffffff;stroke-width:0.5"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.64444px;font-family:'Exo 2';-inkscape-font-specification:'Exo 2, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#21272d;fill-opacity:1;stroke-width:0.5"
            x="129.61462"
            y="153.45554">Debug</tspan><tspan
-           style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:5.64444px;font-family:'Exo 2';-inkscape-font-specification:'Exo 2 Semi-Bold';fill:#ffffff;stroke-width:0.5"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:5.64444px;font-family:'Exo 2';-inkscape-font-specification:'Exo 2, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#00000f;fill-opacity:1;stroke-width:0.5"
            x="129.61462"
            y="161.94183"
            id="tspan9">Module</tspan></text></g><text
@@ -258,11 +258,11 @@
        style="fill:none;fill-opacity:1;stroke:#21272d;stroke-width:1;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0"
        d="m 80.25,110.61172 v 5"
        id="path13-1-6-0-1" /><path
-       style="fill:none;fill-opacity:1;stroke:#21272d;stroke-width:1;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m 127.75,134.9066 v 10.54347"
+       style="fill:none;fill-opacity:1;stroke:#21272d;stroke-width:0.5;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0"
+       d="m 127.75,135.01839 v 10.54347"
        id="path13-1-6-0-9" /><path
        style="fill:none;fill-opacity:1;stroke:#21272d;stroke-width:0.5;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0"
-       d="m 97.345549,134.9066 v 10.54347"
+       d="m 97.345549,135.01839 v 10.54347"
        id="path13-1-6-0-5" /><path
        style="fill:none;fill-opacity:1;stroke:#21272d;stroke-width:0.499999;stroke-miterlimit:10;stroke-dasharray:none;stroke-dashoffset:0"
        d="m 140.16927,125.5 h 10.23961"
