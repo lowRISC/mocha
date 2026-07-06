@@ -8,11 +8,11 @@
   variant: masked
 
   // Import additional common sim cfg files.
-  import_cfgs: ["{proj_root}/hw/ip/kmac/dv/kmac_base_sim_cfg.hjson"]
+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/dv/kmac_base_sim_cfg.hjson"]
 
   // Enable this build mode for all tests
   en_build_modes: ["enable_mask_mode"]
 
   // exclusion files
-  vcs_cov_excl_files: ["{proj_root}/hw/ip/kmac/dv/cov/kmac_masked_terminal_st_excl.el"]
+  vcs_cov_excl_files: ["{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/dv/cov/kmac_masked_terminal_st_excl.el"]
 }

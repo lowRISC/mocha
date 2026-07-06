@@ -1,0 +1,118 @@
+diff --git a/data/kmac_testplan.hjson b/data/kmac_testplan.hjson
+index 2a28bf54..f9b33bbf 100644
+--- a/data/kmac_testplan.hjson
++++ b/data/kmac_testplan.hjson
+@@ -3,13 +3,13 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name: kmac
+-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/mem_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
++  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/mem_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+                      "kmac_sec_cm_testplan.hjson"]
+   testpoints: [
+     {
+diff --git a/dv/kmac_base_sim_cfg.hjson b/dv/kmac_base_sim_cfg.hjson
+index 98cdb52a..7ffdffb7 100644
+--- a/dv/kmac_base_sim_cfg.hjson
++++ b/dv/kmac_base_sim_cfg.hjson
+@@ -12,29 +12,29 @@
+   tb: tb
+ 
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+ 
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: lowrisc:dv:kmac_sim:0.1
+ 
+   // Testplan hjson file
+-  testplan: "{proj_root}/hw/ip/kmac/data/kmac_testplan.hjson"
++  testplan: "{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/data/kmac_testplan.hjson"
+ 
+   // RAL spec - used to generate the RAL model.
+-  ral_spec: "{proj_root}/hw/ip/kmac/data/kmac.hjson"
++  ral_spec: "{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/data/kmac.hjson"
+ 
+   // Import additional common sim cfg files.
+   import_cfgs: [// Project wide common sim cfg file
+-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
+                 // Common CIP test lists
+-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/intr_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/mem_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/alert_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/shadow_reg_errors_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/stress_tests.hjson"]
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/intr_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/mem_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/alert_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/shadow_reg_errors_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_tests.hjson"]
+ 
+   // Add additional tops for simulation.
+   sim_tops: ["kmac_bind",
+@@ -56,7 +56,7 @@
+     }
+     {
+       name: rel_path
+-      value: "hw/ip/{name}_{variant}/dv"
++      value: "hw/vendor/lowrisc_ip/ip/{name}_{variant}/dv"
+     }
+   ]
+ 
+diff --git a/dv/kmac_masked_sim_cfg.hjson b/dv/kmac_masked_sim_cfg.hjson
+index d339bb09..45e2b019 100644
+--- a/dv/kmac_masked_sim_cfg.hjson
++++ b/dv/kmac_masked_sim_cfg.hjson
+@@ -8,11 +8,11 @@
+   variant: masked
+ 
+   // Import additional common sim cfg files.
+-  import_cfgs: ["{proj_root}/hw/ip/kmac/dv/kmac_base_sim_cfg.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/dv/kmac_base_sim_cfg.hjson"]
+ 
+   // Enable this build mode for all tests
+   en_build_modes: ["enable_mask_mode"]
+ 
+   // exclusion files
+-  vcs_cov_excl_files: ["{proj_root}/hw/ip/kmac/dv/cov/kmac_masked_terminal_st_excl.el"]
++  vcs_cov_excl_files: ["{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/dv/cov/kmac_masked_terminal_st_excl.el"]
+ }
+diff --git a/dv/kmac_unmasked_sim_cfg.hjson b/dv/kmac_unmasked_sim_cfg.hjson
+index 8b68da19..fba0750a 100644
+--- a/dv/kmac_unmasked_sim_cfg.hjson
++++ b/dv/kmac_unmasked_sim_cfg.hjson
+@@ -8,12 +8,12 @@
+   variant: unmasked
+ 
+   // Import additional common sim cfg files.
+-  import_cfgs: ["{proj_root}/hw/ip/kmac/dv/kmac_base_sim_cfg.hjson"]
++  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/dv/kmac_base_sim_cfg.hjson"]
+ 
+   // Enable this build mode for all tests
+   en_build_modes: ["disable_mask_mode"]
+ 
+   // exclusion files
+-  vcs_cov_excl_files: ["{proj_root}/hw/ip/kmac/dv/cov/kmac_unmasked_terminal_st_excl.el",
+-                       "{proj_root}/hw/ip/kmac/dv/cov/kmac_unmasked_cov_excl.el"]
++  vcs_cov_excl_files: ["{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/dv/cov/kmac_unmasked_terminal_st_excl.el",
++                       "{proj_root}/hw/vendor/lowrisc_ip/ip/kmac/dv/cov/kmac_unmasked_cov_excl.el"]
+ }
