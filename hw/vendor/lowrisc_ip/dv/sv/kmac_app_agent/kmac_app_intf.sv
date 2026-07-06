@@ -5,8 +5,6 @@
 // verilog_lint: waive interface-name-style
 interface kmac_app_intf (input clk, input rst_n);
 
-  import keymgr_pkg::*;
-
   dv_utils_pkg::if_mode_e if_mode; // interface mode - Host or Device
 
   // interface pins used to connect with DUT
@@ -60,7 +58,7 @@ interface kmac_app_intf (input clk, input rst_n);
           clk, !rst_n || if_mode == dv_utils_pkg::Host)
 
   // Check strb is aligned to LSB, for example: if strb[1]==0, strb[$:2] should be 0 too
-  for (genvar k = 1; k < KmacDataIfWidth / 8 - 1; k++) begin : gen_strb_check
+  for (genvar k = 1; k < kmac_app_agent_pkg::KmacDataIfWidth / 8 - 1; k++) begin : gen_strb_check
     `ASSERT(StrbAlignLSB_A, kmac_data_req.valid && kmac_data_req.strb[k] === 0 |->
                             kmac_data_req.strb[k+1] === 0,
                             clk, !rst_n || if_mode == dv_utils_pkg::Host)

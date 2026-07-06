@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 class key_sideload_item #(
-    parameter type KEY_T = keymgr_pkg::hw_key_req_t
+    parameter type KEY_T = kmac_pkg::hw_key_req_t
 ) extends uvm_sequence_item;
-  localparam int KeyWidth = ($bits(KEY_T)-1)/keymgr_pkg::Shares;
+  localparam int KeyWidth = ($bits(KEY_T)-1)/kmac_pkg::Shares;
 
   // random variables
   rand bit                valid;
