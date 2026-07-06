@@ -72,7 +72,14 @@ module chip_mocha_genesys2 #(
   output logic       eth_tx_en,
   output logic [3:0] eth_tx_d,
   output logic       eth_mdc,
-  inout  logic       eth_mdio
+  inout  logic       eth_mdio,
+
+  // Debug JTAG
+  input  logic jtag_tck,
+  input  logic jtag_tms,
+  input  logic jtag_tdi,
+  output logic jtag_tdo,
+  input  logic jtag_trst_n
 );
   // Local parameters
   localparam int unsigned InitialResetCycles = 4;
@@ -306,11 +313,11 @@ module chip_mocha_genesys2 #(
     .ethernet_irq_i (ethernet_irq),
 
     // Debug module JTAG tie-off
-    .dm_jtag_tck    (1'b0),
-    .dm_jtag_tms    (1'b0),
-    .dm_jtag_tdi    (1'b0),
-    .dm_jtag_tdo    ( ),
-    .dm_jtag_trst_n (1'b0)
+    .dm_jtag_tck    (jtag_tck),
+    .dm_jtag_tms    (jtag_tms),
+    .dm_jtag_tdi    (jtag_tdi),
+    .dm_jtag_tdo    (jtag_tdo),
+    .dm_jtag_trst_n (jtag_trst_n & rst_n_sync_assert_50m)
   );
 
   // GPIO tri-state output drivers

@@ -48,7 +48,7 @@ set_property -dict { PACKAGE_PIN Y23   IOSTANDARD LVCMOS33 } [get_ports { uart_t
 set_property -dict { PACKAGE_PIN T26   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { i2c_scl_io }];
 set_property -dict { PACKAGE_PIN T27   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { i2c_sda_io }];
 
-## SPI Device (PMOD Header JD)
+## SPI Device (FT2232H)
 set_property -dict { PACKAGE_PIN W28   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_o  }];
 set_property -dict { PACKAGE_PIN W27   IOSTANDARD LVCMOS33 PULLTYPE PULLDOWN } [get_ports { spi_device_sd_i  }];
 set_property -dict { PACKAGE_PIN W29   IOSTANDARD LVCMOS33 PULLTYPE PULLUP   } [get_ports { spi_device_csb_i }];
@@ -86,3 +86,10 @@ set_property -dict { PACKAGE_PIN W26   IOSTANDARD LVCMOS33 } [get_ports { spi_ho
 set_property -dict { PACKAGE_PIN V25   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sd_i_dbg_o  }]; # JB2_P (PMOD 3)
 set_property -dict { PACKAGE_PIN V29   IOSTANDARD LVCMOS33 } [get_ports { spi_host_csb_o_dbg_o }]; # JB1_P (PMOD 1)
 set_property -dict { PACKAGE_PIN V30   IOSTANDARD LVCMOS33 } [get_ports { spi_host_sd_o_dbg_o  }]; # JB1_N (PMOD 2)
+
+## Debug JTAG (PMOD Header JD)
+set_property -dict { PACKAGE_PIN V27   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { jtag_tck    }]; # JD1 (PMOD 1)
+set_property -dict { PACKAGE_PIN Y30   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { jtag_tms    }]; # JD2 (PMOD 2)
+set_property -dict { PACKAGE_PIN V24   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { jtag_tdi    }]; # JD3 (PMOD 3)
+set_property -dict { PACKAGE_PIN W22   IOSTANDARD LVCMOS33 PULLTYPE PULLUP } [get_ports { jtag_trst_n }]; # JD4 (PMOD 4)
+set_property -dict { PACKAGE_PIN U24   IOSTANDARD LVCMOS33                 } [get_ports { jtag_tdo    }]; # JD7 (PMOD 7)
