@@ -173,9 +173,11 @@ Some peripheral tests require additional hardware to be connected to the Genesys
 
 ## Debugging
 
-You can connect to OpenOCD using GDB.
-Currently we only support connecting to JTAG out of the box in Verilator simulation and FPGA debugging is unsupported.
-You can build a custom FPGA bitstream by using the patch that is located in the [Genesys2 TCL script](../../util/genesys2-openocd-cfg.tcl).
+FPGA debugging is supported through the PMOD header JD.
+First connect your JTAG adapter to PMOD JD according to the pinout in [pins_genesys2.xdc](../../hw/top_chip/data/pins_genesys2.xdc), then connect OpenOCD to Mocha with the following command:
+```sh
+openocd -f util/genesys2-openocd-cfg.tcl
+```
 
 Once you have connected OpenOCD to your hardware target you can connect GDB by using the following command:
 ```sh
