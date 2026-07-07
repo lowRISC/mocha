@@ -77,11 +77,19 @@
       formatter = pkgs.alejandra;
       devShells = rec {
         default = baremetal;
-        baremetal = pkgs.mkShell {
+        # CHERI baremetal + EDA development shell, built on lowrisc-nix's generic
+        # mkEdaShell. Commercial EDA tools (Xcelium, Jasper, Vivado) are declared
+        # via tool_data.json and resolved at runtime from the JSON file named by
+        # $LOWRISC_EDA_CONFIG; without that config the shell still works and just
+        # warns. Open-source tools listed in tool_data.json (Verilator, FuseSoC)
+        # are absent from that config and are simply skipped — they are still
+        # provided as Nix packages below. Enter with `nix develop`; it execs a
+        # hermetic FHS sandbox, so it is not direnv-loadable.
+        baremetal = lowrisc-nix.lib.mkEdaShell {
+          inherit pkgs;
           name = "baremetal";
-          strictDeps = true;
-          hardeningDisable = ["all"];
-          nativeBuildInputs =
+          tools = builtins.fromJSON (builtins.readFile ./tool_data.json);
+          extraDeps =
             (with pkgs; [
               bc
               bison
@@ -118,22 +126,22 @@
               verilator_5_040
               llvm_cheri
             ]);
-          buildInputs = with pkgs; [libelf zlib];
-          env = {
-            # Prevent uv from managing Python downloads
-            UV_PYTHON_DOWNLOADS = "never";
-            # Force uv to use nixpkgs Python interpreter
-            UV_PYTHON = pythonSet.python.interpreter;
+          # Project env, appended after the EDA setup (mkEdaShell has no `env`
+          # attr — buildFHSEnv takes a bash profile fragment instead).
+          profile = ''
+            # Prevent uv from managing Python downloads; force the nixpkgs interpreter.
+            export UV_PYTHON_DOWNLOADS=never
+            export UV_PYTHON=${pythonSet.python.interpreter}
 
-            SYSROOT_PURECAP = "${cheri-toolchain.linux-headers-purecap}/usr/include";
-            COMPILER_RT_PURECAP = "${cheri-toolchain.compiler-rt-builtins-purecap}/lib";
-            LIBC_PURECAP_INCLUDE = "${cheri-toolchain.muslc-linux-riscv64-purecap}/include";
-            LIBC_PURECAP_LIB = "${cheri-toolchain.muslc-linux-riscv64-purecap}/lib";
+            export SYSROOT_PURECAP=${cheri-toolchain.linux-headers-purecap}/usr/include
+            export COMPILER_RT_PURECAP=${cheri-toolchain.compiler-rt-builtins-purecap}/lib
+            export LIBC_PURECAP_INCLUDE=${cheri-toolchain.muslc-linux-riscv64-purecap}/include
+            export LIBC_PURECAP_LIB=${cheri-toolchain.muslc-linux-riscv64-purecap}/lib
 
-            HOSTCC = "${pkgs.llvmPackages_21.clang}/bin/clang";
-            HOSTCXX = "${pkgs.llvmPackages_21.clang}/bin/clang++";
-            HOSTLD = "${pkgs.llvmPackages_21.lld}/bin/ld.lld";
-          };
+            export HOSTCC=${pkgs.llvmPackages_21.clang}/bin/clang
+            export HOSTCXX=${pkgs.llvmPackages_21.clang}/bin/clang++
+            export HOSTLD=${pkgs.llvmPackages_21.lld}/bin/ld.lld
+          '';
         };
       };
 

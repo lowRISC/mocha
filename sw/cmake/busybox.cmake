@@ -41,6 +41,7 @@ function(mocha_busybox OUTPUT_NAME)
       "CC=clang ${FLAGS}"
       HOSTCC=gcc
       "LD=ld.lld"
+      STRIP=llvm-strip
       "CFLAGS_busybox=--unwindlib=none ${FLAGS} -fuse-ld=lld"
   )
 
