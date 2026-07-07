@@ -6,9 +6,9 @@
 # On timeout just wait indefinitely.
 set timeout 20
 spawn gdb build/sw/device/examples/infinite_loop
-expect_before -i $spawn_id {
-    timeout { send_error "Error: GDB didn't print the expected response within teh timeout\n"; exit 2 }
-    eof { send_error "Error: GDB unexpectedly terminated\n"; exit 1}
+expect_before {
+    timeout { send_error "Error: GDB didn't print the expected response within the timeout\n"; exit 2 }
+    eof { send_error "Error: GDB unexpectedly terminated\n"; exit 1 }
 }
 expect "build/sw/device/examples/infinite_loop"
 # Connect to OpenOCD.

@@ -98,7 +98,7 @@ jobs:
 
       - name: Run debug test
         run: |
-          util/debug_test.sh
+          util/debug_test_verilator.sh
 
   fpga-cache-check:
     runs-on: ["self-hosted", "nixos", "X64"]
@@ -202,3 +202,8 @@ jobs:
         shell: "nix develop -c bash -e {0}"
         run: |
           ctest --test-dir build/sw -R fpga -LE slow --output-on-failure
+
+      - name: Run FPGA debug test
+        shell: "nix develop -c bash -e {0}"
+        run: |
+          util/debug_test_fpga.sh
