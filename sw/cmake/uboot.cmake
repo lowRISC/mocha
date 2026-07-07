@@ -17,9 +17,9 @@ function(mocha_uboot UBOOT_NAME)
   # build command.
   set(BUILD_COMMAND
       make
-      # override CC and LD, as U-boot defaults to using the GNU toolchain.
       "CC=clang -target riscv64-unknown-elf"
       "LD=ld.lld"
+      OBJCOPY=llvm-objcopy
   )
   
   # install command - copy the built U-Boot binary to the root of the external project directory.

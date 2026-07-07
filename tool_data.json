@@ -22,7 +22,7 @@
     {
         "name": "Vivado",
         "vendor": "Xilinx",
-        "version": "v2021.1",
+        "version": "2021.1",
         "comment": "Used to build bitstreams for Genesys 2."
     },
     {
