@@ -14,9 +14,9 @@ class axi_mgr_write_single_data_seq extends axi_mgr_write_data_seq;
 
   extern function new(string name="");
 
-  // An override of axi_mgr_write_data_seq::randomize_item, ensuring that the item that is sent
+  // An override of axi_mgr_write_data_seq::populate_item, ensuring that the item that is sent
   // matches m_write_data_item.
-  extern protected virtual function void randomize_item(axi_write_data_item item, bit is_last);
+  extern protected virtual function void populate_item(axi_write_data_item item, bit is_last);
 
   // Write exactly one item
   extern constraint single_item_c;
