@@ -114,29 +114,38 @@ task axi_mgr_read_data_driver::drive_req();
       wait(m_in_reset);
       begin
         axi_read_data_item read_data_item;
+        // Cycles elapsed since rvalid was first seen; zero means it has not been seen yet.
+        int unsigned delay = 0;
 
-        // For the time until rvalid is asserted, obey req.m_ready_without_valid_pct and assert
-        // rready for some fraction of the total time.
-        while (m_vif.mgr_cb.rvalid !== 1'b1) begin
-          m_vif.mgr_cb.rready <= $urandom_range(0, 99) < req.m_ready_without_valid_pct;
+        // Drive rready and watch for the actual transfer. We track the value we drive in
+        // rather than reading it back from the clocking block, and we sample on that exact
+        // handshake edge. This is what makes the accept protocol correct:
+        //   * a speculative rready (asserted before rvalid via ready_without_valid_pct) that
+        //     catches the beat is detected and sampled, instead of consuming the beat unsampled
+        //   * two accepts running back-to-back (no clock edge between sequence items) cannot
+        //     re-sample the same beat, because each iteration advances a clock before checking.
+        forever begin
+          // the value we drive onto rready this cycle
+          bit rready;
+
+          if (delay == 0) begin
+            // Before rvalid: optionally assert rready speculatively.
+            rready = ($urandom_range(0, 99) < req.m_ready_without_valid_pct);
+          end else begin
+            // After rvalid: hold rready low for valid_to_ready_delay cycles, then assert it.
+            rready = (delay >= req.m_valid_to_ready_delay);
+          end
+
+          m_vif.mgr_cb.rready <= rready;
           @(m_vif.mgr_cb);
+
+          if (m_vif.mgr_cb.rvalid === 1'b1) begin
+            if (rready) break;  // rvalid && rready on this edge: beat transferred
+            delay++;            // count the cycle just elapsed, including the first rvalid one
+          end
         end
 
-        // At this point, rvalid has been asserted. If rready is true, the transfer has gone
-        // through. If not, wait req.m_valid_to_ready_delay cycles before we assert ready.
-        //
-        // Read rready from the clocking block to see the last value we wrote. Practically speaking,
-        // mgr_cb.rready will not be true unless we had at least one cycle in the loop above: we set
-        // mgr_cb.rready <= 0 at the end of this task and also when a reset is seen in monitor_reset.
-        if (m_vif.mgr_cb.rready !== 1'b1) begin
-          repeat (req.m_valid_to_ready_delay) @(m_vif.mgr_cb);
-          m_vif.mgr_cb.rready <= 1'b1;
-          @(m_vif.mgr_cb);
-        end
-
-        // When we get here, we have finished accepting a response and we are at the end of a cycle
-        // where rvalid and rready were asserted. Write a sequence item to represent the response
-        // that we have seen to our read_data_item output argument.
+        // The beat transferred on the edge that just happened: sample the value.
         read_data_item = axi_read_data_item::type_id::create("read_data_item");
         read_data_item.m_id   = m_vif.mgr_cb.rid;
         read_data_item.m_data = m_vif.mgr_cb.rdata;
@@ -146,7 +155,8 @@ task axi_mgr_read_data_driver::drive_req();
 
         rsp = read_data_item;
 
-        // Finally, clear rready (for next cycle).
+        // Deassert rready. If the next accept follows immediately, its first iteration re-drives
+        // rready before the next clock edge, so consecutive beats are still accepted seamlessly.
         m_vif.mgr_cb.rready <= 1'b0;
       end
     join_any
