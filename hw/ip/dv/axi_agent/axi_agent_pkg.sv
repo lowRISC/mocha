@@ -6,6 +6,7 @@ package axi_agent_pkg;
   import uvm_pkg::*;
   import axi_widths_pkg::*;
   `include "uvm_macros.svh"
+  `include "dv_macros.svh"
 
   // The possible encodings of the AxBURST signal
   typedef enum bit [AxiBurstWidth-1:0] {
@@ -67,6 +68,12 @@ package axi_agent_pkg;
   `include "seq_lib/axi_mgr_read_burst_vseq.svh"
 
   `include "seq_lib/axi_mgr_register_layer_vseq.svh"
+
+  `include "axi_mon_types.svh"
+  `include "axi_mon_item.svh"
+  `include "axi_mon_write_item.svh"
+  `include "axi_mon_read_item.svh"
+  `include "axi_monitor.svh"
 
   `include "axi_agent.svh"
 endpackage

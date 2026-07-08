@@ -7,6 +7,10 @@
 class axi_agent_cfg extends uvm_object;
   `uvm_object_utils(axi_agent_cfg)
 
+  // UVM_ACTIVE if the agent should build drivers, sequencers, and monitors. 
+  // UVM_PASSIVE if it should build only the monitors. Set directly by whoever builds the cfg.
+  uvm_active_passive_enum is_active = UVM_ACTIVE;
+
   // Interfaces
   virtual clk_rst_if            clk_rst_vif;        // ACLK/ARESETn
 
