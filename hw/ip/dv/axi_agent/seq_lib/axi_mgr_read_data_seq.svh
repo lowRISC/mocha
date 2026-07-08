@@ -25,10 +25,26 @@ class axi_mgr_read_data_seq extends uvm_sequence #(axi_response_accept_item, axi
 
   extern function new(string name="");
   extern task body();
+
+  // Copy the m_use_fixed_*/m_fixed_* value above, so that a configured sequence can be used as a
+  // template by clone()ing it.
+  extern function void do_copy(uvm_object rhs);
 endclass
 
 function axi_mgr_read_data_seq::new(string name="");
   super.new(name);
+endfunction
+
+function void axi_mgr_read_data_seq::do_copy(uvm_object rhs);
+  axi_mgr_read_data_seq rhs_;
+  if (rhs == null) `uvm_fatal("do_copy", "Cannot copy from RHS: it is null.")
+  if (!$cast(rhs_, rhs)) `uvm_fatal("do_copy", "Cannot cast RHS: wrong type?")
+
+  super.do_copy(rhs);
+  this.m_use_fixed_ready_without_valid_pct = rhs_.m_use_fixed_ready_without_valid_pct;
+  this.m_fixed_ready_without_valid_pct     = rhs_.m_fixed_ready_without_valid_pct;
+  this.m_use_fixed_valid_to_ready_delay    = rhs_.m_use_fixed_valid_to_ready_delay;
+  this.m_fixed_valid_to_ready_delay        = rhs_.m_fixed_valid_to_ready_delay;
 endfunction
 
 task axi_mgr_read_data_seq::body();

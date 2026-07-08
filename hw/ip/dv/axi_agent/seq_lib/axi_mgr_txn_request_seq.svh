@@ -42,8 +42,6 @@ task axi_mgr_txn_request_seq::body();
   start_item(m_req);
   finish_item(m_req);
 
-  finish_item(item);
-
   // Get a response, which will always be sent by the driver (and is available already: there's no
   // pipelining and finish_item just completed).
   get_base_response(base_status_item);
