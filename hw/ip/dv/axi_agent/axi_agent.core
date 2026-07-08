@@ -19,6 +19,12 @@ filesets:
       - axi_agent_pkg.sv
       - axi_agent_cfg.svh: {is_include_file: true}
 
+      - axi_mon_types.svh: {is_include_file: true}
+      - axi_mon_item.svh: {is_include_file: true}
+      - axi_mon_write_item.svh: {is_include_file: true}
+      - axi_mon_read_item.svh: {is_include_file: true}
+      - axi_monitor.svh: {is_include_file: true}
+
       - axi_reset_item.svh: {is_include_file: true}
       - axi_status_item.svh: {is_include_file: true}
       - axi_txn_request_item.svh: {is_include_file: true}
