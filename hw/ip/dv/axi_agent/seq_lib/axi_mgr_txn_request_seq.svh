@@ -10,10 +10,14 @@
 class axi_mgr_txn_request_seq extends uvm_sequence #(axi_txn_request_item, axi_status_item);
   `uvm_object_utils(axi_mgr_txn_request_seq)
 
-  // This sequence uses late randomisation, so doesn't randomise the request until it is scheduled
-  // on the sequencer. Of course, this is a bit tricky to use in a situation where you want to
-  // control a particular variable when randomising. To do so for a field called XYZ, set
-  // m_use_fixed_XYZ=1 and set m_fixed_XYZ to the required value. Do this before starting the
+  // If non-null, this exact item is sent verbatim; no randomisation, and the
+  // m_use_fixed_* pins below are ignored.
+  axi_txn_request_item m_req;
+
+  // If m_req is null, this sequence uses late randomisation, so doesn't randomise the request until
+  // it is scheduled on the sequencer. Of course, this is a bit tricky to use in a situation where 
+  // you want to control a particular variable when randomising. To do so for a field called XYZ, 
+  // set m_use_fixed_XYZ=1 and set m_fixed_XYZ to the required value. Do this before starting the
   // sequence and m_XYZ in the generated item will be "randomised" to match m_fixed_XYZ.
   //
   // The pairs of variables below are named to match the fields of axi_txn_request_item.
@@ -60,28 +64,35 @@ function axi_mgr_txn_request_seq::new(string name="");
 endfunction
 
 task axi_mgr_txn_request_seq::body();
-  axi_txn_request_item item = axi_txn_request_item::type_id::create("item");
+  axi_txn_request_item item;
   uvm_sequence_item base_status_item;
 
-  start_item(item);
-
-  if (!item.randomize() with {
-        local::m_use_fixed_id     -> m_id     == local::m_fixed_id;
-        local::m_use_fixed_addr   -> m_addr   == local::m_fixed_addr;
-        local::m_use_fixed_region -> m_region == local::m_fixed_region;
-        local::m_use_fixed_len    -> m_len    == local::m_fixed_len;
-        local::m_use_fixed_size   -> m_size   == local::m_fixed_size;
-        local::m_use_fixed_burst  -> m_burst  == local::m_fixed_burst;
-        local::m_use_fixed_lock   -> m_lock   == local::m_fixed_lock;
-        local::m_use_fixed_cache  -> m_cache  == local::m_fixed_cache;
-        local::m_use_fixed_prot   -> m_prot   == local::m_fixed_prot;
-        local::m_use_fixed_qos    -> m_qos    == local::m_fixed_qos;
-        local::m_use_fixed_user   -> m_user   == local::m_fixed_user;
-      }) begin
-    `uvm_fatal(get_full_name(), "Failed to randomise item.")
+  if (m_req != null) begin
+    // Send the caller-supplied item verbatim: it is already built, so no randomisation.
+    item = m_req;
+    start_item(item);
+    finish_item(item);
+  end else begin
+    // Late randomisation: build an item and randomise it on the sequencer, honouring m_use_fixed_*.
+    item = axi_txn_request_item::type_id::create("item");
+    start_item(item);
+    if (!item.randomize() with {
+          local::m_use_fixed_id     -> m_id     == local::m_fixed_id;
+          local::m_use_fixed_addr   -> m_addr   == local::m_fixed_addr;
+          local::m_use_fixed_region -> m_region == local::m_fixed_region;
+          local::m_use_fixed_len    -> m_len    == local::m_fixed_len;
+          local::m_use_fixed_size   -> m_size   == local::m_fixed_size;
+          local::m_use_fixed_burst  -> m_burst  == local::m_fixed_burst;
+          local::m_use_fixed_lock   -> m_lock   == local::m_fixed_lock;
+          local::m_use_fixed_cache  -> m_cache  == local::m_fixed_cache;
+          local::m_use_fixed_prot   -> m_prot   == local::m_fixed_prot;
+          local::m_use_fixed_qos    -> m_qos    == local::m_fixed_qos;
+          local::m_use_fixed_user   -> m_user   == local::m_fixed_user;
+        }) begin
+      `uvm_fatal(get_full_name(), "Failed to randomise item.")
+    end
+    finish_item(item);
   end
-
-  finish_item(item);
 
   // Get a response, which will always be sent by the driver (and is available already: there's no
   // pipelining and finish_item just completed).

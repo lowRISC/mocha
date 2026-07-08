@@ -78,9 +78,6 @@ task axi_mgr_read_fixed_vseq::body();
   ar_seq.m_fixed_qos        = m_fixed_req.m_qos;
   ar_seq.m_use_fixed_user   = 1'b1;
   ar_seq.m_fixed_user       = m_fixed_req.m_user;
-  if (!ar_seq.randomize()) begin
-    `uvm_fatal(get_full_name(), "Failed to randomize ar_seq.")
-  end
 
   // Create a sequence to receive a single read data transaction (R). (This might or might not match
   // our ID, but that doesn't matter: the point is that we need to send it as a token)
