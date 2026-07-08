@@ -53,11 +53,14 @@ filesets:
       - seq_lib/axi_mgr_txn_request_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_write_data_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_write_single_data_seq.svh: {is_include_file: true}
+      - seq_lib/axi_mgr_write_listed_data_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_write_response_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_read_data_seq.svh: {is_include_file: true}
 
       - seq_lib/axi_mgr_write_fixed_vseq.svh: {is_include_file: true}
+      - seq_lib/axi_mgr_write_burst_vseq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_read_fixed_vseq.svh: {is_include_file: true}
+      - seq_lib/axi_mgr_read_burst_vseq.svh: {is_include_file: true}
 
       - seq_lib/axi_mgr_register_layer_vseq.svh: {is_include_file: true}
 

@@ -14,11 +14,12 @@ class axi_mgr_write_data_seq extends uvm_sequence #(axi_write_data_item, axi_sta
   extern function new(string name="");
   extern task body();
 
-  // Randomize an item that is about to be sent. Defining this explicitly allows a sequence
-  // extending this one to more easily constrain the randomisation of the items that get sent.
+  // Populate an item that is about to be sent. The base implementation randomises it; defining this
+  // as a hook lets a subclass constrain that randomisation, or replace it entirely (e.g. by copying
+  // a caller-supplied beat).
   //
   // The is_last argument is set when this is the last item in the stream of data words.
-  extern protected virtual function void randomize_item(axi_write_data_item item, bit is_last);
+  extern protected virtual function void populate_item(axi_write_data_item item, bit is_last);
 
   // The number of items needs to match m_len from the AW channel, which is represented by an 8-bit
   // value that gives the last index. As such, m_number_of_items should be in the range 1..256.
@@ -35,7 +36,7 @@ task axi_mgr_write_data_seq::body();
     axi_write_data_item item = axi_write_data_item::type_id::create("item");
 
     start_item(item);
-    randomize_item(item, i + 1 == m_number_of_items);
+    populate_item(item, i + 1 == m_number_of_items);
     finish_item(item);
 
     // Get the response from the driver and check it is actually of the expected axi_status_item
@@ -52,7 +53,7 @@ task axi_mgr_write_data_seq::body();
   end
 endtask
 
-function void axi_mgr_write_data_seq::randomize_item(axi_write_data_item item, bit is_last);
+function void axi_mgr_write_data_seq::populate_item(axi_write_data_item item, bit is_last);
   if (!item.randomize() with {
         m_last == local::is_last;
       }) begin
