@@ -26,3 +26,15 @@ set_clock_groups -asynchronous -group [get_clocks eth_rxck_pin -include_generate
 ## set_false_path -hold \
 ##     -through [get_pins -hierarchical -filter async] \
 ##     -through [get_pins -hierarchical -filter async]
+
+## Debug JTAG Clock (Max 30 MHz)
+create_clock -period 33.333 -waveform {0 16.667} -name jtag_tck_pin [get_ports jtag_tck];
+
+## Debug JTAG Clock Asynchronous with All Other Clocks
+set_clock_groups -asynchronous -group [get_clocks jtag_tck_pin];
+
+## JTAG to Mocha CDC Bus Skew Constraints
+## min(33.333ns, 20ns) = 20ns
+set_max_delay -datapath_only 20 \
+    -from [get_pins -hierarchical -regexp .*/i_dmi_cdc/.*/data_wr_q_reg.*/C] \
+    -to [get_pins -hierarchical -regexp .*/i_dmi_cdc/.*/data_rd_q_reg.*/D]
