@@ -270,7 +270,7 @@ module axi_llc_tag_store #(
     prim_ram_1p #(
       .Width           (TagDataLen),
       .Depth           (Cfg.NumLines),
-      .DataBitsPerMask (32'd1)
+      .DataBitsPerMask (TagDataLen)
     ) i_tag_store (
       .clk_i,
       .rst_ni,
