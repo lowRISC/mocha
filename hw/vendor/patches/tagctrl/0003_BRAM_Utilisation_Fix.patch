@@ -1,0 +1,13 @@
+diff --git a/src/axi_llc_tag_store.sv b/src/axi_llc_tag_store.sv
+index be4d016..7ba57bc 100644
+--- a/src/axi_llc_tag_store.sv
++++ b/src/axi_llc_tag_store.sv
+@@ -270,7 +270,7 @@ module axi_llc_tag_store #(
+     prim_ram_1p #(
+       .Width           (TagDataLen),
+       .Depth           (Cfg.NumLines),
+-      .DataBitsPerMask (32'd1)
++      .DataBitsPerMask (TagDataLen)
+     ) i_tag_store (
+       .clk_i,
+       .rst_ni,
