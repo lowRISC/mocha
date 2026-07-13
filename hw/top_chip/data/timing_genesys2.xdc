@@ -38,3 +38,25 @@ set_clock_groups -asynchronous -group [get_clocks jtag_tck_pin];
 set_max_delay -datapath_only 20 \
     -from [get_pins -hierarchical -regexp .*/i_dmi_cdc/.*/data_wr_q_reg.*/C] \
     -to [get_pins -hierarchical -regexp .*/i_dmi_cdc/.*/data_rd_q_reg.*/D]
+
+## SPI Device Clock (Max 30 MHz)
+create_clock -period 33.333 -waveform {0 16.667} -name spi_dev_sck_pin [get_ports spi_device_sck_i];
+
+## SPI input and output clocks are driven by different BUFRs and should be treated as different clocks
+create_generated_clock -name clk_spi_in  -divide_by 1 -add \
+    -source [get_ports spi_device_sck_i] \
+    -master_clock [get_clocks spi_dev_sck_pin] \
+    [get_pins u_top_chip_system/u_spi_device/u_clk_spi_in_buf/gen_fpga_buf.gen_bufr.bufr_i/O]
+create_generated_clock -name clk_spi_out -divide_by 1 -invert -add \
+    -source [get_ports spi_device_sck_i] \
+    -master_clock [get_clocks spi_dev_sck_pin] \
+    [get_pins u_top_chip_system/u_spi_device/u_clk_spi_out_buf/gen_fpga_buf.gen_bufr.bufr_i/O]
+
+## SPI Device Clock asynchronous with all other clocks
+set_clock_groups -asynchronous -group [get_clocks spi_dev_sck_pin -include_generated_clocks];
+
+## SPI Device CSB pins is used for clocking (Max 15 MHz)
+create_clock -period 66.667 -waveform {0 33.333} -name spi_dev_csb_pin [get_ports spi_device_csb_i];
+
+## SPI Device CSB asynchronous with all other clocks
+set_clock_groups -asynchronous -group [get_clocks spi_dev_csb_pin -include_generated_clocks];
