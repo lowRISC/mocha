@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-module dram_wrapper_sim (
+module sim_dram_wrapper (
   // Clock and reset
   input  logic clk_i,
   input  logic rst_ni,
