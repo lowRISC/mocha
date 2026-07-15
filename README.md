@@ -34,7 +34,7 @@ As we launch this project, we expect the following release schedule:
 
 ## Verification
 
-There is a dashboard of the nightly verification runs for Mocha, which can be found [here](https://cosmic-project.lowrisc.org/reports).
+There is a dashboard of the nightly verification runs for Mocha, which can be found [here](https://cosmic-project.lowrisc.org/dashboard/index.html).
 It shows test pass rates and coverage metrics for all the blocks currently integrated.
 Initially this dashboard is expected to grow as we add more blocks and the red statuses will turn to green as we integrate more of our verification effort.
 For more information on our top-level verification framework, check out its [dedicated documentation](hw/top_chip/dv/README.md).

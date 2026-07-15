@@ -54,7 +54,7 @@ This sign-off is based on commit [`d051a93`][v1-commit] (nightly 2026-05-20).
 | Simulation    | SIM_TB_ENV_CREATED                 | Done    | Generic TLUL UVM environment from `hw/vendor/lowrisc_ip/ip/tlul/generic_dv/`; `tl_agent` instantiated per host/device interface; scoreboard with per-interface analysis FIFOs |
 | Tests         | SIM_SMOKE_TEST_PASSING             | Done    | `xbar_smoke`: 50/50 passed (100%) — nightly 2026-05-20, commit `d051a93` |
 | Regression    | SIM_SMOKE_REGRESSION_SETUP         | Done    | Smoke regression defined in `hw/top_chip/ip/xbar_peri/dv/autogen/xbar_peri_sim_cfg.hjson` and added to the aggregate `mocha/hw/top_chip/dv/mocha_sim_cfgs.hjson` file used for nightly/weekly CI regressions. |
-| Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Done    | Nightly CI running on `main` and results are available at the [COSMIC reports dashboard](https://cosmic-project.lowrisc.org/reports) |
+| Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Done    | Nightly CI running on `main` and results are available at the [COSMIC reports dashboard](https://cosmic-project.lowrisc.org/dashboard/index.html) |
 | Coverage      | SIM_COVERAGE_MODEL_ADDED           | Done    | Coverage model defined in `hw/vendor/lowrisc_ip/ip/tlul/generic_dv/env/xbar_env_cov.sv` |
 | Tests         | FPV_MAIN_ASSERTIONS_PROVEN         | N/A     | xbar_peri verified by simulation only; no FPV flow |
 | Regression    | FPV_REGRESSION_SETUP               | N/A     | No FPV for xbar_peri |
