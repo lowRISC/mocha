@@ -96,7 +96,35 @@ jobs:
         run: |
           ctest --test-dir build/sw -R sim_verilator -LE slow --output-on-failure -j $(nproc)
 
-      - name: Run debug test
+  verilator-debug-test:
+    runs-on: ["self-hosted", "nixos", "X64"]
+    needs: lint-check
+
+    defaults:
+      run:
+        shell: "nix develop -c bash -e {0}"
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Prepare Nix environment
+        run: |
+          true
+
+      - name: Generate software buildsystem
+        run: |
+          cmake -B build/sw -S sw
+
+      - name: Build software
+        run: |
+          cmake --build build/sw -j $(nproc) --target bootrom --target infinite_loop
+
+      - name: Build verilator
+        run: |
+          JOBS=$(($(nproc) / 4))
+          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
+
+      - name: Run verilator debug test
         run: |
           util/debug_test_verilator.sh
 
