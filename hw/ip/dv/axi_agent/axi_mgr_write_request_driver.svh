@@ -14,6 +14,7 @@ class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi
   `uvm_component_utils(axi_mgr_write_request_driver)
 
   local virtual axi_write_request_if m_vif;
+  local virtual clk_rst_if m_clk_rst_vif;
 
   // True if the interface is currently in reset. Maintained by monitor_reset().
   //
@@ -27,6 +28,9 @@ class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi
 
   // Set m_vif. This must be called before run_phase.
   extern function void set_vif(virtual axi_write_request_if vif);
+
+  // Set the shared clock/reset interface. This must be called before run_phase.
+  extern function void set_clk_rst_vif(virtual clk_rst_if vif);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -72,8 +76,12 @@ function void axi_mgr_write_request_driver::set_vif(virtual axi_write_request_if
   m_vif = vif;
 endfunction
 
+function void axi_mgr_write_request_driver::set_clk_rst_vif(virtual clk_rst_if vif);
+  m_clk_rst_vif = vif;
+endfunction
+
 task axi_mgr_write_request_driver::run_phase(uvm_phase phase);
-  if (m_vif == null) begin
+  if (m_vif == null || m_clk_rst_vif == null) begin
     `uvm_fatal(get_full_name(), "Cannot drive interface: vif is null.")
     return;
   end
@@ -100,12 +108,12 @@ task axi_mgr_write_request_driver::get_and_drive();
 endtask
 
 task axi_mgr_write_request_driver::monitor_reset();
-  wait(!$isunknown(m_vif.rst_ni));
-  m_in_reset = !m_vif.rst_ni;
+  wait(!$isunknown(m_clk_rst_vif.rst_n));
+  m_in_reset = !m_clk_rst_vif.rst_n;
   forever begin
-    wait (m_vif.rst_ni);
+    wait (m_clk_rst_vif.rst_n);
     m_in_reset = 0;
-    wait (!m_vif.rst_ni);
+    wait (!m_clk_rst_vif.rst_n);
     m_in_reset = 1;
     clear_data();
   end
