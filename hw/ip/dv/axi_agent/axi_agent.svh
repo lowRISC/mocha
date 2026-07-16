@@ -14,28 +14,26 @@ class axi_agent extends uvm_agent;
   // either be set by calling set_cfg() before the build phase, or provided through uvm_config_db.
   local axi_agent_cfg m_cfg;
 
+  // Reset monitor for the shared AXI clock/reset (covers all five channels).
+  local axi_reset_monitor m_reset_monitor;
+
   // The write request channel (AW)
-  local axi_reset_monitor_aw         m_reset_monitor_aw;
   local axi_mgr_write_request_driver m_write_request_driver;
   local write_request_sequencer_t    m_write_request_sequencer;
 
   // The write data channel (W)
-  local axi_reset_monitor_w       m_reset_monitor_w;
   local axi_mgr_write_data_driver m_write_data_driver;
   local write_data_sequencer_t    m_write_data_sequencer;
 
   // The write response channel (B)
-  local axi_reset_monitor_b           m_reset_monitor_b;
   local axi_mgr_write_response_driver m_write_response_driver;
   local write_response_sequencer_t    m_write_response_sequencer;
 
   // The read request channel (AR)
-  local axi_reset_monitor_ar        m_reset_monitor_ar;
   local axi_mgr_read_request_driver m_read_request_driver;
   local read_request_sequencer_t    m_read_request_sequencer;
 
   // The read data channel (R)
-  local axi_reset_monitor_r      m_reset_monitor_r;
   local axi_mgr_read_data_driver m_read_data_driver;
   local read_data_sequencer_t    m_read_data_sequencer;
 
@@ -64,20 +62,8 @@ class axi_agent extends uvm_agent;
   // will try to get the config object from uvm_config_db.
   extern function void set_cfg(axi_agent_cfg cfg);
 
-  // Get the reset_monitor for the write request channel (AW). Can only be called after build_phase.
-  extern function axi_reset_monitor_aw get_write_request_reset_monitor();
-
-  // Get the reset_monitor for the write data channel (W). Can only be called after build_phase.
-  extern function axi_reset_monitor_w get_write_data_reset_monitor();
-
-  // Get the reset_monitor for the write response channel (B). Can only be called after build_phase.
-  extern function axi_reset_monitor_b get_write_response_reset_monitor();
-
-  // Get the reset_monitor for the read request channel (AR). Can only be called after build_phase.
-  extern function axi_reset_monitor_ar get_read_request_reset_monitor();
-
-  // Get the reset_monitor for the read data channel (R). Can only be called after build_phase.
-  extern function axi_reset_monitor_r get_read_data_reset_monitor();
+  // Get the reset monitor for the shared AXI clock/reset. Can only be called after build_phase.
+  extern function axi_reset_monitor get_reset_monitor();
 
   // Get the sequencer for the write request channel (AW). Can only be called after build_phase, and
   // the agent must be active.
@@ -132,12 +118,8 @@ function void axi_agent::build_phase(uvm_phase phase);
     `uvm_fatal(get_full_name(), "failed to get cfg object from uvm_config_db")
   end
 
-  // Generate a reset monitor for each of the five channels.
-  m_reset_monitor_aw = axi_reset_monitor_aw::type_id::create("m_reset_monitor_aw", this);
-  m_reset_monitor_w  = axi_reset_monitor_w::type_id::create("m_reset_monitor_w", this);
-  m_reset_monitor_b  = axi_reset_monitor_b::type_id::create("m_reset_monitor_b", this);
-  m_reset_monitor_ar = axi_reset_monitor_ar::type_id::create("m_reset_monitor_ar", this);
-  m_reset_monitor_r  = axi_reset_monitor_r::type_id::create("m_reset_monitor_r", this);
+  // One reset monitor for the shared AXI clock/reset (ACLK/ARESETn).
+  m_reset_monitor = axi_reset_monitor::type_id::create("m_reset_monitor", this);
 
   if (get_is_active() == UVM_ACTIVE) begin
     // Create routers for write and read responses
@@ -179,36 +161,33 @@ endfunction
 function void axi_agent::connect_phase(uvm_phase phase);
   super.connect_phase(phase);
 
-  m_reset_monitor_aw.set_vif(m_cfg.write_request_vif);
-  m_reset_monitor_w.set_vif(m_cfg.write_data_vif);
-  m_reset_monitor_b.set_vif(m_cfg.write_response_vif);
-  m_reset_monitor_ar.set_vif(m_cfg.read_request_vif);
-  m_reset_monitor_r.set_vif(m_cfg.read_data_vif);
+  m_reset_monitor.set_vif(m_cfg.clk_rst_vif);
 
   // If the agent is active, connect drivers to interfaces and sequencers
   if (get_is_active() == UVM_ACTIVE) begin
     m_write_request_driver.set_vif(m_cfg.write_request_vif);
+    m_write_request_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
     m_write_request_driver.seq_item_port.connect(m_write_request_sequencer.seq_item_export);
 
     m_write_data_driver.set_vif(m_cfg.write_data_vif);
+    m_write_data_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
     m_write_data_driver.seq_item_port.connect(m_write_data_sequencer.seq_item_export);
 
     m_write_response_driver.set_vif(m_cfg.write_response_vif);
+    m_write_response_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
     m_write_response_driver.seq_item_port.connect(m_write_response_sequencer.seq_item_export);
 
     m_read_request_driver.set_vif(m_cfg.read_request_vif);
+    m_read_request_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
     m_read_request_driver.seq_item_port.connect(m_read_request_sequencer.seq_item_export);
 
     m_read_data_driver.set_vif(m_cfg.read_data_vif);
+    m_read_data_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
     m_read_data_driver.seq_item_port.connect(m_read_data_sequencer.seq_item_export);
 
-    // Connect the write response router to reset events from the AW channel (which will match the
-    // events from W and B)
-    m_reset_monitor_aw.m_analysis_port.connect(m_write_response_router.reset_imp);
-
-    // Connect the read response router to reset events from the AR channel (which will match the
-    // events from R)
-    m_reset_monitor_ar.m_analysis_port.connect(m_read_response_router.reset_imp);
+    // Both response routers observe the same shared reset.
+    m_reset_monitor.m_analysis_port.connect(m_write_response_router.reset_imp);
+    m_reset_monitor.m_analysis_port.connect(m_read_response_router.reset_imp);
   end
 endfunction
 
@@ -217,34 +196,9 @@ function void axi_agent::set_cfg(axi_agent_cfg cfg);
   m_cfg = cfg;
 endfunction
 
-function axi_reset_monitor_aw axi_agent::get_write_request_reset_monitor();
-  if (m_reset_monitor_aw == null)
-    `uvm_fatal(get_full_name(), "m_reset_monitor_aw is null.")
-  return m_reset_monitor_aw;
-endfunction
-
-function axi_reset_monitor_w axi_agent::get_write_data_reset_monitor();
-  if (m_reset_monitor_w == null)
-    `uvm_fatal(get_full_name(), "m_reset_monitor_w is null.")
-  return m_reset_monitor_w;
-endfunction
-
-function axi_reset_monitor_b axi_agent::get_write_response_reset_monitor();
-  if (m_reset_monitor_b == null)
-    `uvm_fatal(get_full_name(), "m_reset_monitor_b is null.")
-  return m_reset_monitor_b;
-endfunction
-
-function axi_reset_monitor_ar axi_agent::get_read_request_reset_monitor();
-  if (m_reset_monitor_ar == null)
-    `uvm_fatal(get_full_name(), "m_reset_monitor_ar is null.")
-  return m_reset_monitor_ar;
-endfunction
-
-function axi_reset_monitor_r axi_agent::get_read_data_reset_monitor();
-  if (m_reset_monitor_r == null)
-    `uvm_fatal(get_full_name(), "m_reset_monitor_r is null.")
-  return m_reset_monitor_r;
+function axi_reset_monitor axi_agent::get_reset_monitor();
+  if (m_reset_monitor == null) `uvm_fatal(get_full_name(), "m_reset_monitor is null.")
+  return m_reset_monitor;
 endfunction
 
 function write_request_sequencer_t axi_agent::get_write_request_sequencer();

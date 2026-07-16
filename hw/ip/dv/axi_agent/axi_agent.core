@@ -8,6 +8,7 @@ filesets:
   files_dv:
     depend:
       - lowrisc:dv:dv_utils
+      - lowrisc:dv:common_ifs
     files:
       - axi_read_data_if.sv
       - axi_read_request_if.sv
@@ -31,11 +32,7 @@ filesets:
       - axi_fixed_read_req_item.svh: {is_include_file: true}
       - axi_fixed_read_rsp_item.svh: {is_include_file: true}
 
-      - axi_reset_monitor_aw.svh: {is_include_file: true}
-      - axi_reset_monitor_w.svh: {is_include_file: true}
-      - axi_reset_monitor_b.svh: {is_include_file: true}
-      - axi_reset_monitor_ar.svh: {is_include_file: true}
-      - axi_reset_monitor_r.svh: {is_include_file: true}
+      - axi_reset_monitor.svh: {is_include_file: true}
 
       - axi_mgr_write_request_driver.svh: {is_include_file: true}
       - axi_mgr_write_data_driver.svh: {is_include_file: true}

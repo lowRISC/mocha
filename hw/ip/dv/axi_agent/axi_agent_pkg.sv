@@ -34,13 +34,8 @@ package axi_agent_pkg;
 
   `include "axi_reset_item.svh"
 
-  // Reset monitors for the five interfaces (all essentially the same thing, but the interface types
-  // are different so we have to copy-paste the classes)
-  `include "axi_reset_monitor_aw.svh"
-  `include "axi_reset_monitor_w.svh"
-  `include "axi_reset_monitor_b.svh"
-  `include "axi_reset_monitor_ar.svh"
-  `include "axi_reset_monitor_r.svh"
+  // Reset monitor for the shared AXI clock/reset (one instance covers all channels).
+  `include "axi_reset_monitor.svh"
 
   `include "axi_reg_op_item.svh"
   `include "axi_reg_adapter.svh"
