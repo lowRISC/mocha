@@ -7,6 +7,9 @@
 class axi_agent_cfg extends uvm_object;
   `uvm_object_utils(axi_agent_cfg)
 
+  // Interfaces
+  virtual clk_rst_if            clk_rst_vif;        // ACLK/ARESETn
+
   virtual axi_write_request_if  write_request_vif;
   virtual axi_write_data_if     write_data_vif;
   virtual axi_write_response_if write_response_vif;
