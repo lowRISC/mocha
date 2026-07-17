@@ -1,0 +1,22 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_vip"
+description: "Reusable parameterized AXI VIP interface"
+
+filesets:
+  files_vip:
+    depend:
+      - lowrisc:dv:dv_utils
+      - lowrisc:dv:common_ifs
+      - lowrisc:dv:axi_agent:0.1
+    files:
+      - axi_vip_if.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_vip
