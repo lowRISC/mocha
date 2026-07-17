@@ -67,7 +67,7 @@ static i2c_timing_params_t compute_minimum_timing_parameters(i2c_speed_mode_t sp
             .setup_data_cycles = rnd_up_div(250u, SYSCLK_NS),
             .hold_data_cycles = 1u,
             .setup_stop_cycles = rnd_up_div(4000u, SYSCLK_NS),
-            .bus_free_time_cycles = rnd_up_div(4700u, SYSCLK_NS)
+            .bus_free_cycles = rnd_up_div(4700u, SYSCLK_NS)
         };
     case i2c_speed_mode_fast:
         return (i2c_timing_params_t){
@@ -81,7 +81,7 @@ static i2c_timing_params_t compute_minimum_timing_parameters(i2c_speed_mode_t sp
             .setup_data_cycles = rnd_up_div(100u, SYSCLK_NS),
             .hold_data_cycles = 1u,
             .setup_stop_cycles = rnd_up_div(600u, SYSCLK_NS),
-            .bus_free_time_cycles = rnd_up_div(1300u, SYSCLK_NS)
+            .bus_free_cycles = rnd_up_div(1300u, SYSCLK_NS)
         };
     case i2c_speed_mode_fast_plus:
         return (i2c_timing_params_t){
@@ -95,7 +95,7 @@ static i2c_timing_params_t compute_minimum_timing_parameters(i2c_speed_mode_t sp
             .setup_data_cycles = rnd_up_div(50, SYSCLK_NS),
             .hold_data_cycles = 1u,
             .setup_stop_cycles = rnd_up_div(260u, SYSCLK_NS),
-            .bus_free_time_cycles = rnd_up_div(500u, SYSCLK_NS)
+            .bus_free_cycles = rnd_up_div(500u, SYSCLK_NS)
         };
     default:
         return (i2c_timing_params_t){ 0 };
@@ -120,7 +120,7 @@ void i2c_init(i2c_t i2c, i2c_speed_mode_t speed_mode)
     i2c_timing3 t3_reg = { .tsu_dat = timing_params.setup_data_cycles,
                            .thd_dat = timing_params.hold_data_cycles };
     i2c_timing4 t4_reg = { .tsu_sto = timing_params.setup_stop_cycles,
-                           .t_buf = timing_params.bus_free_time_cycles };
+                           .t_buf = timing_params.bus_free_cycles };
 
     VOLATILE_WRITE(i2c->timing0, t0_reg);
     VOLATILE_WRITE(i2c->timing1, t1_reg);

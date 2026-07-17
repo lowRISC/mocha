@@ -107,7 +107,7 @@ typedef struct {
     uint16_t setup_data_cycles;
     uint16_t hold_data_cycles;
     uint16_t setup_stop_cycles;
-    uint16_t bus_free_time_cycles;
+    uint16_t bus_free_cycles;
 } i2c_timing_params_t;
 
 void i2c_init(i2c_t i2c, i2c_speed_mode_t speed_mode);
