@@ -131,11 +131,6 @@ void i2c_init(i2c_t i2c, i2c_speed_mode_t speed_mode)
 
 void i2c_write_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_bytes)
 {
-    // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
-    // is halted and the SW didn't manage to clear the FIFO during that scenario.
-    i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
-    VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
-
     // Queue write request
     //
     // Send start bit, address and R/W bit first
@@ -163,11 +158,6 @@ void i2c_write_bytes(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_b
 
 void i2c_read_bytes(i2c_t i2c, uint8_t addr, uint8_t num_bytes)
 {
-    // Reset the FMT FIFO as a precautionary step in case something goes wrong when controller's FSM
-    // is halted and the SW didn't manage to clear the FIFO during that scenario.
-    i2c_fifo_ctrl fifo_ctrl_reg = { .fmtrst = 1u };
-    VOLATILE_WRITE(i2c->fifo_ctrl, fifo_ctrl_reg);
-
     // Queue read request
     //
     // Send start bit, address and R/W bit first
