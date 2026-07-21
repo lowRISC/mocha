@@ -1,0 +1,61 @@
+--- a/tb/tb.sv
++++ b/tb/tb.sv
+@@ -114,17 +114,17 @@
+     run_test();
+   end
+   // Only get one KMAC response
+-  `ASSERT(JustOneKmacResponse_A, kmac_data_in.rsp_valid |=> always !kmac_data_in.rsp_valid,
++  `ASSERT(JustOneKmacResponse_A, kmac_data_in.done |=> always !kmac_data_in.done,
+           clk, rst_n)
+   // Once we signal done to pwrmgr, the done signal stays high and the good signal stays stable.
+   `ASSERT(PwrmgrDoneOneWay_A, $rose(pwrmgr_data.done == prim_mubi_pkg::MuBi4True) |=>
+           always $stable(pwrmgr_data), clk, rst_n)
+   // Don't send any KMAC requests once we've had the response
+-  `ASSERT(KmacNotOutAfterIn_A, kmac_data_in.rsp_valid |=> always !kmac_data_out.req_valid,
++  `ASSERT(KmacNotOutAfterIn_A, kmac_data_in.done |=> always !kmac_data_out.valid,
+           clk, rst_n)
+   always_comb begin
+     if (!rst_n) kmac_digest_handshake_occured = 0;
+-    else if (kmac_data_in.rsp_valid) kmac_digest_handshake_occured = 1;
++    else if (kmac_data_in.done) kmac_digest_handshake_occured = 1;
+   end
+   // We see a response from KMAC before we assert that we're done to pwrmgr
+   `ASSERT(KmacResponseBeforePwmgrDone_A,
+--- a/cov/rom_ctrl_cov_if.sv
++++ b/cov/rom_ctrl_cov_if.sv
+@@ -31,7 +31,7 @@
+     option.per_instance = 1;
+ 
+     // Cover some basic stalling behavior on the kmac ready input
+-    cp_kmac_ready: coverpoint kmac_data_i.req_ready iff (kmac_data_o.req_valid) {
++    cp_kmac_ready: coverpoint kmac_data_i.ready iff (kmac_data_o.valid) {
+       bins zero_delay_5 = (1'b1[*5]);
+       bins stall_1      = (1'b1 => 1'b0 => 1'b1);
+       bins stall_long   = (1'b0[*5:10] => 1'b1);
+@@ -39,7 +39,7 @@
+     }
+ 
+     // Cover the different delays on the kmac response valid signal
+-    cp_kmac_digest_handshake: coverpoint {kmac_data_i.rsp_valid, exp_digest_de} {
++    cp_kmac_digest_handshake: coverpoint {kmac_data_i.done, exp_digest_de} {
+       bins kmac_first = {2'b11}; // kmac responds while still reading digest
+       bins rom_first  = (2'b00 => 2'b10); // kmac responds after digest read
+       bins same_cycle = (2'b01 => 2'b10); // kmac responds as digest read completes
+--- a/tb/rom_ctrl_if.sv
++++ b/tb/rom_ctrl_if.sv
+@@ -36,12 +36,12 @@
+     release dut.u_mux.sel_bus_qq;
+   endtask
+ 
+-  // Override the kmac_data_i.rsp_valid signal to be true for a cycle, returning on the next
++  // Override the kmac_data_i.done signal to be true for a cycle, returning on the next
+   // negedge. This will be one cycle if we start before the posedge.
+   task static force_kmac_data_done();
+-    force dut.kmac_data_i.rsp_valid = 1;
++    force dut.kmac_data_i.done = 1;
+     @(negedge dut.clk_i);
+-    release dut.kmac_data_i.rsp_valid;
++    release dut.kmac_data_i.done;
+   endtask
+ 
+ endinterface
