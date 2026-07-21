@@ -1,0 +1,416 @@
+{
+    axi_sram:
+    {
+        Description: Verification plan for the AXI4 SRAM. Split across both block level and integration level tests.
+        Node_Type: dut_name
+        Block_level:
+        {
+            Description: Block-level verification of axi_sram. Tests both data and tag arrays.
+            Node_Type: section_title
+            Parameterization:
+            {
+                Node_Type: section_title
+                interface_geometry:
+                {
+                    Reference: qohtih
+                    Description: The SRAM block has four ports: clock / reset / AXI4 request in / AXI4 response out
+                    Node_Type: metric
+                    Priority: 1
+                }
+                sram_geometry:
+                {
+                    Reference:
+                        '''
+                        jeluga
+                        01skcc
+                        u0s8nt
+                        '''
+                    Description: Confirm DUT parameterisation matches spec: AxiDataWidth = 64 (8-byte word), CapSize = 128-bit (16-byte capability), 1 CHERI tag bit per 128-bit aligned region,  SramMemSize = 128 KiB
+                    Node_Type: metric
+                    Priority: 1
+                    Comment: SramMemSize 128 KiB, last word 0x1FFF8 and last cap slot 0x1FFF0 are derived from SRAMLength in top_pkg (0x2_0000) and the memmap.svg image, which is untaggable. TODO: point Reference at a real spec tag once the memory map base/size is added as tagged text in arch.md.
+                }
+            }
+            Data_Path:
+            {
+                Description: Translation of AXI4 requests into the SRAM interface; data integrity
+                Node_Type: section_title
+                Clock_and_Reset:
+                {
+                    Description: Clock and reset input behaviour
+                    Node_Type: section_title
+                    rst_sanity:
+                    {
+                        Reference:
+                            '''
+                            947rwh
+                            rrni5j
+                            '''
+                        Description: DUT comes out of reset cleanly and accepts the first transaction
+                        Node_Type: metric
+                        Priority: 1
+                    }
+                    rst_mid_burst:
+                    {
+                        Reference: rrni5j
+                        Description: DUT is reset during an AXI burst
+                        Node_Type: metric
+                        Priority: 1
+                        Comment: Transaction should be dropped cleanly. The next transaction after an in-flight reset should still be accepted as normal. Would be good to clarification on the expected state of SRAM after a reset (i.e if a reset comes in during a 2-beat capability write)
+                    },
+                    init_value_undefined:
+                    {
+                        Reference: hqbiau
+                        Description: Initial SRAM and tag contents are undefined at start-up; no read should be expected to return a known value before a write
+                        Node_Type: metric
+                        Priority: 3
+                        Comment: We model this by not pre-loading the SRAM (leave a X's). Not an explicit testcase, rather an environment configuration.
+                    }
+                }
+                Basic_access:
+                {
+                    Description: Single-beat aligned 64-bit read/write
+                    Node_Type: section_title
+                    write_read:
+                    {
+                        Reference:
+                            '''
+                            vknoin
+                            pgo845
+                            n5txiq
+                            '''
+                        Description: Single-beat 8-byte write followed by readback returns identical data
+                        Node_Type: metric
+                        Priority: 1
+                    }
+                    address_boundaries:
+                    {
+                        Reference: u0s8nt
+                        Description: Write/read first (0x0) and last valid word (0x1FFF8) and last capability slot (0x1FFF0)
+                        Node_Type: metric
+                        Priority: 1
+                    }
+                    data_all_bits:
+                    {
+                        Reference: vknoin
+                        Description: Walk a 1 and a 0 through all 64 data bits to catch stuck-at faults
+                        Node_Type: metric
+                        Priority: 1
+                    }
+                    aligned_only:
+                    {
+                        Reference: lfcb7q
+                        Description: Only aligned 64-bit accesses are exercised; misaligned data accesses are not expected/supported
+                        Node_Type: metric
+                        Priority: 2
+                    }
+                }
+                Bursts:
+                {
+                    Description: AXI4 burst handling
+                    Node_Type: section_title
+                    burst_last:
+                    {
+                        Reference:
+                            '''
+                            o02amt
+                            mcykq8
+                            '''
+                        Description: Last beat of a burst asserts rlast/expects wlast correctly
+                        Node_Type: metric
+                        Priority: 1
+                    }
+                    resp_id_match:
+                    {
+                        Reference: 4t4cew
+                        Description: Response (B/R) AXI4 ID equals the originating request ID
+                        Node_Type: metric
+                        Priority: 1
+                        Comment: Checked explicitly by the SV scoreboard
+                    }
+                    bounded_response:
+                    {
+                        Reference: 34ld5i
+                        Description: Every request receives a response within a bounded time proportional to burst length
+                        Node_Type: metric
+                        Priority: 2
+                    }
+                    backpressure:
+                    {
+                        Reference: NA
+                        Description: Master side constrained random ready-throttling under load. the VIP holds r_ready/b_ready low with a random low duty cycle and injects valid-delays on the request channels (aw/w/ar), forcing the DUT's shallow internal FIFOs to fill and deassert its own aw_ready/w_ready/ar_ready. Data and CHERI tag must be intact once the master resumes.
+                        Node_Type: metric
+                        Priority: 2
+                    }
+                }
+                Concurrency:
+                {
+                    Description: Multiple AXI transactions in flight
+                    Node_Type: section_title
+                    concurrent_data_tag:
+                    {
+                        Reference: vknoin
+                        Description: A plain-data write and a capability write issued concurrently both complete and read back correctly
+                        Node_Type: metric
+                        Priority: 2
+                    }
+                    multiple_outstanding_transactions:
+                    {
+                        reference: mcykq8
+                        description: multiple reads+writes to distinct addresses in flight all complete, data+tag are correct, and ids matched
+                        node_type: metric
+                        priority: 2
+                    }
+                    waw_same_address:
+                    {
+                        reference: mcykq8
+                        description: back-to-back writes to the same address+tag result in the last write data+tag being read back.
+                        node_type: metric
+                        priority: 2
+                    }
+                    raw_war_same_region:
+                    {
+                        Reference: NA
+                        Description: A read and a write to the same region both in flight concurrently. Exercises both RAW (the read may observe the region before or after the write lands) and WAR (the write lands while the read is still in flight).
+                        Node_Type: metric
+                        Priority: 3
+                        Comment: both old and new data are legal outcomes (axi doesn't mandate how the race is handled), so the scoreboard is relaxed on value. Still, the racing read's data must equal the pre or post-write value fully (not bit-torn or X), each beat of a multi-beat read is independently a clean old or new value, and the CHERI tag (ruser) must be consistent with whichever data snapshot that beat observed. Strict invariants are still checked: no deadlock, both transactions receive responses with correct ID / BRESP / RRESP / RLAST. a subsequent ordered read returns the new data (RAW) and the final stored value equals the write data (WAR).
+                    }
+                }
+            }
+            CHERI_tags:
+            {
+                Description: CHERI tag bit storage and read-back behaviour (1 bit per 128-bit region; communicated via wuser/ruser)
+                Node_Type: section_title
+                Tag_write:
+                {
+                    Description: Conditions under which a tag is set to 1
+                    Node_Type: section_title
+                    tag_write:
+                    {
+                        Reference: 01skcc
+                        Description: Each data field has a corresponding tag field which can be accessed in the same transaction
+                        Node_Type: metric
+                        Priority: 1
+                    }
+                    no_tag_single_beat:
+                    {
+                        Reference:
+                            '''
+                            8rlwol
+                            35vdeg
+                            '''
+                        Description: wuser=1 on a single-beat (awlen=0) write must NOT set the tag (not a full region in a single burst)
+                        Node_Type: metric
+                        Priority: 1
+                        Comment: Corner: tag only on full capability burst
+                    }
+                    no_tag_misaligned:
+                    {
+                        Reference: 8rlwol
+                        Description: 2-beat wuser=1 burst starting at a non-16-byte-aligned address must NOT set the tag (is_w_cap_aligned requires addr[3:0]==0)
+                        Node_Type: metric
+                        Priority: 2
+                        Comment: Corner: alignment gating
+                    }
+                    no_tag_two_bursts:
+                    {
+                        Reference:
+                            '''
+                            35vdeg
+                            8rlwol
+                            '''
+                        Description: Writing both halves of a 128-bit region as two separate single-beat bursts must NOT set the tag; the tag requires a single 2-beat capability burst
+                        Node_Type: metric
+                        Priority: 2
+                        Comment: Corner: full region covered across two separate bursts still leaves the tag 0
+                    }
+                    assert_wuser_not_full_cap:
+                    {
+                        Reference: bj8we7
+                        Description: Assertion fires when wuser=1 on a write that is not part of a full capability write
+                        Node_Type: metric
+                        Priority: 2
+                    }
+                    assert_wuser_mismatch:
+                    {
+                        Reference: 9a3xf6
+                        Description: Assertion fires on wuser mismatch (one half of the capability valid the other invalid in the same transaction)
+                        Node_Type: metric
+                        Priority: 2
+                    }
+                }
+                Tag_clear:
+                {
+                    Description: Conditions under which a previously-set tag is cleared
+                    Node_Type: section_title
+                    tag_cleared_by_write:
+                    {
+                        Reference: 893tz4
+                        Description: A plain data write to either word of a tagged capability slot clears the tag for the whole region
+                        Node_Type: metric
+                        Priority: 1
+                        Comment: Corner: any non-cap write zeroes the tag bit
+                    }
+                    partial_strobe_clears_tag:
+                    {
+                        Reference: 893tz4
+                        Description: A sub-64-bit (partial write-strobe) write to a tagged slot clears the tag
+                        Node_Type: metric
+                        Priority: 2
+                        Comment: Corner: partial strobe clears tag
+                    }
+                    subword_read_clears_tag:
+                    {
+                        Reference: raa5pw
+                        Description: Reads of only part of a 64-bit value from a valid cap region return data but with the tag cleared
+                        Node_Type: metric
+                        Priority: 2
+                        Comment: Need to clarify here if the tag is only returned as a clear, or if it permeates as cleared in the tag memory
+                    }
+                }
+                Tag_read:
+                {
+                    Description: Per-beat ruser (CHERI tag) generation on reads
+                    Node_Type: section_title
+                    cap_both_ruser_set:
+                    {
+                        Reference:
+                            '''
+                            kn6exz
+                            af8sx6
+                            u95b14
+                            '''
+                        Description: Both ruser flits of a valid capability read are 1
+                        Node_Type: metric
+                        Priority: 1
+                        Comment: the SRAM invalidate a cap by clearing one or both `ruser` bits, so the two flits are not guaranteed equal by spec. Rather than treat the asymmetric (1,0) case as not-applicable, bind an SVA that on every 2-beat capability read both flits are equal and match the single stored tag bit (ruser_flit0 == ruser_flit1). This proves the one-bit-per-region design never emits a false-valid asymmetric result.
+                    }
+                    burst_read_mixed_tags:
+                    {
+                        Reference: kn6exz
+                        Description: A read spanning a tagged and an untagged capability slot returns the correct per-beat ruser for each
+                        Node_Type: metric
+                        Priority: 3
+                    }
+                }
+                Tag_isolation:
+                {
+                    Description: Tags are stored independently and in separate memory from data
+                    Node_Type: section_title
+                    tag_isolation:
+                    {
+                        Reference: 01skcc
+                        Description: Writing/clearing the tag of one 128-bit slot must not affect an adjacent slot's tag
+                        Node_Type: metric
+                        Priority: 1
+                    }
+                    tag_separate_memory:
+                    {
+                        Reference: lzoy40
+                        Description: Tags are stored in a separate memory block from data
+                        Node_Type: metric
+                        Priority: 3
+                    }
+                }
+            }
+            Stress_random:
+            {
+                Description: Randomised back-to-back access sweeps
+                Node_Type: section_title
+                Comment: randomization should be seeded for reproducibility
+                random_data:
+                {
+                    Reference: NA
+                    Description: N random (aligned addr, data) write/read pairs across the address space
+                    Node_Type: metric
+                    Priority: 2
+                }
+                random_capabilities:
+                {
+                    Reference:
+                        '''
+                        8rlwol
+                        kn6exz
+                        '''
+                    Description: N random 16-byte-aligned capability write/read pairs verifying data and tag
+                    Node_Type: metric
+                    Priority: 2
+                }
+            }
+            Coverage:
+            {
+                Description: Functional coverage collection  for the AXI SRAM
+                Node_Type: section_title
+                cg_tag_write:
+                {
+                    Reference:
+                        '''
+                        8rlwol
+                        35vdeg
+                        893tz4
+                        '''
+                    Description: Coverage of the tag-write gating conditions (burst length/size, alignment, strobe, wuser), each crossed with the tag bit.
+                    Node_Type: metric
+                }
+                cg_tag_read:
+                {
+                    Reference:
+                        '''
+                        kn6exz
+                        raa5pw
+                        '''
+                    Description: Coverage of the ruser tag returned on reads: the per-flit tag pair on capability reads, and cleared tags on sub-word reads
+                    Node_Type: metric
+                }
+            }
+        }
+        Integration:
+        {
+            Description: Verification of axi_sram integrated behind the real Mocha interconnect.
+            Node_Type: section_title
+            Address_map:
+            {
+                Description: Address decode through the real mocha AXI crossbar. Only the SRAM aperture (SRAMBase=0x10000000, 128 KiB) returns OKAY; every other address returns DECERR (the xbar has no default master port; non-SRAM device ports carry axi_err_slv). The scoreboard is decode-aware: in-aperture it checks data/tag, out-of-aperture it expects DECERR and flags any OKAY as a decode bug.
+                Node_Type: section_title
+                sram_reachable:
+                {
+                    Description: Accesses inside the SRAM range reach axi_sram and round-trip correctly through the interconnect
+                    Node_Type: metric
+                    Priority: 1
+                    Comment: Implicit
+                }
+                out_of_range_error:
+                {
+                    Reference: u0s8nt
+                    Description: Accesses outside every mapped SRAM region return DECERR
+                    Node_Type: metric
+                    Priority: 2
+                    Comment: Fully-out-of-range accesses result in an error; the partial-out-of-range part is enforced by proxy of AXI4 not allowing bursts to span a 4KB boundary
+                }
+                burst_wrap:
+                {
+                    Reference: u0s8nt
+                    Description: A burst starting in SRAM whose later beats overflow from the address range.
+                    Node_Type: metric
+                    Priority: 3
+                    Comment: AXI4 forbids a burst from crossing a 4 KB boundary, so a compliant master can't issue such a burst. axi_sram itself does not range-check (mem_err_i=0; it masks the address and would silently wrap), so range enforcement rests entirely on the AXI driver being compliant.
+                }
+                sram_boundary:
+                {
+                    Description: Address range edges: the first and last SRAM words round-trip OK; the word just below SRAMBase and the word just past the top are unmapped and return DECERR
+                    Node_Type: metric
+                    Priority: 2
+                }
+                execute_from_sram:
+                {
+                    Reference: lhjkel
+                    Description: Instruction-flavoured reads (arprot[2]=1) return stored words identically to data reads
+                    Node_Type: metric
+                    Priority: 3
+                    Comment: only the arprot[2]=instruction dimension is SRAM-specific
+                }
+            }
+        }
+    }
+}
