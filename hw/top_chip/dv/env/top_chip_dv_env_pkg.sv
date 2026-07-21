@@ -42,8 +42,18 @@ package top_chip_dv_env_pkg;
   // 50 MHz Peripheral clock
   parameter int unsigned PeriClkFreq = 50_000_000;
 
-  // SW-DV special locations for test status, logging, and platform identification.
-  // In simulation, sim_sram_axi_sink is connected to the dedicated sw_dv crossbar port.
+  // SW-DV special locations for test status, logging, and platform identification. In simulation,
+  // sim_sram_axi_sink is connected to the dedicated sw_dv crossbar port and each location holds a
+  // 32-bit value.
+  //
+  // The sw_test_status_if and sw_logger_if monitors only sample the low 32 bits of the 64-bit AXI
+  // write data (req.w.data[31:0], enforced by the tb DataUpperBitsZero_A assertion). A 32-bit store
+  // must land in that lane, so written locations (test status, log) sit at 8-byte aligned offsets;
+  // a store to offset 4 would land in the upper lane and be missed. HW_ID is read-only, so it can
+  // sit at offset 4 (the sink returns it on the read-data upper half resp.r.data[63:32]). The log
+  // takes the 0x8 slot rather than sharing with HW_ID so it has room to grow to 8 bytes for 64-bit
+  // values.
+
   parameter bit [31:0] SW_DV_START_ADDR       = 'h2002_0000;
   parameter bit [31:0] SW_DV_SIZE             = 'h0000_0100;        // 256 bytes reserved for SW DV
   parameter bit [31:0] SW_DV_TEST_STATUS_ADDR = SW_DV_START_ADDR + 'h00;
