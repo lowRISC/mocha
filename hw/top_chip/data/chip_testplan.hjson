@@ -1,0 +1,899 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "top_chip"
+
+  // import_testplans: intentionally absent. Mocha has no chip-level per-IP testplan files yet.
+  // The IP-level testplans under hw/top_chip/ip, hw/top_chip/ip_autogen/ and hw/vendor/ are
+  // unit-level DV plans and should not be imported here.
+
+  testpoints: [
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Serial Interfaces: UART, SPI, I2C                                     //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_uart_smoke
+      desc: '''Verify UART register reachability and TX/RX via the UART's internal loopback at the
+            chip level.
+
+            SW configures the UART and enables its internal (system) loopback (`uart_loopback_set`),
+            which ties the TX path to the RX path inside the IP, then transmits the byte sequence
+            "Test String" character-by-character and reads each byte back, passing if every received
+            byte matches. Because system loopback keeps the data inside the IP (`uart_tx_o` stays
+            idle), this confirms register access and the internal TX/RX datapath but does not
+            exercise the chip pins; the external pin path is covered by chip_uart_tx_rx. The UVM
+            UART agent passively monitors the pins.
+
+            Both vanilla (non-CHERI) and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["uart_smoke",
+              "uart_smoke_cheri"]
+    }
+    {
+      name: chip_uart_tx_rx
+      desc: '''Verify UART TX/RX over the chip pins using an agent-side loopback.
+
+            SW configures the UART (baud rate and enables), confirming register reachability, and
+            transmits a byte sequence out `uart_tx_o` with no internal loopback. The UVM UART agent,
+            connected to the chip UART pins, receives each byte on `uart_tx_o` and drives it back
+            onto `uart_rx_i`, closing the loopback after the chip pins. SW reads each byte back and
+            passes if it matches what was sent. This exercises the real `uart_tx_o` / `uart_rx_i`
+            pin path and the agent, the integration-unique path that cannot be observed below the
+            chip level, and is the true chip-level UART smoke.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["uart_tx_rx",
+              "uart_tx_rx_cheri"]
+    }
+    {
+      name: chip_spi_device_smoke
+      desc: '''Verify SPI device register reachability and a basic agent-driven SPI transaction
+            at the chip level.
+
+            An SPI agent configured as an SPI host drives the chip spi_device pins. SW configures
+            the spi_device (including its JEDEC device ID), and writes then reads back a CSR
+            (walking 0x55555555 / 0xAAAAAAAA patterns) to confirm reachability via xbar_peri. The
+            agent then issues a simple flash command over the SPI pins that the device services
+            directly (for example Read JEDEC ID); the response observed by the agent is confirmed
+            to match the configured value. This exercises the external SPI pin path into the
+            spi_device, distinct from and lighter than the upload path in chip_spi_device_upload.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["spi_device_smoke",
+              "spi_device_smoke_cheri"]
+    }
+    {
+      name: chip_spi_device_upload
+      desc: '''Verify SPI device upload path from an external SPI host to SW at the chip level.
+
+            The UVM SPI agent is configured as an SPI host and transmits a write-enable
+            command followed by a page-program command with a 16-byte payload. SW reads the opcode
+            from the upload command FIFO (`UPLOAD_CMDFIFO`) and reads the payload word-by-word from
+            the SPI device payload buffer window (`spi_device_flash_payload_buffer_read`, up to the
+            byte count reported in `UPLOAD_STATUS2`), then confirms the opcode and payload match
+            byte-for-byte the values the agent sent. The `UPLOAD_CMDFIFO_NOT_EMPTY` and
+            `UPLOAD_PAYLOAD_NOT_EMPTY` interrupts are confirmed to fire at the correct points in
+            the sequence. Verifies the SPI device passthrough-less upload path from the external
+            SPI pins through to SW is correctly integrated.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["spi_device_upload_test",
+              "spi_device_upload_test_cheri"]
+    }
+    {
+      name: chip_spi_host_smoke
+      desc: '''Verify SPI host TX and RX data integrity at the chip level.
+
+            The testbench (`tb.sv`) wires `spi_host_sd_o[0]` (COPI) to `spi_host_sd_i[1]`
+            (CIPO) via a combinatorial assignment, creating a hardware loopback in standard
+            SPI mode. SW initialises the SPI host by writing its configuration registers
+            (`CONTROL`, `CONFIGOPTS`, `CSID`) and reads back a configuration register to confirm
+            reachability via xbar_peri. It then writes the 32-bit word 0xDEADC0DE, reads back one
+            word over the loopback, and passes if the received value matches.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["spi_host_smoke",
+              "spi_host_smoke_cheri"]
+    }
+    {
+      name: chip_spi_host_tx_rx
+      desc: '''Verify SPI host TX and RX over the chip pins against an agent-driven external SPI
+            device (a proper transmit test, beyond the tb loopback smoke).
+
+            A UVM SPI device agent is connected to the chip SPI host pins and acts as the
+            addressed SPI target. SW configures the SPI host and transmits a known word sequence
+            over one or more segments; the agent receives each transmitted word on COPI, checks it
+            against the expected data, and returns a known pattern on CIPO. SW reads the returned
+            data back and passes if every word matches. Unlike chip_spi_host_smoke, which relies on
+            the tb.sv COPI-to-CIPO wire loopback in standard mode only, this exercises the real
+            transmit path against an active device model and can be extended to dual and quad
+            modes and multi-segment transfers. Requires the SPI device agent in the testbench.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["spi_host_tx_rx",
+              "spi_host_tx_rx_cheri"]
+    }
+    {
+      name: chip_i2c_host_tx_rx
+      desc: '''Verify I2C controller-mode TX and RX at the chip level.
+
+            The DV I2C agent is configured as a target-mode responder. SW configures the I2C
+            block in controller mode by writing its timing configuration registers, which also
+            confirms register reachability via xbar_peri. SW then drives a write transfer
+            followed by a read-back transfer against the agent. The number of bytes per transfer
+            and the 7-bit target address are randomized (the byte count is constrained to the
+            TX/RX FIFO depth) and the payload is a walking-ones pattern. The test passes when
+            every byte read back matches the byte written, confirming an agent-driven
+            controller-mode transaction over the chip I2C pins in both directions.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["i2c_host_tx_rx",
+              "i2c_host_tx_rx_cheri"]
+    }
+    {
+      name: chip_i2c_device_tx_rx
+      desc: '''Verify I2C target-mode RX and TX at the chip level.
+
+            The DV I2C agent is configured as a controller-mode initiator and issues write and
+            read transfers to the I2C block operating in target mode. The transfer address (one
+            of two randomized target addresses) and the number of bytes per transfer are
+            randomized. SW services each transfer and compares the bytes exchanged in every
+            transfer at the end. The test passes when all transactions complete without error and
+            the data matches, confirming target-mode connectivity and data flow in both
+            directions. Because the target-mode SW must load its TX FIFO before the host agent
+            reads it, the vseq waits on a SW-to-DV signal that the FIFO is ready before issuing the
+            read transfer.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["i2c_device_tx_rx",
+              "i2c_device_tx_rx_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // GPIO                                                                  //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_gpio_smoke
+      desc: '''Verify GPIO output drive and input sample at the chip level.
+
+            SW enables all 32 GPIO pins as outputs (`GPIO_REG_DIRECT_OE = 0xFFFFFFFF`) and
+            drives a walking-ones pattern across all pins. After the last pin, output enables
+            are cleared to allow the pads to be driven externally. The UVM vseq monitors pin
+            values via `gpio_vif` and waits for each expected walking-1 pattern using
+            `DV_SPINWAIT`. Once output enables are cleared (pins go to Z), the vseq drives
+            0x55555555 onto the GPIO input pads. SW polls `GPIO_REG_DATA_IN` for this
+            pattern and passes when it is observed.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["gpio_smoke",
+              "gpio_smoke_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // ROM Control                                                           //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_rom_ctrl_smoke
+      desc: '''Verify that the CPU can boot from ROM and execute a software image in SRAM.
+
+            A minimal SW image is loaded into SRAM via backdoor. The ROM (`mem_init_file.vmem`)
+            runs its startup sequence and transfers control to the SRAM image. The test passes
+            when the SW image reports completion via the sim_sram SW test status interface.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["rom_ctrl_smoke",
+              "rom_ctrl_smoke_cheri"]
+    }
+    {
+      name: chip_rom_ctrl_integrity_check
+      desc: '''Verify that the ROM controller performs and signals a correct integrity check
+            before releasing the CPU from reset.
+
+            A specially crafted ROM image (`mem_init_file.vmem`) is loaded via backdoor.
+            The UVM sequence (`top_chip_dv_rom_ctrl_integrity_check_vseq`) monitors the
+            `rom_ctrl` interface and confirms the integrity-check pass/fail signal reaches
+            the expected state before the CPU begins executing code.
+            '''
+      stage: V2
+      tests: ["rom_ctrl_integrity_check"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // System Management: Clock, Reset, Power                                //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_clkmgr_smoke
+      desc: '''Verify software control of gateable and hintable clocks via the clock manager.
+
+            Two sub-tests:
+            - Gateable clock: reads the current enable state of `CLKMGR_GATEABLE_CLOCK_IO_PERI`,
+              toggles it, reads back to confirm the change, then restores and re-confirms.
+            - Hintable clock: same read-toggle-verify-restore sequence for
+              `CLKMGR_HINTABLE_CLOCK_MAIN`; also checks that when the hint is set the clock
+              enabled status reflects it.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["clkmgr_smoke",
+              "clkmgr_smoke_cheri"]
+    }
+    {
+      name: chip_clkmgr_clock_gating
+      desc: '''Verify that software clock control actually gates the corresponding clock at the
+            chip level, not just the status registers.
+
+            Each sub-test is backed by a bound assertion that samples the target clock against an
+            always-on reference clock:
+            - Gateable clock: SW disables the gateable peripheral clock
+              (`CLKMGR_GATEABLE_CLOCK_IO_PERI`); the assertion confirms the clock output goes flat
+              (no edges) while disabled and toggles again once re-enabled.
+            - Hintable clock: SW sets the hint for the hintable main clock
+              (`CLKMGR_HINTABLE_CLOCK_MAIN`); once the hinted block is idle the assertion confirms
+              the clock gates and the hint-status register reflects it, and clearing the hint
+              restores the clock.
+            Where a gated clock feeds an observable block, SW additionally confirms the block is
+            quiescent while gated and operates again once restored. This exercises the clock
+            manager's integration-unique behaviour (real clock distribution and gating), which
+            chip_clkmgr_smoke does not. Note: confirm the actual fan-out of the gateable/hintable
+            clocks with the clk designer, as most blocks are clocked from clk_io_infra /
+            clk_main_infra rather than these SW-controlled clocks.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["clkmgr_clock_gating",
+              "clkmgr_clock_gating_cheri"]
+    }
+    {
+      name: chip_rstmgr_smoke
+      desc: '''Verify the software-requested reset path through the reset manager.
+
+            On the first boot (POR cause), SW reads the reset cause register, clears the POR
+            bit, and requests a software reset via `rstmgr_software_reset_request`. On the
+            second boot (SW reset cause), SW reads the register, confirms
+            `RSTMGR_RESET_INFO_SW_RESET` is set, clears it, and signals pass. Any other reset
+            cause sequence is a failure.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["rstmgr_smoke",
+              "rstmgr_smoke_cheri"]
+    }
+    {
+      name: chip_pwrmgr_smoke
+      desc: '''Verify power manager CSR accessibility and reset-state correctness.
+
+            Three sub-tests:
+            - Control register: confirms reset value contains only `MAIN_PD_N`, writes
+              `LOW_POWER_HINT | CORE_CLK_EN | IO_CLK_EN`, syncs (`pwrmgr_cfg_sync`), reads
+              back, then restores and re-confirms.
+            - Wakeup enable register: confirms reset value is 0, writes
+              `SOC_PROXY_EXT_WKUP_REQ`, syncs, reads back, clears, and re-confirms.
+            - Status registers: confirms `WAKEUP_STATUS`, `RESET_STATUS`,
+              `ESCALATE_RESET_STATUS`, and `WAKE_INFO` are all 0 at reset, then clears
+              `WAKE_INFO` and confirms it remains 0.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["pwrmgr_smoke",
+              "pwrmgr_smoke_cheri"]
+    }
+
+    {
+      name: chip_pwrmgr_wakeup
+      desc: '''Verify low-power entry and wakeup sequence through the power manager.
+
+            SW configures the power manager for low-power mode with a wakeup source enabled,
+            then requests entry into low-power state via the `LOW_POWER_HINT` control register.
+            The UVM sequence monitors the power state and injects a wakeup request. The test
+            confirms the chip exits low-power mode, the power manager wakeup interrupt is
+            delivered via the PLIC, and `PWRMGR_WAKE_INFO` correctly identifies the wakeup
+            source. After wakeup, SW confirms normal operation is restored by accessing a
+            peripheral register. Verifies the power manager low-power entry and wakeup path
+            is correctly integrated at the chip level.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["pwrmgr_wakeup_test",
+              "pwrmgr_wakeup_test_cheri"]
+    }
+    {
+      name: chip_pwrmgr_lowpower_quiescent
+      desc: '''Verify that the clocks which must stop in low-power are quiescent while the
+            always-on clocks keep running, at the chip level.
+
+            SW enters low-power via the power manager (as in chip_pwrmgr_wakeup). While the chip is
+            in low-power, bound assertions confirm the gated clock domains show no edges:
+            `clk_main_infra` (CVA6-CHERI, AXI SRAM, AXI crossbar, mailbox, tag controller, ROM
+            control, KMAC, debug-module adapters) and `clk_io_infra` (UART, SPI host, SPI device,
+            I2C, GPIO, timer, PLIC, entropy source). At the same time an assertion confirms the
+            always-on clock (`clk_io_powerup`, feeding the power and reset managers and the wakeup
+            path) keeps toggling, so the wakeup path survives. After the wakeup event the same
+            clocks are confirmed to resume.
+
+            This is the RTL-level proxy for "the powered-down blocks are not switching". True
+            power-off (isolation, retention, leakage) is out of scope for functional simulation
+            and belongs to power-aware gate-level signoff.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["pwrmgr_lowpower_quiescent_test",
+              "pwrmgr_lowpower_quiescent_test_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Interrupt Infrastructure: RV_PLIC, RV_TIMER                           //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_rv_plic_smoke
+      desc: '''Verify PLIC register access and end-to-end interrupt routing to the CPU.
+
+            Three sub-tests run in sequence:
+            - Register R/W: writes and reads back priority and interrupt-enable registers for
+              both machine and supervisor privilege modes.
+            - Machine-mode IRQ: configures PLIC priority and threshold, enables the UART
+              interrupt, SW-forces `uart_intr_rx_frame_err`, polls until MIP.MEIP asserts,
+              claims the interrupt ID via PLIC, clears the UART interrupt, completes the
+              claim, and confirms MIP.MEIP de-asserts.
+            - Supervisor-mode IRQ: same full claim/complete cycle using `uart_intr_rx_timeout`
+              and MIP.SEIP.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["rv_plic_smoke",
+              "rv_plic_smoke_cheri"]
+    }
+    {
+      name: chip_rv_plic_all_irqs
+      desc: '''Verify end-to-end interrupt routing from every PLIC-connected IP to the CPU
+            (TOP_INTERRUPT_ROUTING).
+
+            A single table-driven test walks every interrupt source wired to the PLIC (entropy
+            source, SPI host, I2C, SPI device, UART, GPIO, power manager wakeup, and mailbox). For
+            each source, SW enables it in the owning IP and in the PLIC (priority above the
+            threshold), forces the interrupt via the IP's INTR_TEST register, and confirms the
+            interrupt reaches the CPU: MIP.MEIP asserts, SW claims the source via the PLIC and
+            checks the claimed ID matches the expected source, clears the interrupt at the IP,
+            completes the claim, and MIP.MEIP de-asserts. Machine mode is exercised for every
+            source; supervisor-mode delivery (MIP.SEIP) is exercised for a representative source.
+            Forcing via INTR_TEST tests the routing wire only, independent of each IP's ability to
+            generate the interrupt from a real event (that is the block-level DV concern). Verifies
+            the complete interrupt address map and IP-to-PLIC-to-CPU wiring at the chip level.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["rv_plic_all_irqs_test",
+              "rv_plic_all_irqs_test_cheri"]
+    }
+    {
+      name: chip_rv_plic_priority
+      desc: '''Verify PLIC priority arbitration with simultaneous interrupt sources at the chip level.
+
+            SW configures PLIC priorities for four interrupt sources (UART, SPI device, GPIO,
+            and mailbox) at distinct priority levels and sets a non-zero threshold. SW
+            simultaneously forces all four interrupts via each IP's software-trigger mechanism.
+            The test confirms that only the highest-priority interrupt above the threshold is
+            delivered first; after each claim-complete cycle the next highest follows in strict
+            priority order. The test is then repeated with the priority assignments rotated to
+            confirm the ordering is driven by the configured priority values, not interrupt ID.
+            Verifies PLIC priority arbitration and threshold masking are correctly wired at the
+            chip level.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["rv_plic_priority_test",
+              "rv_plic_priority_test_cheri"]
+    }
+    {
+      name: chip_rv_timer_smoke
+      desc: '''Verify RV timer counter accuracy and interrupt-pending flag delivery.
+
+            Two sub-tests:
+            - Accuracy test: schedules the timer 100 μs in the future, enables its interrupt,
+              and uses the hart cycle counter to confirm the interrupt-pending flag is clear
+              before 90 μs and set after 110 μs (±10 μs tolerance around the target).
+            - IRQ pending test: schedules the timer 50 μs out, enables the interrupt, and
+              verifies MIP.MTIP was clear before expiry and set after the timer fires.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["rv_timer_smoke",
+              "rv_timer_smoke_cheri"]
+    }
+    {
+      name: chip_rv_timer_irq
+      desc: '''Verify preemptable machine-mode timer interrupt delivery end-to-end.
+
+            SW globally enables interrupts, enables the machine-timer interrupt at the hart,
+            and runs 10 back-to-back iterations: schedules the timer 100 μs out, then blocks
+            with `WAIT_FOR_CONDITION_PREEMPTABLE` until `interrupt_handled` is set. The trap
+            handler clears the timer by scheduling infinitely far ahead and sets the flag.
+            A failure in any of the 10 iterations fails the test.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["rv_timer_irq",
+              "rv_timer_irq_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Debug: RV_DM                                                          //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_rv_dm_smoke
+      desc: '''Verify JTAG-to-debug-module connectivity and basic hart control at the chip level.
+
+            A JTAG agent connected to the chip JTAG pins reads the DTM IDCODE
+            (jtag_id_pkg::RV_DM_JTAG_IDCODE) and activates the debug module (dmcontrol.dmactive),
+            then reads dmstatus and hartinfo to confirm the single hart is visible. It requests a
+            halt (dmcontrol.haltreq) and confirms the hart halts (dmstatus.allhalted), which also
+            confirms dm_top.debug_req_o reaches the CVA6-CHERI hart. With the hart halted it reads
+            a GPR via an abstract command (exercising the debug-memory device-side port through
+            which the halted hart runs the debug ROM), then resumes and confirms dmstatus.allrunning.
+
+            This exercises the integration-unique path from the JTAG TAP through the DMI
+            (dmi_jtag) and dm_top to the CPU, which cannot be observed below the chip level.
+
+            CHERI note: CVA6-CHERI disables all CHERI checks while in debug mode, so debug-ROM fetch
+            and abstract commands are not subject to PCC bounds (no debug-mode fetch-bounds
+            testpoint is needed). Abstract register access currently transfers 64-bit data only,
+            with no capability tag; full-capability readout including tag is an RC-1 item tracked by
+            chip_rv_dm_cap_reg_access.
+            '''
+      stage: V1
+      tests: ["rv_dm_smoke"]
+    }
+    {
+      name: chip_rv_dm_ndm_reset
+      desc: '''Verify that the debug module can issue a non-debug-module (NDM) reset via JTAG DMI
+            and remains accessible throughout.
+
+            Via the JTAG agent the sequence activates the DM (dmcontrol.dmactive) and sets
+            dmcontrol.ndmreset. dm_top.ndmreset_o drives ndmreset_req into the power manager
+            (ResetNdmIdx), which sequences a reset of the rest of the chip. The debug module and
+            DMI stay accessible during and after the reset: rst_debug_n is parented on
+            rst_sys_src_n, which survives the NDM reset (in the rstmgr's OpenTitan terminology,
+            sys_rst-parented resets survive the debug-module reset while lc_rst-parented resets are
+            reset by it). The sequence confirms JTAG access stays functional
+            throughout, the system returns to a functional state, the reset-cause reflects the NDM
+            reset, and dmstatus.allhavereset is set once the reset completes (ndmreset_ack).
+
+            A second variant issues the NDM reset with the CPU already halted, confirming the DM
+            remains accessible across the reset.
+            '''
+      stage: V2
+      tests: ["rv_dm_ndm_reset_req",
+              "rv_dm_ndm_reset_req_when_cpu_halted"]
+    }
+    {
+      name: chip_rv_dm_sba
+      desc: '''Verify debug-module System Bus Access (SBA) to chip memory at the chip level.
+
+            With the debug module active, the JTAG agent uses the SBA registers (sbcs,
+            sbaddress, sbdata) to write and then read back a location in the chip SRAM. The
+            access leaves the dm_top host (system-bus) port, travels through u_dm_host_axi_adapter
+            and the AXI crossbar to the SRAM, confirming the debug module can act as an independent
+            bus host and reach the memory system. This path (an external debugger driving the
+            fabric directly) exists only at the chip level.
+
+            CHERI: the debug-module host adapter drives the AXI user field (which carries the
+            capability tag) to zero, so an SBA write to a capability slot is expected to clear its
+            tag and the debugger cannot forge a valid capability, while SBA reads return the data
+            words only and cannot observe tag validity. The CHERI firmware variant stores a valid
+            capability, overwrites it via SBA, and confirms the tag is cleared (checked with
+            gctag) with the data intact. This is confirmed to be the intended behaviour for the
+            current (non-capability-aware) debug module; RC-1 may adopt a capability-aware DM, in
+            which case this testpoint should be extended to cover writing valid and invalid tags
+            via SBA.
+            '''
+      stage: V2
+      tests: ["rv_dm_sba_access",
+              "rv_dm_sba_access_cheri"]
+    }
+    {
+      name: chip_rv_dm_access_after_wakeup
+      desc: '''Verify that the debug module is inaccessible during low power and restored after
+            wakeup, at the chip level.
+
+            By design (confirmed with the DM owner) the debug module and DMI bridge are clocked by
+            clk_main_infra, which is gated in low power - the DM has nothing to interact with, and
+            no means to wake the chip, while the core and bus are down. The UVM sequence places the
+            chip into low-power state and confirms JTAG DMI access does not respond while asleep,
+            then triggers a wakeup and confirms debug register access is restored and functional
+            once the chip returns to active power.
+            '''
+      stage: V2
+      tests: ["rv_dm_access_after_wakeup"]
+    }
+    {
+      name: chip_rv_dm_access_after_escalation_reset
+      desc: '''Verify that the debug module is accessible via JTAG DMI after an
+            alert-escalation-triggered reset.
+
+            The UVM sequence injects an escalation reset and confirms via JTAG DMI that debug
+            register access is restored once the chip returns to its active power state.
+            '''
+      stage: V2
+      tests: ["rv_dm_access_after_escalation_reset"]
+    }
+    {
+      name: chip_rv_dm_debug_disabled
+      desc: '''Verify that JTAG debug access is denied when external debug is disabled.
+
+            Mocha gates external debug via a top-level debug-enable input driven by an external
+            root of trust (see doc/ref/arch.md top-level interface; implementation tracked by #637,
+            targeted for RC-1). With debug-enable deasserted, the JTAG agent attempts to activate
+            the DM and halt the hart, and the test confirms access is not granted (no halt, DMI
+            access gated). With debug-enable asserted, normal access is confirmed. Depends on the
+            debug-enable gate (#637) being implemented.
+            '''
+      stage: V2
+      tests: ["rv_dm_debug_disabled_test"]
+    }
+    {
+      name: chip_rv_dm_cap_reg_access
+      desc: '''Verify full CHERI capability readout from the core to the debug module (RC-1).
+
+            The current debug module transfers 64-bit data only, so abstract register access does
+            not carry a capability tag. For RC-1, once the debug-module scratch registers are full
+            capability length, this testpoint confirms an abstract command reads out a full
+            capability (data plus tag) from a CVA6-CHERI capability register into the debug module,
+            and the tag matches the core's value. Depends on the capability-aware debug module.
+            '''
+      stage: V2
+      tests: ["rv_dm_cap_reg_access_test_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Alert Handler                                                         //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_alert_handler_smoke
+      desc: '''Verify basic alert routing from all IP senders to the alert handler at chip level.
+
+            SW configures the alert handler to route all alert classes to machine-mode interrupts
+            and sets the priority threshold to zero. For each alert-capable IP, SW writes to its
+            `alert_test` CSR to force-trigger the alert, polls MIP.MEIP until the interrupt
+            arrives, claims and completes the PLIC IRQ, and confirms the alert handler cause
+            register identifies the correct source. Verifies all alert sender-to-handler signal
+            paths are correctly wired in the top-level integration.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["alert_handler_smoke",
+              "alert_handler_smoke_cheri"]
+    }
+    {
+      name: chip_alert_handler_escalation
+      desc: '''Verify the alert handler escalation chain: IRQ to NMI to escalation reset.
+
+            SW configures Class A with a three-phase escalation: phase 0 asserts a CPU interrupt,
+            phase 1 an NMI, phase 2 an escalation reset. SW forces a Class A fatal alert via
+            `alert_test`, confirms the phase-0 interrupt fires, allows the phases to progress to
+            the NMI, and then to the escalation reset. After reset, the reset manager
+            `ESCALATE_RESET_STATUS` bit is confirmed set. Verifies the full escalation path is
+            correctly wired from alert handler to reset manager.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["alert_handler_escalation_test",
+              "alert_handler_escalation_test_cheri"]
+    }
+    {
+      name: chip_alert_handler_ping
+      desc: '''Verify the alert handler ping timer detects a non-responding alert sender.
+
+            SW enables the ping timer and waits for at least one ping cycle to complete. The UVM
+            vseq inhibits the ping response from one registered alert sender by gating its
+            `alert_rx` port. The alert handler is confirmed to raise a ping-timeout alert for
+            that sender, which routes to a CPU interrupt. Verifies the ping infrastructure is
+            correctly wired for all alert sources at the top level.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["alert_handler_ping_test",
+              "alert_handler_ping_test_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Mailbox                                                               //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_mailbox_smoke
+      desc: '''Verify Mailbox FIFO operation and interrupt delivery at the chip level.
+
+            SW flushes both FIFOs, acknowledges any pending interrupts, sets threshold
+            registers to `MAILBOX_FIFO_DEPTH`, enables all three interrupts, then:
+            - Confirms the read FIFO is empty and write FIFO is not full.
+            - Writes `MAILBOX_FIFO_DEPTH` elements (0xBEEF0000..N) and confirms the write
+              FIFO is full with only the w_full interrupt pending.
+            - Flushes both FIFOs, acknowledges w_full, and re-confirms the write FIFO is
+              empty with no pending interrupts.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["mailbox_smoke",
+              "mailbox_smoke_cheri"]
+    }
+
+    {
+      name: chip_mailbox_ext_tx_rx
+      desc: '''Verify bidirectional mailbox message passing between the external AXI port and
+            the CPU at the chip level.
+
+            The UVM AXI agent drives the external mailbox port (`axi_mailbox_req_i` /
+            `axi_mailbox_resp_o`). In the host-to-CPU direction, the agent writes a sequence of
+            words into the external write FIFO; SW reads them from the main-side read FIFO and
+            confirms each word matches. In the CPU-to-host direction, SW writes words into the
+            main-side write FIFO; the agent reads from the external read FIFO and confirms the
+            values. The `mailbox_ext_irq_o` output is confirmed to assert when the external read
+            FIFO contains data. Verifies the full external-to-CPU and CPU-to-external message
+            paths and the external interrupt output are correctly wired at the chip level.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V2
+      tests: ["mailbox_ext_tx_rx_test",
+              "mailbox_ext_tx_rx_test_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Entropy Source and KMAC                                               //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_entropy_src_smoke
+      desc: '''Verify entropy source basic operation and accessibility at the chip level.
+
+            SW reads the entropy source health-test configuration registers to confirm the IP
+            is reachable via xbar_peri, then switches to firmware-override mode and reads
+            entropy words directly from the SW FIFO. The test passes when the expected number
+            of valid entropy words are returned, confirming the hardware noise input is
+            connected and the IP produces output.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["entropy_src_smoke",
+              "entropy_src_smoke_cheri"]
+    }
+    {
+      name: chip_kmac_rom_app
+      desc: '''Verify the KMAC application interface used by the ROM controller for boot-time
+            integrity checking.
+
+            A ROM image with a known digest is loaded via backdoor. The UVM sequence monitors
+            the KMAC application interface during the ROM integrity check phase and confirms
+            that the ROM controller correctly drives the app request, KMAC computes the digest,
+            and the resulting pass/fail output fed back to `rom_ctrl` matches the expected
+            result. Verifies the KMAC-to-ROM-ctrl application port wiring in the top-level
+            integration.
+            '''
+      stage: V2
+      tests: ["kmac_rom_app_test"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Tag Controller                                                        //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_tag_ctrl_smoke
+      desc: '''Verify tag controller CSR accessibility and basic tag-tracking at the chip level.
+
+            SW reads and writes the tag controller configuration registers to confirm the block
+            is reachable via the memory map. SW then performs a capability store to a
+            tag-tracked memory region, reads back the tag bit via the tag controller interface,
+            and confirms it is set. A subsequent sub-word write to the same slot is confirmed
+            to clear the tag. Verifies the tag controller is correctly integrated and its
+            AXI tag-tracking path is functional end-to-end.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["tag_ctrl_smoke",
+              "tag_ctrl_smoke_cheri"]
+    }
+
+    {
+      name: chip_tag_ctrl_dram
+      desc: '''Verify CHERI capability tag tracking through the tag controller for DRAM accesses
+            at the chip level.
+
+            The UVM environment models the DRAM interface (`dram_req_o` / `dram_resp_i`). SW
+            stores capabilities to DRAM addresses at varying alignments using `csc`, then loads
+            them back with `clc` and confirms the tag bit is set via `gctag`. A sub-word write
+            to a capability slot is confirmed to clear only that slot's tag while leaving
+            adjacent slots intact. The test exercises enough distinct cache lines to provoke at
+            least one tag-cache eviction and refill, confirming tag state is preserved across
+            evictions. Verifies the tag controller AXI pipeline and tag cache are correctly
+            integrated end-to-end at the chip level.
+
+            CHERI firmware only.
+            '''
+      stage: V2
+      tests: ["tag_ctrl_dram_test_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // AXI SRAM                                                              //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_axi_sram_smoke
+      desc: '''Verify AXI SRAM read/write data integrity with back-to-back 64-bit accesses.
+
+            SW uses inline assembly to issue 8 consecutive 64-bit stores of known values
+            (0xB037...-0x0E91...) immediately followed by 8 64-bit loads, then compares each
+            loaded value to the stored value. In CHERI mode (`__riscv_zcherihybrid`) capability
+            registers (`ct0`) with `csc`/`clc` are used; in vanilla mode plain `t0`/`sd`/`ld`
+            are used. The tight store-load sequence stresses AXI pipeline buffering.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["axi_sram_smoke",
+              "axi_sram_smoke_cheri"]
+    }
+    {
+      name: chip_axi_sram_tag
+      desc: '''Verify CHERI capability tag storage and per-slot invalidation in AXI SRAM.
+
+            SW uses CHERI inline assembly (`csc`/`clc`/`gctag`) to exercise the tag controller
+            across three scenarios:
+            - Tags start unset; storing valid capabilities sets them; a sub-word write (word,
+              byte, half-word, or double) to a capability slot clears only that slot's tag
+              while leaving adjacent slots intact.
+            - Storing a null capability (`csc cnull`) clears the tag; a sub-word write to the
+              most-significant word of a slot also clears it.
+            - Half-word and byte writes to the most-significant part of a slot invalidate only
+              that slot, leaving others unchanged.
+            In vanilla (non-CHERI) mode the test body is a no-op and returns true.
+            '''
+      stage: V2
+      tests: ["axi_sram_tag_test",
+              "axi_sram_tag_test_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // AXI Crossbar                                                         //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_axi_xbar_smoke
+      desc: '''Verify AXI crossbar address decoding and routing to all AXI devices at the
+            chip level.
+
+            SW issues write-then-read-back transactions to a representative address within
+            each CPU-accessible AXI device region: SRAM, ROM control memory (read), and
+            Mailbox. Routing to the dedicated SW-DV window device (SwDvWindow, base 0x2002_0000)
+            is also confirmed by reading its read-only HW_ID register and checking the expected
+            value, since that window is a DV sink rather than general memory. The DRAM port
+            (routed through the tag controller) and the RestOfChip passthrough (Ethernet, FPGA
+            only) are not exercised here. Each transaction is confirmed to reach the correct
+            device by verifying the read-back value matches the written value and no bus error is
+            signalled. In CHERI mode, capability-tagged accesses are also routed through the
+            crossbar. Verifies the AXI crossbar address-decode map (8 device ports) is complete
+            and correctly connected in the top-level integration.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["axi_xbar_smoke",
+              "axi_xbar_smoke_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // TileLink Crossbar                                                     //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_tl_xbar_smoke
+      desc: '''Verify TileLink crossbar (xbar_peri) address decoding and routing to all
+            TL-UL peripheral devices at the chip level.
+
+            SW reads a read-only status or identification register from each of the twelve
+            peripherals connected to xbar_peri: UART, SPI host, SPI device, I2C, GPIO,
+            clock manager, reset manager, power manager, PLIC, timer, entropy source,
+            and ROM control registers. A non-zero or expected-value response confirms the
+            crossbar routes each access to the correct device. A bus error or an all-zero
+            response to a register with a non-zero reset value is a failure. Verifies the
+            TileLink crossbar address-decode map is complete and correctly connected in the
+            top-level integration.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["tl_xbar_smoke",
+              "tl_xbar_smoke_cheri"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Test Framework                                                        //
+    ///////////////////////////////////////////////////////////////////////////
+
+    {
+      name: chip_test_framework_smoke
+      desc: '''Verify the DV test framework and the SW-to-DV communication path that underlie all
+            firmware-driven tests.
+
+            A minimal firmware image writes a known log message to `SW_DV_LOG_ADDR` and the pass
+            token to `SW_DV_TEST_STATUS_ADDR`. These addresses live in the dedicated SW-DV window
+            (sim_sram_axi at 0x2002_0000, its own AXI crossbar device SwDvWindow) - not the chip
+            SRAM or DRAM. The UVM testbench confirms the `sim_sram_axi_sink` intercepts the AXI
+            write, drives `sw_test_status_vif.sw_test_done`, and the logged message is captured
+            correctly. SW also reads the read-only `HW_ID` register in the window and confirms it
+            matches the expected platform id (HwIdSimUvm). Validates the full SW to sim_sram_axi to
+            sw_test_status_if to UVM path as a standalone check rather than relying on it
+            implicitly in every other test.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["test_framework_test",
+              "test_framework_test_cheri"]
+    }
+    {
+      name: chip_test_framework_exception
+      desc: '''Verify that the DV test framework exception handler correctly identifies and
+            skips over illegal instructions.
+
+            SW deliberately executes two `unimp` instructions: a 4-byte encoding (tval =
+            0xC0001073) and a 2-byte compressed encoding (tval = 0x0000). The exception handler
+            intercepts each illegal-instruction trap (cause = 2), inspects `tval` to determine
+            the instruction width, advances `epc` by 4 or 2 accordingly, and returns. The test
+            passes if SW resumes execution after both `unimp` instructions and reaches the
+            final `return true`.
+
+            Both vanilla and CHERI firmware images are exercised.
+            '''
+      stage: V1
+      tests: ["test_framework_exception_test",
+              "test_framework_exception_test_cheri"]
+    }
+
+  ]
+}
