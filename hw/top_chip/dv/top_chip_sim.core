@@ -16,6 +16,7 @@ filesets:
       - lowrisc:dv:sw_test_status
       - lowrisc:dv:sw_logger_if
       - lowrisc:mocha_dv:top_chip_dv_test
+      - lowrisc:mocha_dv:axi_vip
       - lowrisc:dv:mem_bkdr_util
       - lowrisc:dv:pins_if
       - lowrisc:dv:common_ifs
