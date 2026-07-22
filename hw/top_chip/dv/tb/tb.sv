@@ -58,6 +58,54 @@ module tb;
                  .sda_io(sda   )
                 );
 
+  // Passive AXI monitors on each AXI itf of the crossbar
+  wire axi_mon_rst_n = dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel];
+
+  // ---- Host (manager) ports ----
+  `define AXI_MON_MGR(u_inst, host, agent_name, id_str)             \
+    axi_vip_if #(                                                   \
+      .req_t     (top_pkg::axi_req_t),                              \
+      .resp_t    (top_pkg::axi_resp_t),                             \
+      .IdWidth   (top_pkg::AxiIdWidth),                             \
+      .AddrWidth (top_pkg::AxiAddrWidth),                           \
+      .DataWidth (top_pkg::AxiDataWidth),                           \
+      .UserWidth (top_pkg::AxiUserWidth),                           \
+      .IsActive  (uvm_pkg::UVM_PASSIVE),                            \
+      .InstId    (id_str),                                          \
+      .CfgScope  ({"*.", agent_name})                               \
+    ) u_inst (.clk_i(clk), .rst_ni(axi_mon_rst_n));                 \
+    assign u_inst.axi_req  = `AXI_XBAR_HIER.slv_ports_req_i [host]; \
+    assign u_inst.axi_resp = `AXI_XBAR_HIER.slv_ports_resp_o[host]
+
+  // ---- Device (subordinate) ports ----
+  `define AXI_MON_SUB(u_inst, dev, agent_name, id_str)              \
+    axi_vip_if #(                                                   \
+      .req_t     (top_pkg::axi_dev_req_t),                          \
+      .resp_t    (top_pkg::axi_dev_resp_t),                         \
+      .IdWidth   (top_pkg::AxiDevIdWidth),                          \
+      .AddrWidth (top_pkg::AxiAddrWidth),                           \
+      .DataWidth (top_pkg::AxiDataWidth),                           \
+      .UserWidth (top_pkg::AxiUserWidth),                           \
+      .IsActive  (uvm_pkg::UVM_PASSIVE),                            \
+      .InstId    (id_str),                                          \
+      .CfgScope  ({"*.", agent_name})                               \
+    ) u_inst (.clk_i(clk), .rst_ni(axi_mon_rst_n));                 \
+    assign u_inst.axi_req  = `AXI_XBAR_HIER.mst_ports_req_o [dev];  \
+    assign u_inst.axi_resp = `AXI_XBAR_HIER.mst_ports_resp_i[dev]
+
+  `AXI_MON_MGR(u_axi_mon_cva6,       top_pkg::CVA6,       "m_mgr_axi_CVA6",       "CVA6");
+  `AXI_MON_MGR(u_axi_mon_dm_host,    top_pkg::DM_HOST,    "m_mgr_axi_DM_HOST",    "DM_HOST");
+  `AXI_MON_SUB(u_axi_mon_romctrlmem, top_pkg::RomCtrlMem, "m_sub_axi_RomCtrlMem", "RomCtrlMem");
+  `AXI_MON_SUB(u_axi_mon_sram,       top_pkg::SRAM,       "m_sub_axi_SRAM",       "SRAM");
+  `AXI_MON_SUB(u_axi_mon_dm_dev,     top_pkg::DM_DEV,     "m_sub_axi_DM_DEV",     "DM_DEV");
+  `AXI_MON_SUB(u_axi_mon_mailbox,    top_pkg::Mailbox,    "m_sub_axi_Mailbox",    "Mailbox");
+  `AXI_MON_SUB(u_axi_mon_restofchip, top_pkg::RestOfChip, "m_sub_axi_RestOfChip", "RestOfChip");
+  `AXI_MON_SUB(u_axi_mon_tlcrossbar, top_pkg::TlCrossbar, "m_sub_axi_TlCrossbar", "TlCrossbar");
+  `AXI_MON_SUB(u_axi_mon_dram,       top_pkg::DRAM,       "m_sub_axi_DRAM",       "DRAM");
+
+  `undef AXI_MON_MGR
+  `undef AXI_MON_SUB
+
   // ------ Mock DRAM ------
   top_pkg::axi_dram_req_t  dram_req;
   top_pkg::axi_dram_resp_t dram_resp;

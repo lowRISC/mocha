@@ -12,8 +12,14 @@ class top_chip_dv_env extends uvm_env;
   mem_bkdr_util mem_bkdr_util_h[chip_mem_e];
 
   // Agents
-  uart_agent m_uart_agent;
   i2c_agent  m_i2c_agent;
+  uart_agent   m_uart_agent;
+  // Passive AXI monitors on the xbar host (CVA6) + device ports; each self-gets its
+  // cfg (is_active=UVM_PASSIVE) from the config_db published by its axi_vip_if in the tb.
+  axi_mgr_agent m_mgr_axi[];
+  axi_mgr_agent m_sub_axi[];
+
+  top_chip_dv_axi_scoreboard m_axi_scb;
 
   // Standard SV/UVM methods
   extern function new(string name = "", uvm_component parent = null);
@@ -22,6 +28,9 @@ class top_chip_dv_env extends uvm_env;
 
   // Class specific methods
   extern task load_memories();
+
+  // Block until every AXI manager monitor reports no in-flight transactions.
+  extern task wait_for_axi_idle();
 endclass : top_chip_dv_env
 
 
@@ -76,6 +85,21 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   m_uart_agent = uart_agent::type_id::create("m_uart_agent", this);
   uvm_config_db#(uart_agent_cfg)::set(this, "m_uart_agent*", "cfg", cfg.m_uart_agent_cfg);
 
+  m_mgr_axi = new[top_pkg::AxiXbarHosts];
+  m_mgr_axi[top_pkg::CVA6]    = axi_mgr_agent::type_id::create("m_mgr_axi_CVA6", this);
+  m_mgr_axi[top_pkg::DM_HOST] = axi_mgr_agent::type_id::create("m_mgr_axi_DM_HOST", this);
+
+  m_sub_axi = new[top_pkg::AxiXbarDevices];
+  m_sub_axi[top_pkg::RomCtrlMem] = axi_mgr_agent::type_id::create("m_sub_axi_RomCtrlMem", this);
+  m_sub_axi[top_pkg::SRAM]       = axi_mgr_agent::type_id::create("m_sub_axi_SRAM", this);
+  m_sub_axi[top_pkg::DM_DEV]     = axi_mgr_agent::type_id::create("m_sub_axi_DM_DEV", this);
+  m_sub_axi[top_pkg::Mailbox]    = axi_mgr_agent::type_id::create("m_sub_axi_Mailbox", this);
+  m_sub_axi[top_pkg::RestOfChip] = axi_mgr_agent::type_id::create("m_sub_axi_RestOfChip", this);
+  m_sub_axi[top_pkg::TlCrossbar] = axi_mgr_agent::type_id::create("m_sub_axi_TlCrossbar", this);
+  m_sub_axi[top_pkg::DRAM]       = axi_mgr_agent::type_id::create("m_sub_axi_DRAM", this);
+
+  m_axi_scb = top_chip_dv_axi_scoreboard::type_id::create("m_axi_scb", this);
+
   uvm_config_db#(top_chip_dv_env_cfg)::set(this, "", "cfg", cfg);
 
   top_vsqr                 = top_chip_dv_virtual_sequencer::type_id::create("top_vsqr", this);
@@ -93,6 +117,23 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.
   m_uart_agent.monitor.tx_analysis_port.connect(top_vsqr.uart_tx_fifo.analysis_export);
+
+  m_mgr_axi[top_pkg::CVA6].get_monitor().tx_ap.connect(m_axi_scb.mgr0_cva6_imp);
+  m_mgr_axi[top_pkg::CVA6].get_monitor().aw_ap.connect(m_axi_scb.mgr0_cva6_req_imp);
+  m_mgr_axi[top_pkg::CVA6].get_monitor().ar_ap.connect(m_axi_scb.mgr0_cva6_req_imp);
+  m_mgr_axi[top_pkg::DM_HOST].get_monitor().tx_ap.connect(m_axi_scb.mgr1_dm_host_imp);
+  m_mgr_axi[top_pkg::DM_HOST].get_monitor().aw_ap.connect(m_axi_scb.mgr1_dm_host_req_imp);
+  m_mgr_axi[top_pkg::DM_HOST].get_monitor().ar_ap.connect(m_axi_scb.mgr1_dm_host_req_imp);
+  m_sub_axi[top_pkg::RomCtrlMem].get_monitor().tx_ap.connect(m_axi_scb.sub0_romctrlmem_imp);
+  m_sub_axi[top_pkg::SRAM].get_monitor().tx_ap.connect(m_axi_scb.sub1_sram_imp);
+  m_sub_axi[top_pkg::Mailbox].get_monitor().tx_ap.connect(m_axi_scb.sub2_mailbox_imp);
+  m_sub_axi[top_pkg::TlCrossbar].get_monitor().tx_ap.connect(m_axi_scb.sub3_tlcrossbar_imp);
+  m_sub_axi[top_pkg::DRAM].get_monitor().tx_ap.connect(m_axi_scb.sub4_dram_imp);
+  m_sub_axi[top_pkg::DM_DEV].get_monitor().tx_ap.connect(m_axi_scb.sub5_dm_dev_imp);
+  m_sub_axi[top_pkg::RestOfChip].get_monitor().tx_ap.connect(m_axi_scb.sub6_restofchip_imp);
+
+  // Flush the scoreboard on AXI fabric reset (all taps share it, so one reset monitor suffices).
+  m_mgr_axi[top_pkg::CVA6].get_reset_monitor().m_analysis_port.connect(m_axi_scb.reset_imp);
 endfunction : connect_phase
 
 task top_chip_dv_env::load_memories();
@@ -104,3 +145,9 @@ task top_chip_dv_env::load_memories();
     end
   end
 endtask : load_memories
+
+task top_chip_dv_env::wait_for_axi_idle();
+  foreach (m_mgr_axi[i]) begin
+    if (m_mgr_axi[i] != null) m_mgr_axi[i].get_monitor().wait_for_idle();
+  end
+endtask : wait_for_axi_idle
