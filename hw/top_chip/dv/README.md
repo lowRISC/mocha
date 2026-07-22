@@ -15,6 +15,47 @@ Currently, the top-level approach is focused on **Validation** rather than pure 
 The software tests running on the simulated CPU are often "auto-verifying," meaning the C code itself checks if the operation succeeded (e.g., a UART loopback test checking that received data matches sent data).
 The UVM environment's role is to facilitate this execution (loading memory, handling clocks) and provide secondary checks.
 
+## AXI Fabric Scoreboard
+
+Independently of what the software checks, **every** test runs a fabric scoreboard over the AXI
+crossbar. Passive monitors tap all of the crossbar's ports -- both manager ports (CVA6, the debug
+module) and every subordinate port -- and the scoreboard pairs each manager completion with the
+transaction that arrived at the subordinate it was addressed to.
+
+What it checks, for each matched pair:
+
+* **Routing**: the transaction reached the port that the address map sends it to. A transaction
+  arriving at the wrong port is reported as `SCB_MISROUTE`.
+* **Attributes**: address, length, size, burst, lock, cache, prot, qos, region and user. The
+  crossbar passes these through unchanged, so any difference is a fault.
+* **Payload**: write data and strobes, read data, both responses, and the user fields beat by beat.
+  On Mocha `WUSER`/`RUSER` carry the CHERI capability tag, so these are what catch tag corruption.
+
+What it deliberately ignores:
+
+* **The `sim_sw_dv_window` range.** This is a simulation-only sink with no subordinate tap, so
+  nothing ever arrives to match against a manager access.
+* **Unmapped accesses.** No address rule matches, so the crossbar answers from its own error
+  subordinate and the transaction never reaches a tap. CVA6 speculatively fetching past a mapped
+  region does this legitimately. The scoreboard only insists that the manager really was given a
+  DECERR, and that no subordinate claims to have seen it.
+
+### End-of-test drain
+
+Because manager and subordinate observations arrive at different times, the environment waits for
+the scoreboard to drain -- every observed transaction matched on both sides -- before ending the
+run phase. Two failures come out of this and are worth recognising:
+
+* **`AXI_DRAIN_TIMEOUT`**: traffic was still in flight when the wait gave up. Usually a hung
+  transaction rather than a scoreboard problem.
+* **`SCB_NO_COMPARISONS`**: the run ended having compared nothing at all. An empty pair of queues
+  is the normal state for most of a run, so "nothing left over" does not by itself mean anything
+  was checked. This fires when a test produced no AXI traffic for the scoreboard to see, which
+  usually means the taps were not connected rather than that the test is fine.
+
+Leftovers at the end of the run are reported as `SCB_DRAIN_DROP` (a manager request that no
+subordinate ever answered) or `SCB_DRAIN_ERROR` (a subordinate response with no manager request).
+
 ## Simulation Flow
 
 The simulation is orchestrated by `dvsim`, which manages the build and run flow.
