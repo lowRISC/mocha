@@ -1,0 +1,49 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha:mem_downsizer"
+description: "2:1 downsizer for simple memory interface"
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:prim:fifo
+      - lowrisc:prim:assert
+    files:
+      - rtl/mem_downsizer.sv
+      - rtl/mem_cut.sv
+    file_type: systemVerilogSource
+
+  tb:
+    files:
+      - verif/mem_downsizer_tb.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl
+
+  sim:
+    flow: sim
+    flow_options:
+      tool: verilator
+      verilator_options: # options to BUILD Verilator with
+        - "--timing"
+        - "--trace"         # enable tracing
+        - "--trace-fst"     # trace to an FST file (instead of VCD)
+        - "--trace-structs" # trace structs (e.g. packed structs) properly
+        - "--timescale 1ns/1ns"
+        - "--main"
+      run_options: # options to RUN Verilator with
+        - "--trace"         # enable tracing
+        - "--trace-fst"     # trace to an FST file (instead of VCD)
+        - "--trace-structs" # trace structs (e.g. packed structs) properly
+
+    filesets:
+      - files_rtl
+      - tb
+
+    toplevel: mem_downsizer_tb

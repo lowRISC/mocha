@@ -17,6 +17,7 @@ filesets:
       - lowrisc:ip:rom_ctrl
       - lowrisc:ip:entropy_src
       - lowrisc:ip:kmac
+      - lowrisc:mocha:mem_downsizer
       - lowrisc:mocha_ip:clkmgr
       - lowrisc:mocha_ip:gpio
       - lowrisc:mocha_ip:pwrmgr
@@ -34,7 +35,6 @@ filesets:
       - cosmic::tagctrl
       - cosmic:pulp:axi_riscv_atomics
     files:
-      - rtl/mem_downsizer.sv
       - rtl/axi_sram.sv
       - rtl/top_chip_system.sv
     file_type: systemVerilogSource
