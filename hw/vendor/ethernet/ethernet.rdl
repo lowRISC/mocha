@@ -1,0 +1,318 @@
+/* Copyright lowRISC contributors.
+ * Licensed under the Apache License, Version 2.0; see LICENSE for details.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Register Description Language (SystemRDL 2.0) file for the Ethernet peripheral.
+ * Derived from memory_map.txt.
+ *
+ * Address space overview (relative to peripheral base):
+ *   0x0800 – 0x087F  CSR registers        (128 B, 32-bit, access per register)
+ *   0x1000 – 0x17FF  TX data buffer       (  2 KB, 64-bit words, write-only)
+ *   0x4000 – 0x5FFF  RX data buffer       (  8 KB, 64-bit words, read-only)
+ *   0x6000 – 0x603F  RX descriptor table  ( 64 B,  8 × 64-bit entries, read-only)
+ *
+ * The host-facing bus is 64-bit data / 64-bit address. CSR registers are 32-bit;
+ * the upper 32 bits of any 64-bit write to the CSR region are ignored (BE[63:32]
+ * must be zero, otherwise the access is flagged as a bad request).
+ */
+
+/* =========================================================================
+ * Reusable field types
+ * ========================================================================= */
+
+/* R/W configuration field: software reads and writes; hardware reads the value. */
+field cfg_f {
+    sw    = rw;
+    hw    = r;
+    reset = 1'b0;
+};
+
+/* Read-only status field: hardware writes the value; software reads it. */
+field sts_f {
+    sw    = r;
+    hw    = w;
+    reset = 1'b0;
+};
+
+/* Write-only command field: software writes; hardware reads. Reads as 0. */
+field wo_f {
+    sw    = w;
+    hw    = r;
+    reset = 1'b0;
+};
+
+/* Write-one-to-clear sticky field: hardware sets; software writes 1 to clear. */
+field wtc_f {
+    sw      = rw;
+    hw      = w;
+    onwrite = woclr;
+    reset   = 1'b0;
+};
+
+/* =========================================================================
+ * Top-level address map
+ * ========================================================================= */
+addrmap ethernet {
+    desc = "Ethernet peripheral. 64-bit data, 64-bit address bus interface.";
+
+    /* -----------------------------------------------------------------------
+     * CSR REGISTERS  (base 0x0800, 32-bit, 4-byte aligned)
+     * ----------------------------------------------------------------------- */
+
+    /* INTR_STATE @ 0x0800 - current interrupt status (read-only).
+     * Level interrupts (bits 0–4) deassert when the underlying condition clears.
+     * Sticky interrupts (bits 5–6) are cleared by writing 1. */
+    reg {
+        desc = "Current interrupt status.
+               irq_o = |(INTR_MASK & INTR_STATE).
+               Level interrupts clear automatically when the source condition deasserts.";
+
+        sts_f rx_not_empty[0:0];
+        rx_not_empty->desc = "RX data buffer not empty (level). Deasserts when the buffer is fully drained.";
+
+        sts_f rx_table_almost_full[1:1];
+        rx_table_almost_full->desc = "RX descriptor table almost full (level). High when <=2 descriptor slots remain.";
+
+        sts_f rx_table_full[2:2];
+        rx_table_full->desc = "RX descriptor table full (level). No more incoming packets can be committed.";
+
+        sts_f rx_buf_almost_full[3:3];
+        rx_buf_almost_full->desc = "RX data buffer almost full (level). Fires when <1522 bytes remain free.";
+
+        wtc_f rx_packet_lost[4:4];
+        rx_packet_lost->desc = "A packet was lost (sticky). Set when a packet is dropped due to RX descriptor table or RX data buffer being full. Write 1 to clear.";
+
+        wtc_f tx_done[5:5];
+        tx_done->desc = "TX done (sticky). Set on tx_done_pulse at the end of a transmission. Write 1 to clear.";
+
+        wtc_f manual_irq[6:6];
+        manual_irq->desc = "Manual IRQ (sticky). Set by writing 1 to INTR_TEST[0]. Write 1 to clear.";
+    } INTR_STATE @ 0x0800;
+
+    /* INTR_MASK @ 0x0804 - same access pattern as cfg_f but all bits reset to 1.
+     * Anonymous field declarations are used throughout this register. */
+    reg {
+        desc = "Per-source interrupt enable mask. 1 = enabled, 0 = masked. Reset value: 0x0 (all disabled).";
+
+        field { sw = rw; hw = r; reset = 1'b1; desc = "Mask bit for rx_not_empty."; }          rx_not_empty[0:0];
+        field { sw = rw; hw = r; reset = 1'b1; desc = "Mask bit for rx_table_almost_full."; }  rx_table_almost_full[1:1];
+        field { sw = rw; hw = r; reset = 1'b1; desc = "Mask bit for rx_table_full."; }         rx_table_full[2:2];
+        field { sw = rw; hw = r; reset = 1'b1; desc = "Mask bit for rx_buf_almost_full."; }    rx_buf_almost_full[3:3];
+        field { sw = rw; hw = r; reset = 1'b1; desc = "Mask bit for rx_packet_lost."; }        rx_packet_lost[4:4];
+        field { sw = rw; hw = r; reset = 1'b1; desc = "Mask bit for tx_done."; }               tx_done[5:5];
+        field { sw = rw; hw = r; reset = 1'b1; desc = "Mask bit for manual_irq."; }            manual_irq[6:6];
+    } INTR_MASK @ 0x0804;
+
+    /* INTR_TEST @ 0x0808 - write-only */
+    reg {
+        desc = "Interrupt test register. Write-only.";
+
+        wo_f set_manual_irq[0:0];
+        set_manual_irq->desc = "Write 1 to force-set the manual_irq sticky bit in INTR_STATE (for testing).";
+    } INTR_TEST @ 0x0808;
+
+    /* 0x080C - reserved. No register instance. */
+
+    /* CTRL @ 0x0810 */
+    reg {
+        desc = "Control register. If written while an RX is in progress, the behaviour is not defined for that packet i.e. it may be either dropped or kept. Packets already in the buffer will not be disturbed, and subsequent packets will be received according to the new configuration.";
+
+        cfg_f promiscuous_mode[0:0];
+        promiscuous_mode->desc = "Promiscuous mode.
+                       0 = filter by local MAC address (default);
+                       1 = capture all received frames regardless of destination address.";
+
+        cfg_f loopback[1:1];
+        loopback->desc = "Internal loopback enable.
+            0 = normal operation;
+            1 = internally loop back transmitted frames to the RX path for testing
+        Loop includes framing logic but NOT the MAC and PHY.
+        Does not affect MDIO.
+        The incoming RX data will be ignored while in loopback mode. TX packets are still sent out.";
+
+    } CTRL @ 0x0810;
+
+    /* STATUS @ 0x0814 - read-only */
+    reg {
+        desc = "RX and TX status flags (read-only).";
+
+        sts_f n_packets_in_rx_buf[11:8];
+        n_packets_in_rx_buf->desc = "Number of packets currently stored in the RX data buffer. Incremented by hardware and decrement by writing to pop register.";
+
+        sts_f tx_busy[7:7];
+        tx_busy->desc = "TX busy. Asserted while a frame is being transmitted.
+                       Do not write TX_CTRL while this bit is set.";
+
+        // Bits 4, 5 and 6 left blank
+        // this is because bits 0-3 are identical between STATUS and INTR_STATE
+        // and bits 4/5/6 of INTR_STATE are used for something else
+        // so it could be confusing to use them here for a different purpose
+
+        sts_f rx_buf_almost_full[3:3];
+        rx_buf_almost_full->desc = "RX data buffer almost full (level). Fires when ≤24 words (~192 bytes) remain free.";
+
+        sts_f rx_table_full[2:2];
+        rx_table_full->desc = "RX descriptor table full (level). No more incoming packets can be committed.";
+
+        sts_f rx_table_almost_full[1:1];
+        rx_table_almost_full->desc = "RX descriptor table almost full (level). Fires when ≤2 descriptor slots remain.";
+
+        sts_f rx_not_empty[0:0];
+        rx_not_empty->desc = "RX data buffer not empty (level). Deasserts when the buffer is fully drained.";
+    } STATUS @ 0x0814;
+
+    /* MACLO @ 0x0818 - lower 32 bits of local MAC address */
+    reg {
+        desc = "Lower 32 bits of the local MAC address. Reset value: 0x00000000.";
+
+        cfg_f mac_lo[31:0];
+        mac_lo->desc = "MAC address bits [31:0].";
+    } MACLO @ 0x0818;
+
+    /* MACHI @ 0x081C - upper 16 bits of local MAC address; bits [31:16] reserved */
+    reg {
+        desc = "Upper 16 bits of the local MAC address. Bits [31:16] are reserved. Reset value: 0x00000000.";
+
+        cfg_f mac_hi[15:0];
+        mac_hi->desc = "MAC address bits [47:32].";
+    } MACHI @ 0x081C;
+
+    /* TX_CTRL @ 0x0820 - writing this register also kicks the TX FSM */
+    reg {
+        desc = "TX control register. Writing this register immediately starts a transmission -
+               the TX framing FSM begins reading the TX data buffer and sending tx_packet_len bytes.
+               Do not write while STATUS.tx_busy is set.";
+
+        cfg_f tx_packet_len[10:0];
+        tx_packet_len->desc = "Number of bytes to transmit (min 2, max 1518 for a maximum-size Ethernet frame
+                       with VLAN tag). The TX framing FSM reads this many bytes from the TX data buffer.";
+    } TX_CTRL @ 0x0820;
+
+    /* 0x0824 - reserved. No register instance. */
+
+    /* RX_POP @ 0x0828 - write-only */
+    reg {
+        desc = "RX descriptor table pop register. Write-only.
+               The descriptor table acts as a FIFO; entry 0 is always the oldest unread packet.";
+
+        wo_f pop[0:0];
+        pop->desc = "Write 1 to pop (discard) the oldest entry from the RX descriptor table,
+                      advancing the FIFO head pointer.";
+    } RX_POP @ 0x0828;
+
+    /* MDIO_CTRL @ 0x082C - bit-bang MDIO/MDC interface.
+     * Three R/W config outputs (cfg_f) plus one read-only input (sts_f). */
+    reg {
+        desc = "Bit-bang MDIO/MDC interface control register.
+               Software toggles mdio_clk and drives mdio_o/mdio_oen for MDIO transactions;
+               mdio_i returns the value sampled from the PHY.";
+
+        cfg_f mdio_clk[0:0];
+        mdio_clk->desc = "MDC clock output. Toggle to generate MDC clock cycles.";
+        cfg_f mdio_o[1:1];
+        mdio_o->desc = "MDIO output data bit. Driven onto the MDIO pin when mdio_oen = 1.";
+        cfg_f mdio_oen[2:2];
+        mdio_oen->desc = "MDIO output enable. 1 = drive MDIO pin from mdio_o; 0 = MDIO pin is an input.";
+        sts_f mdio_i[3:3];
+        mdio_i->desc = "MDIO input data sampled from the PHY. Read-only.";
+    } MDIO_CTRL @ 0x082C;
+
+    /* VENDOR_ID @ 0x0830 - vendor identification - read-only */
+    reg {
+        desc = "Device identification register. Read-only.";
+
+        sts_f vendor_id[31:0];
+        vendor_id->desc = "Always reads 0x6C525343 (ASCII for 'lRSC')"
+    } VENDOR_ID @ 0x0830;
+
+    /* DEVICE_ID @ 0x0834 - device identification - read-only */
+    reg {
+        desc = "Device identification register. Read-only.";
+
+        sts_f device_id[31:0];
+        device_id->desc = "Always reads 0x45544858 (ASCII for 'ETHX')"
+    } DEVICE_ID @ 0x0834;
+
+    /* MAGIC_NUM @ 0x0838 - hardcoded number - read-only */
+    reg {
+        desc = "Hardcoded number, useful for checking builds. Read-only.";
+
+        sts_f magic_num[31:0];
+        magic_num->desc = "Hardcoded to a random number. Read only.";
+
+        // Should replace with an actual version numbering scheme, possibly as below
+        // but it's worth researching conventions for encoding compatibility info
+        //sts_f devel[31:30];
+        //devel->desc = "Development version. 1 = development version, 0 = production version. If set, all other bits are randomly generated for identifying builds, and not indicative of a version numbering scheme.";
+        ///* bits 30 and 29 are reserved for future use */
+        //sts_f magic[28:15];
+        //magic->desc = "Magic number randomly generated for each build.";
+        //sts_f major[14:10];
+        //major->desc = "Major version number.";
+        //sts_f minor[9:5];
+        //minor->desc = "Minor version number.";
+        //sts_f patch[4:0];
+        //patch->desc = "Patch version number.";
+    } MAGIC_NUM @ 0x0838
+
+    /* -----------------------------------------------------------------------
+     * TX DATA BUFFER  (0x1000 – 0x17FF, 2 KB, 256 × 64-bit words, write-only)
+     *
+     * Written by software before asserting TX_CTRL to start transmission.
+     * Max Ethernet frame is 1522 bytes = 191 64-bit words.
+     * Byte address of word N: 0x1000 + N*8.
+     * Writes during an active transmission are not blocked by hardware;
+     * software must not write until the TX done interrupt fires.
+     * ----------------------------------------------------------------------- */
+    mem {
+        desc = "TX data buffer. 256 * 64-bit words (2 KB). Write-only.";
+        memwidth  = 64;
+        mementries = 256;
+        sw = w;
+    } external TX_DATA_BUF @ 0x1000;
+
+    /* -----------------------------------------------------------------------
+     * RX DATA BUFFER  (0x4000 – 0x5FFF, 8 KB, 1024 × 64-bit words, read-only)
+     *
+     * Ring buffer managed entirely by hardware; filled automatically as frames
+     * arrive on the RGMII interface.  Software reads packets using the head_ptr
+     * field from the RX descriptor table.
+     * Byte address of word N: 0x4000 + N*8.
+     * ----------------------------------------------------------------------- */
+    mem {
+        desc = "RX data buffer. 1024 * 64-bit words (8 KB). Read-only.";
+        memwidth  = 64;
+        mementries = 1024;
+        sw = r;
+    } external RX_DATA_BUF @ 0x4000;
+
+    /* -----------------------------------------------------------------------
+     * RX DESCRIPTOR TABLE  (0x6000 – 0x603F, 64 B, 8 × 64-bit entries)
+     *
+     * Acts as a FIFO - entry 0 is always the oldest unread packet.
+     * After software reads a packet it pops the entry by writing 1 to RX_POP[0].
+     * Byte address of entry N: 0x6000 + N*8.
+     * See rx_desc_entry_t for the field layout of each entry.
+     * ----------------------------------------------------------------------- */
+    mem {
+        desc = "RX descriptor table. 8 entries, each 64 bits (64 B total). Read-only.";
+        memwidth  = 64;
+        mementries = 8;
+        sw = r;
+    } external rx_desc_table @ 0x6000;
+
+    /* =========================================================================
+     * RX descriptor table entry type  (64-bit)
+     *
+     * Entry layout:
+     *   [63:32]  head_ptr       - word index into RX data buffer; byte addr = 0x4000 + head_ptr*8
+     *   [31:16]  pkt_len        - packet length in bytes (max 1522)
+     *   [15: 0]  metadata
+        * [15:2]  (reserved)
+        *  [1:0]  capture_reason - 2'b00=MAC_MATCHES  2'b01=MAC_BROADCAST
+                                   2'b10=MAC_MULTICAST 2'b11=NON_MAC_MATCH
+     * ========================================================================= */
+
+};
