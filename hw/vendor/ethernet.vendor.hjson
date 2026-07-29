@@ -1,0 +1,27 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+    name: "ethernet",
+    target_dir: "ethernet",
+
+    upstream: {
+        url: "https://github.com/lowRISC/ethernet.git",
+        rev: "master",
+    },
+
+    # Only bring in the hardware, RDL, and README
+    # This excludes software, dev utilities, tests, and documentation
+    mapping: [
+        {from: "src/hw",             to: "hw"},
+        {from: "src/ethernet.rdl",   to: "ethernet.rdl"},
+        {from: "README.md",          to: "README.md"}
+    ],
+
+    exclude_from_upstream: [
+        "*.svg",
+        "*.md",
+        "*hw/*_eth/synth", # exclude trial synth flow
+        "*hw/*_eth/verif", # exclude verif
+    ]
+}
