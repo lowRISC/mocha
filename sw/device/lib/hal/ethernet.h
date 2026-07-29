@@ -4,87 +4,80 @@
 
 #pragma once
 
+#include "hal/autogen/ethernet.h"
 #include "hal/mmio.h"
 #include <stdbool.h>
 #include <stdint.h>
 
-#define ETHERNET_MACLO_REG (0x800)
+// Depth in 64-bit words
+#define ETHERNET_RX_BUF_DEPTH   1024
+#define ETHERNET_RX_TABLE_DEPTH 8
+#define ETHERNET_TX_BUF_DEPTH   256
 
-#define ETHERNET_MACHI_REG          (0x808)
-#define ETHERNET_MACHI_MACADDR_MASK (0xFFFF)
-#define ETHERNET_MACHI_ALLPKTS_MASK (0x400000)
-#define ETHERNET_MACHI_IRQ_EN       (0x800000)
+// entries in the RXTABLE have the following format:
+#define ETHERNET_RXTABLE_PKT_LEN_MASK   (0x00000000FFFF0000) // bits 31:16 are the packet length in bytes
+#define ETHERNET_RXTABLE_PKT_PTR_MASK   (0xFFFFFFFF00000000) // upper 32 bits are the packet pointer
+#define ETHERNET_RXTABLE_REASON_MASK    (0x3) // bits 1:0 indicate the reason the packet was captured (see ethernet_capture_reason_e)
 
-#define ETHERNET_TPLR_REG       (0x810)
-#define ETHERNET_TPLR_BUSY_MASK (0x80000000)
+#define ETHERNET_RXTABLE_PKT_LEN_OFFSET (16)
+#define ETHERNET_RXTABLE_PKT_PTR_OFFSET (32)
+#define ETHERNET_RXTABLE_REASON_OFFSET  (0)
 
-#define ETHERNET_MDIOCTRL_REG          (0x820)
-#define ETHERNET_MDIOCTRL_MDIOCLK_MASK (0x1)
-#define ETHERNET_MDIOCTRL_MDIOOUT_MASK (0x2)
-#define ETHERNET_MDIOCTRL_MDIOOEN_MASK (0x4)
-#define ETHERNET_MDIOCTRL_MDIOIN_MASK  (0x8)
 
-#define ETHERNET_RFCS_REG (0x828)
+typedef enum {
+    MAC_MATCHES     = 0,
+    MAC_BROADCAST   = 1,
+    MAC_MULTICAST   = 2,
+    NON_MAC_MATCH   = 3
+} ethernet_capture_reason_e;
 
-#define ETHERNET_RSR_REG              (0x830)
-#define ETHERNET_RSR_FIRST_BUF_OFFSET (0)
-#define ETHERNET_RSR_NEXT_BUF_OFFSET  (4)
-#define ETHERNET_RSR_LAST_BUF_OFFSET  (8)
-#define ETHERNET_RSR_RX_DONE_MASK     (0x1000)
-#define ETHERNET_RSR_RX_IRQ_MASK      (0x2000)
+typedef struct [[gnu::aligned(4)]] {
+    ethernet_capture_reason_e reason : 2;
+    uint32_t : 14; // reserved
+    uint16_t pkt_len : 16;
+    uint32_t pkt_ptr : 32;
+} ethernet_pkt_metadata_t;
 
-#define ETHERNET_RPLR_REG (0x840)
-
-#define ETHERNET_TXBUFF_OFFSET   (0x1000)
-#define ETHERNET_RXBUFF_OFFSET   (0x4000)
-#define ETHERNET_RXBUFF_COUNT    (8)
-#define ETHERNET_BUFF_SIZE_BYTES (0x800)
-
-#define ETHERNET_PACKET_LEN_MASK (0x7FF)
-#define ETHERNET_BUF_MASK        (0xF)
-
-typedef void *ethernet_t;
-
-void ethernet_mac_address_set(ethernet_t ethernet, uint64_t address);
+// Low-level methods
+ethernet_intr ethernet_intr_state_get(ethernet_t ethernet);
+ethernet_intr ethernet_intr_mask_get(ethernet_t ethernet);
+void ethernet_intr_mask_set(ethernet_t ethernet, ethernet_intr intr_mask);
+void ethernet_test_intr_fire(ethernet_t ethernet);
+void ethernet_test_intr_clear(ethernet_t ethernet);
+void ethernet_tx_done_intr_clear(ethernet_t ethernet);
+void ethernet_packet_lost_intr_clear(ethernet_t ethernet);
+ethernet_status ethernet_status_get(ethernet_t ethernet);
+void ethernet_mode_set(ethernet_t ethernet, bool promiscuous_en, bool loopback_en);
+ethernet_ctrl ethernet_mode_get(ethernet_t ethernet);
 uint64_t ethernet_mac_address_get(ethernet_t ethernet);
-void ethernet_rx_promiscuous_enable(ethernet_t ethernet);
-void ethernet_rx_promiscuous_disable(ethernet_t ethernet);
-bool ethernet_rx_promiscuous_get(ethernet_t ethernet);
+void ethernet_mac_address_set(ethernet_t ethernet, uint64_t address);
+void ethernet_tx_buffer_write64(ethernet_t ethernet, uint32_t word_offset, uint64_t data);
+uint64_t ethernet_rx_buffer_read64(ethernet_t ethernet, uint32_t word_offset);
+uint8_t ethernet_rx_buffer_read_byte(ethernet_t ethernet, uint16_t byte_offset);
+ethernet_pkt_metadata_t ethernet_rx_buffer_metadata_get(ethernet_t ethernet, uint8_t index);
+void ethernet_read_packet_data_raw(ethernet_t ethernet, uint16_t packet_start_ptr, uint16_t len, uint8_t *data);
+uint8_t ethernet_tx_packet_trigger(ethernet_t ethernet, uint16_t len_bytes);
+void ethernet_rx_pop_packet(ethernet_t ethernet);
 bool ethernet_tx_is_busy(ethernet_t ethernet);
-void ethernet_tx_packet_send(ethernet_t ethernet, uint16_t len_bytes);
-void ethernet_rx_first_buffer_set(ethernet_t ethernet, uint8_t buf);
-uint8_t ethernet_rx_first_buffer_get(ethernet_t ethernet);
-uint8_t ethernet_rx_next_buffer_get(ethernet_t ethernet);
-void ethernet_rx_last_buffer_set(ethernet_t ethernet, uint8_t buf);
-uint8_t ethernet_rx_last_buffer_get(ethernet_t ethernet);
 bool ethernet_rx_packet_pending(ethernet_t ethernet);
-uint16_t ethernet_rx_buffer_packet_length_get(ethernet_t ethernet, uint8_t buf);
-void ethernet_init(ethernet_t ethernet);
+ethernet_mdio_ctrl ethernet_mdio_ctrl_raw_get(ethernet_t ethernet);
+void ethernet_mdio_ctrl_raw_set(ethernet_t ethernet, ethernet_mdio_ctrl mdio_ctrl);
 
-static inline void
-ethernet_tx_buffer_write64(ethernet_t ethernet, uint32_t word_offset, uint64_t data)
-{
-    if (((word_offset + 1) * sizeof(uint64_t)) > ETHERNET_BUFF_SIZE_BYTES) {
-        return;
-    }
-    DEV_WRITE64(ethernet + ETHERNET_TXBUFF_OFFSET + word_offset * sizeof(uint64_t), data);
-}
+/// MDIO bit banging interface
+void ethernet_mdio_dir_set(ethernet_t ethernet, bool mdio_out_en);
+void ethernet_mdio_out_set(ethernet_t ethernet, bool mdio_out);
+bool ethernet_mdio_in_get(ethernet_t ethernet);
+void ethernet_mdio_c_set(ethernet_t ethernet, bool mdio_clk);
 
-static inline uint64_t ethernet_tx_buffer_read64(ethernet_t ethernet, uint32_t word_offset)
-{
-    if (((word_offset + 1) * sizeof(uint64_t)) > ETHERNET_BUFF_SIZE_BYTES) {
-        return 0;
-    }
-    return DEV_READ64(ethernet + ETHERNET_TXBUFF_OFFSET + word_offset * sizeof(uint64_t));
-}
+void ethernet_mdc_pulse(ethernet_t ethernet);
+void ethernet_mdio_write_bit(ethernet_t ethernet, bool bit);
+bool ethernet_mdio_read_bit(ethernet_t ethernet);
 
-static inline uint64_t
-ethernet_rx_buffer_read64(ethernet_t ethernet, uint8_t buf, uint32_t word_offset)
-{
-    if (buf >= ETHERNET_RXBUFF_COUNT ||
-        ((word_offset + 1) * sizeof(uint64_t)) > ETHERNET_BUFF_SIZE_BYTES) {
-        return 0;
-    }
-    return DEV_READ64(ethernet + ETHERNET_RXBUFF_OFFSET + buf * ETHERNET_BUFF_SIZE_BYTES +
-                      word_offset * sizeof(uint64_t));
-}
+// High-level interface
+void ethernet_init(ethernet_t ethernet, uint64_t mac_address, bool promiscuous, ethernet_intr intr_mask);
+ethernet_pkt_metadata_t ethernet_read_and_pop_oldest_packet(ethernet_t ethernet, uint8_t *data);
+uint8_t ethernet_send_packet(ethernet_t ethernet, const uint8_t *data, uint16_t len_bytes);
+void ethernet_disable(ethernet_t ethernet);
+
+void ethernet_mdio_write(ethernet_t ethernet, uint8_t phy_addr, uint8_t reg_addr, uint16_t data);
+uint16_t ethernet_mdio_read(ethernet_t ethernet, uint8_t phy_addr, uint8_t reg_addr);
