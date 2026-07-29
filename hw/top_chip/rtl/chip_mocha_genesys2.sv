@@ -572,10 +572,6 @@ module chip_mocha_genesys2 #(
     .default_mst_port_i   ('0)
   );
 
-  // Async reset for ethernet PHY
-  // NOTE: Using eth_rst_n_sync_125m to reset the PHY breaks Tx
-  assign eth_phyrst_n = fpga_rst_n_sync_cfg;
-
   // Ethernet MAC wrapper
   ethernet_wrapper u_eth_wrapper (
     // Clocking and reset
@@ -601,7 +597,10 @@ module chip_mocha_genesys2 #(
     .eth_rgmii_tx_en_o  (eth_tx_en),
     .eth_rgmii_tx_d_o   (eth_tx_d),
     .eth_rgmii_mdio_io  (eth_mdio),
-    .eth_rgmii_mdc_o    (eth_mdc)
+    .eth_rgmii_mdc_o    (eth_mdc),
+
+    // Ethernet PHY reset
+    .eth_phy_reset_no   (eth_phyrst_n)
   );
 
   // SW-DV window: read-only HW_ID register.

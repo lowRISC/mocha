@@ -16,6 +16,12 @@ create_clock -period 8.000 -waveform {0 4} -name eth_rxck_pin [get_ports eth_rx_
 ## Ethernet PHY Rx Clock Asynchronous with All Other Clocks
 set_clock_groups -asynchronous -group [get_clocks eth_rxck_pin -include_generated_clocks];
 
+## Ethernet logic/TX clock
+create_clock -period 8.000 -waveform {0 4} -name eth_main_clk [get_nets clk_125m];
+
+# Prevent synthesis tool from trying to time the crossing from clk_125m to the main system clock (50MHz)
+set_clock_groups -asynchronous -group [get_clocks eth_main_clk -include_generated_clocks];
+
 ## Tag Controller to MIG AXI CDC Constraints
 ## Removed since the custom attribute async cannot be used to select pins,
 ## and the CDC paths can be timed without difficulty
