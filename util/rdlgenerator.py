@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import TextIO
 
 import jinja2
-import svgwrite
 
 # root of the project directory
 PROJECT_ROOT = Path.resolve(Path(__file__)).parent.parent
@@ -106,8 +105,57 @@ def gen_linker_script(args) -> None:
     gen_from_template(input_file, out_file, LD_TEMPLATE)
 
 
-def gen_memory_map(args) -> None:
-    """Generate a svg file with the memory map."""
+MEMORY_MAP_HEADER = ["Base address", "Top address", "Reserved", "Function"]
+
+"""Comments delimiting the generated memory map table inside a markdown document."""
+MEMORY_MAP_MD_BEGIN = "<!-- BEGIN generated memory map -->"
+MEMORY_MAP_MD_END = "<!-- END generated memory map -->"
+
+
+def memory_map_table(rdljson: dict[str, list[dict]]) -> list[str]:
+    """Build the memory map as the lines of a markdown table, one row per device."""
+    rows: list[list[str]] = []
+    for device in rdljson["devices"]:
+        base_addr = device["offset"] if "offset" in device else device["offsets"][0]
+        end_addr = base_addr + device["size"] - 1
+        size = human_size(device["size"])
+        rows.append([f"{base_addr:#010x}", f"{end_addr:#010x}", size, device["name"]])
+
+    widths = [max(len(row[c]) for row in [MEMORY_MAP_HEADER, *rows]) for c in range(len(rows[0]))]
+
+    def emit_row(cells: list[str]) -> str:
+        padded = [cell.ljust(width) for cell, width in zip(cells, widths, strict=True)]
+        return "| " + " | ".join(padded) + " |"
+
+    separator = "|" + "|".join("-" * (width + 2) for width in widths) + "|"
+    return [emit_row(MEMORY_MAP_HEADER), separator, *(emit_row(row) for row in rows)]
+
+
+def row_function(row: str) -> str:
+    """The function column of an untagged memory map table row, naming the entry it describes."""
+    return row.rsplit("|", 2)[-2].strip()
+
+
+def read_row_tags(rows: list[str]) -> dict[str, str]:
+    """
+    Recover the tags appended after the closing pipe of a memory map table row, keyed by the
+    function column of the row they are attached to.
+    """
+    tags = {}
+    for row in rows:
+        cells, _, tag = row.rpartition("|")
+        tag = tag.strip()
+        if tag:
+            tags[cells.rsplit("|", 1)[-1].strip()] = tag
+    return tags
+
+
+def embed_memory_map_md(args) -> None:
+    """
+    Embed the memory map as a markdown table into a document, replacing whatever sits between the
+    marker comments. Tags appended to the rows of the document are written back onto the rows of
+    the regenerated table, so that they survive regeneration.
+    """
 
     input_file = Path(args.input_file)
     out_file = Path(args.out_file)
@@ -116,34 +164,40 @@ def gen_memory_map(args) -> None:
     with input_file.open("r") as f:
         rdljson = json.load(f)
 
-    cell_w = 160
-    cell_h = 30
-    rows_n = len(rdljson["devices"]) + 1
-    cols = 4
+    # the markers are matched on their start, as a spec tagger may have appended a tag to them
+    doc = out_file.read_text().splitlines()
+    begin = next((i for i, line in enumerate(doc) if line.startswith(MEMORY_MAP_MD_BEGIN)), None)
+    end = next((i for i, line in enumerate(doc) if line.startswith(MEMORY_MAP_MD_END)), None)
+    if begin is None or end is None:
+        raise ValueError(
+            f"'{out_file}' needs a '{MEMORY_MAP_MD_BEGIN}' and a '{MEMORY_MAP_MD_END}' line "
+            "delimiting where the memory map table is to be embedded"
+        )
 
-    dwg = svgwrite.Drawing(out_file, size=(cell_w * cols, cell_h * rows_n))
-    font = {"font_size": 14, "font_family": "monospace"}
+    table = memory_map_table(rdljson)
+    tags = read_row_tags(doc[begin + 1 : end])
+    for function in tags.keys() - {row_function(row) for row in table}:
+        print(f"Warning: dropping tag '{tags[function]}' of removed memory map entry '{function}'")
 
-    # Header
-    header = ["Base address", "Top address", "Reserved", "Function"]
-    for c, h in enumerate(header):
-        x = c * cell_w
-        dwg.add(dwg.rect((x, 0), (cell_w, cell_h), fill="black", stroke="white"))
-        dwg.add(dwg.text(h, insert=(x + 6, 20), **font, fill="white"))
+    tagged = [row + tags.get(row_function(row), "") for row in table]
+    out_file.write_text("\n".join(doc[: begin + 1] + tagged + doc[end:]) + "\n")
 
-    # Rows
-    for r, device in enumerate(rdljson["devices"], start=1):
-        base_addr = device["offset"] if "offset" in device else device["offsets"][0]
-        end_addr = base_addr + device["size"] - 1
-        size = human_size(device["size"])
-        line = [f"{base_addr:#010x}", f"{end_addr:#010x}", size, device["name"]]
-        for c, cell in enumerate(line):
-            x = c * cell_w
-            y = r * cell_h
-            dwg.add(dwg.rect((x, y), (cell_w, cell_h), fill="white", stroke="black"))
-            dwg.add(dwg.text(cell, insert=(x + 6, y + 20), **font))
+    print(f"Successfully embedded the memory map into {out_file}")
 
-    dwg.save()
+
+def gen_memory_map_md(args) -> None:
+    """
+    Generate a markdown file with the memory map as a table. The file is created holding just the
+    marker comments, which the table is then embedded between.
+    """
+
+    out_file = Path(args.out_file)
+
+    with out_file.open("w") as f:
+        emit_file_header(f, args, comment_open="<!-- ", comment_close=" -->")
+        f.write(f"\n{MEMORY_MAP_MD_BEGIN}\n{MEMORY_MAP_MD_END}\n")
+
+    embed_memory_map_md(args)
 
 
 def check_register_rdl(devices: list) -> None:
@@ -637,19 +691,31 @@ def main():
     )
     linker_parser.set_defaults(func=gen_linker_script)
 
-    # Subparser for gen_memory_map
-    map_parser = subparsers.add_parser(
-        "gen-memory-map", help="Generate a svg file with the memory map."
+    # Subparser for gen_memory_map_md
+    map_md_parser = subparsers.add_parser(
+        "gen-memory-map-md", help="Generate a markdown file with the memory map table."
     )
-    map_parser.add_argument("input_file", type=Path, help="Input JSON file generated by rdl2ot")
-    map_parser.add_argument(
+    map_md_parser.add_argument("input_file", type=Path, help="Input JSON file generated by rdl2ot")
+    map_md_parser.add_argument(
         "out_file",
         type=Path,
         nargs="?",
-        default=root_resolve(PROJECT_ROOT / Path("build/memmap.svg")),
+        default=root_resolve(PROJECT_ROOT / Path("build/memmap.md")),
         help="Output filename. (default: %(default)s)",
     )
-    map_parser.set_defaults(func=gen_memory_map)
+    map_md_parser.set_defaults(func=gen_memory_map_md)
+
+    # Subparser for embed_memory_map_md
+    embed_md_parser = subparsers.add_parser(
+        "embed-memory-map-md", help="Embed the memory map table into a markdown document."
+    )
+    embed_md_parser.add_argument(
+        "input_file", type=Path, help="Input JSON file generated by rdl2ot"
+    )
+    embed_md_parser.add_argument(
+        "out_file", type=Path, help="Markdown document to embed the memory map table into"
+    )
+    embed_md_parser.set_defaults(func=embed_memory_map_md)
 
     # Subparser for gen_register_dif
     register_parser = subparsers.add_parser(

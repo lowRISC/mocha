@@ -36,12 +36,12 @@ COMMANDS: list[list[str]] = [
         "build/rdl/rdl.json",
         "sw/device/lib/boot/memory.ld",
     ],
-    # rdl: generate memory map image
+    # rdl: embed the memory map table into the architecture document
     [
         "util/rdlgenerator.py",
-        "gen-memory-map",
+        "embed-memory-map-md",
         "build/rdl/rdl.json",
-        "doc/img/memmap.svg",
+        "doc/ref/arch.md",
     ],
     # generate devicetree
     [
