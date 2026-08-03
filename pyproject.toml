@@ -35,7 +35,6 @@ dependencies = [
     "twine>=6.1.0",
     # Design verification runner.
     "dvsim>=1.33",
-    "svgwrite>=1.4.3",
     "pyelftools>=0.32",
     # Tool schema validation.
     "jsonschema>=4.26.0",
