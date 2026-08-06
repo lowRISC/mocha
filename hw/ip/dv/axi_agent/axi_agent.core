@@ -9,6 +9,7 @@ filesets:
     depend:
       - lowrisc:dv:dv_utils
       - lowrisc:dv:common_ifs
+      - lowrisc:dv:dv_base_agent
     files:
       # Signal widths shared by the interfaces and the monitored items: must compile first.
       - axi_widths_pkg.sv

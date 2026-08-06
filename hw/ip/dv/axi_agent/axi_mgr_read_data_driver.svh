@@ -5,34 +5,24 @@
 // A driver for axi_read_data_if, used when the testbench is acting as an AXI Manager that is
 // accepting read data (responding to read requests).
 
-class axi_mgr_read_data_driver extends uvm_driver#(axi_response_accept_item, uvm_sequence_item);
+class axi_mgr_read_data_driver extends dv_base_driver#(.ITEM_T     (axi_response_accept_item),
+                                                       .CFG_T      (axi_agent_cfg),
+                                                       .RSP_ITEM_T (uvm_sequence_item));
   `uvm_component_utils(axi_mgr_read_data_driver)
 
   local virtual axi_read_data_if m_vif;
-  local virtual clk_rst_if m_clk_rst_vif;
-
-  // True if the interface is currently in reset. Maintained by monitor_reset().
-  //
-  // At the very start of the simulation, rst_ni might be 'x or 'z. This isn't considered a "proper"
-  // reset: in_reset can only be asserted by seeing rst_ni === 0 (and then cleared by seeing it
-  // become 1).
-  local bit m_in_reset;
 
   extern function new(string name, uvm_component parent);
-  extern virtual task run_phase(uvm_phase phase);
 
-  // Set m_vif. This must be called before run_phase.
-  extern function void set_vif(virtual axi_read_data_if vif);
-
-  // Set the shared clock/reset interface. This must be called before run_phase.
-  extern function void set_clk_rst_vif(virtual clk_rst_if vif);
+  // Pick up the channel interface from cfg and check that it is one we can drive.
+  extern function void connect_phase(uvm_phase phase);
 
   // Run forever, consuming and driving items from seq_item_port
-  extern local task get_and_drive();
+  extern virtual task get_and_drive();
 
-  // Run forever, tracking rst_ni and maintaining an in_reset class variable. Clears rready in the
-  // clocking block when a reset is seen.
-  extern local task monitor_reset();
+  // Clear rready when a reset starts. Called by dv_base_driver::reset_signals, which tracks the
+  // cfg.in_reset flag maintained by axi_reset_monitor.
+  extern virtual task on_enter_reset();
 
   // A task that drives the axi_response_accept_item in the req class variable
   //
@@ -51,40 +41,28 @@ function axi_mgr_read_data_driver::new(string name, uvm_component parent);
   super.new(name, parent);
 endfunction
 
-function void axi_mgr_read_data_driver::set_vif(virtual axi_read_data_if vif);
-  if (m_vif != null) begin
-    `uvm_fatal(get_full_name(), "Cannot call set_vif: there is already an interface.")
+function void axi_mgr_read_data_driver::connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+
+  if (cfg == null) begin
+    `uvm_fatal(get_full_name(), "Cannot drive interface: cfg is null.")
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
+  if (cfg.read_data_vif == null) begin
+    `uvm_fatal(get_full_name(), "Cannot drive interface: cfg.read_data_vif is null.")
+    return;
+  end
+
+  if (cfg.read_data_vif.if_mode != dv_utils_pkg::Host) begin
     `uvm_fatal(get_full_name(),
                $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
-                         vif.if_mode.name()))
+                         cfg.read_data_vif.if_mode.name()))
     return;
   end
 
-  m_vif = vif;
+  m_vif = cfg.read_data_vif;
 endfunction
-
-function void axi_mgr_read_data_driver::set_clk_rst_vif(virtual clk_rst_if vif);
-  m_clk_rst_vif = vif;
-endfunction
-
-task axi_mgr_read_data_driver::run_phase(uvm_phase phase);
-  if (m_vif == null || m_clk_rst_vif == null) begin
-    `uvm_fatal(get_full_name(), "Cannot drive interface: either m_vif or m_clk_rst_vif is null.")
-    return;
-  end
-
-  // Clear rready (we only wish to assert that we are ready if we are driving an item)
-  m_vif.mgr_cb.rready <= 1'b0;
-
-  fork
-    get_and_drive();
-    monitor_reset();
-  join
-endtask
 
 task axi_mgr_read_data_driver::get_and_drive();
   forever begin
@@ -95,16 +73,8 @@ task axi_mgr_read_data_driver::get_and_drive();
   end
 endtask
 
-task axi_mgr_read_data_driver::monitor_reset();
-  wait(!$isunknown(m_clk_rst_vif.rst_n));
-  m_in_reset = !m_clk_rst_vif.rst_n;
-  forever begin
-    wait (m_clk_rst_vif.rst_n);
-    m_in_reset = 0;
-    wait (!m_clk_rst_vif.rst_n);
-    m_in_reset = 1;
-    m_vif.mgr_cb.rready <= 1'b0;
-  end
+task axi_mgr_read_data_driver::on_enter_reset();
+  m_vif.mgr_cb.rready <= 1'b0;
 endtask
 
 task axi_mgr_read_data_driver::drive_req();
@@ -114,12 +84,12 @@ task axi_mgr_read_data_driver::drive_req();
 
   // If we are currently in reset, there is nothing to do. This check avoids a possible race if
   // reset is asserted at the same time as the response appears: we don't want to set rready after
-  // monitor_reset has cleared it.
-  if (m_in_reset) return;
+  // on_enter_reset has cleared it.
+  if (cfg.in_reset) return;
 
   fork : isolation_fork begin
     fork
-      wait(m_in_reset);
+      wait(cfg.in_reset);
       begin
         axi_read_data_item read_data_item;
         // Cycles elapsed since rvalid was first seen; zero means it has not been seen yet.

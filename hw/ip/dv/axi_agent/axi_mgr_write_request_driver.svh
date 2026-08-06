@@ -10,34 +10,23 @@
 // the agent to support signals that only appear on one side, like the "stash" signals on the write
 // side.
 
-class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi_status_item);
+class axi_mgr_write_request_driver extends dv_base_driver#(.ITEM_T     (axi_txn_request_item),
+                                                           .CFG_T      (axi_agent_cfg),
+                                                           .RSP_ITEM_T (axi_status_item));
   `uvm_component_utils(axi_mgr_write_request_driver)
 
   local virtual axi_write_request_if m_vif;
-  local virtual clk_rst_if m_clk_rst_vif;
-
-  // True if the interface is currently in reset. Maintained by monitor_reset().
-  //
-  // At the very start of the simulation, rst_ni might be 'x or 'z. This isn't considered a "proper"
-  // reset: in_reset can only be asserted by seeing rst_ni === 0 (and then cleared by seeing it
-  // become 1).
-  local bit m_in_reset;
 
   extern function new(string name, uvm_component parent);
-  extern virtual task run_phase(uvm_phase phase);
 
-  // Set m_vif. This must be called before run_phase.
-  extern function void set_vif(virtual axi_write_request_if vif);
-
-  // Set the shared clock/reset interface. This must be called before run_phase.
-  extern function void set_clk_rst_vif(virtual clk_rst_if vif);
+  // Pick up the channel interface from cfg and check that it is one we can drive.
+  extern function void connect_phase(uvm_phase phase);
 
   // Run forever, consuming and driving items from seq_item_port
-  extern local task get_and_drive();
+  extern virtual task get_and_drive();
 
-  // Run forever, tracking rst_ni and maintaining an in_reset class variable. Calls clear_data when
-  // reset becomes asserted.
-  extern local task monitor_reset();
+  // Clear the driven signals when a reset starts.
+  extern virtual task on_enter_reset();
 
   // A task that is called at the start of a reset and also at the end of driving an item.
   extern local task clear_data();
@@ -60,41 +49,28 @@ function axi_mgr_write_request_driver::new(string name, uvm_component parent);
   super.new(name, parent);
 endfunction
 
-function void axi_mgr_write_request_driver::set_vif(virtual axi_write_request_if vif);
-  if (m_vif != null) begin
-    `uvm_fatal(get_full_name(), "Cannot call set_vif: there is already an interface.")
+function void axi_mgr_write_request_driver::connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+
+  if (cfg == null) begin
+    `uvm_fatal(get_full_name(), "Cannot drive interface: cfg is null.")
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
+  if (cfg.write_request_vif == null) begin
+    `uvm_fatal(get_full_name(), "Cannot drive interface: cfg.write_request_vif is null.")
+    return;
+  end
+
+  if (cfg.write_request_vif.if_mode != dv_utils_pkg::Host) begin
     `uvm_fatal(get_full_name(),
                $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
-                         vif.if_mode.name()))
+                         cfg.write_request_vif.if_mode.name()))
     return;
   end
 
-  m_vif = vif;
+  m_vif = cfg.write_request_vif;
 endfunction
-
-function void axi_mgr_write_request_driver::set_clk_rst_vif(virtual clk_rst_if vif);
-  m_clk_rst_vif = vif;
-endfunction
-
-task axi_mgr_write_request_driver::run_phase(uvm_phase phase);
-  if (m_vif == null || m_clk_rst_vif == null) begin
-    `uvm_fatal(get_full_name(), "Cannot drive interface: either m_vif or m_clk_rst_vif is null.")
-    return;
-  end
-
-  // Start by clearing the data (and, importantly, setting m_vif.mgr_cb.awvalid = 0). From now,
-  // awvalid will be zero unless $isunknown on all the data fields is false.
-  clear_data();
-
-  fork
-    get_and_drive();
-    monitor_reset();
-  join
-endtask
 
 task axi_mgr_write_request_driver::get_and_drive();
   axi_status_item status_item;
@@ -107,16 +83,8 @@ task axi_mgr_write_request_driver::get_and_drive();
   end
 endtask
 
-task axi_mgr_write_request_driver::monitor_reset();
-  wait(!$isunknown(m_clk_rst_vif.rst_n));
-  m_in_reset = !m_clk_rst_vif.rst_n;
-  forever begin
-    wait (m_clk_rst_vif.rst_n);
-    m_in_reset = 0;
-    wait (!m_clk_rst_vif.rst_n);
-    m_in_reset = 1;
-    clear_data();
-  end
+task axi_mgr_write_request_driver::on_enter_reset();
+  clear_data();
 endtask
 
 task axi_mgr_write_request_driver::clear_data();
@@ -137,12 +105,12 @@ endtask
 task axi_mgr_write_request_driver::drive_req(output bit item_sent);
   // If we are currently in reset, there is nothing to do. This check avoids a possible race if
   // reset is asserted at the same time as the request appears: we don't want to set awvalid after
-  // monitor_reset has called clear_data.
-  if (m_in_reset) return;
+  // on_enter_reset has called clear_data.
+  if (cfg.in_reset) return;
 
   fork : isolation_fork begin
     fork
-      wait(m_in_reset);
+      wait(cfg.in_reset);
       begin
         set_data_from_req();
         m_vif.mgr_cb.awvalid <= 1;
