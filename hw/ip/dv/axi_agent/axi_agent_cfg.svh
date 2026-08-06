@@ -3,8 +3,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // The configuration for an agent driving the interfaces for AXI (AW, W, B, AR, R).
+//
+// This carries only the AXI-specific interface handles. Everything else (is_active, en_cov, ...)
+// is an inherited dv_base_agent_cfg field and is set directly by whoever builds the cfg. The
+// instance is named after its VIP instantiation, so get_name() identifies which port it belongs to.
 
-class axi_agent_cfg extends uvm_object;
+class axi_agent_cfg extends dv_base_agent_cfg;
   `uvm_object_utils(axi_agent_cfg)
 
   // Interfaces
