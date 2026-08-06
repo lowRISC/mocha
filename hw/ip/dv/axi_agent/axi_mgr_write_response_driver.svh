@@ -9,35 +9,23 @@
 // request is interrupted by a reset, this will instead return a axi_status_item with
 // m_sending_complete == 0.
 
-class axi_mgr_write_response_driver extends uvm_driver#(axi_response_accept_item,
-                                                        uvm_sequence_item);
+class axi_mgr_write_response_driver extends dv_base_driver#(.ITEM_T     (axi_response_accept_item),
+                                                            .CFG_T      (axi_agent_cfg),
+                                                            .RSP_ITEM_T (uvm_sequence_item));
   `uvm_component_utils(axi_mgr_write_response_driver)
 
   local virtual axi_write_response_if m_vif;
-  local virtual clk_rst_if m_clk_rst_vif;
-
-  // True if the interface is currently in reset. Maintained by monitor_reset().
-  //
-  // At the very start of the simulation, rst_ni might be 'x or 'z. This isn't considered a "proper"
-  // reset: in_reset can only be asserted by seeing rst_ni === 0 (and then cleared by seeing it
-  // become 1).
-  local bit m_in_reset;
 
   extern function new(string name, uvm_component parent);
-  extern virtual task run_phase(uvm_phase phase);
 
-  // Set m_vif. This must be called before run_phase.
-  extern function void set_vif(virtual axi_write_response_if vif);
-
-  // Set the shared clock/reset interface. This must be called before run_phase.
-  extern function void set_clk_rst_vif(virtual clk_rst_if vif);
+  // Pick up the channel interface from cfg and check that it is one we can drive.
+  extern function void connect_phase(uvm_phase phase);
 
   // Run forever, consuming and driving items from seq_item_port
-  extern local task get_and_drive();
+  extern virtual task get_and_drive();
 
-  // Run forever, tracking rst_ni and maintaining an in_reset class variable. Clears bready in the
-  // clocking block when a reset is seen.
-  extern local task monitor_reset();
+  // Clear bready when a reset starts.
+  extern virtual task on_enter_reset();
 
   // A task that drives the axi_response_accept_item in the req class variable
   //
@@ -51,40 +39,28 @@ function axi_mgr_write_response_driver::new(string name, uvm_component parent);
   super.new(name, parent);
 endfunction
 
-function void axi_mgr_write_response_driver::set_vif(virtual axi_write_response_if vif);
-  if (m_vif != null) begin
-    `uvm_fatal(get_full_name(), "Cannot call set_vif: there is already an interface.")
+function void axi_mgr_write_response_driver::connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
+
+  if (cfg == null) begin
+    `uvm_fatal(get_full_name(), "Cannot drive interface: cfg is null.")
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
-    `uvm_fatal(get_full_name(),
-               $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
-                         vif.if_mode.name()))
-    return;
-  end
-
-  m_vif = vif;
-endfunction
-
-function void axi_mgr_write_response_driver::set_clk_rst_vif(virtual clk_rst_if vif);
-  m_clk_rst_vif = vif;
-endfunction
-
-task axi_mgr_write_response_driver::run_phase(uvm_phase phase);
-  if (m_vif == null || m_clk_rst_vif == null) begin
+  if (cfg.write_response_vif == null) begin
     `uvm_fatal(get_full_name(), "Cannot drive interface: vif is null.")
     return;
   end
 
-  // Clear bready (we only wish to assert that we are ready if we are driving an item)
-  m_vif.mgr_cb.bready <= 1'b0;
+  if (cfg.write_response_vif.if_mode != dv_utils_pkg::Host) begin
+    `uvm_fatal(get_full_name(),
+               $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
+                         cfg.write_response_vif.if_mode.name()))
+    return;
+  end
 
-  fork
-    get_and_drive();
-    monitor_reset();
-  join
-endtask
+  m_vif = cfg.write_response_vif;
+endfunction
 
 task axi_mgr_write_response_driver::get_and_drive();
   forever begin
@@ -95,16 +71,8 @@ task axi_mgr_write_response_driver::get_and_drive();
   end
 endtask
 
-task axi_mgr_write_response_driver::monitor_reset();
-  wait(!$isunknown(m_clk_rst_vif.rst_n));
-  m_in_reset = !m_clk_rst_vif.rst_n;
-  forever begin
-    wait (m_clk_rst_vif.rst_n);
-    m_in_reset = 0;
-    wait (!m_clk_rst_vif.rst_n);
-    m_in_reset = 1;
-    m_vif.mgr_cb.bready <= 1'b0;
-  end
+task axi_mgr_write_response_driver::on_enter_reset();
+  m_vif.mgr_cb.bready <= 1'b0;
 endtask
 
 task axi_mgr_write_response_driver::drive_req();
@@ -115,14 +83,14 @@ task axi_mgr_write_response_driver::drive_req();
 
   // If we are currently in reset, there is nothing to do. This check avoids a possible race if
   // reset is asserted at the same time as the response appears: we don't want to set bready after
-  // monitor_reset has cleared it.
-  if (m_in_reset) begin
+  // on_enter_reset has cleared it.
+  if (cfg.in_reset) begin
     return;
   end
 
   fork : isolation_fork begin
     fork
-      wait(m_in_reset);
+      wait(cfg.in_reset);
       begin
         axi_write_response_item response;
         // Cycles elapsed since bvalid was first seen; zero means it has not been seen yet.

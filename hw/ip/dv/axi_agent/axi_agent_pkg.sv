@@ -4,6 +4,7 @@
 
 package axi_agent_pkg;
   import uvm_pkg::*;
+  import dv_base_agent_pkg::*;
   import axi_widths_pkg::*;
   `include "uvm_macros.svh"
   `include "dv_macros.svh"
