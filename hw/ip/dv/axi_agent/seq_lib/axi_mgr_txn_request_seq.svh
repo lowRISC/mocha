@@ -22,38 +22,38 @@ class axi_mgr_txn_request_seq extends uvm_sequence #(axi_txn_request_item, axi_s
   //
   // The pairs of variables below are named to match the fields of axi_txn_request_item.
 
-  bit         m_use_fixed_id;
-  bit [31:0]  m_fixed_id;
+  bit                           m_use_fixed_id;
+  bit [AxiMaxIdWidth-1:0]       m_fixed_id;
 
-  bit         m_use_fixed_addr;
-  bit [63:0]  m_fixed_addr;
+  bit                           m_use_fixed_addr;
+  bit [AxiMaxAddrWidth-1:0]     m_fixed_addr;
 
-  bit         m_use_fixed_region;
-  bit [3:0]   m_fixed_region;
+  bit                           m_use_fixed_region;
+  bit [AxiRegionWidth-1:0]      m_fixed_region;
 
-  bit         m_use_fixed_len;
-  bit [7:0]   m_fixed_len;
+  bit                           m_use_fixed_len;
+  bit [AxiLenWidth-1:0]         m_fixed_len;
 
-  bit         m_use_fixed_size;
-  bit [2:0]   m_fixed_size;
+  bit                           m_use_fixed_size;
+  bit [AxiSizeWidth-1:0]        m_fixed_size;
 
-  bit         m_use_fixed_burst;
-  burst_e     m_fixed_burst;
+  bit                           m_use_fixed_burst;
+  burst_e                       m_fixed_burst;
 
-  bit         m_use_fixed_lock;
-  bit         m_fixed_lock;
+  bit                           m_use_fixed_lock;
+  bit                           m_fixed_lock;
 
-  bit         m_use_fixed_cache;
-  bit [3:0]   m_fixed_cache;
+  bit                           m_use_fixed_cache;
+  bit [AxiCacheWidth-1:0]       m_fixed_cache;
 
-  bit         m_use_fixed_prot;
-  bit [2:0]   m_fixed_prot;
+  bit                           m_use_fixed_prot;
+  bit [AxiProtWidth-1:0]        m_fixed_prot;
 
-  bit         m_use_fixed_qos;
-  bit [3:0]   m_fixed_qos;
+  bit                           m_use_fixed_qos;
+  bit [AxiQosWidth-1:0]         m_fixed_qos;
 
-  bit         m_use_fixed_user;
-  bit [127:0] m_fixed_user;
+  bit                           m_use_fixed_user;
+  bit [AxiMaxReqUserWidth-1:0]  m_fixed_user;
 
   extern function new(string name="");
   extern task body();
