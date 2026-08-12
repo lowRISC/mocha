@@ -8,7 +8,7 @@ class axi_write_response_item extends uvm_sequence_item;
   `uvm_object_utils(axi_write_response_item)
 
   // The possible encoded values of the BRESP signal
-  typedef enum bit [2:0] {
+  typedef enum bit [AxiRespWidth-1:0] {
     BRespOkay        = 0,
     BRespExOkay      = 1,
     BRespSlverr      = 2,
@@ -24,7 +24,7 @@ class axi_write_response_item extends uvm_sequence_item;
   // This is sent over the BID signal, whose width is configurable, based on the ID_W_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
   // with an error if bits above the top of the signal are nonzero.
-  rand bit [31:0] m_id;
+  rand bit [AxiMaxIdWidth-1:0] m_id;
 
   // Write response
   //
@@ -37,7 +37,7 @@ class axi_write_response_item extends uvm_sequence_item;
   // configurable, based on the USER_RESP_WIDTH property. The representation in the item uses a max
   // footprint approach but the driver will fail with an error if bits above the top of the signal
   // are nonzero.
-  rand bit [15:0] m_user;
+  rand bit [AxiMaxRespUserWidth-1:0] m_user;
 
   extern function new(string name = "");
   extern function void do_print(uvm_printer printer);

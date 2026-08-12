@@ -7,6 +7,7 @@
   `include "uvm_macros.svh"
 
 interface axi_write_data_if (input clk_i, input rst_ni);
+  import axi_widths_pkg::*;
   import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
   import uvm_pkg::*;
 
@@ -18,10 +19,10 @@ interface axi_write_data_if (input clk_i, input rst_ni);
   if_mode_e if_mode = Monitor;
 
   // The DATA_WIDTH property. Set this by calling set_data_width().
-  int unsigned data_width = 1024;
+  int unsigned data_width = AxiMaxDataWidth;
 
   // The USER_DATA_WIDTH property. Set this by calling set_user_data_width().
-  int unsigned user_data_width = 512;
+  int unsigned user_data_width = AxiMaxDataUserWidth;
 
   // The core defined signals for the write request channel.
   //
@@ -33,35 +34,35 @@ interface axi_write_data_if (input clk_i, input rst_ni);
   //    - WPOISON  (Poison is false)
   //    - WTRACE   (Trace_Signals is false)
   //    - WTAG*    (MTE_Support is false)
-  wire          wvalid;
-  wire          wready;
-  wire [1023:0] wdata;
-  wire [127:0]  wstrb;
-  wire          wlast;
-  wire [511:0]  wuser;
+  wire                            wvalid;
+  wire                            wready;
+  wire [AxiMaxDataWidth-1:0]      wdata;
+  wire [AxiMaxStrbWidth-1:0]      wstrb;
+  wire                            wlast;
+  wire [AxiMaxDataUserWidth-1:0]  wuser;
 
   // Copies of the signals that are driven by mgr_cb (only used if if_mode == Host). The "*_driven"
   // signals are directly driven by the clocking block. The "*_internal" signals track these, but
   // take masks into account for signals with configurable length and are also cleared on reset.
-  logic          wvalid_driven, wvalid_internal;
-  logic [1023:0] wdata_driven, wdata_internal;
-  logic [127:0]  wstrb_driven, wstrb_internal;
-  logic          wlast_driven, wlast_internal;
-  logic [511:0]  wuser_driven, wuser_internal;
+  logic                           wvalid_driven, wvalid_internal;
+  logic [AxiMaxDataWidth-1:0]     wdata_driven, wdata_internal;
+  logic [AxiMaxStrbWidth-1:0]     wstrb_driven, wstrb_internal;
+  logic                           wlast_driven, wlast_internal;
+  logic [AxiMaxDataUserWidth-1:0] wuser_driven, wuser_internal;
 
   // A copy of wready, which is driven by sub_cb (only used if if_mode == Device). The
   // wready_driven signal is directly driven by the clocking block. The wready_internal signal
   // tracks it, but is also cleared on reset.
-  logic         wready_driven, wready_internal;
+  logic                           wready_driven, wready_internal;
 
   // Masks used when converting some *_driven signals to *_internal
-  logic [1023:0] wdata_mask;
-  logic [127:0]  wstrb_mask;
-  logic [511:0]  wuser_mask;
+  logic [AxiMaxDataWidth-1:0]     wdata_mask;
+  logic [AxiMaxStrbWidth-1:0]     wstrb_mask;
+  logic [AxiMaxDataUserWidth-1:0] wuser_mask;
 
-  assign wdata_mask  = (1024'b1 << data_width) - 1;
-  assign wstrb_mask = (128'b1 << ((data_width + 7) / 8)) - 1;
-  assign wuser_mask = (512'b1 << user_data_width) - 1;
+  assign wdata_mask = (AxiMaxDataWidth'(1) << data_width) - 1;
+  assign wstrb_mask = (AxiMaxStrbWidth'(1) << ((data_width + 7) / 8)) - 1;
+  assign wuser_mask = (AxiMaxDataUserWidth'(1) << user_data_width) - 1;
 
   clocking mon_cb @(posedge clk_i);
     input wvalid;

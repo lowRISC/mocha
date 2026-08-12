@@ -10,6 +10,9 @@ filesets:
       - lowrisc:dv:dv_utils
       - lowrisc:dv:common_ifs
     files:
+      # Signal widths shared by the interfaces and the monitored items: must compile first.
+      - axi_widths_pkg.sv
+
       - axi_read_data_if.sv
       - axi_read_request_if.sv
       - axi_write_data_if.sv

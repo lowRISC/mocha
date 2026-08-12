@@ -8,7 +8,7 @@ class axi_read_data_item extends uvm_sequence_item;
   `uvm_object_utils(axi_read_data_item)
 
   // The possible encoded values of the RRESP signal
-  typedef enum bit [2:0] {
+  typedef enum bit [AxiRespWidth-1:0] {
     RRespOkay       = 0,
     RRespExOkay     = 1,
     RRespSlverr     = 2,
@@ -23,14 +23,14 @@ class axi_read_data_item extends uvm_sequence_item;
   // This is sent over the RID signal, whose width is configurable, based on the ID_R_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
   // with an error if bits above the top of the signal are nonzero.
-  rand bit [31:0]   m_id;
+  rand bit [AxiMaxIdWidth-1:0]   m_id;
 
   // Read data
   //
   // This is sent over the RDATA signal, whose width is configurable, based on the DATA_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
   // with an error if bits above the top of the signal are nonzero.
-  rand bit [1023:0] m_data;
+  rand bit [AxiMaxDataWidth-1:0] m_data;
 
   // Read response
   //
@@ -46,7 +46,7 @@ class axi_read_data_item extends uvm_sequence_item;
   // whose width is configurable, based on the USER_DATA_WIDTH and USER_RESP_WIDTH properties. The
   // representation in the item uses a max footprint approach but the driver will fail with an error
   // if bits above the top of the signal are nonzero.
-  rand bit [527:0]  m_user;
+  rand bit [AxiMaxRUserWidth-1:0]  m_user;
 
   extern function new(string name = "");
   extern function void do_print(uvm_printer printer);

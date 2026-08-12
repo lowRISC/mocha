@@ -7,6 +7,7 @@
   `include "uvm_macros.svh"
 
 interface axi_write_request_if (input clk_i, input rst_ni);
+  import axi_widths_pkg::*;
   import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
   import uvm_pkg::*;
 
@@ -18,13 +19,13 @@ interface axi_write_request_if (input clk_i, input rst_ni);
   if_mode_e if_mode = Monitor;
 
   // The ID_W_WIDTH property. Set this by calling set_id_w_width().
-  int unsigned id_w_width = 32;
+  int unsigned id_w_width = AxiMaxIdWidth;
 
   // The ADDR_WIDTH property. Set this by calling set_addr_width().
-  int unsigned addr_width = 64;
+  int unsigned addr_width = AxiMaxAddrWidth;
 
   // The USER_REQ_WIDTH property. Set this by calling set_user_req_width().
-  int unsigned user_req_width = 128;
+  int unsigned user_req_width = AxiMaxReqUserWidth;
 
   // The core defined signals for the write request channel.
   //
@@ -50,49 +51,49 @@ interface axi_write_request_if (input clk_i, input rst_ni);
   //    - AWIDUNQ       (Unique_ID_Support is false)
   //    - AWCMO         (AWCMO_WIDTH is zero)
   //    - AWTAGOP       (MTE_Support is false)
-  wire         awvalid;
-  wire         awready;
-  wire [31:0]  awid;
-  wire [63:0]  awaddr;
-  wire [3:0]   awregion;
-  wire [7:0]   awlen;
-  wire [2:0]   awsize;
-  wire [1:0]   awburst;
-  wire         awlock;
-  wire [3:0]   awcache;
-  wire [2:0]   awprot;
-  wire [3:0]   awqos;
-  wire [127:0] awuser;
+  wire                            awvalid;
+  wire                            awready;
+  wire [AxiMaxIdWidth-1:0]        awid;
+  wire [AxiMaxAddrWidth-1:0]      awaddr;
+  wire [AxiRegionWidth-1:0]       awregion;
+  wire [AxiLenWidth-1:0]          awlen;
+  wire [AxiSizeWidth-1:0]         awsize;
+  wire [AxiBurstWidth-1:0]        awburst;
+  wire                            awlock;
+  wire [AxiCacheWidth-1:0]        awcache;
+  wire [AxiProtWidth-1:0]         awprot;
+  wire [AxiQosWidth-1:0]          awqos;
+  wire [AxiMaxReqUserWidth-1:0]   awuser;
 
   // Copies of the signals that are driven by mgr_cb (only used if if_mode == Host). The "*_driven"
   // signals are directly driven by the clocking block. The "*_internal" signals track these, but
   // take masks into account for signals with configurable length and are also cleared on reset.
-  logic         awvalid_driven, awvalid_internal;
-  logic [31:0]  awid_driven, awid_internal;
-  logic [63:0]  awaddr_driven, awaddr_internal;
-  logic [3:0]   awregion_driven, awregion_internal;
-  logic [7:0]   awlen_driven, awlen_internal;
-  logic [2:0]   awsize_driven, awsize_internal;
-  logic [1:0]   awburst_driven, awburst_internal;
-  logic         awlock_driven, awlock_internal;
-  logic [3:0]   awcache_driven, awcache_internal;
-  logic [2:0]   awprot_driven, awprot_internal;
-  logic [3:0]   awqos_driven, awqos_internal;
-  logic [127:0] awuser_driven, awuser_internal;
+  logic                           awvalid_driven, awvalid_internal;
+  logic [AxiMaxIdWidth-1:0]       awid_driven, awid_internal;
+  logic [AxiMaxAddrWidth-1:0]     awaddr_driven, awaddr_internal;
+  logic [AxiRegionWidth-1:0]      awregion_driven, awregion_internal;
+  logic [AxiLenWidth-1:0]         awlen_driven, awlen_internal;
+  logic [AxiSizeWidth-1:0]        awsize_driven, awsize_internal;
+  logic [AxiBurstWidth-1:0]       awburst_driven, awburst_internal;
+  logic                           awlock_driven, awlock_internal;
+  logic [AxiCacheWidth-1:0]       awcache_driven, awcache_internal;
+  logic [AxiProtWidth-1:0]        awprot_driven, awprot_internal;
+  logic [AxiQosWidth-1:0]         awqos_driven, awqos_internal;
+  logic [AxiMaxReqUserWidth-1:0]  awuser_driven, awuser_internal;
 
   // A copy of awready, which is driven by sub_cb (only used if if_mode == Device). The
   // awready_driven signal is directly driven by the clocking block. The awready_internal signal
   // tracks it, but is also cleared on reset.
-  logic         awready_driven, awready_internal;
+  logic                           awready_driven, awready_internal;
 
   // Masks used when converting some *_driven signals to *_internal
-  logic [31:0]  awid_mask;
-  logic [63:0]  awaddr_mask;
-  logic [127:0] awuser_mask;
+  logic [AxiMaxIdWidth-1:0]       awid_mask;
+  logic [AxiMaxAddrWidth-1:0]     awaddr_mask;
+  logic [AxiMaxReqUserWidth-1:0]  awuser_mask;
 
-  assign awid_mask   = (32'b1 << id_w_width) - 1;
-  assign awaddr_mask = (64'b1 << addr_width) - 1;
-  assign awuser_mask = (128'b1 << user_req_width) - 1;
+  assign awid_mask   = (AxiMaxIdWidth'(1) << id_w_width) - 1;
+  assign awaddr_mask = (AxiMaxAddrWidth'(1) << addr_width) - 1;
+  assign awuser_mask = (AxiMaxReqUserWidth'(1) << user_req_width) - 1;
 
   clocking mon_cb @(posedge clk_i);
     input awvalid;
