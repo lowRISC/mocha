@@ -11,37 +11,37 @@ class axi_fixed_read_req_item extends uvm_sequence_item;
   //
   // This is sent as AWID, whose width is configurable (and will be checked against the
   // corresponding width in the interface by the driver).
-  rand bit [31:0]                  m_id;
+  rand bit [AxiMaxIdWidth-1:0]                  m_id;
 
   // The address.
   //
   // This is AWADDR, whose width is configurable (and will be checked against the
   // corresponding width in the interface by the driver).
-  rand bit [63:0]                  m_addr;
+  rand bit [AxiMaxAddrWidth-1:0]                  m_addr;
 
   // The region identifier, sent as AWREGION in the request transfer.
-  rand bit [3:0]                   m_region;
+  rand bit [AxiRegionWidth-1:0]                   m_region;
 
   // Number of bytes in the data transfer. Sent as AWSIZE and encoded as log2(byte_size).
-  rand bit [2:0]                   m_size;
+  rand bit [AxiSizeWidth-1:0]                   m_size;
 
   // Request exclusive access? Sent as AWLOCK.
   rand bit                         m_lock;
 
   // Memory attributes (applying to caches in the system). Sent as AWCACHE.
-  rand bit [3:0]                   m_cache;
+  rand bit [AxiCacheWidth-1:0]                   m_cache;
 
   // Memory access attributes. Sent as AWPROT.
-  rand bit [2:0]                   m_prot;
+  rand bit [AxiProtWidth-1:0]                   m_prot;
 
   // Traffic stream QoS identifier. Sent as AWQOS.
-  rand bit [3:0]                   m_qos;
+  rand bit [AxiQosWidth-1:0]                   m_qos;
 
   // Extra user bits.
   //
   // This is sent as AWUSER, whose width is configurable (and will be checked against the
   // corresponding width in the interface by the driver).
-  rand bit [127:0]                 m_user;
+  rand bit [AxiMaxReqUserWidth-1:0]                 m_user;
 
   extern function new(string name = "");
   extern function void do_print(uvm_printer printer);

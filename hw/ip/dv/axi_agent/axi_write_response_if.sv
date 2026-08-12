@@ -7,6 +7,7 @@
   `include "uvm_macros.svh"
 
 interface axi_write_response_if (input clk_i, input rst_ni);
+  import axi_widths_pkg::*;
   import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
   import uvm_pkg::*;
 
@@ -18,13 +19,13 @@ interface axi_write_response_if (input clk_i, input rst_ni);
   if_mode_e if_mode = Monitor;
 
   // The ID_W_WIDTH property. Set this by calling set_id_w_width().
-  int unsigned id_w_width = 32;
+  int unsigned id_w_width = AxiMaxIdWidth;
 
   // The BRESP_WIDTH property. Set this by calling set_bresp_width().
-  int unsigned bresp_width = 3;
+  int unsigned bresp_width = AxiRespWidth;
 
   // The USER_RESP_WIDTH property. Set this by calling set_user_resp_width().
-  int unsigned user_resp_width = 16;
+  int unsigned user_resp_width = AxiMaxRespUserWidth;
 
   // The core defined signals for the write response channel.
   //
@@ -42,9 +43,9 @@ interface axi_write_response_if (input clk_i, input rst_ni);
   //    - BTAGMATCH (MTE_Support is false)
   wire         bvalid;
   wire         bready;
-  wire [31:0]  bid;
-  wire [2:0]   bresp;
-  wire [15:0]  buser;
+  wire [AxiMaxIdWidth-1:0]  bid;
+  wire [AxiRespWidth-1:0]   bresp;
+  wire [AxiMaxRespUserWidth-1:0]  buser;
 
   // A copy of bready, which is driven by mgr_cb (only used if if_mode == Host). The bready_driven
   // signal is directly driven by the clocking block. The bready_internal signal tracks it, but is
@@ -56,18 +57,18 @@ interface axi_write_response_if (input clk_i, input rst_ni);
   // these, but take masks into account for signals with configurable length and are also cleared on
   // reset.
   logic        bvalid_driven, bvalid_internal;
-  logic [31:0] bid_driven, bid_internal;
-  logic [2:0]  bresp_driven, bresp_internal;
-  logic [15:0] buser_driven, buser_internal;
+  logic [AxiMaxIdWidth-1:0] bid_driven, bid_internal;
+  logic [AxiRespWidth-1:0]  bresp_driven, bresp_internal;
+  logic [AxiMaxRespUserWidth-1:0] buser_driven, buser_internal;
 
   // Masks used when converting some *_driven signals to *_internal
-  logic [31:0] bid_mask;
-  logic [2:0]  bresp_mask;
-  logic [15:0] buser_mask;
+  logic [AxiMaxIdWidth-1:0] bid_mask;
+  logic [AxiRespWidth-1:0]  bresp_mask;
+  logic [AxiMaxRespUserWidth-1:0] buser_mask;
 
-  assign bid_mask   = (32'b1 << id_w_width) - 1;
-  assign bresp_mask = (3'b1 << bresp_width) - 1;
-  assign buser_mask = (16'b1 << user_resp_width) - 1;
+  assign bid_mask   = (AxiMaxIdWidth'(1) << id_w_width) - 1;
+  assign bresp_mask = (AxiRespWidth'(1) << bresp_width) - 1;
+  assign buser_mask = (AxiMaxRespUserWidth'(1) << user_resp_width) - 1;
 
   clocking mon_cb @(posedge clk_i);
     input bvalid;

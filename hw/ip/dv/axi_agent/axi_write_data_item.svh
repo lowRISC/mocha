@@ -13,14 +13,14 @@ class axi_write_data_item extends uvm_sequence_item;
   // This is sent over the WDATA signal, whose width is configurable, based on the DATA_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
   // with an error if bits above the top of the signal are nonzero.
-  rand bit [1023:0] m_data;
+  rand bit [AxiMaxDataWidth-1:0] m_data;
 
   // Write data strobes
   //
   // This is sent over the WSTRB signal, whose width is configurable, based on the DATA_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
   // with an error if bits above the top of the signal are nonzero.
-  rand bit [127:0]  m_strb;
+  rand bit [AxiMaxStrbWidth-1:0]  m_strb;
 
   // Asserted on the last transfer in a burst
   rand bit          m_last;
@@ -29,7 +29,7 @@ class axi_write_data_item extends uvm_sequence_item;
   // configurable, based on the USER_DATA_WIDTH property. The representation in the item uses a max
   // footprint approach but the driver will fail with an error if bits above the top of the signal
   // are nonzero.
-  rand bit [511:0]  m_user;
+  rand bit [AxiMaxDataUserWidth-1:0]  m_user;
 
   extern function new(string name = "");
   extern function void do_print(uvm_printer printer);

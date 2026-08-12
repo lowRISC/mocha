@@ -4,10 +4,11 @@
 
 package axi_agent_pkg;
   import uvm_pkg::*;
+  import axi_widths_pkg::*;
   `include "uvm_macros.svh"
 
   // The possible encodings of the AxBURST signal
-  typedef enum bit [1:0] {
+  typedef enum bit [AxiBurstWidth-1:0] {
     BurstFixed = 0,
     BurstIncr  = 1,
     BurstWrap  = 2
