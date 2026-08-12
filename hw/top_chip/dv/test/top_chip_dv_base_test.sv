@@ -54,6 +54,8 @@ task top_chip_dv_base_test::run_phase(uvm_phase phase);
   env.load_memories();
   phase.raise_objection(this);
   run_test();
+  // wait until the AXI managers have no in-flight transactions
+  env.wait_for_axi_idle();
   phase.drop_objection(this);
 endtask : run_phase
 
