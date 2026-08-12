@@ -125,11 +125,11 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
 
   // This is the maximum strb value possible, given axsize. If byte_en is not maximal, the strb
   // value to actually use might not have all of the bits set.
-  bit [127:0] strb_from_size = (128'd1 << (1 << axsize)) - 1;
+  bit [AxiMaxStrbWidth-1:0] strb_from_size = (AxiMaxStrbWidth'(1) << (1 << axsize)) - 1;
 
   // The strb value to send on W, or the byte mask to use with rdata in an R response. This takes
   // size and byte_en into account.
-  bit [127:0] byte_mask = strb_from_size & item.m_rw.byte_en;
+  bit [AxiMaxStrbWidth-1:0] byte_mask = strb_from_size & item.m_rw.byte_en;
 
   if (axsize > 7) begin
     `uvm_error(get_full_name(),
@@ -145,7 +145,7 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
       // Single read
       axi_mgr_read_fixed_vseq read_vseq = axi_mgr_read_fixed_vseq::type_id::create("read_vseq");
       bit          ar_complete, r_complete;
-      bit [1023:0] bit_mask;
+      bit [AxiMaxDataWidth-1:0] bit_mask;
 
       read_vseq.set_sequencers(m_ar_sequencer, m_r_sequencer);
       read_vseq.set_read_response_router(m_read_response_router);
