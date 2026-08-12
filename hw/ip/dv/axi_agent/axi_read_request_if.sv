@@ -7,6 +7,7 @@
   `include "uvm_macros.svh"
 
 interface axi_read_request_if (input clk_i, input rst_ni);
+  import axi_widths_pkg::*;
   import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
   import uvm_pkg::*;
 
@@ -18,13 +19,13 @@ interface axi_read_request_if (input clk_i, input rst_ni);
   if_mode_e if_mode = Monitor;
 
   // The ID_R_WIDTH property. Set this by calling set_id_r_width().
-  int unsigned id_r_width = 32;
+  int unsigned id_r_width = AxiMaxIdWidth;
 
   // The ADDR_WIDTH property. Set this by calling set_addr_width().
-  int unsigned addr_width = 64;
+  int unsigned addr_width = AxiMaxAddrWidth;
 
   // The USER_REQ_WIDTH property. Set this by calling set_user_req_width().
-  int unsigned user_req_width = 128;
+  int unsigned user_req_width = AxiMaxReqUserWidth;
 
   // The core defined signals for the read request channel.
   //
@@ -45,49 +46,49 @@ interface axi_read_request_if (input clk_i, input rst_ni);
   //    - ARCHUNKEN  (Read_Data_Chunking is false)
   //    - ARIDUNQ    (Unique_ID_Support is false)
   //    - ARTAGOP    (MTE_Support is false)
-  wire         arvalid;
-  wire         arready;
-  wire [31:0]  arid;
-  wire [63:0]  araddr;
-  wire [3:0]   arregion;
-  wire [7:0]   arlen;
-  wire [2:0]   arsize;
-  wire [1:0]   arburst;
-  wire         arlock;
-  wire [3:0]   arcache;
-  wire [2:0]   arprot;
-  wire [3:0]   arqos;
-  wire [127:0] aruser;
+  wire                            arvalid;
+  wire                            arready;
+  wire [AxiMaxIdWidth-1:0]        arid;
+  wire [AxiMaxAddrWidth-1:0]      araddr;
+  wire [AxiRegionWidth-1:0]       arregion;
+  wire [AxiLenWidth-1:0]          arlen;
+  wire [AxiSizeWidth-1:0]         arsize;
+  wire [AxiBurstWidth-1:0]        arburst;
+  wire                            arlock;
+  wire [AxiCacheWidth-1:0]        arcache;
+  wire [AxiProtWidth-1:0]         arprot;
+  wire [AxiQosWidth-1:0]          arqos;
+  wire [AxiMaxReqUserWidth-1:0]   aruser;
 
   // Copies of the signals that are driven by mgr_cb (only used if if_mode == Host). The "*_driven"
   // signals are directly driven by the clocking block. The "*_internal" signals track these, but
   // take masks into account for signals with configurable length and are also cleared on reset.
-  logic         arvalid_driven, arvalid_internal;
-  logic [31:0]  arid_driven, arid_internal;
-  logic [63:0]  araddr_driven, araddr_internal;
-  logic [3:0]   arregion_driven, arregion_internal;
-  logic [7:0]   arlen_driven, arlen_internal;
-  logic [2:0]   arsize_driven, arsize_internal;
-  logic [1:0]   arburst_driven, arburst_internal;
-  logic         arlock_driven, arlock_internal;
-  logic [3:0]   arcache_driven, arcache_internal;
-  logic [2:0]   arprot_driven, arprot_internal;
-  logic [3:0]   arqos_driven, arqos_internal;
-  logic [127:0] aruser_driven, aruser_internal;
+  logic                           arvalid_driven, arvalid_internal;
+  logic [AxiMaxIdWidth-1:0]       arid_driven, arid_internal;
+  logic [AxiMaxAddrWidth-1:0]     araddr_driven, araddr_internal;
+  logic [AxiRegionWidth-1:0]      arregion_driven, arregion_internal;
+  logic [AxiLenWidth-1:0]         arlen_driven, arlen_internal;
+  logic [AxiSizeWidth-1:0]        arsize_driven, arsize_internal;
+  logic [AxiBurstWidth-1:0]       arburst_driven, arburst_internal;
+  logic                           arlock_driven, arlock_internal;
+  logic [AxiCacheWidth-1:0]       arcache_driven, arcache_internal;
+  logic [AxiProtWidth-1:0]        arprot_driven, arprot_internal;
+  logic [AxiQosWidth-1:0]         arqos_driven, arqos_internal;
+  logic [AxiMaxReqUserWidth-1:0]  aruser_driven, aruser_internal;
 
   // A copy of arready, which is driven by sub_cb (only used if if_mode == Device). The
   // arready_driven signal is directly driven by the clocking block. The arready_internal signal
   // tracks it, but is cleared on reset.
-  logic         arready_driven, arready_internal;
+  logic                           arready_driven, arready_internal;
 
   // Masks used when converting some *_driven signals to *_internal
-  logic [31:0]  arid_mask;
-  logic [63:0]  araddr_mask;
-  logic [127:0] aruser_mask;
+  logic [AxiMaxIdWidth-1:0]       arid_mask;
+  logic [AxiMaxAddrWidth-1:0]     araddr_mask;
+  logic [AxiMaxReqUserWidth-1:0]  aruser_mask;
 
-  assign arid_mask   = (32'b1 << id_r_width) - 1;
-  assign araddr_mask = (64'b1 << addr_width) - 1;
-  assign aruser_mask = (128'b1 << user_req_width) - 1;
+  assign arid_mask   = (AxiMaxIdWidth'(1) << id_r_width) - 1;
+  assign araddr_mask = (AxiMaxAddrWidth'(1) << addr_width) - 1;
+  assign aruser_mask = (AxiMaxReqUserWidth'(1) << user_req_width) - 1;
 
   clocking mon_cb @(posedge clk_i);
     input arvalid;

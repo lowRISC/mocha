@@ -7,6 +7,7 @@
   `include "uvm_macros.svh"
 
 interface axi_read_data_if (input clk_i, input rst_ni);
+  import axi_widths_pkg::*;
   import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
   import uvm_pkg::*;
 
@@ -18,19 +19,19 @@ interface axi_read_data_if (input clk_i, input rst_ni);
   if_mode_e if_mode = Monitor;
 
   // The ID_R_WIDTH property. Set this by calling set_id_r_width().
-  int unsigned id_r_width = 32;
+  int unsigned id_r_width = AxiMaxIdWidth;
 
   // The DATA_WIDTH property. Set this by calling set_data_width().
-  int unsigned data_width = 1024;
+  int unsigned data_width = AxiMaxDataWidth;
 
   // The USER_DATA_WIDTH property. Set this by calling set_user_data_width().
-  int unsigned user_data_width = 512;
+  int unsigned user_data_width = AxiMaxDataUserWidth;
 
   // The RRESP_WIDTH property. Set this by calling set_rresp_width().
-  int unsigned rresp_width = 3;
+  int unsigned rresp_width = AxiRespWidth;
 
   // The USER_RESP_WIDTH property. Set this by calling set_user_resp_width().
-  int unsigned user_resp_width = 16;
+  int unsigned user_resp_width = AxiMaxRespUserWidth;
 
   // The core defined signals for the read data channel.
   //
@@ -46,40 +47,40 @@ interface axi_read_data_if (input clk_i, input rst_ni);
   //    - RIDUNQ  (Unique_ID_Support is false)
   //    - RCHUNK* (Read_Data_Chunking is false)
   //    - RTAG    (MTE_Support is false)
-  wire          rvalid;
-  wire          rready;
-  wire [31:0]   rid;
-  wire [1023:0] rdata;
-  wire [2:0]    rresp;
-  wire          rlast;
-  wire [527:0]  ruser;
+  wire                          rvalid;
+  wire                          rready;
+  wire [AxiMaxIdWidth-1:0]      rid;
+  wire [AxiMaxDataWidth-1:0]    rdata;
+  wire [AxiRespWidth-1:0]       rresp;
+  wire                          rlast;
+  wire [AxiMaxRUserWidth-1:0]   ruser;
 
   // A copy of rready, which is driven by mgr_cb (only used if if_mode == Host). The rready_driven
   // signal is directly driven by the clocking block. The rready_internal signal tracks it, but is
   // also cleared on reset.
-  logic         rready_driven, rready_internal;
+  logic                         rready_driven, rready_internal;
 
   // Copies of the signals that are driven by sub_cb (only used if if_mode == Device). The
   // "*_driven" signals are directly driven by the clocking block. The "*_internal" signals track
   // these, but take masks into account for signals with configurable length and are also cleared on
   // reset.
-  logic          rvalid_driven, rvalid_internal;
-  logic [31:0]   rid_driven, rid_internal;
-  logic [1023:0] rdata_driven, rdata_internal;
-  logic [2:0]    rresp_driven, rresp_internal;
-  logic          rlast_driven, rlast_internal;
-  logic [527:0]  ruser_driven, ruser_internal;
+  logic                         rvalid_driven, rvalid_internal;
+  logic [AxiMaxIdWidth-1:0]     rid_driven, rid_internal;
+  logic [AxiMaxDataWidth-1:0]   rdata_driven, rdata_internal;
+  logic [AxiRespWidth-1:0]      rresp_driven, rresp_internal;
+  logic                         rlast_driven, rlast_internal;
+  logic [AxiMaxRUserWidth-1:0]  ruser_driven, ruser_internal;
 
   // Masks used when converting some *_driven signals to *_internal
-  logic [31:0]   rid_mask;
-  logic [1023:0] rdata_mask;
-  logic [2:0]    rresp_mask;
-  logic [527:0]  ruser_mask;
+  logic [AxiMaxIdWidth-1:0]     rid_mask;
+  logic [AxiMaxDataWidth-1:0]   rdata_mask;
+  logic [AxiRespWidth-1:0]      rresp_mask;
+  logic [AxiMaxRUserWidth-1:0]  ruser_mask;
 
-  assign rid_mask   = (32'b1 << id_r_width) - 1;
-  assign rdata_mask = (1024'b1 << data_width) - 1;
-  assign rresp_mask = (3'b1 << rresp_width) - 1;
-  assign ruser_mask = (528'b1 << (user_data_width + user_resp_width)) - 1;
+  assign rid_mask   = (AxiMaxIdWidth'(1) << id_r_width) - 1;
+  assign rdata_mask = (AxiMaxDataWidth'(1) << data_width) - 1;
+  assign rresp_mask = (AxiRespWidth'(1) << rresp_width) - 1;
+  assign ruser_mask = (AxiMaxRUserWidth'(1) << (user_data_width + user_resp_width)) - 1;
 
   clocking mon_cb @(posedge clk_i);
     input rvalid;

@@ -13,23 +13,23 @@ class axi_txn_request_item extends uvm_sequence_item;
   // This is sent over the AxID signal, whose width is configurable, based on the ID_x_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
   // with an error if bits above the top of the signal are nonzero.
-  rand bit [31:0] m_id;
+  rand bit [AxiMaxIdWidth-1:0] m_id;
 
   // Transaction address
   //
   // This is sent over the AxADDR signal, whose width is configurable, based on the ADDR_WIDTH
   // property. The representation in the item uses a max footprint approach but the driver will fail
   // with an error if bits above the top of the signal are nonzero.
-  rand bit [63:0] m_addr;
+  rand bit [AxiMaxAddrWidth-1:0] m_addr;
 
   // Region identifier
-  rand bit [3:0]  m_region;
+  rand bit [AxiRegionWidth-1:0]  m_region;
 
   // Number of data transfers in the transaction
-  rand bit [7:0]  m_len;
+  rand bit [AxiLenWidth-1:0]  m_len;
 
   // Maximum number of bytes in each data transfer (encoded as log2(byte_size))
-  rand bit [2:0]  m_size;
+  rand bit [AxiSizeWidth-1:0]  m_size;
 
   // Burst attribute (FIXED, INCR or WRAP)
   rand burst_e    m_burst;
@@ -38,20 +38,20 @@ class axi_txn_request_item extends uvm_sequence_item;
   rand bit        m_lock;
 
   // Memory attributes (applying to caches in the system)
-  rand bit [3:0]  m_cache;
+  rand bit [AxiCacheWidth-1:0]  m_cache;
 
   // Memory access attributes
-  rand bit [2:0]  m_prot;
+  rand bit [AxiProtWidth-1:0]  m_prot;
 
   // Traffic stream QoS identifier
-  rand bit [3:0]  m_qos;
+  rand bit [AxiQosWidth-1:0]  m_qos;
 
   // Extra user bits
   //
   // This is sent over the ARUSER or AWUSER signal, whose widths are configurable, based on the
   // USER_REQ_WIDTH property. The representation in the item uses a max footprint approach but the
   // driver will fail with an error if bits above the top of the signal are nonzero.
-  rand bit [127:0] m_user;
+  rand bit [AxiMaxReqUserWidth-1:0] m_user;
 
   extern function new(string name = "");
   extern function void do_print(uvm_printer printer);
