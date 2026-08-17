@@ -18,6 +18,10 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
   // become 1).
   local bit m_in_reset;
 
+  // How to drive this channel's payload while it is idle. Set this with set_drive_x_when_idle
+  // before run_phase; see axi_agent_cfg::drive_x_when_idle for what the two settings mean.
+  local bit m_drive_x_when_idle = 1'b1;
+
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
 
@@ -26,6 +30,9 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
 
   // Set the shared clock/reset interface. This must be called before run_phase.
   extern function void set_clk_rst_vif(virtual clk_rst_if vif);
+
+  // Set how the idle signals are driven. This must be called before run_phase.
+  extern function void set_drive_x_when_idle(bit drive_x);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -75,6 +82,10 @@ function void axi_mgr_write_data_driver::set_clk_rst_vif(virtual clk_rst_if vif)
   m_clk_rst_vif = vif;
 endfunction
 
+function void axi_mgr_write_data_driver::set_drive_x_when_idle(bit drive_x);
+  m_drive_x_when_idle = drive_x;
+endfunction
+
 task axi_mgr_write_data_driver::run_phase(uvm_phase phase);
   if (m_vif == null || m_clk_rst_vif == null) begin
     `uvm_fatal(get_full_name(), "Cannot drive interface: either m_vif or m_clk_rst_vif is null.")
@@ -115,11 +126,30 @@ task axi_mgr_write_data_driver::monitor_reset();
 endtask
 
 task axi_mgr_write_data_driver::clear_data();
+  bit   [AxiMaxDataWidth-1:0]     idle_data;
+  bit   [AxiMaxStrbWidth-1:0]     idle_strb;
+  bit                             idle_last;
+  bit   [AxiMaxDataUserWidth-1:0] idle_user;
+
   m_vif.mgr_cb.wvalid <= 1'b0;
-  m_vif.mgr_cb.wdata  <= 'x;
-  m_vif.mgr_cb.wstrb  <= 'x;
-  m_vif.mgr_cb.wlast  <= 'x;
-  m_vif.mgr_cb.wuser  <= 'x;
+
+  // AXI requires nothing of the payload while WVALID is low, so drive it meaningless: X by
+  // default, or randomised for a sink that cannot tolerate X
+  // (see axi_agent_cfg::drive_x_when_idle).
+  if (m_drive_x_when_idle) begin
+    m_vif.mgr_cb.wdata <= 'x;
+    m_vif.mgr_cb.wstrb <= 'x;
+    m_vif.mgr_cb.wlast <= 'x;
+    m_vif.mgr_cb.wuser <= 'x;
+  end else begin
+    if (!std::randomize(idle_data, idle_strb, idle_last, idle_user)) begin
+      `uvm_fatal(get_full_name(), "Failed to randomize the idle W payload.")
+    end
+    m_vif.mgr_cb.wdata <= idle_data;
+    m_vif.mgr_cb.wstrb <= idle_strb;
+    m_vif.mgr_cb.wlast <= idle_last;
+    m_vif.mgr_cb.wuser <= idle_user;
+  end
 endtask
 
 task axi_mgr_write_data_driver::drive_req(output bit item_sent);
