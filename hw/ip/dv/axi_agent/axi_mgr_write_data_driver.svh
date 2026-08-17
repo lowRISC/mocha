@@ -83,11 +83,30 @@ task axi_mgr_write_data_driver::on_enter_reset();
 endtask
 
 task axi_mgr_write_data_driver::clear_data();
+  bit   [AxiMaxDataWidth-1:0]     idle_data;
+  bit   [AxiMaxStrbWidth-1:0]     idle_strb;
+  bit                             idle_last;
+  bit   [AxiMaxDataUserWidth-1:0] idle_user;
+
   m_vif.mgr_cb.wvalid <= 1'b0;
-  m_vif.mgr_cb.wdata  <= 'x;
-  m_vif.mgr_cb.wstrb  <= 'x;
-  m_vif.mgr_cb.wlast  <= 'x;
-  m_vif.mgr_cb.wuser  <= 'x;
+
+  // AXI requires nothing of the payload while WVALID is low, so drive it meaningless: X by
+  // default, or randomised for a sink that cannot tolerate X
+  // (see axi_agent_cfg::drive_x_when_idle).
+  if (cfg.drive_x_when_idle) begin
+    m_vif.mgr_cb.wdata <= 'x;
+    m_vif.mgr_cb.wstrb <= 'x;
+    m_vif.mgr_cb.wlast <= 'x;
+    m_vif.mgr_cb.wuser <= 'x;
+  end else begin
+    if (!std::randomize(idle_data, idle_strb, idle_last, idle_user)) begin
+      `uvm_fatal(get_full_name(), "Failed to randomize the idle W payload.")
+    end
+    m_vif.mgr_cb.wdata <= idle_data;
+    m_vif.mgr_cb.wstrb <= idle_strb;
+    m_vif.mgr_cb.wlast <= idle_last;
+    m_vif.mgr_cb.wuser <= idle_user;
+  end
 endtask
 
 task axi_mgr_write_data_driver::drive_req(output bit item_sent);
