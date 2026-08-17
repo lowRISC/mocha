@@ -88,18 +88,52 @@ task axi_mgr_write_request_driver::on_enter_reset();
 endtask
 
 task axi_mgr_write_request_driver::clear_data();
+  bit   [AxiMaxIdWidth-1:0]      idle_id;
+  bit   [AxiMaxAddrWidth-1:0]    idle_addr;
+  bit   [AxiRegionWidth-1:0]     idle_region;
+  bit   [AxiLenWidth-1:0]        idle_len;
+  bit   [AxiSizeWidth-1:0]       idle_size;
+  bit   [AxiBurstWidth-1:0]      idle_burst;
+  bit                            idle_lock;
+  bit   [AxiCacheWidth-1:0]      idle_cache;
+  bit   [AxiProtWidth-1:0]       idle_prot;
+  bit   [AxiQosWidth-1:0]        idle_qos;
+  bit   [AxiMaxReqUserWidth-1:0] idle_user;
+
   m_vif.mgr_cb.awvalid  <= 1'b0;
-  m_vif.mgr_cb.awid     <= 'x;
-  m_vif.mgr_cb.awaddr   <= 'x;
-  m_vif.mgr_cb.awregion <= 'x;
-  m_vif.mgr_cb.awlen    <= 'x;
-  m_vif.mgr_cb.awsize   <= 'x;
-  m_vif.mgr_cb.awburst  <= 'x;
-  m_vif.mgr_cb.awlock   <= 'x;
-  m_vif.mgr_cb.awcache  <= 'x;
-  m_vif.mgr_cb.awprot   <= 'x;
-  m_vif.mgr_cb.awqos    <= 'x;
-  m_vif.mgr_cb.awuser   <= 'x;
+
+  // AXI requires nothing of the payload while AWVALID is low, so drive it meaningless: X by
+  // default, or randomised for a sink that cannot tolerate X
+  // (see axi_agent_cfg::drive_x_when_idle).
+  if (cfg.drive_x_when_idle) begin
+    m_vif.mgr_cb.awid     <= 'x;
+    m_vif.mgr_cb.awaddr   <= 'x;
+    m_vif.mgr_cb.awregion <= 'x;
+    m_vif.mgr_cb.awlen    <= 'x;
+    m_vif.mgr_cb.awsize   <= 'x;
+    m_vif.mgr_cb.awburst  <= 'x;
+    m_vif.mgr_cb.awlock   <= 'x;
+    m_vif.mgr_cb.awcache  <= 'x;
+    m_vif.mgr_cb.awprot   <= 'x;
+    m_vif.mgr_cb.awqos    <= 'x;
+    m_vif.mgr_cb.awuser   <= 'x;
+  end else begin
+    if (!std::randomize(idle_id, idle_addr, idle_region, idle_len, idle_size, idle_burst,
+                        idle_lock, idle_cache, idle_prot, idle_qos, idle_user)) begin
+      `uvm_fatal(get_full_name(), "Failed to randomize the idle AW payload.")
+    end
+    m_vif.mgr_cb.awid     <= idle_id;
+    m_vif.mgr_cb.awaddr   <= idle_addr;
+    m_vif.mgr_cb.awregion <= idle_region;
+    m_vif.mgr_cb.awlen    <= idle_len;
+    m_vif.mgr_cb.awsize   <= idle_size;
+    m_vif.mgr_cb.awburst  <= idle_burst;
+    m_vif.mgr_cb.awlock   <= idle_lock;
+    m_vif.mgr_cb.awcache  <= idle_cache;
+    m_vif.mgr_cb.awprot   <= idle_prot;
+    m_vif.mgr_cb.awqos    <= idle_qos;
+    m_vif.mgr_cb.awuser   <= idle_user;
+  end
 endtask
 
 task axi_mgr_write_request_driver::drive_req(output bit item_sent);

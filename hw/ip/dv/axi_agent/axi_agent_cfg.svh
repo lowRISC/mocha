@@ -20,6 +20,14 @@ class axi_agent_cfg extends dv_base_agent_cfg;
   virtual axi_read_request_if   read_request_vif;
   virtual axi_read_data_if      read_data_vif;
 
+  // How the manager drives the payload of an idle channel, where AXI requires nothing of it. When
+  // set, every field but the valid is driven X, so a subordinate that samples outside the
+  // VALID/READY handshake propagates the X instead of quietly reading a plausible value. When
+  // clear, the payload is randomised instead: still meaningless, but defined.
+  //
+  // Defaults set, so an idle channel drives X.
+  bit drive_x_when_idle = 1'b1;
+
   extern function new(string name = "");
 endclass
 
