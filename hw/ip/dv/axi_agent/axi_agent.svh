@@ -152,6 +152,7 @@ function void axi_agent::build_phase(uvm_phase phase);
       axi_mgr_write_request_driver::type_id::create("m_write_request_driver", this);
     m_write_request_driver.set_vif(m_cfg.write_request_vif);
     m_write_request_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
+    m_write_request_driver.set_drive_x_when_idle(m_cfg.drive_x_when_idle);
     m_write_request_sequencer =
       write_request_sequencer_t::type_id::create("m_write_request_sequencer", this);
 
@@ -159,6 +160,7 @@ function void axi_agent::build_phase(uvm_phase phase);
     m_write_data_driver = axi_mgr_write_data_driver::type_id::create("m_write_data_driver", this);
     m_write_data_driver.set_vif(m_cfg.write_data_vif);
     m_write_data_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
+    m_write_data_driver.set_drive_x_when_idle(m_cfg.drive_x_when_idle);
     m_write_data_sequencer =
       write_data_sequencer_t::type_id::create("m_write_data_sequencer", this);
 
@@ -175,6 +177,7 @@ function void axi_agent::build_phase(uvm_phase phase);
       axi_mgr_read_request_driver::type_id::create("m_read_request_driver", this);
     m_read_request_driver.set_vif(m_cfg.read_request_vif);
     m_read_request_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
+    m_read_request_driver.set_drive_x_when_idle(m_cfg.drive_x_when_idle);
     m_read_request_sequencer =
       read_request_sequencer_t::type_id::create("m_read_request_sequencer", this);
 

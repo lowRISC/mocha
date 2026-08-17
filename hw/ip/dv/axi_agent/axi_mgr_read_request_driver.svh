@@ -23,6 +23,10 @@ class axi_mgr_read_request_driver extends uvm_driver#(axi_txn_request_item, axi_
   // become 1).
   local bit m_in_reset;
 
+  // How to drive this channel's payload while it is idle. Set this with set_drive_x_when_idle
+  // before run_phase; see axi_agent_cfg::drive_x_when_idle for what the two settings mean.
+  local bit m_drive_x_when_idle = 1'b1;
+
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
 
@@ -31,6 +35,9 @@ class axi_mgr_read_request_driver extends uvm_driver#(axi_txn_request_item, axi_
 
   // Set the shared clock/reset interface. This must be called before run_phase.
   extern function void set_clk_rst_vif(virtual clk_rst_if vif);
+
+  // Set how the idle signals are driven. This must be called before run_phase.
+  extern function void set_drive_x_when_idle(bit drive_x);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -80,6 +87,10 @@ function void axi_mgr_read_request_driver::set_clk_rst_vif(virtual clk_rst_if vi
   m_clk_rst_vif = vif;
 endfunction
 
+function void axi_mgr_read_request_driver::set_drive_x_when_idle(bit drive_x);
+  m_drive_x_when_idle = drive_x;
+endfunction
+
 task axi_mgr_read_request_driver::run_phase(uvm_phase phase);
   if (m_vif == null || m_clk_rst_vif == null) begin
     `uvm_fatal(get_full_name(), "Cannot drive interface: either m_vif or m_clk_rst_vif is null.")
@@ -120,18 +131,52 @@ task axi_mgr_read_request_driver::monitor_reset();
 endtask
 
 task axi_mgr_read_request_driver::clear_data();
+  bit   [AxiMaxIdWidth-1:0]      idle_id;
+  bit   [AxiMaxAddrWidth-1:0]    idle_addr;
+  bit   [AxiRegionWidth-1:0]     idle_region;
+  bit   [AxiLenWidth-1:0]        idle_len;
+  bit   [AxiSizeWidth-1:0]       idle_size;
+  bit   [AxiBurstWidth-1:0]      idle_burst;
+  bit                            idle_lock;
+  bit   [AxiCacheWidth-1:0]      idle_cache;
+  bit   [AxiProtWidth-1:0]       idle_prot;
+  bit   [AxiQosWidth-1:0]        idle_qos;
+  bit   [AxiMaxReqUserWidth-1:0] idle_user;
+
   m_vif.mgr_cb.arvalid  <= 1'b0;
-  m_vif.mgr_cb.arid     <= 'x;
-  m_vif.mgr_cb.araddr   <= 'x;
-  m_vif.mgr_cb.arregion <= 'x;
-  m_vif.mgr_cb.arlen    <= 'x;
-  m_vif.mgr_cb.arsize   <= 'x;
-  m_vif.mgr_cb.arburst  <= 'x;
-  m_vif.mgr_cb.arlock   <= 'x;
-  m_vif.mgr_cb.arcache  <= 'x;
-  m_vif.mgr_cb.arprot   <= 'x;
-  m_vif.mgr_cb.arqos    <= 'x;
-  m_vif.mgr_cb.aruser   <= 'x;
+
+  // AXI requires nothing of the payload while ARVALID is low, so drive it meaningless: X by
+  // default, or randomised for a sink that cannot tolerate X
+  // (see axi_agent_cfg::drive_x_when_idle).
+  if (m_drive_x_when_idle) begin
+    m_vif.mgr_cb.arid     <= 'x;
+    m_vif.mgr_cb.araddr   <= 'x;
+    m_vif.mgr_cb.arregion <= 'x;
+    m_vif.mgr_cb.arlen    <= 'x;
+    m_vif.mgr_cb.arsize   <= 'x;
+    m_vif.mgr_cb.arburst  <= 'x;
+    m_vif.mgr_cb.arlock   <= 'x;
+    m_vif.mgr_cb.arcache  <= 'x;
+    m_vif.mgr_cb.arprot   <= 'x;
+    m_vif.mgr_cb.arqos    <= 'x;
+    m_vif.mgr_cb.aruser   <= 'x;
+  end else begin
+    if (!std::randomize(idle_id, idle_addr, idle_region, idle_len, idle_size, idle_burst,
+                        idle_lock, idle_cache, idle_prot, idle_qos, idle_user)) begin
+      `uvm_fatal(get_full_name(), "Failed to randomize the idle AR payload.")
+    end
+    m_vif.mgr_cb.arid     <= idle_id;
+    m_vif.mgr_cb.araddr   <= idle_addr;
+    m_vif.mgr_cb.arregion <= idle_region;
+    m_vif.mgr_cb.arlen    <= idle_len;
+    m_vif.mgr_cb.arsize   <= idle_size;
+    m_vif.mgr_cb.arburst  <= idle_burst;
+    m_vif.mgr_cb.arlock   <= idle_lock;
+    m_vif.mgr_cb.arcache  <= idle_cache;
+    m_vif.mgr_cb.arprot   <= idle_prot;
+    m_vif.mgr_cb.arqos    <= idle_qos;
+    m_vif.mgr_cb.aruser   <= idle_user;
+  end
 endtask
 
 task axi_mgr_read_request_driver::drive_req(output bit item_sent);
