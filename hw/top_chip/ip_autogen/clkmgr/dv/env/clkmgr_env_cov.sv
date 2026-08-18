@@ -67,31 +67,6 @@ class clkmgr_trans_cg_wrap;
   endfunction
 endclass
 
-// Wrapper class for frequency measurement covergroup.
-class freq_measure_cg_wrap;
-  // This covergroup collects outcomes of clock frequency measurements.
-  covergroup freq_measure_cg(
-      string name
-  ) with function sample (
-      bit okay, bit slow, bit fast, bit timeout
-  );
-    option.name = name;
-    option.per_instance = 1;
-
-    okay_cp: coverpoint okay;
-    slow_cp: coverpoint slow;
-    fast_cp: coverpoint fast;
-    timeout_cp: coverpoint timeout;
-  endgroup
-
-  function new(string name);
-    freq_measure_cg = new(name);
-  endfunction
-
-  function void sample (bit okay, bit slow, bit fast, bit timeout);
-    freq_measure_cg.sample(okay, slow, fast, timeout);
-  endfunction
-endclass
 
 class clkmgr_env_cov extends cip_base_env_cov #(
   .CFG_T(clkmgr_env_cfg)
@@ -107,22 +82,12 @@ class clkmgr_env_cov extends cip_base_env_cov #(
   // These covergroups collect signals affecting transactional clocks.
   clkmgr_trans_cg_wrap trans_cg_wrap[NUM_TRANS];
 
-  // These covergroups collect outcomes of clock frequency measurements.
-  freq_measure_cg_wrap freq_measure_cg_wrap[2];
 
   // This collects coverage for recoverable errors.
   covergroup recov_err_cg with function sample (
-      bit main_timeout,
-      bit io_timeout,
-      bit main_measure,
-      bit io_measure,
       bit shadow_update
   );
     shadow_update_cp: coverpoint shadow_update;
-    io_measure_cp: coverpoint io_measure;
-    main_measure_cp: coverpoint main_measure;
-    io_timeout_cp: coverpoint io_timeout;
-    main_timeout_cp: coverpoint main_timeout;
   endgroup
 
   // This collects coverage for fatal errors.
@@ -145,10 +110,6 @@ class clkmgr_env_cov extends cip_base_env_cov #(
     foreach (trans_cg_wrap[i]) begin
       clkmgr_env_pkg::trans_e trans = clkmgr_env_pkg::trans_e'(i);
       trans_cg_wrap[i] = new(trans.name);
-    end
-    foreach (ExpectedCounts[i]) begin
-      clk_mesr_e clk_mesr = clk_mesr_e'(i);
-      freq_measure_cg_wrap[i] = new(clk_mesr.name);
     end
     recov_err_cg = new();
     fatal_err_cg = new();

@@ -35,7 +35,6 @@ class clkmgr_scoreboard extends cip_base_scoreboard #(
       monitor_jitter_en();
       sample_peri_covs();
       sample_trans_covs();
-      sample_freq_measurement_covs();
       sample_fatal_err_cov();
       sample_recov_err_cov();
     join_none
@@ -104,48 +103,11 @@ class clkmgr_scoreboard extends cip_base_scoreboard #(
     end
   endtask
 
-  local task sample_freq_measurement_cov(clk_mesr_e clk, ref freq_measurement_t measurement,
-                                         logic timeout);
-    if (cfg.en_cov) begin
-      cov.freq_measure_cg_wrap[clk].sample(!measurement.slow && !measurement.fast, measurement.slow,
-                                           measurement.fast, timeout);
-      `uvm_info(`gfn, $sformatf(
-                "Cov for %0s: %0s",
-                clk.name(),
-                measurement.slow ? "slow" : measurement.fast ? "fast" : "okay"
-                ), UVM_MEDIUM)
-      measurement = '{default: 0};
-    end
-  endtask
-
-  task sample_freq_measurement_covs();
-    fork
-      forever
-        @(posedge cfg.clkmgr_vif.io_freq_measurement.valid or
-          posedge cfg.clkmgr_vif.io_timeout_err) begin
-          sample_freq_measurement_cov(ClkMesrIo, cfg.clkmgr_vif.io_freq_measurement,
-                                      cfg.clkmgr_vif.io_timeout_err);
-        end
-
-      forever
-        @(posedge cfg.clkmgr_vif.main_freq_measurement.valid or
-          posedge cfg.clkmgr_vif.main_timeout_err) begin
-          sample_freq_measurement_cov(ClkMesrMain, cfg.clkmgr_vif.main_freq_measurement,
-                                      cfg.clkmgr_vif.main_timeout_err);
-        end
-
-    join_none
-  endtask
-
   task sample_recov_err_cov();
     fork
       forever
         @cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr if (cfg.en_cov) begin
           cov.recov_err_cg.sample(
-              cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[4],
-              cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[3],
-              cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[2],
-              cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[1],
               cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[0]);
           `uvm_info(`gfn, $sformatf(
                     "Recoverable errors sampled: 0x%x", cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr),

@@ -2,9 +2,13 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+## measurement_live: measurement cannot run when ext_clk_bypass is false, because
+## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
+## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
 <%
 from ipgen.clkmgr_gen import get_rg_srcs
 rg_srcs = get_rg_srcs(typed_clocks)
+measurement_live = ext_clk_bypass
 %>\
 /**
  * Covergroups that are dependent on run-time parameters that may be available
@@ -71,6 +75,7 @@ class clkmgr_trans_cg_wrap;
   endfunction
 endclass
 
+% if measurement_live:
 // Wrapper class for frequency measurement covergroup.
 class freq_measure_cg_wrap;
   // This covergroup collects outcomes of clock frequency measurements.
@@ -97,6 +102,8 @@ class freq_measure_cg_wrap;
   endfunction
 endclass
 
+% endif
+
 class clkmgr_env_cov extends cip_base_env_cov #(
   .CFG_T(clkmgr_env_cfg)
 );
@@ -111,8 +118,11 @@ class clkmgr_env_cov extends cip_base_env_cov #(
   // These covergroups collect signals affecting transactional clocks.
   clkmgr_trans_cg_wrap trans_cg_wrap[NUM_TRANS];
 
+% if measurement_live:
   // These covergroups collect outcomes of clock frequency measurements.
   freq_measure_cg_wrap freq_measure_cg_wrap[${len(rg_srcs)}];
+
+% endif
 
 % if ext_clk_bypass:
   // This embeded covergroup collects coverage for the external clock functionality.
@@ -131,21 +141,25 @@ class clkmgr_env_cov extends cip_base_env_cov #(
 % endif
   // This collects coverage for recoverable errors.
   covergroup recov_err_cg with function sample (
+% if measurement_live:
 % for src in reversed(rg_srcs):
       bit ${src}_timeout,
 % endfor
 % for src in reversed(rg_srcs):
       bit ${src}_measure,
 % endfor
+% endif
       bit shadow_update
   );
     shadow_update_cp: coverpoint shadow_update;
+% if measurement_live:
 % for src in rg_srcs:
     ${src}_measure_cp: coverpoint ${src}_measure;
 % endfor
 % for src in rg_srcs:
     ${src}_timeout_cp: coverpoint ${src}_timeout;
 % endfor
+% endif
   endgroup
 
   // This collects coverage for fatal errors.
@@ -169,10 +183,12 @@ class clkmgr_env_cov extends cip_base_env_cov #(
       clkmgr_env_pkg::trans_e trans = clkmgr_env_pkg::trans_e'(i);
       trans_cg_wrap[i] = new(trans.name);
     end
+  % if measurement_live:
     foreach (ExpectedCounts[i]) begin
       clk_mesr_e clk_mesr = clk_mesr_e'(i);
       freq_measure_cg_wrap[i] = new(clk_mesr.name);
     end
+  % endif
   % if ext_clk_bypass:
     extclk_cg = new();
   % endif

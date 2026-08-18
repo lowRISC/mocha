@@ -1,6 +1,10 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+## measurement_live: measurement cannot run when ext_clk_bypass is false, because
+## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
+## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
+<% measurement_live = ext_clk_bypass %>\
 {
   name: "clkmgr"
   // clkmgr has no interrupts, so intr_test_testplan.hjson is deliberately not imported.
@@ -183,6 +187,7 @@
       stage: V2
       tests: ["clkmgr_smoke"]
     }
+  % if measurement_live:
     {
       name: frequency
       desc: '''This tests the frequency counters measured count functionality.
@@ -249,6 +254,7 @@
       stage: V2
       tests: ["clkmgr_frequency"]
     }
+  % endif
     {
       name: regwen
       desc: '''This tests the behavior of the regwen CSRs.
@@ -258,11 +264,21 @@
             reset.
 
             **Stimulus**:
+    % if measurement_live:
             - Clear each regwen.
             - Write to the corresponding locked CSRs.
+    % else:
+            - Randomly lock or unlock JITTER_REGWEN.
+            - Write to JITTER_ENABLE, the CSR it locks.
+            - Write MEASURE_CTRL_REGWEN to 0 and each *_MEAS_CTRL_EN to MuBi4True.
+    % endif
 
             **Check**:
             - The locked CSR value is not updated.
+    % if not measurement_live:
+            - MEASURE_CTRL_REGWEN reads 1 and each *_MEAS_CTRL_EN reads MuBi4False,
+              because calib_rdy is tied off and measurement cannot be enabled.
+    % endif
             '''
       stage: V3
       tests: ["clkmgr_regwen"]
@@ -275,8 +291,10 @@
           % if ext_clk_bypass:
             - clkmgr_extclk_vseq,
           % endif
+          % if measurement_live:
             - clkmgr_frequency_timeout_vseq,
             - clkmgr_frequency_vseq,
+          % endif
             - clkmgr_peri_vseq,
             - clkmgr_smoke_vseq,
             - clkmgr_trans_vseq
