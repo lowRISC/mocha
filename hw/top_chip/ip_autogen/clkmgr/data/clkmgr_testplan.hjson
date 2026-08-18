@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0
 {
   name: "clkmgr"
-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
+  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
                      "clkmgr_sec_cm_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
   testpoints: [
     {
       name: smoke
