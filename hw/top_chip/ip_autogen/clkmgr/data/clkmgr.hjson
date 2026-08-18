@@ -319,6 +319,8 @@
           '''
         },
       ]
+      // calib_rdy is tied off, so hardware keeps this register at 1 and a write of 0 is ignored.
+      tags: ["excl:CsrNonInitTests:CsrExclWrite"]
     },
     { name: "IO_MEAS_CTRL_EN",
       desc: '''
