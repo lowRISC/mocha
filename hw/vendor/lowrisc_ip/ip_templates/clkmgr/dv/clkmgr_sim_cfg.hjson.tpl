@@ -1,6 +1,14 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+<%doc>
+Clock measurement is intentionally disabled in this configuration: the source clocks are supplied
+from outside the top and are assumed already stable, so there is no calibration step and calib_rdy
+is tied MuBi4False. clkmgr_meas_chk then clears the measurement enable and measure_ctrl_regwen is
+held open, so any sequence exercising measurement cannot pass. These are gated on measurement_live
+rather than deleted, so they return automatically if the configuration ever changes.
+</%doc>\
+<% measurement_live = ext_clk_bypass %>\
 {
   // Name of the sim cfg - typically same as the name of the DUT.
   name: clkmgr
@@ -76,6 +84,7 @@
       uvm_test_seq: clkmgr_extclk_vseq
     }
   % endif
+  % if measurement_live:
     {
       name: clkmgr_frequency
       uvm_test_seq: clkmgr_frequency_vseq
@@ -84,6 +93,7 @@
       name: clkmgr_frequency_timeout
       uvm_test_seq: clkmgr_frequency_timeout_vseq
     }
+  % endif
     {
       name: clkmgr_peri
       uvm_test_seq: clkmgr_peri_vseq

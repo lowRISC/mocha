@@ -1,6 +1,7 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+<% measurement_live = ext_clk_bypass %>\
 {
   name: "clkmgr"
   // clkmgr has no interrupts, so intr_test_testplan.hjson is deliberately not imported.
@@ -183,6 +184,7 @@
       stage: V2
       tests: ["clkmgr_smoke"]
     }
+  % if measurement_live:
     {
       name: frequency
       desc: '''This tests the frequency counters measured count functionality.
@@ -249,6 +251,7 @@
       stage: V2
       tests: ["clkmgr_frequency"]
     }
+  % endif
     {
       name: regwen
       desc: '''This tests the behavior of the regwen CSRs.
@@ -275,8 +278,10 @@
           % if ext_clk_bypass:
             - clkmgr_extclk_vseq,
           % endif
+          % if measurement_live:
             - clkmgr_frequency_timeout_vseq,
             - clkmgr_frequency_vseq,
+          % endif
             - clkmgr_peri_vseq,
             - clkmgr_smoke_vseq,
             - clkmgr_trans_vseq
