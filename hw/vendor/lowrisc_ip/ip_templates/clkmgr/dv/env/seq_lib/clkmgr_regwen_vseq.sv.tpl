@@ -1,6 +1,10 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+## measurement_live: measurement cannot run when ext_clk_bypass is false, because
+## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
+## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
+<% measurement_live = ext_clk_bypass %>\
 
 // The regwen vseq attempts to write to registers whose regwen is randomly on or off to check
 // the register contents is not updated when off. More details in the clkmgr_testplan.hjson file.
@@ -39,6 +43,7 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
   endtask : check_extclk_regwen
 
 % endif
+% if measurement_live:
   // This must be careful to turn measurements off right after checking the updates
   // to avoid measurement errors. We could set the thresholds correctly, but we
   // might as well set them randomly for good measure. Carefully masks only the
@@ -79,11 +84,30 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
     end
   endtask : check_meas_ctrl_regwen
 
+% else:
+  // calib_rdy is tied to MuBi4False, so hardware holds measure_ctrl_regwen at 1 and forces any
+  // measurement enable back to MuBi4False. Check software cannot defeat either.
+  task check_meas_ctrl_disabled();
+    csr_wr(.ptr(ral.measure_ctrl_regwen), .value(0));
+    foreach (ExpectedCounts[clk]) begin
+      clk_mesr_e clk_mesr = clk_mesr_e'(clk);
+      csr_wr(.ptr(meas_ctrl_regs[clk_mesr].en), .value(MuBi4True));
+      void'(meas_ctrl_regs[clk_mesr].en.predict(MuBi4False));
+    end
+    // Clearing the enables crosses clock domains; clkmgr_lost_calib_ctrl_en_sva_if allows up
+    // to 45 cycles for it.
+    cfg.clk_rst_vif.wait_clks(50);
+    calibration_lost_checks();
+  endtask : check_meas_ctrl_disabled
+
+% endif
   task body();
+% if measurement_live:
     // Make sure the aon clock is running as slow as it is meant to, otherwise the aon clock
     // runs fast enough that we could end up triggering faults due to the random settings for
     // the thresholds.
     cfg.aon_clk_rst_vif.set_freq_khz(AonClkHz / 1_000);
+% endif
 
     `uvm_info(`gfn, $sformatf("Will run %0d rounds", num_trans), UVM_MEDIUM)
     for (int i = 0; i < num_trans; ++i) begin
@@ -91,7 +115,11 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
     % if ext_clk_bypass:
       check_extclk_regwen();
     % endif
+    % if measurement_live:
       check_meas_ctrl_regwen();
+    % else:
+      check_meas_ctrl_disabled();
+    % endif
       apply_reset("HARD");
       // This is to make sure we don't start writes immediately after reset,
       // otherwise the tl_agent could mistakenly consider the following read

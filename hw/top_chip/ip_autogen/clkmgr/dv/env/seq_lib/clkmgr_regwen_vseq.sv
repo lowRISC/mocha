@@ -24,56 +24,27 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
     `uvm_info(`gfn, "Check jitter_regwen done", UVM_MEDIUM)
   endtask : check_jitter_regwen
 
-  // This must be careful to turn measurements off right after checking the updates
-  // to avoid measurement errors. We could set the thresholds correctly, but we
-  // might as well set them randomly for good measure. Carefully masks only the
-  // real bits for the comparison.
-  task check_meas_ctrl_regwen();
-    bit regwen_enable;
-    `DV_CHECK_STD_RANDOMIZE_FATAL(regwen_enable)
-    csr_wr(.ptr(ral.measure_ctrl_regwen), .value(regwen_enable));
+  // calib_rdy is tied to MuBi4False, so hardware holds measure_ctrl_regwen at 1 and forces any
+  // measurement enable back to MuBi4False. Check software cannot defeat either.
+  task check_meas_ctrl_disabled();
+    csr_wr(.ptr(ral.measure_ctrl_regwen), .value(0));
     foreach (ExpectedCounts[clk]) begin
       clk_mesr_e clk_mesr = clk_mesr_e'(clk);
-      uvm_reg ctrl_shadowed = meas_ctrl_regs[clk_mesr].ctrl_lo.get_dv_base_reg_parent();
-      uvm_reg_data_t prev_en;
-      mubi4_t new_en = get_rand_mubi4_val(1, 1, 2);
-      int prev_ctrl;
-      int max_threshold = ExpectedCounts[clk] + 2;
-      int min_threshold = ExpectedCounts[clk] - 2;
-      int new_ctrl = get_meas_ctrl_value(min_threshold, max_threshold,
-          meas_ctrl_regs[clk_mesr].ctrl_lo, meas_ctrl_regs[clk_mesr].ctrl_hi);
-      int actual_ctrl;
-      int lo_mask = ((1 << meas_ctrl_regs[clk_mesr].ctrl_lo.get_n_bits()) - 1) <<
-                     meas_ctrl_regs[clk_mesr].ctrl_lo.get_lsb_pos();
-      int hi_mask = ((1 << meas_ctrl_regs[clk_mesr].ctrl_hi.get_n_bits()) - 1) <<
-                     meas_ctrl_regs[clk_mesr].ctrl_hi.get_lsb_pos();
-      `uvm_info(`gfn, $sformatf(
-                "Check %0s regwen = %b", meas_ctrl_regs[clk_mesr].name, regwen_enable),
-                UVM_MEDIUM)
-      csr_rd(.ptr(meas_ctrl_regs[clk_mesr].en), .value(prev_en));
-      csr_rd(.ptr(ctrl_shadowed), .value(prev_ctrl));
-      csr_wr(.ptr(ctrl_shadowed), .value(new_ctrl));
-      csr_wr(.ptr(meas_ctrl_regs[clk_mesr].en), .value(new_en));
-      csr_rd_check(.ptr(meas_ctrl_regs[clk_mesr].en),
-                   .compare_value(mubi4_t'(regwen_enable ? new_en : prev_en)));
-      csr_wr(.ptr(meas_ctrl_regs[clk_mesr].en), .value(MuBi4False));
-      csr_rd_check(.ptr(ctrl_shadowed), .compare_value(regwen_enable ? new_ctrl : prev_ctrl),
-                   .compare_mask(lo_mask | hi_mask));
-      `uvm_info(`gfn, $sformatf("Check %0s regwen done", meas_ctrl_regs[clk_mesr].name),
-                UVM_MEDIUM)
+      csr_wr(.ptr(meas_ctrl_regs[clk_mesr].en), .value(MuBi4True));
+      void'(meas_ctrl_regs[clk_mesr].en.predict(MuBi4False));
     end
-  endtask : check_meas_ctrl_regwen
+    // Clearing the enables crosses clock domains; clkmgr_lost_calib_ctrl_en_sva_if allows up
+    // to 45 cycles for it.
+    cfg.clk_rst_vif.wait_clks(50);
+    calibration_lost_checks();
+  endtask : check_meas_ctrl_disabled
 
   task body();
-    // Make sure the aon clock is running as slow as it is meant to, otherwise the aon clock
-    // runs fast enough that we could end up triggering faults due to the random settings for
-    // the thresholds.
-    cfg.aon_clk_rst_vif.set_freq_khz(AonClkHz / 1_000);
 
     `uvm_info(`gfn, $sformatf("Will run %0d rounds", num_trans), UVM_MEDIUM)
     for (int i = 0; i < num_trans; ++i) begin
       check_jitter_regwen();
-      check_meas_ctrl_regwen();
+      check_meas_ctrl_disabled();
       apply_reset("HARD");
       // This is to make sure we don't start writes immediately after reset,
       // otherwise the tl_agent could mistakenly consider the following read

@@ -1,0 +1,557 @@
+diff --git a/data/clkmgr_sec_cm_testplan.hjson.tpl b/data/clkmgr_sec_cm_testplan.hjson.tpl
+index 05ec432a..fb6cdffb 100644
+--- a/data/clkmgr_sec_cm_testplan.hjson.tpl
++++ b/data/clkmgr_sec_cm_testplan.hjson.tpl
+@@ -21,6 +21,10 @@
+ //
+ // Please ensure that this testplan is imported in:
+ // .../clkmgr/data/clkmgr_testplan.hjson
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
++<% measurement_live = ext_clk_bypass %>\
+ {
+   testpoints: [
+     {
+@@ -41,9 +45,19 @@
+               whether the module can detect measurement error for each test
+               clock.
+             - Measurement error should trigger a recoverable alert
++    % if not measurement_live:
++
++            Not applicable in this configuration: calib_rdy is tied to MuBi4False, so measurement
++            never runs and the error this countermeasure detects cannot occur. The hardware is
++            still built, it just sits idle.
++    % endif
+             '''
+       stage: V2S
++    % if measurement_live:
+       tests: ["clkmgr_frequency"]
++    % else:
++      tests: ["N/A"]
++    % endif
+     }
+     {
+       name: sec_cm_timeout_clk_bkgn_chk
+@@ -53,9 +67,19 @@
+               clk_main, clk_usb, clk_io, clk_io_div2 and clk_io_div4 are choose
+               and stopped. This will leads to timeout event.
+             - Timeout should cause a recoverable alert
++    % if not measurement_live:
++
++            Not applicable in this configuration: calib_rdy is tied to MuBi4False, so measurement
++            never runs and the timeout this countermeasure detects cannot occur. The hardware is
++            still built, it just sits idle.
++    % endif
+             '''
+       stage: V2S
++    % if measurement_live:
+       tests: ["clkmgr_frequency_timeout"]
++    % else:
++      tests: ["N/A"]
++    % endif
+     }
+     {
+       name: sec_cm_meas_config_shadow
+@@ -174,19 +198,40 @@
+       name: sec_cm_meas_config_regwen
+       desc: '''Verify the countermeasure(s) MEAS.CONFIG.REGWEN.
+ 
++    % if measurement_live:
+             This is covered by auto csr test.
++    % else:
++            Not applicable in this configuration: calib_rdy is tied to MuBi4False and hardware
++            holds MEASURE_CTRL_REGWEN at 1, so writes to it are excluded from the CSR tests.
++            The register is still built.
++    % endif
+             '''
+       stage: V2S
++    % if measurement_live:
+       tests: ["clkmgr_csr_rw"]
++    % else:
++      tests: ["N/A"]
++    % endif
+     }
+     {
+       name: sec_cm_clk_ctrl_config_regwen
+       desc: '''Verify the countermeasure(s) CLK_CTRL.CONFIG.REGWEN.
+ 
++    % if ext_clk_bypass:
+             This is covered by auto csr test.
++    % else:
++            Not applicable in this configuration: this regwen locks EXTCLK_CTRL, which is not
++            built when ext_clk_bypass is false. The generated register description still declares
++            the countermeasure, which is a template bug: the countermeasure list should be gated
++            on ext_clk_bypass as well.
++    % endif
+             '''
+       stage: V2S
++    % if ext_clk_bypass:
+       tests: ["clkmgr_csr_rw"]
++    % else:
++      tests: ["N/A"]
++    % endif
+     }
+   ]
+ }
+diff --git a/data/clkmgr_testplan.hjson.tpl b/data/clkmgr_testplan.hjson.tpl
+index 408bf404..2ca80965 100644
+--- a/data/clkmgr_testplan.hjson.tpl
++++ b/data/clkmgr_testplan.hjson.tpl
+@@ -1,6 +1,10 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
++<% measurement_live = ext_clk_bypass %>\
+ {
+   name: "clkmgr"
+   // clkmgr has no interrupts, so intr_test_testplan.hjson is deliberately not imported.
+@@ -183,6 +187,7 @@
+       stage: V2
+       tests: ["clkmgr_smoke"]
+     }
++  % if measurement_live:
+     {
+       name: frequency
+       desc: '''This tests the frequency counters measured count functionality.
+@@ -249,6 +254,7 @@
+       stage: V2
+       tests: ["clkmgr_frequency"]
+     }
++  % endif
+     {
+       name: regwen
+       desc: '''This tests the behavior of the regwen CSRs.
+@@ -258,11 +264,21 @@
+             reset.
+ 
+             **Stimulus**:
++    % if measurement_live:
+             - Clear each regwen.
+             - Write to the corresponding locked CSRs.
++    % else:
++            - Randomly lock or unlock JITTER_REGWEN.
++            - Write to JITTER_ENABLE, the CSR it locks.
++            - Write MEASURE_CTRL_REGWEN to 0 and each *_MEAS_CTRL_EN to MuBi4True.
++    % endif
+ 
+             **Check**:
+             - The locked CSR value is not updated.
++    % if not measurement_live:
++            - MEASURE_CTRL_REGWEN reads 1 and each *_MEAS_CTRL_EN reads MuBi4False,
++              because calib_rdy is tied off and measurement cannot be enabled.
++    % endif
+             '''
+       stage: V3
+       tests: ["clkmgr_regwen"]
+@@ -275,8 +291,10 @@
+           % if ext_clk_bypass:
+             - clkmgr_extclk_vseq,
+           % endif
++          % if measurement_live:
+             - clkmgr_frequency_timeout_vseq,
+             - clkmgr_frequency_vseq,
++          % endif
+             - clkmgr_peri_vseq,
+             - clkmgr_smoke_vseq,
+             - clkmgr_trans_vseq
+diff --git a/dv/README.md.tpl b/dv/README.md.tpl
+index fb2bc821..2d37fe3d 100644
+--- a/dv/README.md.tpl
++++ b/dv/README.md.tpl
+@@ -1,7 +1,15 @@
+ ## Copyright lowRISC contributors (OpenTitan project).
+ ## Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ ## SPDX-License-Identifier: Apache-2.0
+-<% from topgen.lib import Name %>\
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
++<%
++from topgen.lib import Name
++from ipgen.clkmgr_gen import get_hint_targets
++hint_targets = get_hint_targets(typed_clocks)
++measurement_live = ext_clk_bypass
++%>\
+ # CLKMGR DV document
+ 
+ ${"##"} Goals
+@@ -61,7 +69,12 @@ All common types and methods defined at the package level can be found in
+     Peri${Name.to_camel_case(clk['src_name'])}${sep}
+ % endfor
+   } peri_e;
+-  typedef enum int {TransAes, TransHmac, TransKmac, TransOtbn} trans_e;
++  typedef enum int {
++% for target in hint_targets:
++<% sep = "" if loop.last else "," %>\
++    Trans${Name.to_camel_case(target)}${sep}
++% endfor
++  } trans_e;
+ ```
+ 
+ ${"###"} TL_agent
+@@ -91,7 +104,7 @@ All test sequences are extended from `clkmgr_base_vseq`, and are described below
+ 
+ ${"####"} clkmgr_peri_vseq
+ 
+-The sequence `clkmgr_peri_vseq` randomizes the stimuli that drive the four peripheral clocks.
++The sequence `clkmgr_peri_vseq` randomizes the stimuli that drive the peripheral clocks.
+ These clocks are mutually independent so they are tested in parallel.
+ They depend on
+ * The `clk_enables` CSR, which has a dedicated enable for each peripheral clock
+@@ -102,7 +115,7 @@ The sequence runs a number of iterations, each randomizing the above except for
+ 
+ ${"####"} clkmgr_trans_vseq
+ 
+-The sequence `clkmgr_trans_vseq` randomizes the stimuli that drive the five transactional unit clocks.
++The sequence `clkmgr_trans_vseq` randomizes the stimuli that drive the transactional unit clocks.
+ These are also mutually independent so they are tested in parallel.
+ They depend on the `clk_hints` CSR, which has a separate bit for each, `main_ip_clk_en` and `scanmode_i`, similar to the peripheral clocks.
+ They also depend on the `idle_i` input, which also has a separate multi-bit value for each unit.
+@@ -119,6 +132,7 @@ When the external clock is selected and `scanmode_i` is not set to `prim_mubi_pk
+ * If `extclk_ctrl.hi_speed_sel` CSR is `prim_mubi_pkg::MuBi4True`, when the selection is enabled by software.
+ 
+ % endif
++% if measurement_live:
+ ${"####"} clkmgr_frequency_vseq
+ 
+ The sequence `clkmgr_frequency_vseq` randomly programs the frequency measurement for each clock so its measurement is either okay, slow, or fast.
+@@ -132,6 +146,7 @@ The sequence `clkmgr_frequency_timeout_vseq` programs the frequency measurement
+ It randomly stops one of the clocks, and checks the corresponding bit in the `recov_err_code` show a timeout.
+ It also checks the recoverable alerts trigger as expected for a timeout.
+ 
++% endif
+ ${"####"} clkmgr_clk_status_vseq
+ 
+ This checks that the `pwr_o.*_status` outputs track the `pwr_i.*_ip_clk_en` inputs.
+@@ -145,8 +160,10 @@ The following covergroups have been developed to prove that the test intent has
+   These are wrapped in class `clkmgr_peri_cg_wrap` and instantiated in `clkmgr_env_cov`.
+ * Covergroups for inputs to each transactional gated unit clock.
+   These are wrapped in class `clkmgr_trans_cg_wrap` and instantiated in `clkmgr_env_cov`.
++% if measurement_live:
+ * Covergroups for the outcome of each clock measurement.
+   These are wrapped in class `freq_measure_cg_wrap` and instantiated in `clkmgr_env_cov`.
++% endif
+ % if ext_clk_bypass:
+ * Covergroup for the external clock selection logic: `extclk_cg` in `clkmgr_env_cov`.
+ % endif
+@@ -176,14 +193,16 @@ ${"###"} Assertions
+ * Pwrmgr enable-status assertions: Interface `clkmgr_pwrmgr_sva_if` contains concurrent SVA that checks that edges of the various ip_clk_en are followed by corresponding edges of their clk_status.
+   The clocks checked are `main`, `io`, and `usb`.
+ * Gated clock assertions: Interface `clkmgr_gated_clock_sva_if` contains concurrent SVA that checks each gated clock is either running or stopped based on their control logic.
+-  There is one assertion for each of the four peripheral clock and four hintable clocks.
++  There is one assertion for each peripheral clock and each hintable clock.
+ * Transactional clock assertions: Interface `clkmgr_trans_sva_if` contains concurrent SVA that checks each transactional clock is either running or stopped based on their control logic.
+-  There is one assertion for each of the four hintable clocks.
++  There is one assertion for each hintable clock.
+ * Clock divider assertions: Interface `clkmgr_div_sva_if` contains concurrent SVA that checks the `io_div2` and `io_div4` clocks are running at nominal frequency, or are divided by two each in response to the `extclk` logic.
+ * External clock assertions: Interface `clkmgr_extclk_sva_if` contains concurrent SVA that checks the external control outputs respond correctly to the various CSR or inputs that control them.
+ * Clock gating assertions: Interface `clkmgr_cg_en_sva_if` contains concurrent assertions that check a clock's cg_en output is active when the clock is disabled, and viceversa.
+   As a special case, interface `clkmgr_aon_cg_en_sva_if` checks cg_en is never active for an aon clock.
++% if ext_clk_bypass:
+ * Lost calibration assertions: Interfaces `clkmgr_lost_calib_ctrl_en_sva_if` and `clkmgr_lost_calib_regwen_sva_if` check that losing calibration turns off clock measurements and re-enables measure control writes.
++% endif
+ * TLUL assertions: `clkmgr_bind.sv` binds the `tlul_assert` [assertions](../../../../ip/tlul/doc/TlulProtocolChecker.md) to the IP to ensure TileLink interface protocol compliance.
+ * Unknown checks on DUT outputs: The RTL has assertions to ensure all outputs are initialized to known values after coming out of reset.
+ 
+diff --git a/dv/clkmgr_sim_cfg.hjson.tpl b/dv/clkmgr_sim_cfg.hjson.tpl
+index 746d9b7d..b999d25f 100644
+--- a/dv/clkmgr_sim_cfg.hjson.tpl
++++ b/dv/clkmgr_sim_cfg.hjson.tpl
+@@ -1,6 +1,16 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++<%doc>
++Clock measurement cannot run when ext_clk_bypass is false. See rtl/clkmgr.sv.tpl, where the
++% else: branch of u_calib_rdy_sync ties .mubi_i to MuBi4False: with calib_rdy false,
++clkmgr_meas_chk clears the measurement enable and measure_ctrl_regwen is held at 1, so any
++sequence exercising measurement cannot pass. That is why measurement_live aliases ext_clk_bypass
++here and in the four other templates that gate on it.
++
++These are gated rather than deleted, so they return automatically if the configuration changes.
++</%doc>\
++<% measurement_live = ext_clk_bypass %>\
+ {
+   // Name of the sim cfg - typically same as the name of the DUT.
+   name: clkmgr
+@@ -76,6 +86,7 @@
+       uvm_test_seq: clkmgr_extclk_vseq
+     }
+   % endif
++  % if measurement_live:
+     {
+       name: clkmgr_frequency
+       uvm_test_seq: clkmgr_frequency_vseq
+@@ -84,6 +95,7 @@
+       name: clkmgr_frequency_timeout
+       uvm_test_seq: clkmgr_frequency_timeout_vseq
+     }
++  % endif
+     {
+       name: clkmgr_peri
+       uvm_test_seq: clkmgr_peri_vseq
+diff --git a/dv/env/clkmgr_env_cov.sv.tpl b/dv/env/clkmgr_env_cov.sv.tpl
+index 6d1caf1b..da0e9e72 100644
+--- a/dv/env/clkmgr_env_cov.sv.tpl
++++ b/dv/env/clkmgr_env_cov.sv.tpl
+@@ -2,9 +2,13 @@
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
+ 
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
+ <%
+ from ipgen.clkmgr_gen import get_rg_srcs
+ rg_srcs = get_rg_srcs(typed_clocks)
++measurement_live = ext_clk_bypass
+ %>\
+ /**
+  * Covergroups that are dependent on run-time parameters that may be available
+@@ -71,6 +75,7 @@ class clkmgr_trans_cg_wrap;
+   endfunction
+ endclass
+ 
++% if measurement_live:
+ // Wrapper class for frequency measurement covergroup.
+ class freq_measure_cg_wrap;
+   // This covergroup collects outcomes of clock frequency measurements.
+@@ -97,6 +102,8 @@ class freq_measure_cg_wrap;
+   endfunction
+ endclass
+ 
++% endif
++
+ class clkmgr_env_cov extends cip_base_env_cov #(
+   .CFG_T(clkmgr_env_cfg)
+ );
+@@ -111,9 +118,12 @@ class clkmgr_env_cov extends cip_base_env_cov #(
+   // These covergroups collect signals affecting transactional clocks.
+   clkmgr_trans_cg_wrap trans_cg_wrap[NUM_TRANS];
+ 
++% if measurement_live:
+   // These covergroups collect outcomes of clock frequency measurements.
+   freq_measure_cg_wrap freq_measure_cg_wrap[${len(rg_srcs)}];
+ 
++% endif
++
+ % if ext_clk_bypass:
+   // This embeded covergroup collects coverage for the external clock functionality.
+   covergroup extclk_cg with function sample (
+@@ -131,21 +141,25 @@ class clkmgr_env_cov extends cip_base_env_cov #(
+ % endif
+   // This collects coverage for recoverable errors.
+   covergroup recov_err_cg with function sample (
++% if measurement_live:
+ % for src in reversed(rg_srcs):
+       bit ${src}_timeout,
+ % endfor
+ % for src in reversed(rg_srcs):
+       bit ${src}_measure,
+ % endfor
++% endif
+       bit shadow_update
+   );
+     shadow_update_cp: coverpoint shadow_update;
++% if measurement_live:
+ % for src in rg_srcs:
+     ${src}_measure_cp: coverpoint ${src}_measure;
+ % endfor
+ % for src in rg_srcs:
+     ${src}_timeout_cp: coverpoint ${src}_timeout;
+ % endfor
++% endif
+   endgroup
+ 
+   // This collects coverage for fatal errors.
+@@ -169,10 +183,12 @@ class clkmgr_env_cov extends cip_base_env_cov #(
+       clkmgr_env_pkg::trans_e trans = clkmgr_env_pkg::trans_e'(i);
+       trans_cg_wrap[i] = new(trans.name);
+     end
++  % if measurement_live:
+     foreach (ExpectedCounts[i]) begin
+       clk_mesr_e clk_mesr = clk_mesr_e'(i);
+       freq_measure_cg_wrap[i] = new(clk_mesr.name);
+     end
++  % endif
+   % if ext_clk_bypass:
+     extclk_cg = new();
+   % endif
+diff --git a/dv/env/clkmgr_scoreboard.sv.tpl b/dv/env/clkmgr_scoreboard.sv.tpl
+index b8a2b1fd..ed131e16 100644
+--- a/dv/env/clkmgr_scoreboard.sv.tpl
++++ b/dv/env/clkmgr_scoreboard.sv.tpl
+@@ -1,11 +1,15 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
+ <%
+ from itertools import chain
+ from ipgen.clkmgr_gen import get_rg_srcs
+ from topgen.lib import Name
+ rg_srcs = get_rg_srcs(typed_clocks)
++measurement_live = ext_clk_bypass
+ %>\
+ 
+ // The scoreboard checks the jitter_an_o output, and processes CSR checks.
+@@ -48,7 +52,9 @@ class clkmgr_scoreboard extends cip_base_scoreboard #(
+       monitor_jitter_en();
+       sample_peri_covs();
+       sample_trans_covs();
++    % if measurement_live:
+       sample_freq_measurement_covs();
++    % endif
+       sample_fatal_err_cov();
+       sample_recov_err_cov();
+     join_none
+@@ -179,6 +185,7 @@ ${spc}cfg.clkmgr_vif.scanmode_i == MuBi4True);
+     end
+   endtask
+ 
++% if measurement_live:
+   local task sample_freq_measurement_cov(clk_mesr_e clk, ref freq_measurement_t measurement,
+                                          logic timeout);
+     if (cfg.en_cov) begin
+@@ -207,15 +214,20 @@ ${spc}cfg.clkmgr_vif.scanmode_i == MuBi4True);
+     join_none
+   endtask
+ 
++% endif
+   task sample_recov_err_cov();
+     fork
+       forever
+         @cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr if (cfg.en_cov) begin
+           cov.recov_err_cg.sample(
++% if measurement_live:
+ % for i in list(reversed(range(1 + 2 * len(rg_srcs)))):
+ <% sep = ');' if loop.last else ',' %>\
+               cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[${i}]${sep}
+ % endfor
++% else:
++              cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[0]);
++% endif
+           `uvm_info(`gfn, $sformatf(
+                     "Recoverable errors sampled: 0x%x", cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr),
+                     UVM_MEDIUM)
+diff --git a/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl b/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl
+index 20ae4434..551ae764 100644
+--- a/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl
++++ b/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl
+@@ -1,6 +1,10 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
++<% measurement_live = ext_clk_bypass %>\
+ 
+ // The regwen vseq attempts to write to registers whose regwen is randomly on or off to check
+ // the register contents is not updated when off. More details in the clkmgr_testplan.hjson file.
+@@ -39,6 +43,7 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
+   endtask : check_extclk_regwen
+ 
+ % endif
++% if measurement_live:
+   // This must be careful to turn measurements off right after checking the updates
+   // to avoid measurement errors. We could set the thresholds correctly, but we
+   // might as well set them randomly for good measure. Carefully masks only the
+@@ -79,11 +84,30 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
+     end
+   endtask : check_meas_ctrl_regwen
+ 
++% else:
++  // calib_rdy is tied to MuBi4False, so hardware holds measure_ctrl_regwen at 1 and forces any
++  // measurement enable back to MuBi4False. Check software cannot defeat either.
++  task check_meas_ctrl_disabled();
++    csr_wr(.ptr(ral.measure_ctrl_regwen), .value(0));
++    foreach (ExpectedCounts[clk]) begin
++      clk_mesr_e clk_mesr = clk_mesr_e'(clk);
++      csr_wr(.ptr(meas_ctrl_regs[clk_mesr].en), .value(MuBi4True));
++      void'(meas_ctrl_regs[clk_mesr].en.predict(MuBi4False));
++    end
++    // Clearing the enables crosses clock domains; clkmgr_lost_calib_ctrl_en_sva_if allows up
++    // to 45 cycles for it.
++    cfg.clk_rst_vif.wait_clks(50);
++    calibration_lost_checks();
++  endtask : check_meas_ctrl_disabled
++
++% endif
+   task body();
++% if measurement_live:
+     // Make sure the aon clock is running as slow as it is meant to, otherwise the aon clock
+     // runs fast enough that we could end up triggering faults due to the random settings for
+     // the thresholds.
+     cfg.aon_clk_rst_vif.set_freq_khz(AonClkHz / 1_000);
++% endif
+ 
+     `uvm_info(`gfn, $sformatf("Will run %0d rounds", num_trans), UVM_MEDIUM)
+     for (int i = 0; i < num_trans; ++i) begin
+@@ -91,7 +115,11 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
+     % if ext_clk_bypass:
+       check_extclk_regwen();
+     % endif
++    % if measurement_live:
+       check_meas_ctrl_regwen();
++    % else:
++      check_meas_ctrl_disabled();
++    % endif
+       apply_reset("HARD");
+       // This is to make sure we don't start writes immediately after reset,
+       // otherwise the tl_agent could mistakenly consider the following read
+diff --git a/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl b/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl
+index 87ac1e2b..021519aa 100644
+--- a/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl
++++ b/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl
+@@ -1,6 +1,10 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
++<% measurement_live = ext_clk_bypass %>\
+ 
+ // combine all clkmgr seqs (except below seqs) in one seq to run sequentially
+ // 1. csr seq, which requires scb to be disabled
+@@ -14,8 +18,10 @@ class clkmgr_stress_all_vseq extends clkmgr_base_vseq;
+     % if ext_clk_bypass:
+       "clkmgr_extclk_vseq",
+     % endif
++    % if measurement_live:
+       "clkmgr_frequency_timeout_vseq",
+       "clkmgr_frequency_vseq",
++    % endif
+       "clkmgr_peri_vseq",
+       "clkmgr_smoke_vseq",
+       "clkmgr_trans_vseq"
+diff --git a/dv/env/seq_lib/clkmgr_vseq_list.sv.tpl b/dv/env/seq_lib/clkmgr_vseq_list.sv.tpl
+index d672cbd4..4bfbf34d 100644
+--- a/dv/env/seq_lib/clkmgr_vseq_list.sv.tpl
++++ b/dv/env/seq_lib/clkmgr_vseq_list.sv.tpl
+@@ -1,12 +1,18 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++## measurement_live: measurement cannot run when ext_clk_bypass is false, because
++## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
++## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
++<% measurement_live = ext_clk_bypass %>\
+ 
+ `include "clkmgr_base_vseq.sv"
+ `include "clkmgr_clk_status_vseq.sv"
+ `include "clkmgr_common_vseq.sv"
++% if measurement_live:
+ `include "clkmgr_frequency_timeout_vseq.sv"
+ `include "clkmgr_frequency_vseq.sv"
++% endif
+ % if ext_clk_bypass:
+ `include "clkmgr_extclk_vseq.sv"
+ % endif

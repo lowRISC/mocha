@@ -1,6 +1,16 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+<%doc>
+Clock measurement cannot run when ext_clk_bypass is false. See rtl/clkmgr.sv.tpl, where the
+% else: branch of u_calib_rdy_sync ties .mubi_i to MuBi4False: with calib_rdy false,
+clkmgr_meas_chk clears the measurement enable and measure_ctrl_regwen is held at 1, so any
+sequence exercising measurement cannot pass. That is why measurement_live aliases ext_clk_bypass
+here and in the four other templates that gate on it.
+
+These are gated rather than deleted, so they return automatically if the configuration changes.
+</%doc>\
+<% measurement_live = ext_clk_bypass %>\
 {
   // Name of the sim cfg - typically same as the name of the DUT.
   name: clkmgr
@@ -76,6 +86,7 @@
       uvm_test_seq: clkmgr_extclk_vseq
     }
   % endif
+  % if measurement_live:
     {
       name: clkmgr_frequency
       uvm_test_seq: clkmgr_frequency_vseq
@@ -84,6 +95,7 @@
       name: clkmgr_frequency_timeout
       uvm_test_seq: clkmgr_frequency_timeout_vseq
     }
+  % endif
     {
       name: clkmgr_peri
       uvm_test_seq: clkmgr_peri_vseq

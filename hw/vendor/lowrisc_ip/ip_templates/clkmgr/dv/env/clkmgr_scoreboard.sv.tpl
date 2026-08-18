@@ -1,11 +1,15 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+## measurement_live: measurement cannot run when ext_clk_bypass is false, because
+## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
+## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
 <%
 from itertools import chain
 from ipgen.clkmgr_gen import get_rg_srcs
 from topgen.lib import Name
 rg_srcs = get_rg_srcs(typed_clocks)
+measurement_live = ext_clk_bypass
 %>\
 
 // The scoreboard checks the jitter_an_o output, and processes CSR checks.
@@ -48,7 +52,9 @@ class clkmgr_scoreboard extends cip_base_scoreboard #(
       monitor_jitter_en();
       sample_peri_covs();
       sample_trans_covs();
+    % if measurement_live:
       sample_freq_measurement_covs();
+    % endif
       sample_fatal_err_cov();
       sample_recov_err_cov();
     join_none
@@ -179,6 +185,7 @@ ${spc}cfg.clkmgr_vif.scanmode_i == MuBi4True);
     end
   endtask
 
+% if measurement_live:
   local task sample_freq_measurement_cov(clk_mesr_e clk, ref freq_measurement_t measurement,
                                          logic timeout);
     if (cfg.en_cov) begin
@@ -207,15 +214,20 @@ ${spc}cfg.clkmgr_vif.scanmode_i == MuBi4True);
     join_none
   endtask
 
+% endif
   task sample_recov_err_cov();
     fork
       forever
         @cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr if (cfg.en_cov) begin
           cov.recov_err_cg.sample(
+% if measurement_live:
 % for i in list(reversed(range(1 + 2 * len(rg_srcs)))):
 <% sep = ');' if loop.last else ',' %>\
               cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[${i}]${sep}
 % endfor
+% else:
+              cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr[0]);
+% endif
           `uvm_info(`gfn, $sformatf(
                     "Recoverable errors sampled: 0x%x", cfg.clkmgr_csrs_vif.csrs_cb.recov_err_csr),
                     UVM_MEDIUM)
