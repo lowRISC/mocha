@@ -48,10 +48,18 @@ module clkmgr_bind;
   bind clkmgr clkmgr_trans_sva_if clkmgr_${sig['endpoint_ip']}_trans_sva_if (
     .clk(clk_${sig['src_name']}_i),
     .rst_n(rst_${sig['src_name']}_ni),
+% if len(typed_clocks['hint_clks']) == 1:
+    .hint(reg2hw.clk_hints.q),
+% else:
     .hint(reg2hw.clk_hints.${clk}_hint.q),
+% endif
     .idle(idle_i[${hint_names[clk]}] == prim_mubi_pkg::MuBi4True),
     .scanmode(scanmode_i == prim_mubi_pkg::MuBi4True),
+% if len(typed_clocks['hint_clks']) == 1:
+    .status(hw2reg.clk_hints_status.d),
+% else:
     .status(hw2reg.clk_hints_status.${clk}_val.d),
+% endif
     .trans_clk(clocks_o.${clk})
   );
 

@@ -2,10 +2,9 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 <%
-from ipgen.clkmgr_gen import get_all_srcs, get_hint_targets, get_rg_srcs
+from ipgen.clkmgr_gen import get_all_srcs, get_rg_srcs
 from topgen.lib import Name
 rg_srcs = get_rg_srcs(typed_clocks)
-hint_targets = get_hint_targets(typed_clocks)
 %>\
 //
 // clkmgr interface.
@@ -85,18 +84,26 @@ interface clkmgr_if (
   clk_hints_t clk_hints_csr;
   always_comb
     clk_hints_csr = '{
-% for target in list(reversed(hint_targets)):
+% for clk, sig in list(reversed(list(typed_clocks['hint_clks'].items()))):
 <% sep = '' if loop.last else ',' %>\
-    ${target}: `CLKMGR_HIER.reg2hw.clk_hints.clk_main_${target}_hint.q${sep}
+  % if len(typed_clocks['hint_clks']) == 1:
+    ${sig['endpoint_ip']}: `CLKMGR_HIER.reg2hw.clk_hints.q${sep}
+  % else:
+    ${sig['endpoint_ip']}: `CLKMGR_HIER.reg2hw.clk_hints.${clk}_hint.q${sep}
+  % endif
 % endfor
   };
 
   clk_hints_t clk_hints_status_csr;
   always_comb
     clk_hints_status_csr = '{
-% for target in list(reversed(hint_targets)):
+% for clk, sig in list(reversed(list(typed_clocks['hint_clks'].items()))):
 <% sep = '' if loop.last else ',' %>\
-                             ${target}: `CLKMGR_HIER.u_reg.clk_hints_status_clk_main_${target}_val_qs${sep}
+  % if len(typed_clocks['hint_clks']) == 1:
+                             ${sig['endpoint_ip']}: `CLKMGR_HIER.u_reg.clk_hints_status_qs${sep}
+  % else:
+                             ${sig['endpoint_ip']}: `CLKMGR_HIER.u_reg.clk_hints_status_${clk}_val_qs${sep}
+  % endif
 % endfor
                              };
 % if ext_clk_bypass:
