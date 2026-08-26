@@ -20,6 +20,7 @@ mocha_add_test(NAME gpio_smoketest SOURCES gpio/smoketest.c LIBRARIES ${LIBS} SK
 mocha_add_test(NAME i2c_temperature_sensor_test SOURCES i2c/temperature_sensor_test.c LIBRARIES ${LIBS})
 mocha_add_test(NAME i2c_host_tx_rx_test SOURCES i2c/host_tx_rx_test.c LIBRARIES ${LIBS} SKIP_VERILATOR SKIP_FPGA)
 mocha_add_test(NAME i2c_device_tx_rx_test SOURCES i2c/device_tx_rx_test.c LIBRARIES ${LIBS} SKIP_VERILATOR SKIP_FPGA)
+mocha_add_test(NAME kmac_smoketest SOURCES kmac/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME mailbox_smoketest SOURCES mailbox/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME plic_smoketest SOURCES plic/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME pwrmgr_smoketest SOURCES pwrmgr/smoketest.c LIBRARIES ${LIBS})
