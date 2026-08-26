@@ -359,6 +359,20 @@
       run_opts: ["+ChipMemDRAM_image_file={run_dir}/entropy_src_smoketest_cheri.vmem",
                  "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
+    {
+      name: kmac_rom_app_test
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["kmac_smoketest_vanilla:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/kmac_smoketest_vanilla.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
+      name: kmac_rom_app_test_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["kmac_smoketest_cheri:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/kmac_smoketest_cheri.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -402,6 +416,8 @@
         "pwrmgr_smoke_cheri",
         "entropy_src_smoke",
         "entropy_src_smoke_cheri",
+        "kmac_rom_app_test",
+        "kmac_rom_app_test_cheri",
       ]
     }
     {
@@ -519,6 +535,13 @@
       tests: [
         "entropy_src_smoke",
         "entropy_src_smoke_cheri"
+      ]
+    }
+    {
+      name: kmac
+      tests: [
+        "kmac_rom_app_test",
+        "kmac_rom_app_test_cheri"
       ]
     }
   ]
