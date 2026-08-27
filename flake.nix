@@ -24,7 +24,7 @@
       inputs.uv2nix.follows = "uv2nix";
     };
     ftditool = {
-      url = "github:lowRISC/ftditool?ref=v0.5.0";
+      url = "github:lowRISC/ftditool?ref=v0.5.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
