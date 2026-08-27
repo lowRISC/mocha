@@ -21,7 +21,7 @@ There are three clock domains in Mocha.<!-- rfj4pd_x -->
 ## Reset domains
 
 Mocha has two power domains, `Aon` and `Main`, and the reset manager derives the chip's resets from them.<!-- 9g9uej_x -->
-The JTAG TAP reset is the exception: `dm_jtag_trst_n` comes straight from a pin and does not pass through the reset manager.
+The JTAG TAP reset is the exception: `dm_jtag_trst_n` comes straight from a pin and does not pass through the reset manager.<!-- yza50i_x -->
 
 The reset manager builds three trees.<!-- 3yv1wh_x -->
 
@@ -29,24 +29,24 @@ The reset manager builds three trees.<!-- 3yv1wh_x -->
 2. Life cycle: `lc_src` parents the `main`, `aon`, `io`, `spi_device`, `spi_host` and `i2c` leaf resets.<!-- 44pvix_x -->
 3. System: `sys_src` parents the `debug` leaf reset.<!-- 6waem2_x -->
 
-`sys_src` has a single leaf reset, `debug`, so that the debug module survives a non-debug-module reset.
-A non-debug-module request always asserts `lc_src`, but only asserts `sys_src` while `lc_hw_debug_en` is false.
-However, Mocha wires `lc_hw_debug_en` to a constant `On`, so everything on `lc_src` resets and the debug module stays out of reset.
+`sys_src` has a single leaf reset, `debug`, so that the debug module survives a non-debug-module reset.<!-- iq6ugn_x -->
+A non-debug-module request always asserts `lc_src`, but only asserts `sys_src` while `lc_hw_debug_en` is false.<!-- f5qo8i_x -->
+However, Mocha wires `lc_hw_debug_en` to a constant `On`, so everything on `lc_src` resets and the debug module stays out of reset.<!-- jry7si_x -->
 
-The reset manager supports four hardware reset requests: a main power glitch from the power manager, an escalation from the alert handler, a non-debug-module reset from the debug module, and an external peripheral request.
-Only the non-debug-module request is connected in Mocha; the other three are tied off at the power manager instantiation in `top_chip_system.sv`.
-Software can also reset the whole system by writing the reset manager's `RESET_REQ` register, which the reset manager forwards to the power manager.
-Unlike a non-debug-module request this asserts both `lc_src` and `sys_src`, so the debug module resets too, and the register self-clears when the reset is acknowledged so the system does not reset repeatedly.
+The reset manager supports four hardware reset requests: a main power glitch from the power manager, an escalation from the alert handler, a non-debug-module reset from the debug module, and an external peripheral request.<!-- 6upgjf_x -->
+Only the non-debug-module request is connected in Mocha; the other three are tied off at the power manager instantiation in `top_chip_system.sv`.<!-- zufl3r_x -->
+Software can also reset the whole system by writing the reset manager's `RESET_REQ` register, which the reset manager forwards to the power manager.<!-- h51zvb_x -->
+Unlike a non-debug-module request this asserts both `lc_src` and `sys_src`, so the debug module resets too, and the register self-clears when the reset is acknowledged so the system does not reset repeatedly.<!-- adhb0f_x -->
 
 Software can directly control three of the leaf resets, all on the IO clock: `spi_device`, `spi_host` and `i2c`.<!-- ih9zw0_x -->
-Each has its own `SW_RST_CTRL_N` register, driven straight into the leaf, holding that one peripheral in reset while the rest of the chip keeps running, so unlike a `RESET_REQ` write they do not involve the power manager and do not self-clear.
+Each has its own `SW_RST_CTRL_N` register, driven straight into the leaf, holding that one peripheral in reset while the rest of the chip keeps running, so unlike a `RESET_REQ` write they do not involve the power manager and do not self-clear.<!-- 3u6vgu_x -->
 The remaining leaf resets are not software controllable.<!-- 9wq9ze_x -->
 The vendored [theory of operation](../../hw/top_chip/ip_autogen/rstmgr/doc/theory_of_operation.md) describes the reset trees and their behaviour correctly, but it is written for the OpenTitan configuration and differs from Mocha, mainly:<!-- skwcio_x -->
 
-1. It says the power-on reset is driven by AST; Mocha has no AST block, so the reset manager takes its power-on reset from `rst_ni`, an input to the Mocha enclave.
-2. It lists the OpenTitan set of software resettable blocks, which includes `usbdev`. Mocha has no USB device.
-3. It names `sysrst_ctrl` and `aon_timer` as peripherals capable of requesting a reset. Neither exists in Mocha.
-4. It says `ALERT_INFO` and `CPU_INFO` record the alert status and CPU state before a reset. Mocha ties the alert and CPU dump inputs off, so neither register ever captures anything meaningful.
+1. It says the power-on reset is driven by AST; Mocha has no AST block, so the reset manager takes its power-on reset from `rst_ni`, an input to the Mocha enclave.<!-- lnxfen_x -->
+2. It lists the OpenTitan set of software resettable blocks, which includes `usbdev`. Mocha has no USB device.<!-- rqguia_x -->
+3. It names `sysrst_ctrl` and `aon_timer` as peripherals capable of requesting a reset. Neither exists in Mocha.<!-- 9x0qbx_x -->
+4. It says `ALERT_INFO` and `CPU_INFO` record the alert status and CPU state before a reset. Mocha ties the alert and CPU dump inputs off, so neither register ever captures anything meaningful.<!-- iyamrn_x -->
 
 ## Memory map
 
