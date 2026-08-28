@@ -73,7 +73,7 @@
       };
       ftditool-cli = inputs.ftditool.packages.${system}.default;
       cheri-toolchain = pkgs.callPackage ./nix/cheri_toolchain.nix {inherit (lrPkgs) llvm_cheri;};
-    in {
+    in rec {
       formatter = pkgs.alejandra;
       devShells = rec {
         default = baremetal;
@@ -146,6 +146,27 @@
       };
 
       apps = {
+        # Non-interactive entry point into the baremetal shell, for running a
+        # one-off command in it: `nix run .#baremetal -- <cmd> <args>`.
+        # mkEdaShell's shellHook execs the FHS sandbox with no argv, so
+        # `nix develop -c CMD` never reaches CMD: the dispatcher sees no
+        # arguments and drops into an interactive $SHELL instead. The app
+        # payload forwards argv through to `exec "$@"` inside the sandbox.
+        baremetal = devShells.baremetal.app;
+        # CI job runner, and what the workflows call. `nix run .#ci -- <job>`
+        # runs ci/run.py inside the same baremetal shell, so a CI job and a
+        # local run of it are the same command in the same environment:
+        #   nix run .#ci -- verilator-test
+        # The workflows invoke this from an ordinary `run:` step rather than
+        # through `defaults.run.shell`, which keeps the Actions runner's own
+        # child a plain bash it can track.
+        ci = {
+          type = "app";
+          program = "${pkgs.writeShellScript "mocha-ci" ''
+            repo="$(${pkgs.git}/bin/git rev-parse --show-toplevel 2>/dev/null || pwd)"
+            exec ${devShells.baremetal.app.program} "$repo/ci/run.py" "$@"
+          ''}";
+        };
         bitstream-build = flake-utils.lib.mkApp {
           drv = fpga.bitstream-build;
         };
