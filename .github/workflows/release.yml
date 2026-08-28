@@ -51,21 +51,14 @@ jobs:
     env:
       ARTEFACT: build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator
 
-    defaults:
-      run:
-        shell: "nix develop -c bash -e {0}"
-
     steps:
       - uses: actions/checkout@v5
 
       - name: Prepare Nix environment
-        run: |
-          true
+        run: nix run .#ci -- warmup
 
       - name: Build verilator
-        run: |
-          JOBS=$(($(nproc) / 2))
-          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
+        run: nix run .#ci -- verilator-release
 
       - uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
@@ -78,26 +71,16 @@ jobs:
     env:
       ARTEFACT: release_software.tar.gz
 
-    defaults:
-      run:
-        shell: "nix develop -c bash -e {0}"
-
     steps:
       - uses: actions/checkout@v5
 
       - name: Prepare Nix environment
-        run: |
-          true
+        run: nix run .#ci -- warmup
 
       - name: Generate artefacts
-        run: |
-          cmake -B build/sw -S sw
-          cmake --build build/sw -j$(nproc)
-          cmake --install build/sw --prefix release/examples --component examples
-          cmake --install build/sw --prefix release --component bootrom
-          cmake --install build/sw --prefix release --component boot
-
-          tar -czvf ${{ env.ARTEFACT }} release
+        run: nix run .#ci -- software-release
+        env:
+          MOCHA_RELEASE_ARTEFACT: ${{ env.ARTEFACT }}
 
       - uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'

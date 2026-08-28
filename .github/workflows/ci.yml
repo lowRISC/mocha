@@ -24,109 +24,40 @@ jobs:
   lint-check:
     runs-on: ["self-hosted", "nixos", "X64"]
 
-    defaults:
-      run:
-        shell: "nix develop -c bash -e {0}"
-
     steps:
       - uses: actions/checkout@v5
 
       - name: Prepare Nix environment
-        run: |
-          true
+        run: nix run .#ci -- warmup
 
-      - name: License check
-        run: |
-          reuse lint
-
-      - name: Check auto-generated artefacts
-        run: |
-          util/artefacts.py --check
-
-      - name: Lint - Ruff
-        run: |
-          ruff check
-
-      - name: Generate software buildsystem
-        run: |
-          cmake -B build/sw -S sw
-
-      - name: Lint - Clang Format
-        run: |
-          util/clang_format.py -i --dry-run -Werror
-
-      - name: Lint - Clang Tidy
-        run: |
-          util/clang_tidy.py
-
-      - name: Tool schema validation
-        run: |
-          util/tool_schema_validate.py
+      - name: Lint
+        run: nix run .#ci -- lint
 
   verilator-test:
     runs-on: ["self-hosted", "nixos", "X64"]
     needs: lint-check
 
-    defaults:
-      run:
-        shell: "nix develop -c bash -e {0}"
-
     steps:
       - uses: actions/checkout@v5
 
       - name: Prepare Nix environment
-        run: |
-          true
+        run: nix run .#ci -- warmup
 
-      - name: Generate software buildsystem
-        run: |
-          cmake -B build/sw -S sw
-
-      - name: Build software
-        run: |
-          cmake --build build/sw -j $(nproc)
-
-      - name: Build verilator
-        run: |
-          JOBS=$(($(nproc) / 4))
-          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
-
-      - name: Run verilator software tests
-        # Exclude tests marked 'slow' from quick CI runs.
-        run: |
-          ctest --test-dir build/sw -R sim_verilator -LE slow --output-on-failure -j $(nproc)
+      - name: Verilator tests
+        run: nix run .#ci -- verilator-test
 
   verilator-debug-test:
     runs-on: ["self-hosted", "nixos", "X64"]
     needs: lint-check
 
-    defaults:
-      run:
-        shell: "nix develop -c bash -e {0}"
-
     steps:
       - uses: actions/checkout@v5
 
       - name: Prepare Nix environment
-        run: |
-          true
+        run: nix run .#ci -- warmup
 
-      - name: Generate software buildsystem
-        run: |
-          cmake -B build/sw -S sw
-
-      - name: Build software
-        run: |
-          cmake --build build/sw -j $(nproc) --target bootrom --target infinite_loop
-
-      - name: Build verilator
-        run: |
-          JOBS=$(($(nproc) / 4))
-          MAKEFLAGS="-j$JOBS" fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator
-
-      - name: Run verilator debug test
-        run: |
-          util/debug_test_verilator.sh
+      - name: Verilator debug test
+        run: nix run .#ci -- verilator-debug-test
 
   fpga-cache-check:
     runs-on: ["self-hosted", "nixos", "X64"]
@@ -216,22 +147,14 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Build software
-        shell: "nix develop -c bash -e {0}"
-        run: |
-          cmake -B build/sw -S sw
-          cmake --build build/sw -j $(nproc)
+        run: nix run .#ci -- sw-build
 
       - name: Flash bitstream
         run: |
           nix run .#bitstream-load
 
       - name: Run FPGA tests
-        # Exclude tests marked 'slow' from quick CI runs.
-        shell: "nix develop -c bash -e {0}"
-        run: |
-          ctest --test-dir build/sw -R fpga -LE slow --output-on-failure
+        run: nix run .#ci -- fpga-test
 
       - name: Run FPGA debug test
-        shell: "nix develop -c bash -e {0}"
-        run: |
-          util/debug_test_fpga.sh
+        run: nix run .#ci -- fpga-debug-test
