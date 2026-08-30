@@ -83,22 +83,7 @@ interface clkmgr_if (
     };
 
   clk_hints_t clk_hints_csr;
-  always_comb
-    clk_hints_csr = '{
-% for target in list(reversed(hint_targets)):
-<% sep = '' if loop.last else ',' %>\
-    ${target}: `CLKMGR_HIER.reg2hw.clk_hints.clk_main_${target}_hint.q${sep}
-% endfor
-  };
 
-  clk_hints_t clk_hints_status_csr;
-  always_comb
-    clk_hints_status_csr = '{
-% for target in list(reversed(hint_targets)):
-<% sep = '' if loop.last else ',' %>\
-                             ${target}: `CLKMGR_HIER.u_reg.clk_hints_status_clk_main_${target}_val_qs${sep}
-% endfor
-                             };
 % if ext_clk_bypass:
 
   prim_mubi_pkg::mubi4_t extclk_ctrl_csr_sel;

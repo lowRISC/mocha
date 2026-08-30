@@ -43,19 +43,7 @@ module clkmgr_bind;
   );
 
 % endfor
-  // Assertions for transactional clocks.
-% for clk, sig in typed_clocks['hint_clks'].items():
-  bind clkmgr clkmgr_trans_sva_if clkmgr_${sig['endpoint_ip']}_trans_sva_if (
-    .clk(clk_${sig['src_name']}_i),
-    .rst_n(rst_${sig['src_name']}_ni),
-    .hint(reg2hw.clk_hints.${clk}_hint.q),
-    .idle(idle_i[${hint_names[clk]}] == prim_mubi_pkg::MuBi4True),
-    .scanmode(scanmode_i == prim_mubi_pkg::MuBi4True),
-    .status(hw2reg.clk_hints_status.${clk}_val.d),
-    .trans_clk(clocks_o.${clk})
-  );
 
-% endfor
 % if ext_clk_bypass:
   bind clkmgr clkmgr_extclk_sva_if clkmgr_extclk_sva_if (
     .clk_i,

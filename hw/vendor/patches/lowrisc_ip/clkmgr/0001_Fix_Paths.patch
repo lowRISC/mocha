@@ -1,0 +1,61 @@
+diff --git a/data/clkmgr_testplan.hjson.tpl b/data/clkmgr_testplan.hjson.tpl
+index 42a26b6..61293f6 100644
+--- a/data/clkmgr_testplan.hjson.tpl
++++ b/data/clkmgr_testplan.hjson.tpl
+@@ -3,14 +3,14 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name: "clkmgr"
+-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
++  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
+                      "clkmgr_sec_cm_testplan.hjson",
+-                     "hw/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
++                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
+   testpoints: [
+     {
+       name: smoke
+diff --git a/dv/clkmgr_sim_cfg.hjson.tpl b/dv/clkmgr_sim_cfg.hjson.tpl
+index 7a869dc..746d9b7 100644
+--- a/dv/clkmgr_sim_cfg.hjson.tpl
++++ b/dv/clkmgr_sim_cfg.hjson.tpl
+@@ -12,7 +12,7 @@
+   tb: tb
+ 
+   // Simulator used to sign off this block
+-  tool: vcs
++  tool: xcelium
+ 
+   // Fusesoc core file used for building the file list.
+   fusesoc_core: ${instance_vlnv("lowrisc:dv:clkmgr_sim:0.1")}
+@@ -25,14 +25,14 @@
+ 
+   // Import additional common sim cfg files.
+   import_cfgs: [// Project wide common sim cfg file
+-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
+                 // Common CIP test lists
+-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/alert_test.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/stress_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+-                "{proj_root}/hw/dv/tools/dvsim/tests/shadow_reg_errors_tests.hjson"
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/alert_test.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
++                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/shadow_reg_errors_tests.hjson"
+                 ]
+ 
+   // Add additional tops for simulation.
