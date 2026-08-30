@@ -1,16 +1,17 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+<% measurement_live = ext_clk_bypass %>\
 {
   name: "clkmgr"
-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
+  // clkmgr has no interrupts, so intr_test_testplan.hjson is deliberately not imported.
+  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
                      "clkmgr_sec_cm_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
   testpoints: [
     {
       name: smoke
@@ -183,6 +184,7 @@
       stage: V2
       tests: ["clkmgr_smoke"]
     }
+  % if measurement_live:
     {
       name: frequency
       desc: '''This tests the frequency counters measured count functionality.
@@ -249,6 +251,7 @@
       stage: V2
       tests: ["clkmgr_frequency"]
     }
+  % endif
     {
       name: regwen
       desc: '''This tests the behavior of the regwen CSRs.
@@ -275,8 +278,10 @@
           % if ext_clk_bypass:
             - clkmgr_extclk_vseq,
           % endif
+          % if measurement_live:
             - clkmgr_frequency_timeout_vseq,
             - clkmgr_frequency_vseq,
+          % endif
             - clkmgr_peri_vseq,
             - clkmgr_smoke_vseq,
             - clkmgr_trans_vseq

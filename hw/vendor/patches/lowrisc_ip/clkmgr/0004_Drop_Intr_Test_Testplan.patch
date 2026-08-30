@@ -1,0 +1,13 @@
+diff --git a/data/clkmgr_testplan.hjson.tpl b/data/clkmgr_testplan.hjson.tpl
+--- a/data/clkmgr_testplan.hjson.tpl
++++ b/data/clkmgr_testplan.hjson.tpl
+@@ -3,8 +3,8 @@
+ // SPDX-License-Identifier: Apache-2.0
+ {
+   name: "clkmgr"
++  // clkmgr has no interrupts, so intr_test_testplan.hjson is deliberately not imported.
+   import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
+-                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
+                      "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+                      "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+                      "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
