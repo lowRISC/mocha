@@ -1,0 +1,45 @@
+diff --git a/env/seq_lib/kmac_common_vseq.sv b/env/seq_lib/kmac_common_vseq.sv
+index 481e7451..1382fc16 100644
+--- a/env/seq_lib/kmac_common_vseq.sv
++++ b/env/seq_lib/kmac_common_vseq.sv
+@@ -18,10 +18,12 @@ class kmac_common_vseq extends kmac_base_vseq;
+     if (common_seq_type inside {"shadow_reg_errors", "shadow_reg_errors_with_csr_rw"}) begin
+       csr_excl_item csr_excl = ral.get_excl_item();
+       // Shadow storage fatal error might cause req to drop without ack.
++`ifdef KMAC_MASKING
+       $assertoff(0,
+       "tb.dut.gen_entropy.u_prim_sync_reqack_data.u_prim_sync_reqack.SyncReqAckHoldReq");
+       $assertoff(0,
+       "tb.dut.gen_entropy.u_prim_sync_reqack_data.u_prim_sync_reqack.SyncReqAckAckNeedsReq");
++`endif
+       $assertoff(0, "tb.edn_if[0].ReqHighUntilAck_A");
+       $assertoff(0, "tb.edn_if[0].AckAssertedOnlyWhenReqAsserted_A");
+     end
+diff --git a/env/seq_lib/kmac_lc_escalation_vseq.sv b/env/seq_lib/kmac_lc_escalation_vseq.sv
+index bbf9e55d..d7ba893f 100644
+--- a/env/seq_lib/kmac_lc_escalation_vseq.sv
++++ b/env/seq_lib/kmac_lc_escalation_vseq.sv
+@@ -8,8 +8,10 @@ class kmac_lc_escalation_vseq extends kmac_app_vseq;
+   `uvm_object_new
+
+   virtual function void disable_asserts();
++`ifdef KMAC_MASKING
+     $assertoff(0,
+       "tb.dut.gen_entropy.u_prim_sync_reqack_data.u_prim_sync_reqack.SyncReqAckAckNeedsReq");
++`endif
+     $assertoff(0, "tb.edn_if[0].ReqHighUntilAck_A");
+     $assertoff(0, "tb.edn_if[0].AckAssertedOnlyWhenReqAsserted_A");
+   endfunction
+diff --git a/kmac_base_sim_cfg.hjson b/kmac_base_sim_cfg.hjson
+index 7ffdffb7..d07d3ef5 100644
+--- a/kmac_base_sim_cfg.hjson
++++ b/kmac_base_sim_cfg.hjson
+@@ -63,7 +63,7 @@
+   build_modes: [
+     {
+       name: enable_mask_mode
+-      build_opts: ["+define+EN_MASKING=1", "+define+SW_KEY_MASKED=0"]
++      build_opts: ["+define+EN_MASKING=1", "+define+SW_KEY_MASKED=0", "+define+KMAC_MASKING"]
+       run_opts: ["+enable_masking=1", "+sw_key_masked=0"]
+     }
+     {

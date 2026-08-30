@@ -14,8 +14,14 @@ import argparse
 import subprocess
 import sys
 
+# A COMMANDS entry is either a single command, or a group of commands that run
+# together before one dirty-check (e.g. the DD + DV vendor pair, which share a
+# target_dir and must both run before the tree is checked).
+Command = list[str]
+CommandGroup = list[Command]
+
 # the commands which generated committed files to be ran
-COMMANDS: list[list[str]] = [
+COMMANDS: list[Command | CommandGroup] = [
     # lockfiles
     ["uv", "lock"],
     ["nix", "flake", "lock"],
@@ -58,8 +64,13 @@ COMMANDS: list[list[str]] = [
     ],
     # documentation
     ["d2", "doc/img/mocha.d2"],
-    # vendor OpenTitan before doing the IP generation because patches might change the template
-    ["util/vendor.py", "hw/vendor/lowrisc_ip.vendor.hjson"],
+    # vendor OpenTitan before doing the IP generation because patches might change the template.
+    # DD and DV vendors share a target_dir; run both before checking, since DD deletes IP dirs
+    # (including their dv/ subdirs) which the DV vendor then re-populates.
+    [
+        ["util/vendor.py", "hw/vendor/lowrisc_ip.vendor.hjson"],
+        ["util/vendor.py", "hw/vendor/lowrisc_ip_dv.vendor.hjson"],
+    ],
     # crossbar generator
     [
         "hw/vendor/lowrisc_ip/util/tlgen.py",
@@ -177,11 +188,16 @@ def main():
     args = parser.parse_args()
 
     fail = False
-    for cmdline in COMMANDS:
-        # run each generator command. these should all succeed
-        joined_cmdline = " ".join(cmdline)
-        print(f"running '{joined_cmdline}'...")
-        run_subprocess(cmdline)
+    for entry in COMMANDS:
+        # An entry is either a single command (list[str]) or a group of commands
+        # (list[list[str]]) that all run before a single dirty check.
+        cmdlines = entry if isinstance(entry[0], list) else [entry]
+
+        for cmdline in cmdlines:
+            # run each generator command. these should all succeed
+            joined_cmdline = " ".join(cmdline)
+            print(f"running '{joined_cmdline}'...")
+            run_subprocess(cmdline)
 
         if not args.check:
             continue

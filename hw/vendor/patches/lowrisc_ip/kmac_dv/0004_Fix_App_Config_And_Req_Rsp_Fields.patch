@@ -1,0 +1,203 @@
+diff --git a/env/kmac_env_pkg.sv b/env/kmac_env_pkg.sv
+--- a/env/kmac_env_pkg.sv
++++ b/env/kmac_env_pkg.sv
+@@ -70,10 +70,10 @@
+   parameter uint NUM_EDN = 1;
+
+   // Earlgrey has 3 application interfaces
+-  parameter uint NUM_APP_INTF = 4;
++  parameter uint NUM_APP_INTF = 3;
+   parameter app_config_t APP_CFG[NUM_APP_INTF] =
+     '{kmac_pkg::AppCfgKeyMgr, kmac_pkg::AppCfgLcCtrl,
+-      kmac_pkg::AppCfgRomCtrl, kmac_pkg::AppCfgOtbn};
++      kmac_pkg::AppCfgRomCtrl};
+
+   /////////////////////////////
+   // Timing Model Parameters //
+diff --git a/env/kmac_scoreboard.sv b/env/kmac_scoreboard.sv
+--- a/env/kmac_scoreboard.sv
++++ b/env/kmac_scoreboard.sv
+@@ -330,16 +330,16 @@
+             `uvm_info(`gfn, "Raised in_kmac_app and sha3_absorb. Dropped sha3_idle.", UVM_HIGH)
+
+             // we need to choose the correct application interface
+             if (`KMAC_APP_VALID_TRANS(AppKeymgr)) begin
+               app_mode = AppKeymgr;
+-              strength = APP_CFG[app_mode].session_cfg.kstrength;
++              strength = APP_CFG[app_mode].KeccakStrength;
+               if (entropy_ready) incr_and_predict_hash_cnt();
+             end else if (`KMAC_APP_VALID_TRANS(AppLc)) begin
+               app_mode = AppLc;
+-              strength = APP_CFG[app_mode].session_cfg.kstrength;
++              strength = APP_CFG[app_mode].KeccakStrength;
+             end else if (`KMAC_APP_VALID_TRANS(AppRom)) begin
+               app_mode = AppRom;
+-              strength = APP_CFG[app_mode].session_cfg.kstrength;
++              strength = APP_CFG[app_mode].KeccakStrength;
+             end else if (`KMAC_APP_VALID_TRANS(AppOtbn)) begin
+               `uvm_fatal(get_full_name(),
+                          "Cannot start KMAC app for OTBN (no support for dynamic apps yet)")
+@@ -1748,8 +1748,8 @@
+     byte fname_arr[];
+     byte custom_str_arr[];
+
+-    if (en_kmac_app && APP_CFG[app_mode].session_cfg.prefix_mode) begin
+-      prefix_bytes = {<< byte {APP_CFG[app_mode].prefix}};
++    if (en_kmac_app && APP_CFG[app_mode].PrefixMode) begin
++      prefix_bytes = {<< byte {APP_CFG[app_mode].Prefix}};
+     end else begin
+       prefix_bytes = {<< 32 {prefix}};
+       prefix_bytes = {<< byte {prefix_bytes}};
+--- a/env/kmac_if.sv
++++ b/env/kmac_if.sv
+@@ -19,11 +19,11 @@
+   `ASSERT(KmacMaskingO_A, `EN_MASKING == en_masking_o)
+ 
+   `ASSERT(AppKeymgrErrOutputZeros_A, app_rsp[AppKeymgr].error |->
+-          app_rsp[AppKeymgr].digest_s0 == 0 && app_rsp[AppKeymgr].digest_s1 == 0)
++          app_rsp[AppKeymgr].digest_share0 == 0 && app_rsp[AppKeymgr].digest_share1 == 0)
+ 
+   `ASSERT(AppLcErrOutputZeros_A, app_rsp[AppLc].error |->
+-          app_rsp[AppLc].digest_s0 == 0 && app_rsp[AppLc].digest_s1 == 0)
++          app_rsp[AppLc].digest_share0 == 0 && app_rsp[AppLc].digest_share1 == 0)
+ 
+   `ASSERT(AppRomErrOutputZeros_A, app_rsp[AppRom].error |->
+-          app_rsp[AppRom].digest_s0 == 0 && app_rsp[AppRom].digest_s1 == 0)
++          app_rsp[AppRom].digest_share0 == 0 && app_rsp[AppRom].digest_share1 == 0)
+ endinterface
+--- a/env/kmac_scoreboard.sv
++++ b/env/kmac_scoreboard.sv
+@@ -473,8 +473,8 @@
+ 
+                 // It's possible for SW to not clear the error until after the hash is done.
+                 // In this case the hash will be garbage data, so do not check it.
+-                if (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid &&
+-                    cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_last) begin
++                if (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid &&
++                    cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.last) begin
+                   do_check_digest = 0;
+                 end
+ 
+--- a/env/seq_lib/kmac_smoke_vseq.sv
++++ b/env/seq_lib/kmac_smoke_vseq.sv
+@@ -195,7 +195,7 @@
+             bit [TL_DW-1:0] rand_data;
+             `DV_CHECK_MEMBER_RANDOMIZE_FATAL(fifo_addr)
+             `DV_CHECK_STD_RANDOMIZE_FATAL(rand_data)
+-            wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid);
++            wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid);
+             tl_access(.addr(ral.get_addr_from_offset(fifo_addr)),
+                       .write(1),
+                       .data(rand_data),
+@@ -211,7 +211,7 @@
+           // the only command that will trigger this particular error is CmdStart.
+           if (kmac_err_type == kmac_pkg::ErrSwIssuedCmdInAppActive) begin : sw_cmd_in_app
+             kmac_pkg::kmac_cmd_e invalid_cmd = kmac_pkg::CmdStart;
+-            wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid);
++            wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid);
+             cfg.clk_rst_vif.wait_clks($urandom_range(25, 250));
+             issue_cmd(invalid_cmd);
+             error_injected = 1;
+@@ -221,7 +221,7 @@
+           // provided to an AppKeymgr operation that is in progress.
+           if (kmac_err_type == kmac_pkg::ErrKeyNotValid) begin : check_invalid_key_err
+             // wait until the first valid request is seen
+-            wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid);
++            wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid);
+             if (process_key_err_before_app_done) begin
+               disable send_kmac_req;
+               check_err();
+--- a/env/seq_lib/kmac_sideload_invalid_vseq.sv
++++ b/env/seq_lib/kmac_sideload_invalid_vseq.sv
+@@ -76,8 +76,8 @@
+       // TODO(lowrisc/opentitan#24739): Currently, when invalidating the key when the
+       // app_i.last was received, exiting the StErrorAwaitApp is not possible anymore.
+       // After resolving this issue, we simply can wait until we got kmac_done.
+-      wait(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid &&
+-           cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_last);
++      wait(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid &&
++           cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.last);
+       kmac_done = 1;
+     end else begin
+       // Issue Start cmd.
+@@ -136,7 +136,7 @@
+     // app_i.last was received, exiting the StErrorAwaitApp is not possible anymore.
+     // After resolving this issue, the last condition can be removed.
+     if (invalidate_key && !kmac_done &&
+-        (!en_app || !cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_last)) begin
++        (!en_app || !cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.last)) begin
+       // We got the FSM state, the key is valid, and the operation is not yet done.
+       // Invalidate the key and wait for the expected error code.
+       `uvm_info(`gfn, $sformatf("invalidated key in state %0b", curr_state), UVM_LOW)
+--- a/env/seq_lib/kmac_key_error_vseq.sv
++++ b/env/seq_lib/kmac_key_error_vseq.sv
+@@ -45,8 +45,8 @@
+       fork begin : isolation_fork
+         fork
+           send_kmac_app_req(app_mode);
+-          wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_valid &&
+-                cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.req_last);
++          wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.valid &&
++                cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_req.last);
+         join_any;
+         disable fork;
+       end join
+@@ -76,18 +76,18 @@
+   virtual task check_keymgr_rsp_nonblocking();
+     fork begin
+       while (cfg.en_scb == 0) begin
+-        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.req_ready == 1);
+-        `DV_CHECK_EQ(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.digest_s0, '0)
+-        `DV_CHECK_EQ(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.digest_s1, '0)
+-        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.req_ready == 0);
++        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.ready == 1);
++        `DV_CHECK_EQ(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.digest_share0, '0)
++        `DV_CHECK_EQ(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.digest_share1, '0)
++        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.ready == 0);
+       end
+     end join_none
+ 
+     fork begin
+       while (cfg.en_scb == 0) begin
+-        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.rsp_valid == 1);
++        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.done == 1);
+         `DV_CHECK_EQ(cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.error, 1)
+-        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.rsp_valid == 0);
++        wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.kmac_data_rsp.done == 0);
+       end
+     end join_none
+   endtask
+--- a/env/seq_lib/kmac_edn_timeout_error_vseq.sv
++++ b/env/seq_lib/kmac_edn_timeout_error_vseq.sv
+@@ -63,11 +63,11 @@
+   virtual task check_keymgr_rsp_nonblocking();
+     fork begin
+       while (cfg.en_scb == 0 && entropy_fetched == 0) begin
+-        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.rsp_valid == 1);
++        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.done == 1);
+         if (cfg.enable_masking && entropy_mode == EntropyModeEdn) begin
+           `DV_CHECK_EQ(cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.error, 1)
+         end
+-        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.rsp_valid == 0);
++        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.done == 0);
+       end
+     end join_none
+   endtask
+--- a/env/seq_lib/kmac_entropy_mode_error_vseq.sv
++++ b/env/seq_lib/kmac_entropy_mode_error_vseq.sv
+@@ -31,13 +31,13 @@
+   virtual task check_keymgr_rsp_nonblocking();
+     fork begin
+       while (cfg.en_scb == 0 && entropy_fetched == 0) begin
+-        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.rsp_valid == 1);
++        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.done == 1);
+         if (cfg.enable_masking && kmac_err_type == ErrIncorrectEntropyMode) begin
+           if (entropy_fetched == 0) begin
+             `DV_CHECK_EQ(cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.error, 1)
+           end
+         end
+-        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.rsp_valid == 0);
++        wait (cfg.m_kmac_app_agent_cfg[AppKeymgr].vif.kmac_data_rsp.done == 0);
+       end
+     end join_none
+   endtask
