@@ -1,0 +1,21 @@
+CAPI=2:
+
+# This is a FuseSoC .core file
+# https://fusesoc.readthedocs.io/_/downloads/en/stable/pdf/
+
+name: "lowrisc:ethernet:random_access_fifo"
+description: "FIFO with standard push/pop interfaces and an additional read-only random-access interface"
+
+filesets:
+    rtl:
+        files:
+            - random_access_fifo.sv
+        file_type: systemVerilogSource
+        depend:
+            - lowrisc:prim:assert:0.1
+            - lowrisc:prim:fifo
+
+targets:
+    default:
+        filesets:
+            - rtl

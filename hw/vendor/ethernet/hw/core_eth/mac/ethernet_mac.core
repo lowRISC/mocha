@@ -1,0 +1,36 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# This is a FuseSoC .core file
+# https://fusesoc.readthedocs.io/_/downloads/en/stable/pdf/
+
+name: "lowrisc:ethernet:mac"
+description: "1GbE ethernet MAC"
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:prim_generic:flop_2sync
+      - lowrisc:prim:fifo
+    files:
+      - axis_gmii_rx.sv
+      - axis_gmii_tx.sv
+      - eth_mac_1g.sv
+      - eth_mac_1g_rgmii.sv
+      - eth_mac_1g_rgmii_wrapper.sv
+      - iddr.sv
+      - oddr.sv
+      - rgmii_core.sv
+      - rgmii_lfsr.sv
+      - rgmii_phy_if.sv
+      - rgmii_soc.sv
+      - ssio_ddr_in.sv
+      - ethernet_rgmii_tx_assertions.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

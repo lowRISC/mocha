@@ -9,7 +9,7 @@ filesets:
     depend:
       - lowrisc:mocha:top_chip_system
       - lowrisc:prim_xilinx:all
-      - lowrisc::ethernet
+      - lowrisc:ethernet:axi_top
       - lowrisc:mocha:rng
       - pulp-platform.org::axi
     files:
