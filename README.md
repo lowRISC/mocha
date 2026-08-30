@@ -28,9 +28,12 @@ As we launch this project, we expect the following release schedule:
 
 | Release | Date | Details |
 |--|--|--|
-| 0.0.1 (MVP-1) | March 2026 | *Available now.* First minimal viable product (MVP-1) which includes essential IP blocks and access to SRAM as well as DRAM. It supports baremetal testing in both CHERI and integer modes. |
-| 0.1.0 (MVP-2) | June 2026 | Second minimal viable product (MVP-2) with all blocks integrated, as well as support for booting CHERI-Linux. |
-| RC-1 | Dec 2026 | First release candidate (RC-1) including initial design and verification sign-offs. |
+| [0.0.1 (MVP-1)][v0.0.1] | March 2026 | *Available now.* First minimal viable product (MVP-1) which includes essential IP blocks and access to SRAM as well as DRAM. It supports baremetal testing in both CHERI and integer modes.
+| [0.1.0 (MVP-2)][v0.1.0] | June  2026 | *Available now.* Second minimal viable product (MVP-2) with all blocks integrated, as well as support for booting CHERI-Linux.
+| RC-1                    | Dec   2026 | First release candidate (RC-1) including initial design and verification sign-offs.
+
+[v0.0.1]: https://github.com/lowRISC/mocha/releases/tag/v0.0.1
+[v0.1.0]: https://github.com/lowRISC/mocha/releases/tag/v0.1.0
 
 ## Verification
 
