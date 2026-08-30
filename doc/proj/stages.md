@@ -25,7 +25,7 @@ This table shows the current design and verification stage for each block in Moc
 | Power manager         | D0               | V0                     |
 | Reset manager         | D0               | V0                     |
 | ROM control           | D0               | V0                     |
-| SPI device            | D0               | V0                     |
+| [SPI device][]        | D0               | V1                     |
 | SPI host              | D0               | V0                     |
 | SRAM                  | D0               | V0                     |
 | Tag controller        | D0               | V0                     |
@@ -35,6 +35,7 @@ This table shows the current design and verification stage for each block in Moc
 |                       |                  |                        |
 | Top chip              | N/A*             | V0                     |
 
+[SPI device]: spi_device.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
