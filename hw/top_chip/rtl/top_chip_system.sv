@@ -681,30 +681,35 @@ module top_chip_system #(
   );
 
   // 64-bit mem to 32-bit mem for TLUL crossbar
-  mem_downsizer u_tl_xbar_mem_downsizer (
+  mem_downsizer #(
+    .UPSTREAM_DATA_W( top_pkg::AxiDataWidth ),
+    .ADDR_W         ( top_pkg::TL_AW        )
+  ) u_tl_xbar_mem_downsizer (
     .clk_i  (clkmgr_clocks.clk_main_infra),
     .rst_ni (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // 64-bit memory request in
-    .mem64_req_i   (mem64_tl_xbar_req),
-    .mem64_gnt_o   (mem64_tl_xbar_gnt),
-    .mem64_we_i    (mem64_tl_xbar_we),
-    .mem64_be_i    (mem64_tl_xbar_be),
-    .mem64_addr_i  (mem64_tl_xbar_addr),
-    .mem64_wdata_i (mem64_tl_xbar_wdata),
-    .mem64_rvalid_o(mem64_tl_xbar_rvalid),
-    .mem64_rdata_o (mem64_tl_xbar_rdata),
+    .mem_req_i   (mem64_tl_xbar_req),
+    .mem_gnt_o   (mem64_tl_xbar_gnt),
+    .mem_we_i    (mem64_tl_xbar_we),
+    .mem_be_i    (mem64_tl_xbar_be),
+    .mem_addr_i  (mem64_tl_xbar_addr[top_pkg::TL_AW-1:0]), // Truncate to TL address width
+    .mem_wdata_i (mem64_tl_xbar_wdata),
+    .mem_rvalid_o(mem64_tl_xbar_rvalid),
+    .mem_rdata_o (mem64_tl_xbar_rdata),
 
     // 32-bit memory request out
-    .mem32_req_o   (mem32_tl_xbar_req),
-    .mem32_gnt_i   (mem32_tl_xbar_gnt),
-    .mem32_we_o    (mem32_tl_xbar_we),
-    .mem32_be_o    (mem32_tl_xbar_be),
-    .mem32_addr_o  (mem32_tl_xbar_addr),
-    .mem32_wdata_o (mem32_tl_xbar_wdata),
-    .mem32_rvalid_i(mem32_tl_xbar_rvalid),
-    .mem32_rdata_i (mem32_tl_xbar_rdata)
+    .mem_req_o   (mem32_tl_xbar_req),
+    .mem_gnt_i   (mem32_tl_xbar_gnt),
+    .mem_we_o    (mem32_tl_xbar_we),
+    .mem_be_o    (mem32_tl_xbar_be),
+    .mem_addr_o  (mem32_tl_xbar_addr),
+    .mem_wdata_o (mem32_tl_xbar_wdata),
+    .mem_rvalid_i(mem32_tl_xbar_rvalid),
+    .mem_rdata_i (mem32_tl_xbar_rdata)
   );
+  logic unused_upper_addr_bits_tl_xbar;
+  assign unused_upper_addr_bits_tl_xbar = ^mem64_tl_xbar_addr[top_pkg::AxiAddrWidth-1:top_pkg::TL_AW];
 
   // 32-bit mem to TLUL for TLUL crossbar
   tlul_adapter_host #(
@@ -1366,30 +1371,35 @@ module top_chip_system #(
   );
 
   // 64-bit mem to 32-bit mem for TLUL ROM
-  mem_downsizer u_tl_rom_mem_downsizer (
+  mem_downsizer #(
+    .UPSTREAM_DATA_W( top_pkg::AxiDataWidth ),
+    .ADDR_W         ( top_pkg::TL_AW        )
+  ) u_tl_rom_mem_downsizer (
     .clk_i      (clkmgr_clocks.clk_main_infra),
     .rst_ni     (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
 
     // 64-bit memory request in
-    .mem64_req_i    (mem64_tl_rom_mem_req),
-    .mem64_gnt_o    (mem64_tl_rom_mem_gnt),
-    .mem64_we_i     (mem64_tl_rom_mem_we),
-    .mem64_be_i     (mem64_tl_rom_mem_be),
-    .mem64_addr_i   (mem64_tl_rom_mem_addr),
-    .mem64_wdata_i  (mem64_tl_rom_mem_wdata),
-    .mem64_rvalid_o (mem64_tl_rom_mem_rvalid),
-    .mem64_rdata_o  (mem64_tl_rom_mem_rdata),
+    .mem_req_i    (mem64_tl_rom_mem_req),
+    .mem_gnt_o    (mem64_tl_rom_mem_gnt),
+    .mem_we_i     (mem64_tl_rom_mem_we),
+    .mem_be_i     (mem64_tl_rom_mem_be),
+    .mem_addr_i   (mem64_tl_rom_mem_addr[top_pkg::TL_AW-1:0]), // Truncate to TL address width
+    .mem_wdata_i  (mem64_tl_rom_mem_wdata),
+    .mem_rvalid_o (mem64_tl_rom_mem_rvalid),
+    .mem_rdata_o  (mem64_tl_rom_mem_rdata),
 
     // 32-bit memory request out
-    .mem32_req_o    (mem32_tl_rom_mem_req),
-    .mem32_gnt_i    (mem32_tl_rom_mem_gnt),
-    .mem32_we_o     (mem32_tl_rom_mem_we),
-    .mem32_be_o     (mem32_tl_rom_mem_be),
-    .mem32_addr_o   (mem32_tl_rom_mem_addr),
-    .mem32_wdata_o  (mem32_tl_rom_mem_wdata),
-    .mem32_rvalid_i (mem32_tl_rom_mem_rvalid),
-    .mem32_rdata_i  (mem32_tl_rom_mem_rdata)
+    .mem_req_o    (mem32_tl_rom_mem_req),
+    .mem_gnt_i    (mem32_tl_rom_mem_gnt),
+    .mem_we_o     (mem32_tl_rom_mem_we),
+    .mem_be_o     (mem32_tl_rom_mem_be),
+    .mem_addr_o   (mem32_tl_rom_mem_addr),
+    .mem_wdata_o  (mem32_tl_rom_mem_wdata),
+    .mem_rvalid_i (mem32_tl_rom_mem_rvalid),
+    .mem_rdata_i  (mem32_tl_rom_mem_rdata)
   );
+  logic unused_upper_addr_bits_tl_rom_mem;
+  assign unused_upper_addr_bits_tl_rom_mem = ^mem64_tl_rom_mem_addr[top_pkg::AxiAddrWidth-1:top_pkg::TL_AW];
 
   // 32-bit mem to TLUL for TLUL ROM
   tlul_adapter_host #(
