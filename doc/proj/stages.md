@@ -17,7 +17,7 @@ This table shows the current design and verification stage for each block in Moc
 | CVA6-CHERI            | D0               | V0                     |
 | Debug module          | D0               | V0                     |
 | Entropy source        | D0               | V0                     |
-| GPIO                  | D0               | V0                     |
+| [GPIO][]              | D0               | V1                     |
 | I2C                   | D0               | V0                     |
 | KMAC                  | D0               | V0                     |
 | Mailbox               | D0               | V0                     |
@@ -35,6 +35,7 @@ This table shows the current design and verification stage for each block in Moc
 |                       |                  |                        |
 | Top chip              | N/A*             | V0                     |
 
+[GPIO]: gpio.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
