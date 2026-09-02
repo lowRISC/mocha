@@ -138,6 +138,13 @@
             export LIBC_PURECAP_INCLUDE=${cheri-toolchain.muslc-linux-riscv64-purecap}/include
             export LIBC_PURECAP_LIB=${cheri-toolchain.muslc-linux-riscv64-purecap}/lib
 
+            # The debugger the debug tests drive. Commercial EDA trees ship
+            # their own gdb and mkEdaShell puts their paths first, so a bare
+            # `gdb` in this shell can be a vendor build that cannot even load
+            # (Xcelium's wants libmpfr.so.4). Name ours instead of relying on
+            # $PATH order; util/gdb_response.exp reads this.
+            export GDB=${pkgs.gdb}/bin/gdb
+
             export HOSTCC=${pkgs.llvmPackages_21.clang}/bin/clang
             export HOSTCXX=${pkgs.llvmPackages_21.clang}/bin/clang++
             export HOSTLD=${pkgs.llvmPackages_21.lld}/bin/ld.lld

@@ -11,6 +11,7 @@ here, instead of burying the output of the first real step -- and so a failure
 further down can be read against the versions it happened with.
 """
 
+import os
 import shutil
 import subprocess
 import sys
@@ -37,6 +38,13 @@ TOOLS = {
     "expect": ["-v"],
     "ruff": ["--version"],
     "reuse": ["--version"],
+}
+
+# Tools a step takes from an environment variable rather than $PATH, so that
+# this reports the one the step will use. gdb is named by the devshell because
+# EDA tool paths come first in $PATH and can shadow it.
+FROM_ENV = {
+    "gdb": "GDB",
 }
 
 MISSING = "<missing>"
@@ -85,7 +93,8 @@ def main() -> None:
 
     rows = []
     for tool, version_args in TOOLS.items():
-        path = shutil.which(tool)
+        named = os.environ.get(FROM_ENV.get(tool, ""), "").strip()
+        path = named or shutil.which(tool)
         rows.append(
             (
                 tool,
