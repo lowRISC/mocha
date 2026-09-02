@@ -54,3 +54,8 @@ extend-exclude = [
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "SIM", "PTH", "C4", "A", "RUF", "PERF"]
+
+[tool.ruff.lint.isort]
+# Standard library from 3.11, and the devshell's Python is newer than the 3.10
+# the target version keeps the rest of the tree compatible with.
+extra-standard-library = ["tomllib"]

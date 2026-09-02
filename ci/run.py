@@ -17,18 +17,21 @@ same command in the same shell.
 
 From inside `nix develop` the same thing spelled ci/run.py <job>.
 
+The jobs themselves are described in ci/jobs.toml, which is the only place
+that says what a job does; this runs what it describes.
+
 A step is a command: a tool the devshell provides, one of the repository's
 util/ scripts, or -- where a step needs arguments worked out, or is more than
-one command -- a script in ci/scripts. Steps run from the repository root and
-each is runnable on its own.
+one command -- a script in ci/scripts, named there as `run = "sw-build"`.
+Steps run from the repository root and each is runnable on its own.
 
-A step the rest of its job depends on, a configure or a build, is Required():
-if it fails the run stops there. Any other step records its failure and the job
-carries on, so one run reports every problem it can find.
+A step the rest of its job depends on, a configure or a build, is written
+`required = true`: if it fails the run stops there. Any other step records its
+failure and the job carries on, so one run reports every problem it can find.
 
-A job can also name another job, Job("name"), to run its steps at that point:
-the sequences are written once and composed rather than restated. A step
-reached twice over runs once, the first time it is reached.
+A job can also name another job, `{ job = "name" }`, to run its steps at that
+point: the sequences are written once and composed rather than restated. A
+step reached twice over runs once, the first time it is reached.
 
 Parallelism comes from $MOCHA_JOBS (default: every core), so
 `MOCHA_JOBS=8 nix run .#ci -- verilator-test` leaves a machine usable.
@@ -36,9 +39,11 @@ Parallelism comes from $MOCHA_JOBS (default: every core), so
 
 import argparse
 import os
+import shlex
 import shutil
 import subprocess
 import sys
+import tomllib
 from typing import NamedTuple, Union
 
 import lib
@@ -57,91 +62,80 @@ class Job(NamedTuple):
     name: str
 
 
-# Reads as a kind of step rather than a function, hence the capital.
-def Required(*argv) -> Step:
-    return Step(tuple(argv), required=True)
-
-
-def step(*argv) -> Step:
-    return Step(tuple(argv))
-
-
-def ci_script(name: str, *args) -> tuple:
-    """One of our own steps, by its job-style name."""
-    return (f"ci/scripts/{name.replace('-', '_')}.py", *args)
-
-
 # ---------------------------------------------------------------------------
 # The jobs. One per CI job, named after it; the workflows call these by name.
+# They are described in ci/jobs.toml, which is the only place that says what a
+# job does.
 # ---------------------------------------------------------------------------
 
-JOBS: "dict[str, list[Union[Step, Job]]]" = {
-    "sw-configure": [
-        Required("cmake", "-B", "build/sw", "-S", "sw"),
-    ],
-    # clang-format and clang-tidy read the compilation database, so the
-    # buildsystem has to exist before them.
-    "lint": [
-        step("reuse", "lint"),
-        step("util/artefacts.py", "--check"),
-        step("ruff", "check"),
-        Job("sw-configure"),
-        step("util/clang_format.py", "-i", "--dry-run", "-Werror"),
-        step("util/clang_tidy.py"),
-        step("util/tool_schema_validate.py"),
-    ],
-    # The FPGA jobs build the software here, then the workflow flashes the
-    # board between this job and fpga-test.
-    "sw-build": [
-        Job("sw-configure"),
-        Required(*ci_script("sw-build")),
-    ],
-    "verilator-test": [
-        Job("sw-build"),
-        Required(*ci_script("verilator-build")),
-        step(*ci_script("verilator-test")),
-    ],
-    # The debug test only needs a bootrom to run and something to step through,
-    # so it builds those targets rather than the whole tree.
-    "verilator-debug-test": [
-        Job("sw-configure"),
-        Required(*ci_script("sw-build"), "--target", "bootrom", "--target", "infinite_loop"),
-        Required(*ci_script("verilator-build")),
-        step("util/debug_test_verilator.sh"),
-    ],
-    "verilator-slow-test": [
-        Job("sw-build"),
-        Required(*ci_script("verilator-build"), "--traced"),
-        step(*ci_script("verilator-slow-test")),
-    ],
-    # Needs the software built and the bitstream loaded, which the workflow
-    # does with `nix run .#bitstream-load` outside the devshell.
-    "fpga-test": [
-        step("ctest", "--test-dir", "build/sw", "-R", "fpga", "-LE", "slow", "--output-on-failure"),
-    ],
-    "fpga-debug-test": [
-        step("util/debug_test_fpga.sh"),
-    ],
-    # Releases get a faster model build than CI: nothing shares the machine.
-    "verilator-release": [
-        Required(*ci_script("verilator-build"), "--jobs-divisor", "2"),
-    ],
-    "software-release": [
-        Job("sw-build"),
-        Required(*ci_script("sw-release")),
-    ],
-    "warmup": [
-        step(*ci_script("env-info")),
-    ],
-    # Every job that does not need an FPGA board attached. The local pre-push
-    # run.
-    "all": [
-        Job("warmup"),
-        Job("lint"),
-        Job("verilator-test"),
-        Job("verilator-debug-test"),
-    ],
-}
+# Named relative to the repository root, which is where the steps run and how
+# every message about the file reads.
+JOBS_FILE_NAME = "ci/jobs.toml"
+JOBS_FILE = lib.REPO_TOP / JOBS_FILE_NAME
+
+
+def resolve(token: str) -> str:
+    """The command a step name refers to: a bare name is a script in
+    ci/scripts, so `sw-build` in ci/jobs.toml, and `--step sw-build` on the
+    command line, both mean ci/scripts/sw_build.py.
+    """
+    candidate = lib.REPO_TOP / f"ci/scripts/{token.replace('-', '_')}.py"
+    return str(candidate.relative_to(lib.REPO_TOP)) if candidate.is_file() else token
+
+
+def read_step(job: str, index: int, entry) -> "Union[Step, Job]":
+    """One entry of a job's `steps`, as it is written in ci/jobs.toml.
+
+    Complaining here rather than at the point of use means a typo in the file
+    is reported as a typo, before any of the run has happened.
+    """
+    where = f"{JOBS_FILE_NAME}: jobs.{job}.steps[{index}]"
+    if not isinstance(entry, dict):
+        raise SystemExit(f"{where}: expected a table, not {type(entry).__name__}.")
+
+    unknown = set(entry) - {"run", "job", "required"}
+    if unknown:
+        raise SystemExit(f"{where}: unknown key(s): {', '.join(sorted(unknown))}.")
+    if ("run" in entry) == ("job" in entry):
+        raise SystemExit(f"{where}: needs exactly one of 'run' or 'job'.")
+
+    if "job" in entry:
+        if "required" in entry:
+            # A job reference has no status of its own; its steps carry theirs.
+            raise SystemExit(f"{where}: 'required' belongs on a 'run', not a 'job'.")
+        return Job(entry["job"])
+
+    argv = shlex.split(entry["run"])
+    if not argv:
+        raise SystemExit(f"{where}: 'run' is empty.")
+    return Step((resolve(argv[0]), *argv[1:]), required=bool(entry.get("required")))
+
+
+def read_jobs() -> "dict[str, list[Union[Step, Job]]]":
+    """The jobs, in the order ci/jobs.toml gives them."""
+    try:
+        with JOBS_FILE.open("rb") as source:
+            described = tomllib.load(source)
+    except OSError as error:
+        raise SystemExit(f"Could not read {JOBS_FILE_NAME}: {error}") from None
+    except tomllib.TOMLDecodeError as error:
+        raise SystemExit(f"{JOBS_FILE_NAME}: {error}") from None
+
+    jobs = described.get("jobs")
+    if not isinstance(jobs, dict) or not jobs:
+        raise SystemExit(f"{JOBS_FILE_NAME}: no [jobs.<name>] tables.")
+
+    read = {}
+    for job, described_job in jobs.items():
+        steps = described_job.get("steps") if isinstance(described_job, dict) else None
+        if not isinstance(steps, list) or not steps:
+            raise SystemExit(f"{JOBS_FILE_NAME}: jobs.{job} needs a non-empty 'steps'.")
+        read[job] = [read_step(job, index, entry) for index, entry in enumerate(steps)]
+    return read
+
+
+JOBS: "dict[str, list[Union[Step, Job]]]" = read_jobs()
+
 
 MAX_DEPTH = 8
 
@@ -195,14 +189,6 @@ def is_ours(argv: tuple) -> bool:
 def runnable(cmd: str) -> bool:
     """Whether a step's command exists, as a file here or a tool on $PATH."""
     return (lib.REPO_TOP / cmd).is_file() or shutil.which(cmd) is not None
-
-
-def resolve(token: str) -> str:
-    """The command a step name refers to: a bare name is a script in
-    ci/scripts, so `--step sw-build` works as well as the path the jobs use.
-    """
-    candidate = lib.REPO_TOP / f"ci/scripts/{token.replace('-', '_')}.py"
-    return str(candidate.relative_to(lib.REPO_TOP)) if candidate.is_file() else token
 
 
 def print_step(one: Step, verbose: bool) -> None:
