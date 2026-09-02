@@ -5,7 +5,12 @@
 #
 # On timeout just wait indefinitely.
 set timeout 20
-spawn gdb build/sw/device/examples/infinite_loop
+if {[info exists env(GDB)]} {
+    set gdb $env(GDB)
+} else {
+    set gdb "gdb"
+}
+spawn $gdb build/sw/device/examples/infinite_loop
 expect_before {
     timeout { send_error "Error: GDB didn't print the expected response within the timeout\n"; exit 2 }
     eof { send_error "Error: GDB unexpectedly terminated\n"; exit 1 }
