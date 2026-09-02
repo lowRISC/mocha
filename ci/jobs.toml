@@ -1,0 +1,108 @@
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# The CI jobs: one table per job, named after the CI job the workflows call by
+# name. ci/run.py reads this file and nothing else decides what a job does.
+#
+# Each entry in `steps` is either
+#
+#   { run = "<command line>" }   a command, written as you would type it. A
+#                                bare first word naming a script in ci/scripts
+#                                (sw-build, verilator-build, ...) resolves to
+#                                that script, so `run = "sw-build --traced"`
+#                                and `--step sw-build --traced` are the same.
+#   { job = "<job>" }            another job's steps, run at this point.
+#
+# A step the rest of its job depends on, a configure or a build, is
+# `required = true`: if it fails the run stops there. Any other step records
+# its failure and the job carries on, so one run reports every problem it can
+# find. A step reached twice over runs once, the first time it is reached.
+
+[jobs.sw-configure]
+steps = [
+  { run = "cmake -B build/sw -S sw", required = true },
+]
+
+# clang-format and clang-tidy read the compilation database, so the
+# buildsystem has to exist before them.
+[jobs.lint]
+steps = [
+  { run = "reuse lint" },
+  { run = "util/artefacts.py --check" },
+  { run = "ruff check" },
+  { job = "sw-configure" },
+  { run = "util/clang_format.py -i --dry-run -Werror" },
+  { run = "util/clang_tidy.py" },
+  { run = "util/tool_schema_validate.py" },
+]
+
+# The FPGA jobs build the software here, then the workflow flashes the board
+# between this job and fpga-test.
+[jobs.sw-build]
+steps = [
+  { job = "sw-configure" },
+  { run = "sw-build", required = true },
+]
+
+[jobs.verilator-test]
+steps = [
+  { job = "sw-build" },
+  { run = "verilator-build", required = true },
+  { run = "verilator-test" },
+]
+
+# The debug test only needs a bootrom to run and something to step through, so
+# it builds those targets rather than the whole tree.
+[jobs.verilator-debug-test]
+steps = [
+  { job = "sw-configure" },
+  { run = "sw-build --target bootrom --target infinite_loop", required = true },
+  { run = "verilator-build", required = true },
+  { run = "util/debug_test_verilator.sh" },
+]
+
+[jobs.verilator-slow-test]
+steps = [
+  { job = "sw-build" },
+  { run = "verilator-build --traced", required = true },
+  { run = "verilator-slow-test" },
+]
+
+# Needs the software built and the bitstream loaded, which the workflow does
+# with `nix run .#bitstream-load` outside the devshell.
+[jobs.fpga-test]
+steps = [
+  { run = "ctest --test-dir build/sw -R fpga -LE slow --output-on-failure" },
+]
+
+[jobs.fpga-debug-test]
+steps = [
+  { run = "util/debug_test_fpga.sh" },
+]
+
+# Releases get a faster model build than CI: nothing shares the machine.
+[jobs.verilator-release]
+steps = [
+  { run = "verilator-build --jobs-divisor 2", required = true },
+]
+
+[jobs.software-release]
+steps = [
+  { job = "sw-build" },
+  { run = "sw-release", required = true },
+]
+
+[jobs.warmup]
+steps = [
+  { run = "env-info" },
+]
+
+# Every job that does not need an FPGA board attached. The local pre-push run.
+[jobs.all]
+steps = [
+  { job = "warmup" },
+  { job = "lint" },
+  { job = "verilator-test" },
+  { job = "verilator-debug-test" },
+]
