@@ -16,15 +16,32 @@ expect_before {
     eof { send_error "Error: GDB unexpectedly terminated\n"; exit 1 }
 }
 expect "build/sw/device/examples/infinite_loop"
+expect "(gdb) "
+send "set style enabled off\r"
 # Connect to OpenOCD.
 expect "(gdb) "
 send "target extended-remote localhost:3333\r"
-# Inspect a register.
+# Reset and run to a breakpoint in main instead, so every check below sees the
+# same state on every run.
+expect "(gdb) "
+send "monitor reset halt\r"
+expect "(gdb) "
+send "break *0x100000d0\r"
+expect "Breakpoint 1"
+# Booting through the ROM takes a while under Verilator, so allow more time for
+# this step than for the individual commands around it.
+expect "(gdb) "
+set timeout 300
+send "continue\r"
+expect "Breakpoint 1, main"
+set timeout 20
+# Write to a register and read it back.
+expect "(gdb) "
+send "set \$t6 = 0xdeadbeef\r"
 expect "(gdb) "
 send "info reg t6\r"
 expect "t6"
-expect "0x0"
-expect "0"
+expect "0xdeadbeef"
 # Inspect memory.
 expect "(gdb) "
 send "x/x 0x00080000\r"
@@ -39,13 +56,4 @@ send "x/x 0x80001000\r"
 expect "0xdeadbeef"
 expect "(gdb) "
 send "set *0x80001000 = 0x00000000\r"
-# Breakpoints.
 expect "(gdb) "
-send "break *0x100000d0\r"
-expect "Breakpoint 1"
-expect "(gdb) "
-send "run\r"
-expect "Start it from the beginning? (y or n) "
-send "y\r"
-expect "Starting program"
-expect "Breakpoint 1"
