@@ -11,43 +11,13 @@
 class top_chip_dv_i2c_host_tx_rx_vseq extends top_chip_dv_i2c_tx_rx_vseq;
   `uvm_object_utils(top_chip_dv_i2c_host_tx_rx_vseq)
 
-  // Declare the device_addr as a byte size array because sw_symbol_backdoor_overwrite() expects the
-  // data that is going to overwrite the SW symbol to be an array
-  local rand bit [7:0] device_addr[1];
-
-  extern constraint device_addr_c;
-
   extern function new(string name="");
-  extern virtual task dut_init(string reset_kind = "HARD");
   extern task body();
 endclass : top_chip_dv_i2c_host_tx_rx_vseq
-
-constraint top_chip_dv_i2c_host_tx_rx_vseq::device_addr_c {
-  device_addr[0] inside {[8'h00 : 8'h7F]};
-}
 
 function top_chip_dv_i2c_host_tx_rx_vseq::new(string name = "");
   super.new(name);
 endfunction
-
-task top_chip_dv_i2c_host_tx_rx_vseq::dut_init(string reset_kind = "HARD");
-  super.dut_init(reset_kind);
-
-  // Read the timing parameters through SW backdoor load
-  sw_symbol_backdoor_read("sys_clk_period_ns", sw_sys_clk_period_ns);
-  sw_symbol_backdoor_read("scl_low_time_ns", sw_scl_low_time_ns);
-  sw_symbol_backdoor_read("hold_data_time_ns", sw_data_hold_time_ns);
-
-  // Overwrite the SW symbol with the randomized value
-  sw_symbol_backdoor_overwrite("byte_count", xfer_bytes);
-  sw_symbol_backdoor_overwrite("device_addr", device_addr);
-
-  scl_low_cycles    = round_up_divide({sw_scl_low_time_ns[1], sw_scl_low_time_ns[0]},
-                                      sw_sys_clk_period_ns[0]);
-  sda_hold_cycles   = round_up_divide({sw_data_hold_time_ns[1], sw_data_hold_time_ns[0]},
-                                      sw_sys_clk_period_ns[0]);
-
-endtask
 
 task top_chip_dv_i2c_host_tx_rx_vseq::body();
   i2c_device_response_seq seq = i2c_device_response_seq::type_id::create("seq");

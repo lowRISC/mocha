@@ -5,24 +5,9 @@
 #include "hal/i2c.h"
 #include "hal/mmio.h"
 #include "hal/mocha.h"
+#include "i2c_test.h"
 #include <stdbool.h>
 #include <stdint.h>
-
-#define TX_FIFO_DEPTH (64)
-
-// The const variables below are treated as symbols read by top_chip_dv_i2c_host_tx_rx_vseq in order
-// to calculate agent timing parameters.
-const uint8_t sys_clk_period_ns = SYSCLK_NS;
-
-// The constants are the spec minimums for standard mode speed except hold_data_time_ns which should
-// be at least one according to OpenTitan's programming guide.
-const uint16_t scl_low_time_ns = 4700;
-const uint16_t hold_data_time_ns = 1;
-
-// The symbols below are going to be overwritten through sw_symbol_backdoor_overwrite() in
-// top_chip_dv_i2c_host_tx_rx_vseq.sv
-volatile const uint8_t byte_count = TX_FIFO_DEPTH;
-volatile const uint8_t device_addr = 0x0;
 
 static bool write_transfer(i2c_t i2c, uint8_t addr, const uint8_t *data, uint8_t num_bytes)
 {
@@ -56,7 +41,7 @@ static bool host_tx_rx_test(i2c_t i2c)
         data_bytes[i] = 1u << (i % 8);
     }
 
-    if (!drive_transfer(i2c, device_addr, data_bytes, byte_count)) {
+    if (!drive_transfer(i2c, device_addr0, data_bytes, byte_count)) {
         return false;
     }
 

@@ -93,6 +93,9 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.
   m_uart_agent.monitor.tx_analysis_port.connect(top_vsqr.uart_tx_fifo.analysis_export);
+
+  // Grab the read transfer item
+  m_i2c_agent.monitor.controller_mode_rd_item_port.connect(top_vsqr.i2c_rd_xfer_fifo.analysis_export);
 endfunction : connect_phase
 
 task top_chip_dv_env::load_memories();

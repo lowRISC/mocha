@@ -11,6 +11,7 @@ package top_chip_dv_env_pkg;
   import uart_agent_pkg::*;
   import gpio_env_pkg::NUM_GPIOS;
   import i2c_reg_pkg::FifoDepth;
+  import i2c_pkg::*;
 
   // Macro includes
   `include "uvm_macros.svh"
