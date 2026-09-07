@@ -16,7 +16,7 @@ This table shows the current design and verification stage for each block in Moc
 | [Clock manager][]     | D1               | V0                     |
 | CVA6-CHERI            | D0               | V0                     |
 | Debug module          | D0               | V0                     |
-| Entropy source        | D0               | V0                     |
+| [Entropy source][]    | D1               | V0                     |
 | [GPIO][]              | D1               | V0                     |
 | [KMAC][]              | D1               | V0                     |
 | [I2C][]               | D1               | V0                     |
@@ -40,6 +40,7 @@ This table shows the current design and verification stage for each block in Moc
 [Clock manager]: clkmgr.md
 [SRAM]: sram.md
 [GPIO]: gpio.md
+[Entropy source]: entropy_src.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
