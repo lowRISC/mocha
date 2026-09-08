@@ -27,7 +27,7 @@ This table shows the current design and verification stage for each block in Moc
 | ROM control           | D0               | V0                     |
 | SPI device            | D0               | V0                     |
 | SPI host              | D0               | V0                     |
-| SRAM                  | D0               | V0                     |
+| [SRAM][]              | D1               | V0                     |
 | Tag controller        | D0               | V0                     |
 | [TileLink crossbar][] | D1               | V1                     |
 | Timer                 | D0               | V0                     |
@@ -38,6 +38,7 @@ This table shows the current design and verification stage for each block in Moc
 [KMAC]: kmac.md
 [I2C]: i2c.md
 [Clock manager]: clkmgr.md
+[SRAM]: sram.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
