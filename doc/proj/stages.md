@@ -26,7 +26,7 @@ This table shows the current design and verification stage for each block in Moc
 | [Reset manager][]     | D1               | V0                     |
 | ROM control           | D0               | V0                     |
 | SPI device            | D0               | V0                     |
-| SPI host              | D0               | V0                     |
+| [SPI host][]          | D1               | V0                     |
 | [SRAM][]              | D1               | V0                     |
 | Tag controller        | D0               | V0                     |
 | [TileLink crossbar][] | D1               | V1                     |
@@ -44,6 +44,7 @@ This table shows the current design and verification stage for each block in Moc
 [PLIC]: rv_plic.md
 [Power manager]: pwrmgr.md
 [Reset manager]: rstmgr.md
+[SPI host]: spi_host.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
