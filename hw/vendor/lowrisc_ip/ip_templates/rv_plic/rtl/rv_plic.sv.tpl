@@ -273,6 +273,7 @@ module ${module_instance_name} import ${module_instance_name}_reg_pkg::*; #(
 % if racl_support:
   `ASSERT_KNOWN(RaclErrorValidKnown_A, racl_error_o.valid)
 % endif
+  `ASSERT_KNOWN(AlertKnownO_A, alert_tx_o)
   `ASSERT_KNOWN(IrqKnownO_A, irq_o)
   `ASSERT_KNOWN(MsipKnownO_A, msip_o)
   for (genvar k = 0; k < NumTarget; k++) begin : gen_irq_id_known

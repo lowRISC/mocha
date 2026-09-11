@@ -276,6 +276,7 @@ module rv_plic import rv_plic_reg_pkg::*; #(
   // Assertions
   `ASSERT_KNOWN(TlDValidKnownO_A, tl_o.d_valid)
   `ASSERT_KNOWN(TlAReadyKnownO_A, tl_o.a_ready)
+  `ASSERT_KNOWN(AlertKnownO_A, alert_tx_o)
   `ASSERT_KNOWN(IrqKnownO_A, irq_o)
   `ASSERT_KNOWN(MsipKnownO_A, msip_o)
   for (genvar k = 0; k < NumTarget; k++) begin : gen_irq_id_known
