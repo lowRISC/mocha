@@ -30,7 +30,7 @@ This table shows the current design and verification stage for each block in Moc
 | [SRAM][]              | D1               | V0                     |
 | Tag controller        | D0               | V0                     |
 | [TileLink crossbar][] | D1               | V1                     |
-| Timer                 | D0               | V0                     |
+| [Timer][]             | D1               | V0                     |
 | [UART][]              | D1               | V1                     |
 |                       |                  |                        |
 | Top chip              | N/A*             | V0                     |
@@ -50,6 +50,7 @@ This table shows the current design and verification stage for each block in Moc
 [Mailbox]: mailbox.md
 [SPI device]: spi_device.md
 [TileLink crossbar]: xbar_peri.md
+[Timer]: rv_timer.md
 [UART]: uart.md
 
 *The top chip integration has no design stage.
