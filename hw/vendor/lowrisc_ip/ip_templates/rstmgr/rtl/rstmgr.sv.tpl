@@ -476,6 +476,7 @@ module rstmgr
   `ASSERT_KNOWN(PwrKnownO_A,         pwr_o         )
   `ASSERT_KNOWN(ResetsKnownO_A,      resets_o      )
   `ASSERT_KNOWN(RstEnKnownO_A,       rst_en_o      )
+  `ASSERT_KNOWN(SwRstReqKnownO_A,    sw_rst_req_o  )
 % for intf in export_rsts:
   `ASSERT_KNOWN(${intf.capitalize()}ResetsKnownO_A, resets_${intf}_o )
 % endfor
