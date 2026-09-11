@@ -789,6 +789,10 @@ module pwrmgr
   `ASSERT_KNOWN(OtpKnownO_A,       pwr_otp_o        )
   `ASSERT_KNOWN(LcKnownO_A,        pwr_lc_o         )
   `ASSERT_KNOWN(IntrKnownO_A,      intr_wakeup_o    )
+  `ASSERT_KNOWN(FetchEnKnownO_A,   fetch_en_o       )
+  `ASSERT_KNOWN(StrapKnownO_A,     strap_o          )
+  `ASSERT_KNOWN(LowPowerKnownO_A,  low_power_o      )
+  `ASSERT_KNOWN(EscRstRxKnownO_A,  esc_rst_rx_o     )
 
   // EscTimeOutCnt also sets the required clock ratios between escalator and local clock
   // Ie, clk_lc cannot be so slow that the timeout count is reached
