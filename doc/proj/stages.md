@@ -21,7 +21,7 @@ This table shows the current design and verification stage for each block in Moc
 | [KMAC][]              | D1               | V0                     |
 | [I2C][]               | D1               | V0                     |
 | Mailbox               | D0               | V0                     |
-| PLIC                  | D0               | V0                     |
+| [PLIC][]              | D1               | V0                     |
 | Power manager         | D0               | V0                     |
 | Reset manager         | D0               | V0                     |
 | ROM control           | D0               | V0                     |
@@ -41,6 +41,7 @@ This table shows the current design and verification stage for each block in Moc
 [SRAM]: sram.md
 [GPIO]: gpio.md
 [Entropy source]: entropy_src.md
+[PLIC]: rv_plic.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
