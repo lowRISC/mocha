@@ -292,6 +292,7 @@ module entropy_src
 
   // RNG Interface
   `ASSERT_KNOWN(EsRngEnableKnownO_A, entropy_src_rng_enable_o)
+  `ASSERT_KNOWN(EsRngFipsKnownO_A, rng_fips_o)
 
   // External Health Test Interface
   `ASSERT_KNOWN_IF(EsXhtEntropyBitKnownO_A, entropy_src_xht_bits_o, entropy_src_xht_valid_o)
@@ -301,6 +302,10 @@ module entropy_src
   `ASSERT_KNOWN(EsXhtThreshHiKnownO_A, entropy_src_xht_meta_o.thresh_hi)
   `ASSERT_KNOWN(EsXhtThreshLoKnownO_A, entropy_src_xht_meta_o.thresh_lo)
   `ASSERT_KNOWN(EsXhtWindowKnownO_A, entropy_src_xht_meta_o.window_wrap_pulse)
+  `ASSERT_KNOWN(EsXhtRngBitEnKnownO_A, entropy_src_xht_meta_o.rng_bit_en)
+  `ASSERT_KNOWN(EsXhtThresholdScopeKnownO_A, entropy_src_xht_meta_o.threshold_scope)
+  `ASSERT_KNOWN(EsXhtBitSelKnownO_A, entropy_src_xht_bit_sel_o)
+  `ASSERT_KNOWN(EsXhtHealthTestWindowKnownO_A, entropy_src_xht_health_test_window_o)
 
   // Alerts
   `ASSERT_KNOWN(AlertTxKnownO_A, alert_tx_o)
@@ -308,6 +313,7 @@ module entropy_src
   // Interrupts
   `ASSERT_KNOWN(IntrEsEntropyValidKnownO_A, intr_es_entropy_valid_o)
   `ASSERT_KNOWN(IntrEsHealthTestFailedKnownO_A, intr_es_health_test_failed_o)
+  `ASSERT_KNOWN(IntrEsObserveFifoReadyKnownO_A, intr_es_observe_fifo_ready_o)
   `ASSERT_KNOWN(IntrEsFifoErrKnownO_A, intr_es_fatal_err_o)
 
   // prim_count alerts
