@@ -1,0 +1,16 @@
+diff --git a/rtl/spi_device.sv b/rtl/spi_device.sv
+index ed91ace4..98fe8bfb 100644
+--- a/rtl/spi_device.sv
++++ b/rtl/spi_device.sv
+@@ -1973,6 +1973,11 @@ module spi_device
+   `ASSERT_KNOWN(AlertKnownO_A,         alert_tx_o)
+ 
+   `ASSERT_KNOWN(RaclErrorValidKnown_A, racl_error_o.valid)
++  `ASSERT_KNOWN(TlDValidKnownO_A, tl_o.d_valid)
++  `ASSERT_KNOWN(TlAReadyKnownO_A, tl_o.a_ready)
++  `ASSERT_KNOWN(RamCfgRspSys2SpiKnownO_A, ram_cfg_rsp_sys2spi_o)
++  `ASSERT_KNOWN(RamCfgRspSpi2SysKnownO_A, ram_cfg_rsp_spi2sys_o)
++  `ASSERT_KNOWN(SckMonitorKnownO_A, sck_monitor_o)
+ 
+   // Assume the tpm_en is set when TPM transaction is idle.
+   `ASSUME(TpmEnableWhenTpmCsbIdle_M, $rose(cfg_tpm_en) |-> cio_tpm_csb_i)
