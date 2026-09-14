@@ -12,7 +12,7 @@ This table shows the current design and verification stage for each block in Moc
 
 | **Module name**       | **Design stage** | **Verification stage** |
 |-----------------------|------------------|------------------------|
-| AXI crossbar          | D0               | V0                     |
+| [AXI crossbar][]      | D1               | V0                     |
 | [Clock manager][]     | D1               | V0                     |
 | CVA6-CHERI            | D0               | V0                     |
 | Debug module          | D0               | V0                     |
@@ -46,6 +46,7 @@ This table shows the current design and verification stage for each block in Moc
 [Reset manager]: rstmgr.md
 [SPI host]: spi_host.md
 [ROM control]: rom_ctrl.md
+[AXI crossbar]: axi_xbar.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
