@@ -17,6 +17,7 @@
 //              of parameters and ports.
 
 `include "common_cells/registers.svh"
+`include "prim_assert.sv"
 
 module axi_lite_mailbox #(
   parameter int unsigned MailboxDepth = 32'd0,
@@ -185,6 +186,19 @@ module axi_lite_mailbox #(
     end else begin : gen_irq_level
       assign irq_o[i] = (IrqActHigh) ? slv_irq[i] : ~slv_irq[i];
     end
+  end
+
+  // Output known assertions. The response payloads are only meaningful while their valid is
+  // high, so those are gated; r.data is legitimately undefined otherwise.
+  for (genvar i = 0; i < 2; i++) begin : gen_known_assertions
+    `ASSERT_KNOWN(IrqKnownO_A, irq_o[i])
+    `ASSERT_KNOWN(SlvRespAwReadyKnownO_A, slv_resps_o[i].aw_ready)
+    `ASSERT_KNOWN(SlvRespWReadyKnownO_A, slv_resps_o[i].w_ready)
+    `ASSERT_KNOWN(SlvRespArReadyKnownO_A, slv_resps_o[i].ar_ready)
+    `ASSERT_KNOWN(SlvRespBValidKnownO_A, slv_resps_o[i].b_valid)
+    `ASSERT_KNOWN(SlvRespRValidKnownO_A, slv_resps_o[i].r_valid)
+    `ASSERT_KNOWN_IF(SlvRespBKnownO_A, slv_resps_o[i].b, slv_resps_o[i].b_valid)
+    `ASSERT_KNOWN_IF(SlvRespRKnownO_A, slv_resps_o[i].r, slv_resps_o[i].r_valid)
   end
 
   // pragma translate_off
