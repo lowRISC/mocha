@@ -82,6 +82,7 @@ filesets:
     depend :
       - lowrisc:common_cells:all
       - lowrisc:prim:util
+      - lowrisc:prim:assert
 
 generators:
   axi_intercon_gen:
