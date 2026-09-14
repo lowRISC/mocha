@@ -20,7 +20,7 @@ This table shows the current design and verification stage for each block in Moc
 | [GPIO][]              | D1               | V0                     |
 | [KMAC][]              | D1               | V0                     |
 | [I2C][]               | D1               | V0                     |
-| Mailbox               | D0               | V0                     |
+| [Mailbox][]           | D1               | V0                     |
 | [PLIC][]              | D1               | V0                     |
 | [Power manager][]     | D1               | V0                     |
 | [Reset manager][]     | D1               | V0                     |
@@ -47,6 +47,7 @@ This table shows the current design and verification stage for each block in Moc
 [SPI host]: spi_host.md
 [ROM control]: rom_ctrl.md
 [AXI crossbar]: axi_xbar.md
+[Mailbox]: mailbox.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
