@@ -13,6 +13,8 @@
 // - Andreas Kurth <akurth@iis.ee.ethz.ch>
 // - Florian Zaruba <zarubaf@iis.ee.ethz.ch>
 
+`include "prim_assert.sv"
+
 /// axi_xbar: Fully-connected AXI4+ATOP crossbar with an arbitrary number of slave and master ports.
 /// See `doc/axi_xbar.md` for the documentation, including the definition of parameters and ports.
 module axi_xbar
@@ -151,6 +153,30 @@ module axi_xbar
       .mst_req_o   ( mst_ports_req_o[i]  ),
       .mst_resp_i  ( mst_ports_resp_i[i] )
     );
+  end
+
+  // Output known assertions. Request and response payloads are only meaningful while their
+  // valid is high, so those are gated. The read data and its user bits are left out: they
+  // carry whatever the addressed device returns, which for uninitialised memory is undefined.
+  for (genvar i = 0; i < Cfg.NoSlvPorts; i++) begin : gen_slv_known_assertions
+    `ASSERT_KNOWN(SlvAwReadyKnownO_A, slv_ports_resp_o[i].aw_ready)
+    `ASSERT_KNOWN(SlvWReadyKnownO_A, slv_ports_resp_o[i].w_ready)
+    `ASSERT_KNOWN(SlvArReadyKnownO_A, slv_ports_resp_o[i].ar_ready)
+    `ASSERT_KNOWN(SlvBValidKnownO_A, slv_ports_resp_o[i].b_valid)
+    `ASSERT_KNOWN(SlvRValidKnownO_A, slv_ports_resp_o[i].r_valid)
+    `ASSERT_KNOWN_IF(SlvBKnownO_A, slv_ports_resp_o[i].b, slv_ports_resp_o[i].b_valid)
+    `ASSERT_KNOWN_IF(SlvRIdKnownO_A, slv_ports_resp_o[i].r.id, slv_ports_resp_o[i].r_valid)
+    `ASSERT_KNOWN_IF(SlvRRespKnownO_A, slv_ports_resp_o[i].r.resp, slv_ports_resp_o[i].r_valid)
+    `ASSERT_KNOWN_IF(SlvRLastKnownO_A, slv_ports_resp_o[i].r.last, slv_ports_resp_o[i].r_valid)
+  end
+  for (genvar i = 0; i < Cfg.NoMstPorts; i++) begin : gen_mst_known_assertions
+    `ASSERT_KNOWN(MstAwValidKnownO_A, mst_ports_req_o[i].aw_valid)
+    `ASSERT_KNOWN(MstWValidKnownO_A, mst_ports_req_o[i].w_valid)
+    `ASSERT_KNOWN(MstArValidKnownO_A, mst_ports_req_o[i].ar_valid)
+    `ASSERT_KNOWN(MstBReadyKnownO_A, mst_ports_req_o[i].b_ready)
+    `ASSERT_KNOWN(MstRReadyKnownO_A, mst_ports_req_o[i].r_ready)
+    `ASSERT_KNOWN_IF(MstAwKnownO_A, mst_ports_req_o[i].aw, mst_ports_req_o[i].aw_valid)
+    `ASSERT_KNOWN_IF(MstArKnownO_A, mst_ports_req_o[i].ar, mst_ports_req_o[i].ar_valid)
   end
 
   // pragma translate_off
