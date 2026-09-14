@@ -90,10 +90,14 @@ module tb;
   % endif
 % endfor
     .clk_hints({
-        reg2hw.clk_hints.clk_main_otbn_hint.q,
-        reg2hw.clk_hints.clk_main_kmac_hint.q,
-        reg2hw.clk_hints.clk_main_hmac_hint.q,
-        reg2hw.clk_hints.clk_main_aes_hint.q})
+% for clk in list(reversed(list(typed_clocks['hint_clks'].keys()))):
+<% sep = "})" if loop.last else "," %>\
+  % if len(typed_clocks['hint_clks']) == 1:
+        reg2hw.clk_hints.q${sep}
+  % else:
+        reg2hw.clk_hints.${clk}_hint.q${sep}
+  % endif
+% endfor
   );
 
   rst_shadowed_if rst_shadowed_if (
