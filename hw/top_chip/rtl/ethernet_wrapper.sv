@@ -28,28 +28,20 @@ module ethernet_wrapper (
   output logic       eth_rgmii_tx_en_o,
   output logic [3:0] eth_rgmii_tx_d_o,
   inout  logic       eth_rgmii_mdio_io,
-  output logic       eth_rgmii_mdc_o
+  output logic       eth_rgmii_mdc_o,
+
+  // PHY reset
+  output logic       eth_phy_reset_no
 );
   // AXI signals from CDC FIFO to axi_to_mem, synchronous to clk_125m
-  top_pkg::axi_dev_req_t  eth_125m_req;
-  top_pkg::axi_dev_resp_t eth_125m_resp;
+  top_pkg::axi_dev_req_t  axi_125m_req;
+  top_pkg::axi_dev_resp_t axi_125m_rsp;
 
-  // Framing top 64-bit memory format signals
-  logic                               eth_en;
-  logic [  top_pkg::AxiAddrWidth-1:0] eth_addr;
-  logic [  top_pkg::AxiDataWidth-1:0] eth_wdata;
-  logic [top_pkg::AxiDataWidth/8-1:0] eth_be;
-  logic                               eth_we_d;
-  logic                               eth_we_q;
-  logic                               eth_rvalid;
-  logic [  top_pkg::AxiDataWidth-1:0] eth_rdata;
+  ///////////////////////////////
+  // CDC to the Ethernet clock //
+  ///////////////////////////////
 
-  // MDIO buffer control signals
-  logic eth_mdio_i;
-  logic eth_mdio_o;
-  logic eth_mdio_oe;
-
-  // Async AXI FIFO from clk_axi_i to clk_125m_i
+  // Synchronise AXI bus from clk_axi_i to clk_125m_i
   axi_cdc #(
     .aw_chan_t  ( top_pkg::axi_dev_aw_chan_t ),
     .w_chan_t   ( top_pkg::axi_w_chan_t      ),
@@ -67,93 +59,76 @@ module ethernet_wrapper (
     .src_resp_o (axi_resp_o),
     .dst_clk_i  (clk_125m_i),
     .dst_rst_ni (rst_eth_ni),
-    .dst_req_o  (eth_125m_req),
-    .dst_resp_i (eth_125m_resp)
+    .dst_req_o  (axi_125m_req),
+    .dst_resp_i (axi_125m_rsp)
   );
 
-  // AXI to mem for framing top
-  axi_to_mem #(
-    .axi_req_t  ( top_pkg::axi_dev_req_t  ),
-    .axi_resp_t ( top_pkg::axi_dev_resp_t ),
-    .AddrWidth  ( top_pkg::AxiAddrWidth   ),
-    .DataWidth  ( top_pkg::AxiDataWidth   ),
-    .IdWidth    ( top_pkg::AxiDevIdWidth  ),
-    .NumBanks   ( 1                       )
-  ) u_eth_axi_to_mem (
+  // The interrupt line needs to be synchronised back to the main clock domain
+  logic ethernet_irq_125m_q; // First flop the IRQ on source domain to deglitch
+  prim_flop u_eth_irq_flop (
     .clk_i  (clk_125m_i),
     .rst_ni (rst_eth_ni),
-
-    // AXI interface.
-    .busy_o     ( ),
-    .axi_req_i  (eth_125m_req),
-    .axi_resp_o (eth_125m_resp),
-
-    // Memory interface.
-    .mem_req_o    (eth_en),
-    .mem_gnt_i    (1'b1),
-    .mem_addr_o   (eth_addr),
-    .mem_wdata_o  (eth_wdata),
-    .mem_strb_o   (eth_be),
-    .mem_atop_o   ( ),
-    .mem_we_o     (eth_we_d),
-    .mem_rvalid_i (eth_rvalid),
-    .mem_rdata_i  (eth_we_q ? 64'hBADDBADDBADDBADD : eth_rdata)
+    .d_i    (ethernet_irq_125m),
+    .q_o    (ethernet_irq_125m_q)
+  );
+  prim_flop_2sync #(
+    .Width      (1),
+    .ResetValue (1'b0)
+  ) u_eth_irq_sync (
+    .clk_i  (clk_axi_i),
+    .rst_ni (rst_axi_ni),
+    .d_i    (ethernet_irq_125m_q),
+    .q_o    (ethernet_irq_o)
   );
 
-  // Single-cycle read response.
-  always_ff @(posedge clk_125m_i or negedge rst_eth_ni) begin
-    if (!rst_eth_ni) begin
-      eth_rvalid <= '0;
-      eth_we_q   <= '0;
-    end else begin
-      eth_rvalid <= eth_en; // Generate rvalid strobes even for writes
-      eth_we_q   <= eth_we_d;
-    end
-  end
+  //////////////////////////////
+  // Instantiate ethernet_top //
+  ///////////////////////////////
 
-  // Packet framing top
-  framing_top u_framing_top (
-    // Memory interface.
-    .msoc_clk       (clk_125m_i), // Some internal logic assumes msoc_clk == clk_int
-    .core_lsu_addr  (eth_addr[14:0]),
-    .core_lsu_wdata (eth_wdata),
-    .core_lsu_be    (eth_be),
-    .ce_d           (eth_en),
-    .we_d           (eth_en & eth_we_d),
-    .framing_sel    (eth_en),
-    .framing_rdata  (eth_rdata),
-    .rst_int        (!rst_eth_ni),
+  ethernet_pkg::eth_rgmii_rx_t        eth_rgmii_rx;
+  ethernet_pkg::eth_rgmii_tx_t        eth_rgmii_tx;
+  ethernet_pkg::eth_rgmii_mdio_in_t   eth_mdio_in; // actually just an alias for logic but I like the consistent naming convention
+  ethernet_pkg::eth_rgmii_mdio_out_t  eth_mdio_out;
 
-    // Clocks.
-    .clk_int     (clk_125m_i),      // 125 MHz in-phase
-    .clk90_int   (clk_125m_quad_i), // 125 MHz quadrature
-    .clk_200_int (clk_200m_i),
-
-    // 1000BASE-T RGMII PHY interface.
-    .phy_rx_clk  (eth_rgmii_rx_clk_i),
-    .phy_rxd     (eth_rgmii_rx_d_i),
-    .phy_rx_ctl  (eth_rgmii_rx_ctl_i),
-    .phy_tx_clk  (eth_rgmii_tx_clk_o),
-    .phy_txd     (eth_rgmii_tx_d_o),
-    .phy_tx_ctl  (eth_rgmii_tx_en_o),
-    .phy_reset_n ( ), // Do not use rst_int for PHY reset
-    .phy_int_n   ( ),
-    .phy_pme_n   ( ),
-    .phy_mdc     (eth_rgmii_mdc_o),
-    .phy_mdio_i  (eth_mdio_i),
-    .phy_mdio_o  (eth_mdio_o),
-    .phy_mdio_oe (eth_mdio_oe),
-
-    // Interrupt out.
-    .eth_irq (ethernet_irq)
+  ethernet_top_axi #(
+    .TARGET     ( "XILINX" ),
+    .axi_req_t  ( top_pkg::axi_dev_req_t     ),
+    .axi_rsp_t  ( top_pkg::axi_dev_resp_t    )
+  ) ethernet_inst (
+    // Clocking and reset
+    .clk_125M_i        (clk_125m_i),        // Main clock - used by memory interface and as 125 MHz ethernet in-phase clock
+    .rst_ni            (rst_eth_ni),        // Main reset, deassertion synchronous to clk_125m_i
+    .clk_125M_quad_i   (clk_125m_quad_i),   // 125 MHz ethernet quadrature clock (used by MAC)
+    .clk_200M_i        (clk_200m_i),        // 200 MHz IDELAYCTRL reference clock
+    .axi_req_i         (axi_125m_req),      // Synchronous to clk_125M_i
+    .axi_rsp_o         (axi_125m_rsp),      // Synchronous to clk_125M_i
+    .eth_rgmii_rx_i    (eth_rgmii_rx),
+    .eth_rgmii_tx_o    (eth_rgmii_tx),
+    .eth_rgmii_mdio_i  (eth_mdio_in),
+    .eth_rgmii_mdio_o  (eth_mdio_out),
+    .ethernet_irq_o    (ethernet_irq_125m),
+    .phy_reset_no      (eth_phy_reset_no)
   );
 
-  // MDIO bidirectional IO buffer
+  //////////////////////////
+  // RGMII signal mapping //
+  //////////////////////////
+  assign eth_rgmii_rx.clk   = eth_rgmii_rx_clk_i;
+  assign eth_rgmii_rx.ctl   = eth_rgmii_rx_ctl_i;
+  assign eth_rgmii_rx.d     = eth_rgmii_rx_d_i;
+  assign eth_rgmii_tx_clk_o = eth_rgmii_tx.clk;
+  assign eth_rgmii_tx_en_o  = eth_rgmii_tx.en;
+  assign eth_rgmii_tx_d_o   = eth_rgmii_tx.d;
+
+  //////////////////////////////////
+  // MDIO bidirectional IO buffer //
+  //////////////////////////////////
   IOBUF u_mdio_iobuf (
-    .O  (eth_mdio_i),        // Buffer output
+    .O  (eth_mdio_in),       // Buffer output
     .IO (eth_rgmii_mdio_io), // Buffer inout port (connect directly to top-level port)
-    .I  (eth_mdio_o),        // Buffer input
-    .T  (~eth_mdio_oe)       // 3-state enable input, high=input, low=output
+    .I  (eth_mdio_out.o),    // Buffer input
+    .T  (~eth_mdio_out.oen)  // 3-state enable input, high=input, low=output
   );
+  assign eth_rgmii_mdc_o = eth_mdio_out.c;
 
 endmodule

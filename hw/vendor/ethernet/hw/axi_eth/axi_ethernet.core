@@ -1,0 +1,109 @@
+CAPI=2:
+
+# This is a FuseSoC .core file
+# https://fusesoc.readthedocs.io/_/downloads/en/stable/pdf/
+
+name: "lowrisc:ethernet:axi_top"
+description: "Ethernet MAC and framing top with internal TX/RX buffers and an AXI4 interface"
+
+filesets:
+    sim_only:
+        depend:
+            - lowrisc:prim_generic:all
+
+    synth_only:
+        files:
+            - synth/axi_ethernet.xdc: {file_type: xdc}
+            - synth/axi_ethernet.tcl: {file_type: tclSource}
+            - synth/ethernet_top_axi_synth.sv: {file_type: systemVerilogSource} # top-level for trial synthesis. Thin wrapper. Not necessary for using the design in your own SoC
+        depend:
+            - lowrisc:prim_xilinx:all
+        # including this will cause any virtual cores to point to their corresponding XILINX concrete cores (as opposed to generic primitives)
+
+    rtl:
+        files:
+            - ethernet_top_axi.sv
+        file_type: systemVerilogSource
+        depend:
+            - lowrisc:ethernet:top
+            - pulp-platform.org::axi:0.39.9
+            # this core is originally part of Pulp but was modified by lowRISC to use lowRISC primitives. Behaviour should be the same. The fusesoc.conf file attached to this repo points to the lowRISC version.
+
+    cocotb:
+        files:
+            - verif/ethernet_top_axi_tb.sv:             {file_type : systemVerilogSource}
+            - cov/ethernet_csr_cov.sv:                  {file_type : systemVerilogSource} # TODO separate file list for coverage things. Also move this file to be adjacent to its target
+            - cov/axis_pkt_ring_buffer_cov.sv:          {file_type : systemVerilogSource} # TODO separate file list for coverage things. Also move this file to be adjacent to its target
+            - verif/coco_top.py:                        {file_type : user , copyto: .}
+            - verif/dut_utils.py:                       {file_type : user , copyto: .}
+            - verif/test_utils.py:                      {file_type : user , copyto: .}
+            - verif/models.py:                          {file_type : user , copyto: .}
+
+    lint_waivers:
+        files:
+            - axi_ethernet.vlt:     { file_type: vlt }
+
+targets:
+    default: &default_target
+        filesets:
+            - rtl
+
+    sim:
+        <<: *default_target
+        flow: sim
+        flow_options:
+            tool: verilator
+            cocotb_module: coco_top
+
+            verilator_options: # arguments to BUILD Verilator with
+                - "--timing"
+                - "-Wno-fatal"      # don't exit on warnings TODO remove this once warnings are fixed
+                - "--trace"         # enable tracing
+                - "--trace-fst"     # trace to an FST file (instead of VCD)
+                - "--trace-structs" # trace structs (e.g. packed structs) properly
+
+                # Toggle coverage (optional)
+                - tcov ? ("--coverage-toggle")  # tracks toggle coverage
+
+                # FSM coverage (optional)
+                - fcov ? ("--coverage-fsm")     # tracks FSMs coverage
+
+                # Properties and cover groups (optional)
+                - pcov ? ("--coverage-user")    # tracks coverage of properties
+                - pcov ? ("-DCOVERAGE")         # define `COVERAGE
+
+            run_options: # arguments to RUN Verilator with
+                - "--trace"         # enable tracing
+                - "--trace-fst"     # trace to an FST file (instead of VCD)
+                - "--trace-structs" # trace structs (e.g. packed structs) properly
+
+            timescale: 1ns/1ns
+        filesets_append:
+            - sim_only
+            - cocotb
+        toplevel: ethernet_top_axi_tb
+
+    trial_synth:
+        <<: *default_target
+        default_tool: vivado
+        toplevel: ethernet_top_axi_synth
+        filesets_append:
+            - synth_only
+        tools:
+            vivado:
+                part: xc7k325tffg900-2
+
+    lint:
+        <<: *default_target
+        default_tool: verilator
+        filesets_append:
+            - sim_only
+            - lint_waivers
+            - cocotb # TODO we only need the top-level not the Python files...
+        toplevel: ethernet_top_axi_tb
+        tools:
+            verilator:
+                mode: lint-only
+                verilator_options:
+                    - "-Wall"
+                    - "--timing"

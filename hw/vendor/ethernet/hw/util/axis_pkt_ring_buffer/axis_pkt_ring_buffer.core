@@ -1,0 +1,21 @@
+CAPI=2:
+
+name: "lowrisc:ethernet:axis_pkt_ring_buffer"
+description: "Translates AXI Stream into addressable buffer with a separate descriptor table for metadata + pointers"
+
+filesets:
+    rtl:
+        files:
+            - axis_pkt_ring_buffer_wr_ptr_logic.sv
+            - axis_pkt_ring_buffer.sv
+        file_type: systemVerilogSource
+        depend:
+            - lowrisc:ethernet:random_access_fifo
+            - lowrisc:prim:assert:0.1
+            - lowrisc:prim:util:0.1
+            - lowrisc:ethernet:mem_if_utils
+
+targets:
+    default: &default_target
+        filesets:
+            - rtl
