@@ -1,0 +1,28 @@
+diff --git a/src/axi_tagctrl_reg_wrap.sv b/src/axi_tagctrl_reg_wrap.sv
+index 313372f9..ce2101b4 100644
+--- a/src/axi_tagctrl_reg_wrap.sv
++++ b/src/axi_tagctrl_reg_wrap.sv
+@@ -295,4 +295,23 @@ module axi_tagctrl_reg_wrap #(
+       .cached_end_addr_i
+   );
+ 
++  // Assert Known for module outputs
++  `ASSERT_KNOWN(TaggedSubordinateResponseKnown_ar_ready, slv_resp_o.ar_ready)
++  `ASSERT_KNOWN(TaggedSubordinateResponseKnown_aw_ready, slv_resp_o.aw_ready)
++  `ASSERT_KNOWN(TaggedSubordinateResponseKnown_w_ready, slv_resp_o.w_ready)
++  `ASSERT_KNOWN_IF(TaggedSubordinateResponseKnown_b, slv_resp_o.b, slv_resp_o.b_valid)
++  `ASSERT_KNOWN_IF(TaggedSubordinateResponseKnown_r, slv_resp_o.r, slv_resp_o.r_valid)
++
++  `ASSERT_KNOWN_IF(UntaggedManagerRequestKnown_ar, mst_req_o.ar, mst_req_o.ar_valid)
++  `ASSERT_KNOWN_IF(UntaggedManagerRequestKnown_aw, mst_req_o.aw, mst_req_o.aw_valid)
++  `ASSERT_KNOWN_IF(UntaggedManagerRequestKnown_w, mst_req_o.w, mst_req_o.w_valid)
++  `ASSERT_KNOWN(UntaggedManagerRequestKnown_b_ready, mst_req_o.b_ready)
++  `ASSERT_KNOWN(UntaggedManagerRequestKnown_r_ready, mst_req_o.r_ready)
++
++  `ASSERT_KNOWN(ConfigurationSubordinateResponseKnown_ar_ready, conf_resp_o.ar_ready)
++  `ASSERT_KNOWN(ConfigurationSubordinateResponseKnown_aw_ready, conf_resp_o.aw_ready)
++  `ASSERT_KNOWN(ConfigurationSubordinateResponseKnown_w_ready, conf_resp_o.w_ready)
++  `ASSERT_KNOWN_IF(ConfigurationSubordinateResponseKnown_b, conf_resp_o.b, conf_resp_o.b_valid)
++  `ASSERT_KNOWN_IF(ConfigurationSubordinateResponseKnown_r, conf_resp_o.r, conf_resp_o.r_valid)
++
+ endmodule
