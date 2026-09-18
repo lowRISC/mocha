@@ -16,6 +16,7 @@
 
 `include "rvfi_types.svh"
 `include "cvxif_types.svh"
+`include "prim_assert.sv"
 
 module cva6
   import ariane_pkg::*;
@@ -387,6 +388,38 @@ module cva6
       M_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_EXT),
       HS_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_HS_EXT)
   };
+
+  // ------------------------------------------
+  // Output Known Assertions
+  // Assert that module outputs are not X
+  // ------------------------------------------
+  // noc_req_o
+  `ASSERT_KNOWN(CVA6NOCReqKnown_aw_valid, noc_req_o.aw_valid)
+  `ASSERT_KNOWN_IF(CVA6NOCReqKnown_aw, noc_req_o.aw, noc_req_o.aw_valid)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_w_valid, noc_req_o.w_valid)
+  `ASSERT_KNOWN_IF(CVA6NOCReqKnown_w, noc_req_o.w, noc_req_o.w_valid)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_b_ready, noc_req_o.b_ready)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_ar_valid, noc_req_o.ar_valid)
+  `ASSERT_KNOWN_IF(CVA6NOCReqKnown_ar, noc_req_o.ar, noc_req_o.ar_valid)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_r_ready, noc_req_o.r_ready)
+  // The following may be unused depending on configuration.
+  // However, they are still assigned when unused, so it is safe to assert they are known.
+  // rvfi_probes_o
+  `ASSERT_KNOWN(CVA6RVFIProbesKnown_csr, rvfi_probes_o.csr)
+  `ASSERT_KNOWN(CVA6RVFIProbesKnown_instr_valid, rvfi_probes_o.instr.valid);
+  // NB: the following includes the valid itself in what is being asserted known.
+  // This is redundant with CVA6RVFIProbesKnown_instr_valid but easier than enumerating the fields.
+  `ASSERT_KNOWN_IF(CVA6RVFIProbesKnown_instr, rvfi_probes_o.instr, rvfi_probes_o.instr.valid);
+  // cvxif_req_o
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_compressed_valid, rvfi_probes_o.compressed_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_compressed, rvfi_probes_o.compressed_req, rvfi_probes_o.compressed_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_issue_valid, rvfi_probes_o.issue_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_issue, rvfi_probes_o.issue, rvfi_probes_o.issue_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_register_valid, rvfi_probes_o.register_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_register, rvfi_probes_o.register, rvfi_probes_o.register_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_commit_valid, rvfi_probes_o.commit_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_commit, rvfi_probes_o.commit, rvfi_probes_o.commit_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_result_ready, rvfi_probes_o.result_ready)
 
   // ------------------------------------------
   // Global Signals

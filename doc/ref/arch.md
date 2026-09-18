@@ -60,6 +60,11 @@ In terms of output, the top-level will need output signals:<!-- tvdygx_x -->
 - Key to provide an AES engine outside of the secure enclave with the memory encryption key.<!-- fv7l7k_x -->
 - AXI manager port to interact with the rest of the chip.<!-- du1glx_x -->
 
+## CVA6-CHERI
+
+Mocha will instantiate CVA6-CHERI.
+This is specified in [cva6.md][cva6-spec].
+
 ## SRAM specification
 
 The static random-access memory (SRAM) in CHERI Mocha is mainly used as the stack and heap for the boot firmware that lives in the read-only memory (ROM).<!-- 21k32t_x -->
@@ -97,3 +102,5 @@ The SRAM is allowed to mark a capability as invalid by setting one or both of th
 Tags should be stored in a separate block of memory from the data, this is to allow future optimisations where bulk-reads of tags are desired.<!-- lzoy40 -->
 
 The initial value of the SRAM including the tags is undefined at start-up.<!-- hqbiau -->
+
+[cva6-spec]: ./cva6-cheri.md

@@ -4,6 +4,7 @@
 {
   name: "cva6_cheri",
   target_dir: "cva6_cheri",
+  patch_dir: "patches/cva6_cheri"
 
   upstream: {
     url: "https://github.com/lowRISC/cva6-cheri.git",
