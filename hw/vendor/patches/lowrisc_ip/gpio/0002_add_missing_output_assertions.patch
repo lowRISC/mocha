@@ -1,0 +1,20 @@
+--- a/rtl/gpio.sv.tpl
++++ b/rtl/gpio.sv.tpl
+@@ -420,6 +420,17 @@
+   `ASSERT_KNOWN(CioGpioOKnown, cio_gpio_o)
+   `ASSERT_KNOWN(AlertsKnown_A, alert_tx_o)
+   `ASSERT_KNOWN(RaclErrorValidKnown_A, racl_error_o.valid)
++  `ASSERT_KNOWN(TlDValidKnownO_A, tl_o.d_valid)
++  `ASSERT_KNOWN(TlAReadyKnownO_A, tl_o.a_ready)
++  // d_data intentionally omitted.
++  `ASSERT_KNOWN_IF(TlDOpcodeKnownO_A, tl_o.d_opcode, tl_o.d_valid)
++  `ASSERT_KNOWN_IF(TlDParamKnownO_A, tl_o.d_param, tl_o.d_valid)
++  `ASSERT_KNOWN_IF(TlDSizeKnownO_A, tl_o.d_size, tl_o.d_valid)
++  `ASSERT_KNOWN_IF(TlDSourceKnownO_A, tl_o.d_source, tl_o.d_valid)
++  `ASSERT_KNOWN_IF(TlDSinkKnownO_A, tl_o.d_sink, tl_o.d_valid)
++  `ASSERT_KNOWN_IF(TlDErrorKnownO_A, tl_o.d_error, tl_o.d_valid)
++  `ASSERT_KNOWN_IF(TlDUserKnownO_A, tl_o.d_user, tl_o.d_valid)
++  `ASSERT_KNOWN(SampledStrapsKnownO_A, sampled_straps_o)
+ 
+   // Alert assertions for reg_we onehot check
+   `ASSERT_PRIM_REG_WE_ONEHOT_ERROR_TRIGGER_ALERT(RegWeOnehotCheck_A, u_reg, alert_tx_o[0])
