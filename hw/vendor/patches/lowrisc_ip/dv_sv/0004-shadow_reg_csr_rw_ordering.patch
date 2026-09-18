@@ -1,0 +1,27 @@
+diff --git a/cip_lib/seq_lib/cip_base_vseq__shadow_reg_errors.svh b/cip_lib/seq_lib/cip_base_vseq__shadow_reg_errors.svh
+--- a/cip_lib/seq_lib/cip_base_vseq__shadow_reg_errors.svh
++++ b/cip_lib/seq_lib/cip_base_vseq__shadow_reg_errors.svh
+@@ -238,7 +238,10 @@
+ 
+   // Randomly choose to glitch `rst_n` or `shadowed_rst_n` pin.
+   if ($urandom_range(0, 1)) begin
+-    ready_to_trigger_csr_rw = 1;
++    // Do not release the csr_rw sequence here. While rst_shadowed_n is held low a reg_top asserts
++    // shadow_busy, which drives tlul_adapter_reg's busy_i and holds a_ready low, so every CSR
++    // access blocks until the pin is reconnected at the end of this task. csr_rw is released
++    // there instead, matching the ordering the IP-reset branch below already uses.
+     `uvm_info(`gfn, "toggle shadow reset pin", UVM_HIGH)
+      cfg.rst_shadowed_vif.drive_shadow_rst_pin(0);
+   end else begin
+@@ -274,6 +277,11 @@
+   cfg.clk_rst_vif.wait_clks($urandom_range(50, 200));
+ 
+   cfg.rst_shadowed_vif.reconnect_shadowed_rst_n_to_rst_n();
++
++  // The CSR interface is reachable again now that the shadow reset is reconnected, so the csr_rw
++  // sequence can safely be released (a no-op if the IP-reset branch already did so).
++  ready_to_trigger_csr_rw = 1;
++
+   has_fatal_alert = alert_name != "";
+ endtask
+ 

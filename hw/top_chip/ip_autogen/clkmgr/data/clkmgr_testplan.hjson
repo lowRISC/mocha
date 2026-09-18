@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: Apache-2.0
 {
   name: "clkmgr"
-  import_testplans: ["hw/dv/tools/dvsim/testplans/csr_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/intr_test_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
+  // clkmgr has no interrupts, so intr_test_testplan.hjson is deliberately not imported.
+  import_testplans: ["hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/csr_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/alert_test_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/tl_device_access_types_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/stress_all_with_reset_testplan.hjson",
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/shadow_reg_errors_testplan.hjson",
                      "clkmgr_sec_cm_testplan.hjson",
-                     "hw/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
+                     "hw/vendor/lowrisc_ip/dv/tools/dvsim/testplans/sec_cm_count_testplan.hjson"]
   testpoints: [
     {
       name: smoke
@@ -130,72 +130,6 @@
       tests: ["clkmgr_smoke"]
     }
     {
-      name: frequency
-      desc: '''This tests the frequency counters measured count functionality.
-
-            These counters compute the number of cycles of each clock relative
-            to the aon timer, and compares it to the corresponding
-            thresholds written into the `*_meas_ctrl_shadowed` CSR. Measurements
-            beyond these thresholds trigger a recoverable alert and set a bit
-            in the `recov_err_code` CSR. Also, if the counters reach their
-            maximum value they don't wrap around.
-
-            If clock calibration is lost, indicated by the `calib_rdy_i` input
-            being `prim_mubi_pkg::MuBi4False`, the measurements stop, no
-            error is triggered, and `measure_ctrl_regwen` is set to 1.
-
-            **Stimulus**:
-            - Randomly set slow, correct, and fast interval for each counter
-              and test.
-            - Randomly set the `calib_rdy_i` input.
-            - Randomly trigger a clock saturation by forcing its cycle count
-              to be near its maximum value while counting.
-
-            **Check**:
-            - Slow and fast intervals should cause a recoverable alert.
-            - Coverage collected per clock.
-            '''
-      stage: V2
-      tests: ["clkmgr_frequency"]
-    }
-    {
-      name: frequency_timeout
-      desc: '''This tests the frequency counters timeout functionality.
-
-            These counters compute the number of cycles of some clock relative
-            to the aon timer. It should trigger a recoverable alert when there
-            is no valid measurement when enabled, leading to a timeout. This is
-            separate from the `frequently` testpoint to simplify the test checks.
-
-            **Stimulus**:
-            - Randomly stop measured clocks to trigger a timeout.
-
-            **Check**:
-            - Timeout should cause a recoverable alert.
-            - Coverage collected per clock.
-            '''
-      stage: V2
-      tests: ["clkmgr_frequency_timeout"]
-    }
-    {
-      name: frequency_overflow
-      desc: '''This tests the overflow feature in prim_clock_meas.
-
-            This needs to modify the state of the counter to trigger the
-            feature.
-
-            **Stimulus**:
-            - Program the counter. Whenever it hits the value of 1, set it to
-              the range - 2.
-
-            **Check**:
-            - The internal cnt_ovfl flop is set.
-            - The fast_o output should be set.
-            '''
-      stage: V2
-      tests: ["clkmgr_frequency"]
-    }
-    {
       name: regwen
       desc: '''This tests the behavior of the regwen CSRs.
 
@@ -218,8 +152,6 @@
       desc: '''This runs random sequences in succession.
 
             Randomly chooses from the following sequences:
-            - clkmgr_frequency_timeout_vseq,
-            - clkmgr_frequency_vseq,
             - clkmgr_peri_vseq,
             - clkmgr_smoke_vseq,
             - clkmgr_trans_vseq

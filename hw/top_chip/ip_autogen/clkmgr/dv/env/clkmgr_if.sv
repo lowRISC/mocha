@@ -52,13 +52,13 @@ interface clkmgr_if (
   clk_hints_t clk_hints_csr;
   always_comb
     clk_hints_csr = '{
-    none: `CLKMGR_HIER.reg2hw.clk_hints.clk_main_none_hint.q
+    none: `CLKMGR_HIER.reg2hw.clk_hints.q
   };
 
   clk_hints_t clk_hints_status_csr;
   always_comb
     clk_hints_status_csr = '{
-                             none: `CLKMGR_HIER.u_reg.clk_hints_status_clk_main_none_val_qs
+                             none: `CLKMGR_HIER.u_reg.clk_hints_status_qs
                              };
   prim_mubi_pkg::mubi4_t jitter_enable_csr;
   always_comb begin
