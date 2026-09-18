@@ -20,7 +20,7 @@ This table shows the current design and verification stage for each block in Moc
 | GPIO                  | D0               | V0                     |
 | [KMAC][]              | D1               | V0                     |
 | [I2C][]               | D1               | V0                     |
-| Mailbox               | D0               | V0                     |
+| [Mailbox][]           | D1               | V0                     |
 | PLIC                  | D0               | V0                     |
 | Power manager         | D0               | V0                     |
 | Reset manager         | D0               | V0                     |
@@ -38,6 +38,7 @@ This table shows the current design and verification stage for each block in Moc
 [KMAC]: kmac.md
 [I2C]: i2c.md
 [Clock manager]: clkmgr.md
+[Mailbox]: mailbox.md
 [TileLink crossbar]: xbar_peri.md
 [UART]: uart.md
 
