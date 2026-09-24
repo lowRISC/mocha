@@ -9,6 +9,7 @@
 
 `include "axi_llc/typedef.svh"
 `include "axi_llc/assign.svh"
+`include "prim_assert.sv"
 
 /// Wraps the top_level of the axi_llc with structs as AXI connections and a regbus-accessible
 /// register file.
@@ -294,5 +295,25 @@ module axi_tagctrl_reg_wrap #(
       .cached_start_addr_i,
       .cached_end_addr_i
   );
+
+  // Assert Known for module outputs
+  `ASSERT_KNOWN(SlvRespArReadyKnownO_A, slv_resp_o.ar_ready)
+  `ASSERT_KNOWN(SlvRespAwReadyKnownO_A, slv_resp_o.aw_ready)
+  `ASSERT_KNOWN(SlvRespWReadyKnownO_A,  slv_resp_o.w_ready)
+  `ASSERT_KNOWN_IF(SlvRespBKnownO_A, slv_resp_o.b, slv_resp_o.b_valid)
+  `ASSERT_KNOWN_IF(SlvRespRKnownO_A, slv_resp_o.r, slv_resp_o.r_valid)
+
+  `ASSERT_KNOWN_IF(MstReqArKnownO_A, mst_req_o.ar, mst_req_o.ar_valid)
+  `ASSERT_KNOWN_IF(MstReqAwKnownO_A, mst_req_o.aw, mst_req_o.aw_valid)
+  `ASSERT_KNOWN_IF(MstReqWKnownO_A,  mst_req_o.w,  mst_req_o.w_valid)
+  `ASSERT_KNOWN(MstReqBReadyKnownO_A, mst_req_o.b_ready)
+  `ASSERT_KNOWN(MstReqRReadyKnownO_A, mst_req_o.r_ready)
+
+  // The configuration port is a register bus, not AXI: its response carries ready, error and
+  // rdata, with rdata only meaningful on a completed handshake.
+  `ASSERT_KNOWN(ConfRespReadyKnownO_A, conf_resp_o.ready)
+  `ASSERT_KNOWN(ConfRespErrorKnownO_A, conf_resp_o.error)
+  `ASSERT_KNOWN_IF(ConfRespRdataKnownO_A, conf_resp_o.rdata,
+                   conf_req_i.valid && conf_resp_o.ready)
 
 endmodule
