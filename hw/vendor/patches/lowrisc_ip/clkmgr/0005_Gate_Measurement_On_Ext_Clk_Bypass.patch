@@ -1,0 +1,170 @@
+diff --git a/data/clkmgr_testplan.hjson.tpl b/data/clkmgr_testplan.hjson.tpl
+--- a/data/clkmgr_testplan.hjson.tpl
++++ b/data/clkmgr_testplan.hjson.tpl
+@@ -1,6 +1,7 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++<% measurement_live = ext_clk_bypass %>\
+ {
+   name: "clkmgr"
+   // clkmgr has no interrupts, so intr_test_testplan.hjson is deliberately not imported.
+@@ -183,6 +184,7 @@
+       stage: V2
+       tests: ["clkmgr_smoke"]
+     }
++  % if measurement_live:
+     {
+       name: frequency
+       desc: '''This tests the frequency counters measured count functionality.
+@@ -249,6 +251,7 @@
+       stage: V2
+       tests: ["clkmgr_frequency"]
+     }
++  % endif
+     {
+       name: regwen
+       desc: '''This tests the behavior of the regwen CSRs.
+@@ -275,8 +278,10 @@
+           % if ext_clk_bypass:
+             - clkmgr_extclk_vseq,
+           % endif
++          % if measurement_live:
+             - clkmgr_frequency_timeout_vseq,
+             - clkmgr_frequency_vseq,
++          % endif
+             - clkmgr_peri_vseq,
+             - clkmgr_smoke_vseq,
+             - clkmgr_trans_vseq
+diff --git a/data/clkmgr_sec_cm_testplan.hjson.tpl b/data/clkmgr_sec_cm_testplan.hjson.tpl
+--- a/data/clkmgr_sec_cm_testplan.hjson.tpl
++++ b/data/clkmgr_sec_cm_testplan.hjson.tpl
+@@ -21,6 +21,7 @@
+ //
+ // Please ensure that this testplan is imported in:
+ // .../clkmgr/data/clkmgr_testplan.hjson
++<% measurement_live = ext_clk_bypass %>\
+ {
+   testpoints: [
+     {
+@@ -43,7 +44,13 @@
+             - Measurement error should trigger a recoverable alert
+             '''
+       stage: V2S
++    % if measurement_live:
+       tests: ["clkmgr_frequency"]
++    % else:
++      // Unverified: measurement is intentionally disabled in this configuration, so this
++      // countermeasure cannot be exercised. The clkmgr_meas_chk hardware is still instantiated.
++      tests: []
++    % endif
+     }
+     {
+       name: sec_cm_timeout_clk_bkgn_chk
+@@ -55,7 +62,13 @@
+             - Timeout should cause a recoverable alert
+             '''
+       stage: V2S
++    % if measurement_live:
+       tests: ["clkmgr_frequency_timeout"]
++    % else:
++      // Unverified: measurement is intentionally disabled in this configuration, so this
++      // countermeasure cannot be exercised. The clkmgr_meas_chk hardware is still instantiated.
++      tests: []
++    % endif
+     }
+     {
+       name: sec_cm_meas_config_shadow
+diff --git a/dv/clkmgr_sim_cfg.hjson.tpl b/dv/clkmgr_sim_cfg.hjson.tpl
+--- a/dv/clkmgr_sim_cfg.hjson.tpl
++++ b/dv/clkmgr_sim_cfg.hjson.tpl
+@@ -1,6 +1,14 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++<%doc>
++Clock measurement is intentionally disabled in this configuration: the source clocks are supplied
++from outside the top and are assumed already stable, so there is no calibration step and calib_rdy
++is tied MuBi4False. clkmgr_meas_chk then clears the measurement enable and measure_ctrl_regwen is
++held open, so any sequence exercising measurement cannot pass. These are gated on measurement_live
++rather than deleted, so they return automatically if the configuration ever changes.
++</%doc>\
++<% measurement_live = ext_clk_bypass %>\
+ {
+   // Name of the sim cfg - typically same as the name of the DUT.
+   name: clkmgr
+@@ -76,6 +84,7 @@
+       uvm_test_seq: clkmgr_extclk_vseq
+     }
+   % endif
++  % if measurement_live:
+     {
+       name: clkmgr_frequency
+       uvm_test_seq: clkmgr_frequency_vseq
+@@ -84,6 +93,7 @@
+       name: clkmgr_frequency_timeout
+       uvm_test_seq: clkmgr_frequency_timeout_vseq
+     }
++  % endif
+     {
+       name: clkmgr_peri
+       uvm_test_seq: clkmgr_peri_vseq
+diff --git a/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl b/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl
+--- a/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl
++++ b/dv/env/seq_lib/clkmgr_regwen_vseq.sv.tpl
+@@ -1,6 +1,7 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++<% measurement_live = ext_clk_bypass %>\
+ 
+ // The regwen vseq attempts to write to registers whose regwen is randomly on or off to check
+ // the register contents is not updated when off. More details in the clkmgr_testplan.hjson file.
+@@ -39,6 +40,7 @@
+   endtask : check_extclk_regwen
+ 
+ % endif
++% if measurement_live:
+   // This must be careful to turn measurements off right after checking the updates
+   // to avoid measurement errors. We could set the thresholds correctly, but we
+   // might as well set them randomly for good measure. Carefully masks only the
+@@ -78,6 +80,7 @@
+                 UVM_MEDIUM)
+     end
+   endtask : check_meas_ctrl_regwen
++% endif
+ 
+   task body();
+     // Make sure the aon clock is running as slow as it is meant to, otherwise the aon clock
+@@ -91,7 +94,9 @@
+     % if ext_clk_bypass:
+       check_extclk_regwen();
+     % endif
++    % if measurement_live:
+       check_meas_ctrl_regwen();
++    % endif
+       apply_reset("HARD");
+       // This is to make sure we don't start writes immediately after reset,
+       // otherwise the tl_agent could mistakenly consider the following read
+diff --git a/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl b/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl
+--- a/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl
++++ b/dv/env/seq_lib/clkmgr_stress_all_vseq.sv.tpl
+@@ -1,6 +1,7 @@
+ // Copyright lowRISC contributors (OpenTitan project).
+ // Licensed under the Apache License, Version 2.0, see LICENSE for details.
+ // SPDX-License-Identifier: Apache-2.0
++<% measurement_live = ext_clk_bypass %>\
+ 
+ // combine all clkmgr seqs (except below seqs) in one seq to run sequentially
+ // 1. csr seq, which requires scb to be disabled
+@@ -14,8 +15,10 @@
+     % if ext_clk_bypass:
+       "clkmgr_extclk_vseq",
+     % endif
++    % if measurement_live:
+       "clkmgr_frequency_timeout_vseq",
+       "clkmgr_frequency_vseq",
++    % endif
+       "clkmgr_peri_vseq",
+       "clkmgr_smoke_vseq",
+       "clkmgr_trans_vseq"

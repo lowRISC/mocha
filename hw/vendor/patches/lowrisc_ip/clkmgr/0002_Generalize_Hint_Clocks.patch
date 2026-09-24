@@ -1,0 +1,100 @@
+diff --git a/dv/env/clkmgr_if.sv.tpl b/dv/env/clkmgr_if.sv.tpl
+index e6c751f2..dbdc8406 100644
+--- a/dv/env/clkmgr_if.sv.tpl
++++ b/dv/env/clkmgr_if.sv.tpl
+@@ -85,18 +85,26 @@ interface clkmgr_if (
+   clk_hints_t clk_hints_csr;
+   always_comb
+     clk_hints_csr = '{
+-% for target in list(reversed(hint_targets)):
++% for clk, sig in list(reversed(list(typed_clocks['hint_clks'].items()))):
+ <% sep = '' if loop.last else ',' %>\
+-    ${target}: `CLKMGR_HIER.reg2hw.clk_hints.clk_main_${target}_hint.q${sep}
++  % if len(typed_clocks['hint_clks']) == 1:
++    ${sig['endpoint_ip']}: `CLKMGR_HIER.reg2hw.clk_hints.q${sep}
++  % else:
++    ${sig['endpoint_ip']}: `CLKMGR_HIER.reg2hw.clk_hints.${clk}_hint.q${sep}
++  % endif
+ % endfor
+   };
+ 
+   clk_hints_t clk_hints_status_csr;
+   always_comb
+     clk_hints_status_csr = '{
+-% for target in list(reversed(hint_targets)):
++% for clk, sig in list(reversed(list(typed_clocks['hint_clks'].items()))):
+ <% sep = '' if loop.last else ',' %>\
+-                             ${target}: `CLKMGR_HIER.u_reg.clk_hints_status_clk_main_${target}_val_qs${sep}
++  % if len(typed_clocks['hint_clks']) == 1:
++                             ${sig['endpoint_ip']}: `CLKMGR_HIER.u_reg.clk_hints_status_qs${sep}
++  % else:
++                             ${sig['endpoint_ip']}: `CLKMGR_HIER.u_reg.clk_hints_status_${clk}_val_qs${sep}
++  % endif
+ % endfor
+                              };
+ % if ext_clk_bypass:
+diff --git a/dv/env/seq_lib/clkmgr_smoke_vseq.sv.tpl b/dv/env/seq_lib/clkmgr_smoke_vseq.sv.tpl
+index 567295e5..a851d99d 100644
+--- a/dv/env/seq_lib/clkmgr_smoke_vseq.sv.tpl
++++ b/dv/env/seq_lib/clkmgr_smoke_vseq.sv.tpl
+@@ -70,10 +70,10 @@ class clkmgr_smoke_vseq extends clkmgr_base_vseq;
+       uvm_reg_field value_bit;
+     } trans_descriptor_t;
+     trans_descriptor_t trans_descriptors[NUM_TRANS] = '{
+-        '{TransAes, ral.clk_hints.clk_main_aes_hint, ral.clk_hints_status.clk_main_aes_val},
+-        '{TransHmac, ral.clk_hints.clk_main_hmac_hint, ral.clk_hints_status.clk_main_hmac_val},
+-        '{TransKmac, ral.clk_hints.clk_main_kmac_hint, ral.clk_hints_status.clk_main_kmac_val},
+-        '{TransOtbn, ral.clk_hints.clk_main_otbn_hint, ral.clk_hints_status.clk_main_otbn_val}
++% for clk, sig in typed_clocks['hint_clks'].items():
++<% sep = '' if loop.last else ',' %>\
++        '{Trans${sig['endpoint_ip'].capitalize()}, ral.clk_hints.${clk}_hint, ral.clk_hints_status.${clk}_val}${sep}
++% endfor
+     };
+     idle = 0;
+     // Changes in idle take at least 10 cycles to stick.
+diff --git a/dv/sva/clkmgr_bind.sv.tpl b/dv/sva/clkmgr_bind.sv.tpl
+index 7eb396fd..0ced0128 100644
+--- a/dv/sva/clkmgr_bind.sv.tpl
++++ b/dv/sva/clkmgr_bind.sv.tpl
+@@ -48,10 +48,18 @@ module clkmgr_bind;
+   bind clkmgr clkmgr_trans_sva_if clkmgr_${sig['endpoint_ip']}_trans_sva_if (
+     .clk(clk_${sig['src_name']}_i),
+     .rst_n(rst_${sig['src_name']}_ni),
++% if len(typed_clocks['hint_clks']) == 1:
++    .hint(reg2hw.clk_hints.q),
++% else:
+     .hint(reg2hw.clk_hints.${clk}_hint.q),
++% endif
+     .idle(idle_i[${hint_names[clk]}] == prim_mubi_pkg::MuBi4True),
+     .scanmode(scanmode_i == prim_mubi_pkg::MuBi4True),
++% if len(typed_clocks['hint_clks']) == 1:
++    .status(hw2reg.clk_hints_status.d),
++% else:
+     .status(hw2reg.clk_hints_status.${clk}_val.d),
++% endif
+     .trans_clk(clocks_o.${clk})
+   );
+ 
+diff --git a/dv/tb.sv.tpl b/dv/tb.sv.tpl
+index 5a2e8ef9..8fb88835 100644
+--- a/dv/tb.sv.tpl
++++ b/dv/tb.sv.tpl
+@@ -90,10 +90,14 @@ module tb;
+   % endif
+ % endfor
+     .clk_hints({
+-        reg2hw.clk_hints.clk_main_otbn_hint.q,
+-        reg2hw.clk_hints.clk_main_kmac_hint.q,
+-        reg2hw.clk_hints.clk_main_hmac_hint.q,
+-        reg2hw.clk_hints.clk_main_aes_hint.q})
++% for clk in list(reversed(list(typed_clocks['hint_clks'].keys()))):
++<% sep = "})" if loop.last else "," %>\
++  % if len(typed_clocks['hint_clks']) == 1:
++        reg2hw.clk_hints.q${sep}
++  % else:
++        reg2hw.clk_hints.${clk}_hint.q${sep}
++  % endif
++% endfor
+   );
+ 
+   rst_shadowed_if rst_shadowed_if (
