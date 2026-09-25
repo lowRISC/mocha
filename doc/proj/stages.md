@@ -14,7 +14,7 @@ This table shows the current design and verification stage for each block in Moc
 |-----------------------|------------------|------------------------|
 | [AXI crossbar][]      | D1               | V0                     |
 | [Clock manager][]     | D1               | V0                     |
-| CVA6-CHERI            | D0               | V0                     |
+| [CVA6-CHERI][]        | D1               | V0                     |
 | Debug module          | D0               | V0                     |
 | [Entropy source][]    | D1               | V0                     |
 | [GPIO][]              | D1               | V0                     |
@@ -35,6 +35,7 @@ This table shows the current design and verification stage for each block in Moc
 |                       |                  |                        |
 | Top chip              | N/A*             | V0                     |
 
+[CVA6-CHERI]: cva6-cheri.md
 [KMAC]: kmac.md
 [I2C]: i2c.md
 [Clock manager]: clkmgr.md

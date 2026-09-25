@@ -1961,6 +1961,40 @@ module cva6
 
   );
 
+  // ------------------------------------------
+  // Output Known Assertions
+  // Assert that module outputs are not X
+  // ------------------------------------------
+  // noc_req_o
+  `ASSERT_KNOWN(CVA6NOCReqKnown_aw_valid, noc_req_o.aw_valid)
+  `ASSERT_KNOWN_IF(CVA6NOCReqKnown_aw, noc_req_o.aw, noc_req_o.aw_valid)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_w_valid, noc_req_o.w_valid)
+  `ASSERT_KNOWN_IF(CVA6NOCReqKnown_w, noc_req_o.w, noc_req_o.w_valid)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_b_ready, noc_req_o.b_ready)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_ar_valid, noc_req_o.ar_valid)
+  `ASSERT_KNOWN_IF(CVA6NOCReqKnown_ar, noc_req_o.ar, noc_req_o.ar_valid)
+  `ASSERT_KNOWN(CVA6NOCReqKnown_r_ready, noc_req_o.r_ready)
+  // The following may be unused depending on configuration.
+  // However, they are still assigned when unused, so it is safe to assert they are known.
+  // rvfi_probes_o
+  // TODO enable this once it is actually true.
+  // `ASSERT_KNOWN(CVA6RVFIProbesKnown_csr, rvfi_probes_o.csr)
+  `ASSERT_KNOWN(CVA6RVFIProbesKnown_instr_decode_instr_valid, rvfi_probes_o.instr.decoded_instr_valid)
+  `ASSERT_KNOWN(CVA6RVFIProbesKnown_instr_fetch_entry_valid, rvfi_probes_o.instr.fetch_entry_valid)
+  `ASSERT_KNOWN(CVA6RVFIProbesKnown_instr_commit_instr_valid, rvfi_probes_o.instr.commit_instr_valid)
+  `ASSERT_KNOWN(CVA6RVFIProbesKnown_instr_ex_commit_valid, rvfi_probes_o.instr.ex_commit_valid)
+  `ASSERT_KNOWN(CVA6RVFIProbesKnown_instr_branch_valid, rvfi_probes_o.instr.branch_valid)
+  // cvxif_req_o
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_compressed_valid, cvxif_req_o.compressed_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_compressed, cvxif_req_o.compressed_req, cvxif_req_o.compressed_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_issue_valid, cvxif_req_o.issue_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_issue, cvxif_req_o.issue_req, cvxif_req_o.issue_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_register_valid, cvxif_req_o.register_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_register, cvxif_req_o.register, cvxif_req_o.register_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_commit_valid, cvxif_req_o.commit_valid)
+  `ASSERT_KNOWN_IF(CVA6CVXIFReqKnown_commit, cvxif_req_o.commit, cvxif_req_o.commit_valid)
+  `ASSERT_KNOWN(CVA6CVXIFReqKnown_result_ready, cvxif_req_o.result_ready)
+
   //pragma translate_off
   initial begin
     assert (!(CVA6Cfg.SuperscalarEn && CVA6Cfg.EnableAccelerator))
