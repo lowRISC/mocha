@@ -22,16 +22,16 @@ This sign-off is based on commit [`1234def`][d1-commit] (nightly yyyy-mm-dd).
 | RTL           | IP_INSTANTIABLE            | Not Started |
 | RTL           | PHYSICAL_MACROS_DEFINED_80 | Not Started |
 | RTL           | FUNC_IMPLEMENTED           | Not Started |
-| RTL           | ASSERT_KNOWN_ADDED         | Not Started |
+| RTL           | ASSERT_KNOWN_ADDED         | Not Started | <!-- Link the assertions as a permalink pinned to the sign-off commit, e.g. [output asserts], so the line range stays correct when the file changes. -->
 | Code Quality  | LINT_SETUP                 | Not Started |
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
@@ -61,17 +61,20 @@ This sign-off is based on commit [`abc1234`][v1-commit] (nightly yyyy-mm-dd).
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [stages]: stages.md
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
-[design stages]: stages.md#design-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
 [V1 checklist]: stages.md#v1-verification-sign-off-checklist
-[verification stages]: stages.md#verification-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 <!-- Replace the commit hashes in the two links below with the actual hashes for each sign-off. -->
 [d1-commit]: https://github.com/lowRISC/mocha/commit/1234def
 [v1-commit]: https://github.com/lowRISC/mocha/commit/abc1234
+<!-- Links into the RTL that carry a line range must be permalinks pinned to the sign-off
+commit, not relative paths. A relative link goes stale silently when the file changes. -->
+[output asserts]: https://github.com/lowRISC/mocha/blob/1234def/hw/path/to/block.sv#L1-L10

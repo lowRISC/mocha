@@ -89,7 +89,7 @@ Checklists for signing off a block at D1.
 | IP_INSTANTIABLE | The IP compiles and elaborates without errors. |
 | PHYSICAL_MACROS_DEFINED_80 | Physical macros for memories and analogue components are defined and roughly 80% accurate. |
 | FUNC_IMPLEMENTED | The main functional path is implemented to allow basic testing. |
-| ASSERT_KNOWN_ADDED | Assert that all outputs of the blocks are “known.” |
+| ASSERT_KNOWN_ADDED | Assert that all outputs of the blocks are "known." |
 | LINT_SETUP | Lint flow is set up, but it is acceptable to have warnings at this point. |
 
 *D2 and D3 checklists to be added.*
@@ -224,7 +224,7 @@ Interrupt routing is one such check. As a suggestion, rather than testing an int
 | TOP_RESET_PATHS | Software reset, NDM reset via the debug module, and alert-escalation reset each exercised: correct reset cause register state confirmed after each. |
 | TOP_ALL_TESTS_PASSING_V2 | All V1 and V2 testpoints in the testplan passing. |
 | TOP_VPLAN_COVERAGE_V2 | All V1 and V2 items defined in the verification plan achieved. |
-| TOP_GLUE_CODE_COVERAGE_90 | ≥90% line, branch, toggle and FSM code coverage on the top-level glue logic. IP blocks verified at block level are black-boxed; only the integration logic is in scope. |
+| TOP_GLUE_CODE_COVERAGE_90 | >=90% line, branch, toggle and FSM code coverage on the top-level glue logic. IP blocks verified at block level are black-boxed; only the integration logic is in scope. |
 | TOP_NO_HIGH_PRIORITY_ISSUES | All P0 and P1 bugs closed. |
 
 ### Top-level V3 sign-off checklist
