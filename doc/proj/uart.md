@@ -13,6 +13,7 @@ To facilitate the sign-off process, we can take inspiration from the [design and
 
 The UART used for D1 sign-off is the one imported from OpenTitan at revision [d96fc2a][OpenTitan hash].
 The sign-off checklist items are described in the [D1 design sign-off checklist][D1 checklist].
+This sign-off is based on commit [`a413a52`][d1-commit].
 
 | Type          | Item                       | Status | Note/Collaterals |
 |---------------|----------------------------|--------|------------------|
@@ -28,11 +29,11 @@ The sign-off checklist items are described in the [D1 design sign-off checklist]
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
@@ -61,11 +62,11 @@ This sign-off is based on commit [`a413a52`][V1 commit].
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/lowrisc_ip/ip/uart/README.md
 [stages]: stages.md
@@ -73,12 +74,13 @@ This sign-off is based on commit [`a413a52`][V1 commit].
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/d96fc2abd7b3c547f8a31ac4cb5a0bac645a7d1f
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
 [registers]: ../../hw/vendor/lowrisc_ip/ip/uart/doc/registers.md
-[output asserts]: ../../hw/vendor/lowrisc_ip/ip/uart/rtl/uart.sv#L122-L127
-[lint waivers]: https://github.com/lowRISC/mocha/blob/0d4d6369a57864dab9522ef9000ca8577d803050/hw/top_chip/lint/top_chip_system.vlt#L98-L100
-[design stages]: stages.md#design-stages
+[output asserts]: https://github.com/lowRISC/mocha/blob/a413a5274bfbdc119dabf16c5ba27d3580b68903/hw/vendor/lowrisc_ip/ip/uart/rtl/uart.sv#L122-L140
+[lint waivers]: https://github.com/lowRISC/mocha/blob/a413a5274bfbdc119dabf16c5ba27d3580b68903/hw/top_chip/lint/top_chip_system.vlt#L98-L100
+[design stages]: stages.md#hardware-ip-block-design-stages
 [V1 checklist]: stages.md#v1-verification-sign-off-checklist
-[verification stages]: stages.md#verification-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [V1 commit]: https://github.com/lowRISC/mocha/commit/a413a5274bfbdc119dabf16c5ba27d3580b68903
+[d1-commit]: https://github.com/lowRISC/mocha/commit/a413a5274bfbdc119dabf16c5ba27d3580b68903
 [UART DV document]: ../../hw/vendor/lowrisc_ip/ip/uart/dv/README.md
 [UART testplan]: ../../hw/vendor/lowrisc_ip/ip/uart/data/uart_testplan.hjson
 [OpenTitan UART checklist]: ../../hw/vendor/lowrisc_ip/ip/uart/doc/checklist.md

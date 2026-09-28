@@ -31,34 +31,34 @@ This sign-off is based on commit [`55fa175`][d1-commit].
 | RTL           | PHYSICAL_MACROS_DEFINED_80 | Done   | The buffers share one dual-port RAM instantiated through `prim_ram_2p_async_adv` in `spid_dpram.sv`, fixed at 1024 entries of 32 bits. This becomes a one-read-one-write RAM under [issue #271][sram type].
 | RTL           | FUNC_IMPLEMENTED           | Done   | All functionality already implemented.
 | RTL           | ASSERT_KNOWN_ADDED         | Done   | Output assertions are [here][output asserts] and cover every output except `cio_sd_o` and `passthrough_o.s`, which carry SPI-domain data that is legitimately undefined outside a transaction. Upstream takes the same view for `cio_sd_o`, checking `cio_sd_en_o` instead and asserting that the block does not drive the pads while both chip selects are inactive. The other six `passthrough_o` fields are checked. `tl_o` and `racl_error_o` are checked on their handshake and valid fields, as elsewhere. `passthrough_o.s` could instead be checked qualified on `s_en`; the passthrough port is unconnected in Mocha, so nothing turns on it here.
-| Code Quality  | LINT_SETUP                 | Done   | Verilator lint target with `-Wall` in `spi_device.core` and in the top. Width, unused signal and unoptimisable-flat warnings in `spi_device_pkg.sv`, `spi_tpm.sv`, `spid_status.sv` and `spi_readcmd.sv` [are waived][lint waivers]. The block target also loads the vendored `lint/spi_device.vlt`, which waives a reserved-word warning in `spi_device_reg_pkg.sv` and a width warning in `spid_fifo2sram_adapter.sv`. The block carries vendored waivers for the other lint tools too — `lint/spi_device.waiver` and `lint/spi_tpm.waiver` for AscentLint and `lint/spi_device.vbl` for Verible — but neither tool is run in Mocha.
+| Code Quality  | LINT_SETUP                 | Done   | Verilator lint target with `-Wall` in `spi_device.core` and in the top. Width, unused signal and unoptimisable-flat warnings in `spi_device_pkg.sv`, `spi_tpm.sv`, `spid_status.sv` and `spi_readcmd.sv` [are waived][lint waivers]. The block target also loads the vendored `lint/spi_device.vlt`, which waives a reserved-word warning in `spi_device_reg_pkg.sv` and a width warning in `spid_fifo2sram_adapter.sv`. The block carries vendored waivers for the other lint tools too: `lint/spi_device.waiver` and `lint/spi_tpm.waiver` for AscentLint and `lint/spi_device.vbl` for Verible, but neither tool is run in Mocha.
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/lowrisc_ip/ip/spi_device/README.md
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan D1 signoff]: https://github.com/lowRISC/opentitan/pull/898
 [D1 checklist]: stages.md#d1-design-sign-off-checklist

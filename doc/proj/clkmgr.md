@@ -34,32 +34,32 @@ This sign-off is based on commit [b597321][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/top_chip/ip_autogen/clkmgr/README.md
 [stages]: stages.md
 [block doc issue]: https://github.com/lowRISC/mocha/issues/709
 [cmdgen]: https://github.com/lowRISC/mocha/issues/706
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
 [d1-commit]: https://github.com/lowRISC/mocha/commit/b5973217f704923917e7761f73df7dfcb8d0c345
@@ -68,4 +68,4 @@ This sign-off is based on commit [b597321][d1-commit].
 [theory]: ../../hw/top_chip/ip_autogen/clkmgr/doc/theory_of_operation.md
 [pguide]: ../../hw/top_chip/ip_autogen/clkmgr/doc/programmers_guide.md
 [ipconfig]: ../../hw/top_chip/ip_autogen/clkmgr/data/mocha_clkmgr.ipconfig.hjson
-[output asserts]: ../../hw/top_chip/ip_autogen/clkmgr/rtl/clkmgr.sv#L483-L490
+[output asserts]: https://github.com/lowRISC/mocha/blob/b5973217f704923917e7761f73df7dfcb8d0c345/hw/top_chip/ip_autogen/clkmgr/rtl/clkmgr.sv#L483-L490

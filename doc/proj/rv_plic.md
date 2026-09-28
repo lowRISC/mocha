@@ -31,30 +31,30 @@ This sign-off is based on commit [`272c57d`][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/top_chip/ip_autogen/rv_plic/README.md
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan sign-off]: https://github.com/lowRISC/opentitan/pull/1480
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
@@ -63,5 +63,5 @@ This sign-off is based on commit [`272c57d`][d1-commit].
 [pguide]: ../../hw/top_chip/ip_autogen/rv_plic/doc/programmers_guide.md
 [csrs]: ../../hw/top_chip/ip_autogen/rv_plic/data/rv_plic.hjson
 [cmdgen]: https://github.com/lowRISC/mocha/issues/706
-[output asserts]: ../../hw/top_chip/ip_autogen/rv_plic/rtl/rv_plic.sv#L276-L284
+[output asserts]: https://github.com/lowRISC/mocha/blob/272c57d8d91556f7c7889123c5da3bcf51dd8345/hw/top_chip/ip_autogen/rv_plic/rtl/rv_plic.sv#L276-L284
 [patch]: ../../hw/vendor/patches/lowrisc_ip/rv_plic

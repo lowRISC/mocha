@@ -50,14 +50,14 @@ This sign-off is based on commit [`e9a63ad`][d1-commit].
 
 [block doc]: ../ref/arch.md#sram-specification
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [ram cfg]: https://github.com/lowRISC/mocha/issues/715
 [ram prim]: https://github.com/lowRISC/mocha/issues/694
 [atomics]: https://github.com/lowRISC/mocha/issues/695
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
 [d1-commit]: https://github.com/lowRISC/mocha/commit/e9a63add98f273bf0148c27f5f16c219fbc5aaa1
 [instantiation]: ../../hw/top_chip/rtl/top_chip_system.sv
-[output asserts]: ../../hw/top_chip/rtl/axi_sram.sv#L174-L183
+[output asserts]: https://github.com/lowRISC/mocha/blob/e9a63add98f273bf0148c27f5f16c219fbc5aaa1/hw/top_chip/rtl/axi_sram.sv#L174-L183
 [lint waivers]: ../../hw/top_chip/lint/top_chip_system.vlt
 [fusesoc file]: ../../hw/top_chip/axi_sram.core

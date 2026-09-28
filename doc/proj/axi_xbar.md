@@ -31,30 +31,30 @@ This sign-off is based on commit [`97816a0`][d1-commit], the last of the output 
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/pulp_axi/doc/axi_xbar.md
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [pulp axi]: https://github.com/pulp-platform/axi
 [pulp hash]: https://github.com/pulp-platform/axi/tree/a256a3b86394fedf19e361047fccfdd7f6ef83e4
 [D1 checklist]: stages.md#d1-design-sign-off-checklist

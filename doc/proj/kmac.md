@@ -13,7 +13,7 @@ The rest of this document contains the design checklist for the KMAC hardware IP
 
 The KMAC used for D1 sign-off is the one imported from OpenTitan at revision [bf4a2b2][OpenTitan hash].
 The sign-off checklist items are described in the [D1 design sign-off checklist][D1 checklist].
-This sign-off is based on commit [b597321][d1-commit].
+This sign-off is based on commit [3824b31][d1-commit].
 
 | Type          | Item                       | Status | Note/Collaterals |
 |---------------|----------------------------|--------|------------------|
@@ -29,35 +29,35 @@ This sign-off is based on commit [b597321][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/lowrisc_ip/ip/kmac/README.md
 [missing asserts]: https://github.com/lowRISC/mocha/issues/707
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
-[d1-commit]: https://github.com/lowRISC/mocha/commit/b5973217f704923917e7761f73df7dfcb8d0c345
+[d1-commit]: https://github.com/lowRISC/mocha/commit/3824b3167f3691f0a0259f2d85c43b022ac56c1a
 [registers]: ../../hw/vendor/lowrisc_ip/ip/kmac/doc/registers.md
-[output asserts]: ../../hw/vendor/lowrisc_ip/ip/kmac/rtl/kmac.sv#L1531-L1541
+[output asserts]: https://github.com/lowRISC/mocha/blob/3824b3167f3691f0a0259f2d85c43b022ac56c1a/hw/vendor/lowrisc_ip/ip/kmac/rtl/kmac.sv#L1531-L1540
 [ot checklist]: ../../hw/vendor/lowrisc_ip/ip/kmac/doc/checklist.md
 [lint waivers]: ../../hw/top_chip/lint/top_chip_system.vlt
 [block waivers]: ../../hw/vendor/lowrisc_ip/ip/kmac/lint/kmac.vlt

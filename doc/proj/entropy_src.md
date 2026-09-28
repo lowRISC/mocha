@@ -31,38 +31,38 @@ This sign-off is based on commit [11ca7dd][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/lowrisc_ip/ip/entropy_src/README.md
 [stages]: stages.md
 [missing asserts]: https://github.com/lowRISC/mocha/issues/713
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan D1 sign-off]: https://github.com/lowRISC/opentitan/pull/4413
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
 [d1-commit]: https://github.com/lowRISC/mocha/commit/11ca7dd6438a11c2b3fe1d20c2cd0ce4a1e37f0a
 [registers]: ../../hw/vendor/lowrisc_ip/ip/entropy_src/doc/registers.md
 [top_pkg]: ../../hw/top_chip/rtl/top_pkg.sv
-[output asserts]: ../../hw/vendor/lowrisc_ip/ip/entropy_src/rtl/entropy_src.sv#L282-L325
+[output asserts]: https://github.com/lowRISC/mocha/blob/11ca7dd6438a11c2b3fe1d20c2cd0ce4a1e37f0a/hw/vendor/lowrisc_ip/ip/entropy_src/rtl/entropy_src.sv#L282-L325
 [ot checklist]: ../../hw/vendor/lowrisc_ip/ip/entropy_src/doc/checklist.md
 [lint waivers]: ../../hw/top_chip/lint/top_chip_system.vlt
 [patch]: ../../hw/vendor/patches/lowrisc_ip/entropy_src

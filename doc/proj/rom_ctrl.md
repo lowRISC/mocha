@@ -31,36 +31,36 @@ This sign-off is based on commit [`b597321`][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/README.md
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan D1 sign-off]: https://github.com/lowRISC/opentitan/pull/7114
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
 [d1-commit]: https://github.com/lowRISC/mocha/commit/b5973217f704923917e7761f73df7dfcb8d0c345
 [registers]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/doc/registers.md
-[output asserts]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/rtl/rom_ctrl.sv#L519-L561
+[output asserts]: https://github.com/lowRISC/mocha/blob/b5973217f704923917e7761f73df7dfcb8d0c345/hw/vendor/lowrisc_ip/ip/rom_ctrl/rtl/rom_ctrl.sv#L519-L561
 [lint waivers]: https://github.com/lowRISC/mocha/blob/b5973217f704923917e7761f73df7dfcb8d0c345/hw/top_chip/lint/top_chip_system.vlt#L317-L324
 [OpenTitan ROM control checklist]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/doc/checklist.md
 [patch]: ../../hw/vendor/patches/lowrisc_ip/rom_ctrl

@@ -16,7 +16,7 @@ For more details on the stages and the current state for each block, please refe
 
 The GPIO used for D1 sign-off is generated from the OpenTitan template at revision [bf4a2b2][OpenTitan hash], where it was [signed off to D1][OpenTitan D1 sign-off].
 The sign-off checklist items are described in the [D1 design sign-off checklist][D1 checklist].
-This sign-off is based on commit [b597321][d1-commit].
+This sign-off is based on commit [97816a0][d1-commit].
 
 | Type          | Item                       | Status | Note/Collaterals |
 |---------------|----------------------------|--------|------------------|
@@ -32,41 +32,41 @@ This sign-off is based on commit [b597321][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/top_chip/ip_autogen/gpio/README.md
 [stages]: stages.md
 [cmdgen]: https://github.com/lowRISC/mocha/issues/706
 [missing asserts]: https://github.com/lowRISC/mocha/issues/711
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan D1 sign-off]: https://github.com/lowRISC/opentitan/pull/676
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
-[d1-commit]: https://github.com/lowRISC/mocha/commit/b5973217f704923917e7761f73df7dfcb8d0c345
+[d1-commit]: https://github.com/lowRISC/mocha/commit/97816a09b4bff4fa48c12e586a0fa71a1698836e
 [registers]: ../../hw/top_chip/ip_autogen/gpio/doc/registers.md
 [csrs]: ../../hw/top_chip/ip_autogen/gpio/data/gpio.hjson
 [theory]: ../../hw/top_chip/ip_autogen/gpio/doc/theory_of_operation.md
 [pguide]: ../../hw/top_chip/ip_autogen/gpio/doc/programmers_guide.md
 [ipconfig]: ../../hw/top_chip/data/gpio_cfg.hjson
-[output asserts]: ../../hw/top_chip/ip_autogen/gpio/rtl/gpio.sv#L242-L249
+[output asserts]: https://github.com/lowRISC/mocha/blob/97816a09b4bff4fa48c12e586a0fa71a1698836e/hw/top_chip/ip_autogen/gpio/rtl/gpio.sv#L242-L257
 [ot checklist]: ../../hw/top_chip/ip_autogen/gpio/doc/checklist.md
 [patch]: ../../hw/vendor/patches/lowrisc_ip/gpio/0001_fix_paths_and_tool.patch

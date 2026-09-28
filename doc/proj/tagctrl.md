@@ -11,12 +11,12 @@ For more details on the stages and the current state for each block, please refe
 
 ### D1
 
-This sign-off is based on commit [`90741aa`][d1-commit].
+This sign-off is based on commit [`73fd5c8`][d1-commit].
 
 | Type          | Item                       | Status | Note/Collaterals |
 |---------------|----------------------------|--------|------------------|
 | Documentation | SPEC_COMPLETED             | Done   | The High-Level Overview in [`/docs/tag_controller.adoc`][tagctrl_doc] applies to the vendored revision, and the cache behaviour is documented in the PULP LLC's [`axi_llc.md`][llc doc]. The rest of that document postdates `173646d` and describes the newer [HPDCache](https://github.com/Capabilities-Limited/cv-hpdcache)-based version: its Unconfigured, Zeroing, Serving and Flushing states, entered through start, resume and stop commands on the config port, do not exist here, where the only FSM is the LLC flush FSM in `axi_tagctrl_config.sv`.
-| Documentation | CSR_DEFINED                | Done   | The registers as built are the 18 defined in the PULP LLC's [`axi_llc_regs.hjson`][llc regs], instantiated through `axi_llc_reg_top` in `axi_tagctrl_reg_wrap.sv`: `CFG_SPM_LOW`/`CFG_SPM_HIGH` and `CFG_FLUSH_LOW`/`CFG_FLUSH_HIGH` are read-write, `COMMIT_CFG` is `rw1s`, and the remaining 13 are read-only. Mocha ties `conf_req_i` to `'0` at the [instantiation][conf tie-off], so software cannot reach any of them. The [Programmer’s Model & Software Interface][tag_ctrl_doc_progmod] section of the upstream document describes the newer tag controller's interface instead, and is to be reconciled when that version is integrated.
+| Documentation | CSR_DEFINED                | Done   | The registers as built are the 18 defined in the PULP LLC's [`axi_llc_regs.hjson`][llc regs], instantiated through `axi_llc_reg_top` in `axi_tagctrl_reg_wrap.sv`: `CFG_SPM_LOW`/`CFG_SPM_HIGH` and `CFG_FLUSH_LOW`/`CFG_FLUSH_HIGH` are read-write, `COMMIT_CFG` is `rw1s`, and the remaining 13 are read-only. Mocha ties `conf_req_i` to `'0` at the [instantiation][conf tie-off], so software cannot reach any of them. The [Programmer's Model & Software Interface][tag_ctrl_doc_progmod] section of the upstream document describes the newer tag controller's interface instead, and is to be reconciled when that version is integrated.
 | RTL           | CLKRST_CONNECTED           | Done   | The clock and reset are driven into the toplevel from [`top_chip_system.sv`][instantiation]. Modules containing submodules checked: `axi_tagctrl_reg_wrap.sv`, `axi_tagctrl_top.sv`, `axi_tagctrl_config.sv`, `axi_tagctrl_r.sv`, `axi_tagctrl_w.sv`, `axi_tagc_read_unit.sv`, `axi_tagc_write_unit.sv`, `axi_tagctrl_data_way.sv`, `axi_tagctrl_ways.sv`, `axi_llc_tag_store.sv`, `eviction_refill/axi_llc_r_master.sv`, `axi_llc_hit_miss.sv`, `axi_llc_evict_unit.sv`, `axi_llc_refill_unit.sv` and `axi_llc_merge_unit.sv`. `axi_tagctrl_ax.sv` takes a clock and reset and instantiates nothing further. Modules without clocks and resets are confirmed to be purely combinational: `axi_id_prepend`, `lzc`, `onehot_to_bin`, `prim_subreg_arb`, `stream_demux` and `sub_per_hash`.
 | RTL           | IP_TOP                     | Done   | The tag controller's toplevel module is defined in [`/hw/vendor/tagctrl/src/axi_tagctrl_reg_wrap.sv`](/hw/vendor/tagctrl/src/axi_tagctrl_reg_wrap.sv)
 | RTL           | IP_INSTANTIABLE            | Done   | The tag controller's toplevel module is instantiated in [`/hw/top_chip/rtl/top_chip_system.sv`](/hw/top_chip/rtl/top_chip_system.sv).
@@ -27,28 +27,28 @@ This sign-off is based on commit [`90741aa`][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [axi_cheri_tagcontroller]: https://github.com/Capabilities-Limited/axi_cheri_tagcontroller
-[d1-commit]: https://github.com/lowRISC/mocha/commit/90741aa2d21ec78b3de4a35809176dcf96c3315d
+[d1-commit]: https://github.com/lowRISC/mocha/commit/73fd5c8214f536fd7349ba1ff7da3c53eace842e
 [instantiation]: ../../hw/top_chip/rtl/top_chip_system.sv#L1301-L1302
 [conf tie-off]: ../../hw/top_chip/rtl/top_chip_system.sv#L1308
 [llc doc]: ../../hw/vendor/pulp_axi_llc/doc/axi_llc.md

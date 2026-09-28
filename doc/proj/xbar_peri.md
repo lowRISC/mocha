@@ -28,11 +28,11 @@ This sign-off is based on commit [`5d06b0e`][d1-commit] (nightly 2026-06-25).
 
 ### D2
 
-*Checklist to be defined — see [design stages][design stages].*
+*Checklist to be defined - see [design stages][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [design stages][design stages].*
+*Checklist to be defined - see [design stages][design stages].*
 
 ## Verification sign-offs
 
@@ -50,9 +50,9 @@ This sign-off is based on commit [`d051a93`][v1-commit] (nightly 2026-05-20).
 | Integration   | PRE_VERIFIED_SUB_MODULES_V1        | Waived  | TLUL socket primitives (`tlul_socket_1n`, `tlul_socket_m1`) sourced from `lowrisc_ip` vendor library, carried as pre-verified at V2 in OpenTitan ([lowRISC/opentitan#10352][]); `prim_arbiter` waived, consistent with OpenTitan V1 precedent |
 | Review        | DESIGN_SPEC_REVIEWED               | Waived  | xbar_peri comes from OpenTitan where the specification was reviewed as part of the OpenTitan design process; no significant modifications made for Mocha, so waived for V1 in Mocha |
 | Review        | TESTPLAN_REVIEWED                  | Done    | |
-| Review        | STD_TEST_CATEGORIES_PLANNED        | Done    | Exception: Security/leakage (N/A — no security assets in a routing fabric), Power (N/A), Performance (N/A), Debug (N/A). Error scenarios and Stress are covered in the [TLUL testplan][] |
+| Review        | STD_TEST_CATEGORIES_PLANNED        | Done    | Exception: Security/leakage (N/A - no security assets in a routing fabric), Power (N/A), Performance (N/A), Debug (N/A). Error scenarios and Stress are covered in the [TLUL testplan][] |
 | Simulation    | SIM_TB_ENV_CREATED                 | Done    | Generic TLUL UVM environment from `hw/vendor/lowrisc_ip/ip/tlul/generic_dv/`; `tl_agent` instantiated per host/device interface; scoreboard with per-interface analysis FIFOs |
-| Tests         | SIM_SMOKE_TEST_PASSING             | Done    | `xbar_smoke`: 50/50 passed (100%) — nightly 2026-05-20, commit `d051a93` |
+| Tests         | SIM_SMOKE_TEST_PASSING             | Done    | `xbar_smoke`: 50/50 passed (100%) - nightly 2026-05-20, commit `d051a93` |
 | Regression    | SIM_SMOKE_REGRESSION_SETUP         | Done    | Smoke regression defined in `hw/top_chip/ip/xbar_peri/dv/autogen/xbar_peri_sim_cfg.hjson` and added to the aggregate `mocha/hw/top_chip/dv/mocha_sim_cfgs.hjson` file used for nightly/weekly CI regressions. |
 | Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Done    | Nightly CI running on `main` and results are available at the [COSMIC reports dashboard](https://cosmic-project.lowrisc.org/dashboard/index.html) |
 | Coverage      | SIM_COVERAGE_MODEL_ADDED           | Done    | Coverage model defined in `hw/vendor/lowrisc_ip/ip/tlul/generic_dv/env/xbar_env_cov.sv` |
@@ -61,17 +61,17 @@ This sign-off is based on commit [`d051a93`][v1-commit] (nightly 2026-05-20).
 
 ### V2
 
-*Checklist to be defined — see [verification stages][].*
+*Checklist to be defined - see [verification stages][].*
 
 ### V3
 
-*Checklist to be defined — see [verification stages][].*
+*Checklist to be defined - see [verification stages][].*
 
 [stages]:              stages.md
 [D1 checklist]:        stages.md#d1-design-sign-off-checklist
-[design stages]:       stages.md#design-stages
+[design stages]:       stages.md#hardware-ip-block-design-stages
 [V1 checklist]:        stages.md#v1-verification-sign-off-checklist
-[verification stages]: stages.md#verification-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 
 [OpenTitan]:               https://github.com/lowRISC/opentitan
 [lowRISC/opentitan#10352]: https://github.com/lowRISC/opentitan/pull/10352

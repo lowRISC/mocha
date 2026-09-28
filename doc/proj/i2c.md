@@ -15,7 +15,7 @@ For more details on the stages and the current state for each block, please refe
 
 The I2C used for D1 sign-off is the one imported from OpenTitan at revision [bf4a2b2][OpenTitan hash].
 The sign-off checklist items are described in the [D1 design sign-off checklist][D1 checklist].
-This sign-off is based on commit [b597321][d1-commit].
+This sign-off is based on commit [8ac5ce9][d1-commit].
 
 | Type          | Item                       | Status | Note/Collaterals |
 |---------------|----------------------------|--------|------------------|
@@ -31,35 +31,35 @@ This sign-off is based on commit [b597321][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/lowrisc_ip/ip/i2c/README.md
 [stages]: stages.md
 [missing asserts]: https://github.com/lowRISC/mocha/issues/708
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
-[d1-commit]: https://github.com/lowRISC/mocha/commit/b5973217f704923917e7761f73df7dfcb8d0c345
+[d1-commit]: https://github.com/lowRISC/mocha/commit/8ac5ce9d1e2af59bc12b834f7870e5a797a824a1
 [registers]: ../../hw/vendor/lowrisc_ip/ip/i2c/doc/registers.md
-[output asserts]: ../../hw/vendor/lowrisc_ip/ip/i2c/rtl/i2c.sv#L157-L181
+[output asserts]: https://github.com/lowRISC/mocha/blob/8ac5ce9d1e2af59bc12b834f7870e5a797a824a1/hw/vendor/lowrisc_ip/ip/i2c/rtl/i2c.sv#L157-L181
 [ot checklist]: ../../hw/vendor/lowrisc_ip/ip/i2c/doc/checklist.md
 [patch]: ../../hw/vendor/patches/lowrisc_ip/i2c/0001-Fix-Paths-and-Tool.patch

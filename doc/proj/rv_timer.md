@@ -32,35 +32,35 @@ This sign-off is based on commit [`b597321`][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/lowrisc_ip/ip/rv_timer/README.md
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan sign-off]: https://github.com/lowRISC/opentitan/pull/652
 [OpenTitan rv_timer checklist]: ../../hw/vendor/lowrisc_ip/ip/rv_timer/doc/checklist.md
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
 [d1-commit]: https://github.com/lowRISC/mocha/commit/b5973217f704923917e7761f73df7dfcb8d0c345
 [registers]: ../../hw/vendor/lowrisc_ip/ip/rv_timer/doc/registers.md
-[output asserts]: ../../hw/vendor/lowrisc_ip/ip/rv_timer/rtl/rv_timer.sv#L173-L178
+[output asserts]: https://github.com/lowRISC/mocha/blob/b5973217f704923917e7761f73df7dfcb8d0c345/hw/vendor/lowrisc_ip/ip/rv_timer/rtl/rv_timer.sv#L173-L178
 [patch]: ../../hw/vendor/patches/lowrisc_ip/rv_timer

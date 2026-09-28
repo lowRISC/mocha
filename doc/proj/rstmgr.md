@@ -24,7 +24,7 @@ This sign-off is based on commit [`d918b3e`][d1-commit].
 |---------------|----------------------------|--------|------------------|
 | Documentation | SPEC_COMPLETED             | Done   | [Theory of operation][theory], which carries the block specification.
 | Documentation | CSR_DEFINED                | Done   | Registers are defined in [rstmgr.hjson][csrs] and generated into `rstmgr_reg_pkg.sv` and `rstmgr_reg_top.sv`.
-| RTL           | CLKRST_CONNECTED           | Done   | Modules containing submodules checked: `rstmgr.sv`, `rstmgr_ctrl.sv`, `rstmgr_por.sv`, `rstmgr_leaf_rst.sv`, `rstmgr_cnsty_chk.sv` and `rstmgr_reg_top.sv`; `rstmgr_crash_info.sv` takes a clock and reset and instantiates no submodules. `prim_subreg_ext`, `tlul_cmd_intg_chk` and `tlul_rsp_intg_gen` have no clock or reset and are confirmed to be purely combinational; `prim_clock_mux2` and `prim_clock_buf` have no reset and take only the clocks they select between or buffer. The clocked shared submodules instantiated here — `prim_alert_sender`, `prim_flop`, `prim_flop_2sync`, `prim_mubi4_sender`, `prim_mubi4_sync`, `prim_reg_we_check`, `prim_rst_sync`, `prim_subreg`, `prim_sync_reqack` and `tlul_adapter_reg` — have their clock and reset driven from the instantiating module and are not walked further, being covered by their own OpenTitan sign-offs.
+| RTL           | CLKRST_CONNECTED           | Done   | Modules containing submodules checked: `rstmgr.sv`, `rstmgr_ctrl.sv`, `rstmgr_por.sv`, `rstmgr_leaf_rst.sv`, `rstmgr_cnsty_chk.sv` and `rstmgr_reg_top.sv`; `rstmgr_crash_info.sv` takes a clock and reset and instantiates no submodules. `prim_subreg_ext`, `tlul_cmd_intg_chk` and `tlul_rsp_intg_gen` have no clock or reset and are confirmed to be purely combinational; `prim_clock_mux2` and `prim_clock_buf` have no reset and take only the clocks they select between or buffer. The clocked shared submodules: `prim_alert_sender`, `prim_flop`, `prim_flop_2sync`, `prim_mubi4_sender`, `prim_mubi4_sync`, `prim_reg_we_check`, `prim_rst_sync`, `prim_subreg`, `prim_sync_reqack` and `tlul_adapter_reg` have their clock and reset driven from the instantiating module and are not walked further, being covered by their own OpenTitan sign-offs.
 | RTL           | IP_TOP                     | Done   | This module is defined in `rstmgr.sv`.
 | RTL           | IP_INSTANTIABLE            | Done   | It is instantiated in top chip system.
 | RTL           | PHYSICAL_MACROS_DEFINED_80 | Done   | No memory macros or analogue components.
@@ -34,30 +34,30 @@ This sign-off is based on commit [`d918b3e`][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/top_chip/ip_autogen/rstmgr/README.md
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan D1 transition]: https://github.com/lowRISC/opentitan/commit/51a23424ec66cece8c179f67388efa7cdad34381
 [OpenTitan D3 sign-off]: https://github.com/lowRISC/opentitan/pull/24164
@@ -70,7 +70,7 @@ This sign-off is based on commit [`d918b3e`][d1-commit].
 [csrs]: ../../hw/top_chip/ip_autogen/rstmgr/data/rstmgr.hjson
 [ipconfig]: ../../hw/top_chip/data/rstmgr_cfg.hjson
 [cmdgen]: https://github.com/lowRISC/mocha/issues/706
-[output asserts]: ../../hw/top_chip/ip_autogen/rstmgr/rtl/rstmgr.sv#L698-L704
+[output asserts]: https://github.com/lowRISC/mocha/blob/d918b3ef1b80febeccbae3c9d7d8b30edf8a1186/hw/top_chip/ip_autogen/rstmgr/rtl/rstmgr.sv#L698-L704
 [lint waivers]: https://github.com/lowRISC/mocha/blob/d918b3ef1b80febeccbae3c9d7d8b30edf8a1186/hw/top_chip/lint/top_chip_system.vlt#L55
 [patch]: ../../hw/vendor/patches/lowrisc_ip/rstmgr
 [assert patch]: ../../hw/vendor/patches/lowrisc_ip/rstmgr/0004_Add_Missing_Output_Assertions.patch

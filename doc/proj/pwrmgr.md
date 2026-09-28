@@ -33,30 +33,30 @@ This sign-off is based on commit [`5d7a249`][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/top_chip/ip_autogen/pwrmgr/README.md
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [OpenTitan hash]: https://github.com/lowRISC/opentitan/tree/bf4a2b24e41742151cfce9c4041e959a3ba76ca3
 [OpenTitan D1 sign-off]: https://github.com/lowRISC/opentitan/pull/24191
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
@@ -67,5 +67,5 @@ This sign-off is based on commit [`5d7a249`][d1-commit].
 [csrs]: ../../hw/top_chip/ip_autogen/pwrmgr/data/pwrmgr.hjson
 [ipconfig]: ../../hw/top_chip/data/pwrmgr_cfg.hjson
 [cmdgen]: https://github.com/lowRISC/mocha/issues/706
-[output asserts]: ../../hw/top_chip/ip_autogen/pwrmgr/rtl/pwrmgr.sv#L703-L715
+[output asserts]: https://github.com/lowRISC/mocha/blob/5d7a249ac6caa60464ea64192ed9e418292edfb6/hw/top_chip/ip_autogen/pwrmgr/rtl/pwrmgr.sv#L703-L715
 [patch]: ../../hw/vendor/patches/lowrisc_ip/pwrmgr

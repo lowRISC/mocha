@@ -35,31 +35,31 @@ This sign-off is based on commit [`b6edc2a`][d1-commit].
 
 ### D2
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ### D3
 
-*Checklist to be defined — see [stages.md][design stages].*
+*Checklist to be defined - see [stages.md][design stages].*
 
 ## Verification sign-offs
 
 ### V1
 
-*Not yet started — see [stages.md][verification stages].*
+*Not yet started - see [stages.md][verification stages].*
 
 ### V2
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 ### V3
 
-*Checklist to be defined — see [stages.md][verification stages].*
+*Checklist to be defined - see [stages.md][verification stages].*
 
 [block doc]: ../../hw/vendor/pulp_axi/doc/axi_lite_mailbox.md
 [registers]: ../../hw/vendor/pulp_axi/doc/axi_lite_mailbox.md#register-address-mapping
 [stages]: stages.md
-[design stages]: stages.md#design-stages
-[verification stages]: stages.md#verification-stages
+[design stages]: stages.md#hardware-ip-block-design-stages
+[verification stages]: stages.md#hardware-ip-block-verification-stages
 [pulp axi]: https://github.com/pulp-platform/axi
 [pulp hash]: https://github.com/pulp-platform/axi/tree/a256a3b86394fedf19e361047fccfdd7f6ef83e4
 [prim patch]: ../../hw/vendor/patches/pulp_axi/0001_Primitives_from_lowRISC_used.patch
@@ -67,6 +67,6 @@ This sign-off is based on commit [`b6edc2a`][d1-commit].
 [D1 checklist]: stages.md#d1-design-sign-off-checklist
 [d1-commit]: https://github.com/lowRISC/mocha/commit/b6edc2ae5cdee9f1d4d1baa815921bb658c82613
 [instantiation]: ../../hw/top_chip/rtl/top_chip_system.sv#L637
-[output asserts]: ../../hw/vendor/pulp_axi/src/axi_lite_mailbox.sv#L191-L202
+[output asserts]: https://github.com/lowRISC/mocha/blob/b6edc2ae5cdee9f1d4d1baa815921bb658c82613/hw/vendor/pulp_axi/src/axi_lite_mailbox.sv#L191-L202
 [lint waivers]: ../../hw/top_chip/lint/top_chip_system.vlt#L60-L69
 [waivers issue]: https://github.com/lowRISC/mocha/issues/739
