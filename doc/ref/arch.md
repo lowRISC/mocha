@@ -18,6 +18,31 @@ There are three clock domains in Mocha.<!-- rfj4pd_x -->
    Both the main and IO clocks can be disabled and are turned off when a system reset is requested.<!-- 68url6_x -->
    The always on clock drives the clock, reset and power managers and allows the system to come out of reset.<!-- w5ylk6_x -->
 
+## Reset domains
+
+The resets are derived from the power-on reset on the top-level `rst_ni` input.<!-- 3yv1wh_x -->
+The JTAG TAP reset is the exception: `dm_jtag_trst_n` comes straight from a pin to the debug module and does not pass through the reset manager.<!-- yza50i_x -->
+There are five resets in our architecture:<!-- 9g9uej_x -->
+1. The AON reset resets the logic on the always-on clock.<!-- qpdwd4_x -->
+2. The main reset resets everything on the main clock.<!-- 44pvix_x -->
+3. The IO reset resets everything on the IO clock, except for the ones that have a separate software reset.<!-- rve9kz_x -->
+4. Individual software-controllable resets for SPI device, SPI host and I2C to recover from protocol errors.<!-- ih9zw0_x -->
+5. The debug reset resets the debug module separately.<!-- 6waem2_x -->
+
+The debug reset is kept separate from the main reset so that the debug module can reset the main domain while excluding itself from that flow.<!-- iq6ugn_x -->
+Such a request always asserts the main reset, but only asserts the debug reset when debugging is disabled at the top level.<!-- f5qo8i_x -->
+
+In Mocha the debug module is the only source of hardware reset requests.<!-- 6upgjf_x -->
+Software can also reset the whole system by writing the reset manager's `RESET_REQ` register.<!-- h51zvb_x -->
+Unlike a request from the debug module, the software reset also resets the debug module.<!-- adhb0f_x -->
+
+The vendored [theory of operation](../../hw/top_chip/ip_autogen/rstmgr/doc/theory_of_operation.md) describes the reset trees and their behaviour correctly, but it is written for the OpenTitan configuration and differs from Mocha, mainly:<!-- skwcio_x -->
+
+1. It says the power-on reset is driven by AST; Mocha has no AST block, so the power-on reset is driven by `rst_ni`, an input to the Mocha enclave.<!-- lnxfen_x -->
+2. It lists the OpenTitan set of software resettable blocks, which includes `usbdev`. Mocha has no USB device.<!-- rqguia_x -->
+3. It names `sysrst_ctrl` and `aon_timer` as peripherals capable of requesting a reset. Neither exists in Mocha.<!-- 9x0qbx_x -->
+4. It says `ALERT_INFO` and `CPU_INFO` record the alert status and CPU state before a reset. Mocha ties the alert and CPU dump inputs off, so neither register ever captures anything meaningful.<!-- iyamrn_x -->
+
 ## Memory map
 
 This is the current memory map for Mocha, where the base and top addresses are inclusive, and reserved is the amount of memory reserved for this function:<!-- mcbp27_x -->
@@ -62,8 +87,8 @@ In terms of output, the top-level will need output signals:<!-- tvdygx_x -->
 
 ## CVA6-CHERI
 
-Mocha will instantiate CVA6-CHERI.
-This is specified in [cva6-cheri.md][cva6-cheri-spec].
+Mocha will instantiate CVA6-CHERI.<!-- t7q0t4_x -->
+This is specified in [cva6-cheri.md][cva6-cheri-spec].<!-- v78vdz_x -->
 
 ## SRAM specification
 
