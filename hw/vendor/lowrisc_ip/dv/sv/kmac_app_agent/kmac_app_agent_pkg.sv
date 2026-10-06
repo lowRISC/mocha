@@ -8,7 +8,6 @@ package kmac_app_agent_pkg;
   import dv_utils_pkg::*;
   import dv_base_agent_pkg::*;
   import dv_lib_pkg::*;
-  import kmac_pkg::*;
   import push_pull_agent_pkg::*;
 
   // macro includes
@@ -16,10 +15,9 @@ package kmac_app_agent_pkg;
   `include "dv_macros.svh"
 
   // parameters
-  parameter int KmacDataIfWidth = kmac_pkg::MsgWidth;
-  parameter int KMAC_REQ_DATA_WIDTH = KmacDataIfWidth       // data width
-                                      + KmacDataIfWidth / 8 // data mask width
-                                      + 1;                  // bit last
+  parameter int KMAC_REQ_DATA_WIDTH = kmac_pkg::MsgWidth       // data (single share)
+                                      + kmac_pkg::MsgWidth / 8 // strobe
+                                      + 1;                     // req_last
 
   `define CONNECT_DATA_WIDTH .HostDataWidth(kmac_app_agent_pkg::KMAC_REQ_DATA_WIDTH)
 

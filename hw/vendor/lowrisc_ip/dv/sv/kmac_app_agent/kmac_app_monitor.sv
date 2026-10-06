@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-class kmac_app_monitor extends dv_base_monitor #(
+class kmac_app_monitor extends dv_reactive_monitor #(
     .ITEM_T (kmac_app_item),
     .CFG_T  (kmac_app_agent_cfg),
     .COV_T  (kmac_app_agent_cov)
@@ -43,9 +43,9 @@ class kmac_app_monitor extends dv_base_monitor #(
       kmac_app_item rsp;
 
       while (1) begin
-        bit [KmacDataIfWidth-1:0] data;
-        bit [KmacDataIfWidth/8-1:0] strb;
-        bit last;
+        bit [kmac_pkg::MsgWidth-1:0] data_s0;
+        bit [kmac_pkg::MsgWidth/8-1:0] strb;
+        bit req_last;
         push_pull_item#(`CONNECT_DATA_WIDTH) data_item;
 
         // KMAC (device) supports prematurely ending an App transaction and going back to Idle state
@@ -57,13 +57,14 @@ class kmac_app_monitor extends dv_base_monitor #(
         // ok_to_end = 0 for the entire transaction.
         ok_to_end = 1;
         data_fifo.get(data_item);
-        {data, strb, last} = data_item.h_data;
+        {data_s0, strb, req_last} = data_item.h_data;
 
-        for (int i = 0; i < KmacDataIfWidth/8; i++) begin
-          if (strb[i]) req.byte_data_q.push_back(data[i*8+:8]);
+        for (int i = 0; i < kmac_pkg::MsgWidth/8; i++) begin
+          // Unmask the message before we collect it.
+          if (strb[i]) req.byte_data_q.push_back(data_s0[i*8+:8]);
         end
 
-        if (last) begin
+        if (req_last) begin
           ok_to_end = 0;
           break;
         end
@@ -72,10 +73,10 @@ class kmac_app_monitor extends dv_base_monitor #(
       `uvm_info(`gfn, $sformatf("Write req item:\n%0s", req.sprint()), UVM_HIGH)
 
       `downcast(rsp, req.clone())
-      while (cfg.vif.rsp_done !== 1) @(cfg.vif.mon_cb);
-      rsp.rsp_error         = cfg.vif.rsp_error;
-      rsp.rsp_digest_share0 = cfg.vif.rsp_digest_share0;
-      rsp.rsp_digest_share1 = cfg.vif.rsp_digest_share1;
+      while (cfg.vif.rsp_valid !== 1) @(cfg.vif.mon_cb);
+      rsp.error     = cfg.vif.rsp_error;
+      rsp.digest_s0 = cfg.vif.rsp_digest_share0;
+      rsp.digest_s1 = cfg.vif.rsp_digest_share1;
       analysis_port.write(rsp);
       `uvm_info(`gfn, $sformatf("Write rsp item:\n%0s", rsp.sprint()), UVM_HIGH)
       ok_to_end = 1;

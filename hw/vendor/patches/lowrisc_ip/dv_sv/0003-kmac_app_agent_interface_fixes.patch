@@ -1,0 +1,102 @@
+diff --git a/kmac_app_agent/kmac_app_intf.sv b/kmac_app_agent/kmac_app_intf.sv
+--- a/kmac_app_agent/kmac_app_intf.sv
++++ b/kmac_app_agent/kmac_app_intf.sv
+@@ -52,10 +52,8 @@
+   assign {req_data_if.valid, req_data_if.h_data} = (if_mode == dv_utils_pkg::Device) ?
+                                                    kmac_data_req : 'z;
+
+-  assign {req_data_if.ready, rsp_valid, rsp_digest_share0, rsp_digest_share1, rsp_error,
+-          rsp_finish} =
++  assign {req_data_if.ready, rsp_valid, rsp_digest_share0, rsp_digest_share1, rsp_error} =
+          (if_mode == dv_utils_pkg::Host) ? kmac_data_rsp : 'z;
+   assign kmac_data_rsp = (if_mode == dv_utils_pkg::Device) ?
+-         {req_data_if.ready, rsp_valid, rsp_digest_share0, rsp_digest_share1, rsp_error,
+-          rsp_finish} : 'z;
++         {req_data_if.ready, rsp_valid, rsp_digest_share0, rsp_digest_share1, rsp_error} : 'z;
+
+@@ -62,5 +60,5 @@
+   // The following assertions only apply to device mode.
+   // strb should never be 0
+-  `ASSERT(StrbNotZero_A, kmac_data_req.req_valid |-> kmac_data_req.strb > 0,
++  `ASSERT(StrbNotZero_A, kmac_data_req.valid |-> kmac_data_req.strb > 0,
+           clk, !rst_n || if_mode == dv_utils_pkg::Host)
+
+@@ -67,6 +65,6 @@
+   // Check strb is aligned to LSB, for example: if strb[1]==0, strb[$:2] should be 0 too
+   for (genvar k = 1; k < MsgWidth / 8 - 1; k++) begin : gen_strb_check
+-    `ASSERT(StrbAlignLSB_A, kmac_data_req.req_valid && kmac_data_req.strb[k] === 0 |->
++    `ASSERT(StrbAlignLSB_A, kmac_data_req.valid && kmac_data_req.strb[k] === 0 |->
+                             kmac_data_req.strb[k+1] === 0,
+                             clk, !rst_n || if_mode == dv_utils_pkg::Host)
+   end
+@@ -74,8 +72,8 @@
+   // The following assertions apply for this interface for all modes.
+
+   // Done should be asserted after last, before we start another request
+   `ASSERT(DoneAssertAfterLast_A,
+-    (kmac_data_req.req_last && kmac_data_req.req_valid && kmac_data_rsp.req_ready) |=>
+-    !kmac_data_req.req_valid throughout rsp_valid[->1], clk, !rst_n || rsp_error)
++    (kmac_data_req.last && kmac_data_req.valid && kmac_data_rsp.ready) |=>
++    !kmac_data_req.valid throughout rsp_valid[->1], clk, !rst_n || rsp_error)
+
+ endinterface
+diff --git a/kmac_app_agent/kmac_app_agent_pkg.sv b/kmac_app_agent/kmac_app_agent_pkg.sv
+--- a/kmac_app_agent/kmac_app_agent_pkg.sv
++++ b/kmac_app_agent/kmac_app_agent_pkg.sv
+@@ -15,9 +15,9 @@
+   `include "dv_macros.svh"
+
+   // parameters
+-  parameter int KMAC_REQ_DATA_WIDTH = 2 * kmac_pkg::MsgWidth   // share0 + share1
+-                                      + kmac_pkg::MsgWidth / 8 // strobe
+-                                      + 2;                     // req_last + rsp_ready
++  parameter int KMAC_REQ_DATA_WIDTH = kmac_pkg::MsgWidth       // data (single share)
++                                      + kmac_pkg::MsgWidth / 8 // strobe
++                                      + 1;                     // req_last
+
+   `define CONNECT_DATA_WIDTH .HostDataWidth(kmac_app_agent_pkg::KMAC_REQ_DATA_WIDTH)
+
+diff --git a/kmac_app_agent/kmac_app_monitor.sv b/kmac_app_agent/kmac_app_monitor.sv
+--- a/kmac_app_agent/kmac_app_monitor.sv
++++ b/kmac_app_agent/kmac_app_monitor.sv
+@@ -46,8 +46,6 @@
+         bit [kmac_pkg::MsgWidth-1:0] data_s0;
+-        bit [kmac_pkg::MsgWidth-1:0] data_s1;
+         bit [kmac_pkg::MsgWidth/8-1:0] strb;
+         bit req_last;
+-        bit rsp_ready;
+         push_pull_item#(`CONNECT_DATA_WIDTH) data_item;
+
+         // KMAC (device) supports prematurely ending an App transaction and going back to Idle state
+@@ -59,9 +57,9 @@
+         // ok_to_end = 0 for the entire transaction.
+         ok_to_end = 1;
+         data_fifo.get(data_item);
+-        {data_s0, data_s1, strb, req_last, rsp_ready} = data_item.h_data;
++        {data_s0, strb, req_last} = data_item.h_data;
+
+         for (int i = 0; i < kmac_pkg::MsgWidth/8; i++) begin
+           // Unmask the message before we collect it.
+-          if (strb[i]) req.byte_data_q.push_back(data_s0[i*8+:8] ^ data_s1[i*8+:8]);
++          if (strb[i]) req.byte_data_q.push_back(data_s0[i*8+:8]);
+         end
+diff --git a/kmac_app_agent/seq_lib/kmac_app_host_seq.sv b/kmac_app_agent/seq_lib/kmac_app_host_seq.sv
+--- a/kmac_app_agent/seq_lib/kmac_app_host_seq.sv
++++ b/kmac_app_agent/seq_lib/kmac_app_host_seq.sv
+@@ -30,7 +30,6 @@
+
+       // We send the data unmasked (share 1 is fixed to '0).
+       bit [kmac_pkg::MsgWidth-1:0] req_data_s0 = '0;
+-      bit [kmac_pkg::MsgWidth-1:0] req_data_s1 = '0;
+       bit [kmac_pkg::MsgWidth/8-1:0] req_strb = '1;
+       bit req_last = 0;
+
+@@ -62,7 +61,7 @@
+
+       // For now, a static app is assumed to be always ready to accept a response.
+       cfg.m_data_push_agent_cfg.add_h_user_data(
+-          {req_data_s0, req_data_s1, req_strb, req_last, 1'b1});
++          {req_data_s0, req_strb, req_last});
+
+       `uvm_send(host_seq)
+
