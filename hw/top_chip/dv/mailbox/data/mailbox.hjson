@@ -1,0 +1,147 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Register description of the vendored PULP axi_lite_mailbox, written from
+// hw/vendor/pulp_axi/doc/axi_lite_mailbox.md for the Mocha instance only:
+// AxiDataWidth = 64 and MailboxDepth = 3. Both ports expose the same register set, so the
+// environment builds one register block per port at that port's base address.
+//
+// It is used to generate the DV register model only. The RTL register logic is hand-written in
+// axi_lite_mailbox.sv and is not generated from this file, so the CSR tests are what keep the two
+// aligned.
+{
+  name:               "mailbox",
+  human_name:         "Mailbox",
+  one_line_desc:      "Two AXI4-Lite ports connected back to back over a pair of FIFOs",
+  // TODO: placeholder, reggen requires an id but no top in Mocha reads it
+  cip_id:             "99",
+  version:            "0.1.0",
+  clocking: [{clock: "clk_i", reset: "rst_ni"}],
+  // The RTL ports are AXI4-Lite. reggen only knows TL-UL, which only shapes the RTL it would
+  // generate, and none is generated from this file.
+  bus_interfaces: [
+    { protocol: "tlul", direction: "device" }
+  ],
+  regwidth: "64",
+  registers: [
+    { name: "MBOXW",
+      desc: "Mailbox write register. Data written here is sent to the other port.",
+      swaccess: "wo",
+      hwaccess: "hro",
+      hwext: "true",
+      hwqe: "true",
+      fields: [
+        { bits: "63:0", name: "data", desc: "Data pushed into the write FIFO." }
+      ]
+    }
+    { name: "MBOXR",
+      desc: "Mailbox read register. Reading here pops data sent by the other port.",
+      swaccess: "ro",
+      hwaccess: "hwo",
+      hwext: "true",
+      hwre: "true",
+      fields: [
+        { bits: "63:0", name: "data", desc: "Data popped from the read FIFO." }
+      ]
+    }
+    { name: "STATUS",
+      desc: "Mailbox status register.",
+      swaccess: "ro",
+      hwaccess: "hwo",
+      hwext: "true",
+      fields: [
+        { bits: "0", name: "empty", resval: "1", desc: "Read FIFO is empty." }
+        { bits: "1", name: "full", resval: "0", desc: "Write FIFO is full." }
+        { bits: "2", name: "wfifol", resval: "0",
+          desc: "Write FIFO level is higher than the threshold set in WIRQT." }
+        { bits: "3", name: "rfifol", resval: "0",
+          desc: "Read FIFO level is higher than the threshold set in RIRQT." }
+      ]
+    }
+    { name: "ERROR",
+      desc: "Mailbox error register, cleared on read.",
+      swaccess: "rc",
+      hwaccess: "hrw",
+      fields: [
+        // TODO: the register table gives ERROR a default of 0x0 and the bit table gives this
+        // bit a reset value of 1'b1. 0 is used here.
+        { bits: "0", name: "read_err", resval: "0", desc: "Read attempted from an empty mailbox." }
+        { bits: "1", name: "write_err", resval: "0", desc: "Write attempted to a full mailbox." }
+      ]
+    }
+    // The clamp on write is not a hardware update, so the register stays non-volatile and the
+    // environment models the clamp in its predictor
+    { name: "WIRQT",
+      desc: '''
+            Write interrupt request threshold. A value larger than or equal to MailboxDepth is
+            reduced to MailboxDepth - 1.
+            ''',
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits: "1:0", name: "wirqt", resval: "0",
+          desc: "Write IRQ threshold level, $clog2(MailboxDepth) bits wide." }
+      ]
+    }
+    // The clamp on write is not a hardware update, so the register stays non-volatile and the
+    // environment models the clamp in its predictor
+    { name: "RIRQT",
+      desc: '''
+            Read interrupt request threshold. A value larger than or equal to MailboxDepth is
+            reduced to MailboxDepth - 1.
+            ''',
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits: "1:0", name: "rirqt", resval: "0",
+          desc: "Read IRQ threshold level, $clog2(MailboxDepth) bits wide." }
+      ]
+    }
+    { name: "IRQS",
+      desc: "Interrupt request status register. Bits are sticky and cleared by writing 1.",
+      swaccess: "rw1c",
+      hwaccess: "hrw",
+      fields: [
+        { bits: "0", name: "wtirq", resval: "0", desc: "Write threshold interrupt request." }
+        { bits: "1", name: "rtirq", resval: "0", desc: "Read threshold interrupt request." }
+        { bits: "2", name: "eirq", resval: "0", desc: "Error interrupt request." }
+      ]
+    }
+    { name: "IRQEN",
+      desc: "Interrupt request enable register.",
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits: "0", name: "wtirq", resval: "0", desc: "Write threshold interrupt enable." }
+        { bits: "1", name: "rtirq", resval: "0", desc: "Read threshold interrupt enable." }
+        { bits: "2", name: "eirq", resval: "0", desc: "Error interrupt enable." }
+      ]
+    }
+    { name: "IRQP",
+      desc: "Interrupt request pending register, the bitwise AND of IRQS and IRQEN.",
+      swaccess: "ro",
+      hwaccess: "hwo",
+      hwext: "true",
+      fields: [
+        { bits: "0", name: "wtirq", resval: "0", desc: "Write threshold interrupt pending." }
+        { bits: "1", name: "rtirq", resval: "0", desc: "Read threshold interrupt pending." }
+        { bits: "2", name: "eirq", resval: "0", desc: "Error interrupt pending." }
+      ]
+    }
+    { name: "CTRL",
+      // TODO: the register table lists CTRL as R/W and its bit table lists both bits as W. The
+      // bit table is used here.
+      desc: "Mailbox control register. Writing a 1 flushes the corresponding FIFO.",
+      swaccess: "wo",
+      hwaccess: "hro",
+      hwext: "true",
+      hwqe: "true",
+      fields: [
+        // TODO: the doc names these bits WTIRQ and RTIRQ, like the interrupt bits
+        { bits: "0", name: "flush_wfifo", desc: "Flush the write FIFO for this port." }
+        { bits: "1", name: "flush_rfifo", desc: "Flush the read FIFO for this port." }
+      ]
+    }
+  ]
+}
