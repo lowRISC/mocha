@@ -1,0 +1,206 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Mailbox block-level testplan.
+//
+// The block is the vendored PULP axi_lite_mailbox, specified by
+// hw/vendor/pulp_axi/doc/axi_lite_mailbox.md and verified as instantiated in Mocha: AxiDataWidth
+// 64, MailboxDepth 3, level-sensitive active-high interrupts (doc/proj/mailbox.md).
+//
+// The vPlan (mailbox_vplan.hjson) holds the features to verify and the coverage that proves them.
+// This file holds the testpoints, meaning the tests that produce that evidence. Expected results
+// come from the specification only. Where it leaves a result open, the vPlan says so and the
+// testpoint here only names the stimulus.
+//
+// Naming
+// ------
+// Every testpoint and test is `mailbox_<what>`. The list is sorted by stage, then by dependency.
+//
+// Descriptions
+// ------------
+// Descriptions stay on the surface: a title, how the testpoint is driven, and what decides the
+// verdict. Procedure and rationale belong in the header of the sequence that implements it.
+//
+// Standard test categories
+// ------------------------
+// STD_TEST_CATEGORIES_PLANNED asks for error scenarios, power, performance, debug and stress.
+// Error scenarios and stress have V2 testpoints below. The block has no power management, no
+// performance requirement and no debug feature, so those three have none.
+{
+  name: "mailbox"
+
+  testpoints: [
+    ///////////////////////////////////////////////////////////////////////////
+    // V1                                                                    //
+    ///////////////////////////////////////////////////////////////////////////
+    {
+      name: mailbox_smoke
+      desc: '''Words written on one port arrive in order on the other.
+
+            Testbench-driven over both AXI4-Lite ports. Send a few 64-bit words each way through
+            MBOXW and collect them through MBOXR. Data, order and responses match, and STATUS.EMPTY
+            follows the reads.
+
+            Sign-off item: `SIM_SMOKE_TEST_PASSING`.
+            '''
+      stage: V1
+      tests: ["mailbox_smoke"]
+    }
+    {
+      name: mailbox_csr_hw_reset
+      desc: '''Reset value of every readable register on both ports.
+
+            Read through the register model straight after reset. MBOXR is left out, since a read
+            pops or errors.
+            '''
+      stage: V1
+      tests: ["mailbox_csr_hw_reset"]
+    }
+    {
+      name: mailbox_csr_rw
+      desc: '''Write and read back the R/W registers on both ports.
+
+            Random values through the register model, with the WIRQT and RIRQT clamp predicted.
+            '''
+      stage: V1
+      tests: ["mailbox_csr_rw"]
+    }
+    {
+      name: mailbox_csr_bit_bash
+      desc: '''Every bit of the R/W registers set and cleared on its own.
+
+            Reserved bits read back as zero.
+            '''
+      stage: V1
+      tests: ["mailbox_csr_bit_bash"]
+    }
+    {
+      name: mailbox_csr_aliasing
+      desc: '''Each register answers at its own address only.
+
+            Write each R/W register, then check that no other register on either port changed.
+            '''
+      stage: V1
+      tests: ["mailbox_csr_aliasing"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // V2                                                                    //
+    ///////////////////////////////////////////////////////////////////////////
+    {
+      name: mailbox_fifo_full
+      desc: '''Writes to a full mailbox are refused.
+
+            Fill one port's write FIFO, then write once more. The extra write answers SLVERR and is
+            never delivered, ERROR.WRITE_ERR and IRQS.EIRQ are set, and STATUS.FULL stays set until
+            the other port reads a word.
+            '''
+      stage: V2
+      tests: ["mailbox_fifo_full"]
+    }
+    {
+      name: mailbox_fifo_empty
+      desc: '''Reads from an empty mailbox are refused.
+
+            Read MBOXR with nothing to collect. The read answers SLVERR, ERROR.READ_ERR and
+            IRQS.EIRQ are set, and a later word is still delivered.
+            '''
+      stage: V2
+      tests: ["mailbox_fifo_empty"]
+    }
+    {
+      name: mailbox_error_clear_on_read
+      desc: '''ERROR reports each error once.
+
+            Raise read and write errors on both ports, then read ERROR. It returns the flags raised
+            since the last read and reads back zero after that.
+            '''
+      stage: V2
+      tests: ["mailbox_error_clear_on_read"]
+    }
+    {
+      name: mailbox_threshold_irq
+      desc: '''Fill-level thresholds and their interrupt status.
+
+            For every WIRQT and RIRQT value, including those clamped to MailboxDepth - 1, move the
+            FIFO levels across the threshold. STATUS.WFIFOL and STATUS.RFIFOL follow the levels,
+            and IRQS.WTIRQ and IRQS.RTIRQ set on the crossing and clear only on a write of 1.
+            '''
+      stage: V2
+      tests: ["mailbox_threshold_irq"]
+    }
+    {
+      name: mailbox_irq
+      desc: '''Interrupt enable, pending and output.
+
+            Raise each interrupt source on each port under every IRQEN setting. IRQP equals IRQS
+            AND IRQEN, and the port's interrupt output is high exactly while IRQP is non-zero.
+            '''
+      stage: V2
+      tests: ["mailbox_irq"]
+    }
+    {
+      name: mailbox_flush
+      desc: '''FIFO flush from either port.
+
+            With words in both FIFOs, write each CTRL bit from each port. The named FIFO empties
+            whichever port asked, and the status flags of both ports follow.
+            '''
+      stage: V2
+      tests: ["mailbox_flush"]
+    }
+    {
+      name: mailbox_access_errors
+      desc: '''Accesses the access type does not allow.
+
+            Write each R register and read each W register on both ports. No state changes, and the
+            response is checked against the vPlan, where the expected result for some registers is
+            still an open question.
+            '''
+      stage: V2
+      tests: ["mailbox_access_errors"]
+    }
+    {
+      name: mailbox_unmapped_access
+      desc: '''Addresses that map to no register.
+
+            Access each port past CTRL and below its base address. No state changes. The expected
+            response is an open question in the vPlan.
+            '''
+      stage: V2
+      tests: ["mailbox_unmapped_access"]
+    }
+    {
+      name: mailbox_partial_writes
+      desc: '''Writes with only some byte strobes set.
+
+            Partial writes to MBOXW and to the R/W registers. The expected result is an open
+            question in the vPlan.
+            '''
+      stage: V2
+      tests: ["mailbox_partial_writes"]
+    }
+    {
+      name: mailbox_stress
+      desc: '''Both ports busy at once.
+
+            Random accesses to every register on both ports at the same time, with random channel
+            timing and back-pressure on all five AXI4-Lite channels, and once with zero delays. The
+            scoreboard checks data, responses, flags and interrupt outputs throughout.
+            '''
+      stage: V2
+      tests: ["mailbox_stress", "mailbox_stress_zero_delays"]
+    }
+    {
+      name: mailbox_stress_with_rand_reset
+      desc: '''Reset in the middle of traffic.
+
+            Run mailbox_stress and assert reset at a random point. Every register returns to its
+            reset value and the next transfer is delivered intact.
+            '''
+      stage: V2
+      tests: ["mailbox_stress_with_rand_reset"]
+    }
+  ]
+}
