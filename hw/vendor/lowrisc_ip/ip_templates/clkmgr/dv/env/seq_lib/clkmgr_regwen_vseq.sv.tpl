@@ -1,6 +1,7 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+<% measurement_live = ext_clk_bypass %>\
 
 // The regwen vseq attempts to write to registers whose regwen is randomly on or off to check
 // the register contents is not updated when off. More details in the clkmgr_testplan.hjson file.
@@ -39,6 +40,7 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
   endtask : check_extclk_regwen
 
 % endif
+% if measurement_live:
   // This must be careful to turn measurements off right after checking the updates
   // to avoid measurement errors. We could set the thresholds correctly, but we
   // might as well set them randomly for good measure. Carefully masks only the
@@ -78,6 +80,7 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
                 UVM_MEDIUM)
     end
   endtask : check_meas_ctrl_regwen
+% endif
 
   task body();
     // Make sure the aon clock is running as slow as it is meant to, otherwise the aon clock
@@ -91,7 +94,9 @@ class clkmgr_regwen_vseq extends clkmgr_base_vseq;
     % if ext_clk_bypass:
       check_extclk_regwen();
     % endif
+    % if measurement_live:
       check_meas_ctrl_regwen();
+    % endif
       apply_reset("HARD");
       // This is to make sure we don't start writes immediately after reset,
       // otherwise the tl_agent could mistakenly consider the following read

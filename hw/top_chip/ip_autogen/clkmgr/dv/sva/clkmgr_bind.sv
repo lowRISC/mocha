@@ -40,10 +40,10 @@ module clkmgr_bind;
   bind clkmgr clkmgr_trans_sva_if clkmgr_none_trans_sva_if (
     .clk(clk_main_i),
     .rst_n(rst_main_ni),
-    .hint(reg2hw.clk_hints.clk_main_hint_hint.q),
+    .hint(reg2hw.clk_hints.q),
     .idle(idle_i[HintMainHint] == prim_mubi_pkg::MuBi4True),
     .scanmode(scanmode_i == prim_mubi_pkg::MuBi4True),
-    .status(hw2reg.clk_hints_status.clk_main_hint_val.d),
+    .status(hw2reg.clk_hints_status.d),
     .trans_clk(clocks_o.clk_main_hint)
   );
 

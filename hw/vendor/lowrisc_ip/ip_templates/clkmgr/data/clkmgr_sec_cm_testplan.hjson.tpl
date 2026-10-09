@@ -21,6 +21,7 @@
 //
 // Please ensure that this testplan is imported in:
 // .../clkmgr/data/clkmgr_testplan.hjson
+<% measurement_live = ext_clk_bypass %>\
 {
   testpoints: [
     {
@@ -43,7 +44,13 @@
             - Measurement error should trigger a recoverable alert
             '''
       stage: V2S
+    % if measurement_live:
       tests: ["clkmgr_frequency"]
+    % else:
+      // Unverified: measurement is intentionally disabled in this configuration, so this
+      // countermeasure cannot be exercised. The clkmgr_meas_chk hardware is still instantiated.
+      tests: []
+    % endif
     }
     {
       name: sec_cm_timeout_clk_bkgn_chk
@@ -55,7 +62,13 @@
             - Timeout should cause a recoverable alert
             '''
       stage: V2S
+    % if measurement_live:
       tests: ["clkmgr_frequency_timeout"]
+    % else:
+      // Unverified: measurement is intentionally disabled in this configuration, so this
+      // countermeasure cannot be exercised. The clkmgr_meas_chk hardware is still instantiated.
+      tests: []
+    % endif
     }
     {
       name: sec_cm_meas_config_shadow

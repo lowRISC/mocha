@@ -553,6 +553,13 @@ rg_srcs = get_rg_srcs(typed_clocks)
           '''
         },
       ]
+% if not ext_clk_bypass:
+      // Clock measurement is intentionally disabled in this configuration: the source clocks are
+      // supplied from outside the top and are assumed already stable, so there is no calibration
+      // step. calib_rdy is therefore tied MuBi4False, and hardware holds this regwen at 1, making
+      // the rw0c behaviour unobservable and randomized CSR writes unpredictable.
+      tags: ["excl:CsrNonInitTests:CsrExclWrite"]
+% endif
     },
 % for src in rg_srcs:
     { name: "${src.upper()}_MEAS_CTRL_EN",
