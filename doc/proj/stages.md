@@ -23,7 +23,7 @@ This table shows the current design and verification stage for each block in Moc
 | [Mailbox][]           | D1               | V0                     |
 | [PLIC][]              | D1               | V0                     |
 | [Power manager][]     | D1               | V0                     |
-| [Reset manager][]     | D1               | V0                     |
+| [Reset manager][]     | D1               | V1                     |
 | [ROM control][]       | D1               | V0                     |
 | [SPI device][]        | D1               | V0                     |
 | [SPI host][]          | D1               | V0                     |
