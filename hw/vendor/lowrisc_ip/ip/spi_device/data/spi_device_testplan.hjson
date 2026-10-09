@@ -14,12 +14,11 @@
     {
       name: smoke
       desc: '''
-            Configures Flash/Passthrough modes as well as TPM and drive reads/writes
-            through SPI alternating between TPM and SPI commands.
-            Sequences spi_device_flash_all_vseq and spi_device_tpm_all_vseq are
-            launched in parallel'''
+            Configures FlashMode and drives a randomised sequence of read commands,
+            exercising the read buffer along with the intercepted status, JEDEC and
+            SFDP commands.'''
       stage: V1
-      tests: ["spi_device_flash_and_tpm"]
+      tests: ["spi_device_flash_mode"]
     }
     {
       name: csb_read
