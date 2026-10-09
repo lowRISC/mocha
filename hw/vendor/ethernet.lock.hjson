@@ -8,7 +8,7 @@
 {
   upstream:
   {
-    url: https://github.com/lowRISC/ariane-ethernet.git
-    rev: 1a14e8d98a0160f06e31e7a903082d0c8d293720
+    url: https://github.com/lowRISC/ethernet.git
+    rev: 2dc3a8b12da4006f343d6be82872dd80990cab6f
   }
 }

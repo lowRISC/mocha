@@ -1,0 +1,87 @@
+CAPI=2:
+
+# This is a FuseSoC .core file
+# https://fusesoc.readthedocs.io/_/downloads/en/stable/pdf/
+
+name: "lowrisc:ethernet:top"
+description: "Ethernet MAC and framing top with internal TX/RX buffers and a single simple memory interface"
+
+filesets:
+    sim_only:
+        depend:
+            - lowrisc:prim_generic:all
+        file_type: systemVerilogSource
+
+    rtl:
+        files:
+            - top/ethernet_pkg.sv
+            - loopback/axis_pkt_isolate.sv
+            - loopback/axis_pkt_mux.sv
+            - loopback/ethernet_loopback.sv
+            - rx_framing/mac_address_filter.sv
+            - rx_framing/ethernet_rx_framing.sv
+            - tx_framing/ethernet_tx_framing.sv
+            - csr/ethernet_csr.sv
+            - top/mac_wrapper.sv
+            - top/ethernet_mem_map.sv
+            - top/ethernet_top.sv
+        file_type: systemVerilogSource
+        depend:
+            - lowrisc:ethernet:axis_pkt_ring_buffer
+            - lowrisc:ethernet:mac
+            - lowrisc:ethernet:mem_if_utils
+            - lowrisc:prim:assert:0.1
+            - lowrisc:prim:util:0.1
+            - lowrisc:prim:fifo
+
+    tb:
+        files:
+            - verif/ethernet_top_tb.sv
+        file_type: systemVerilogSource
+
+parameters:
+    SYNTHESIS:
+        datatype: bool
+        paramtype: vlogdefine
+
+targets:
+    default: &default_target
+        filesets:
+            - rtl
+
+    sim:
+        <<: *default_target
+        default_tool: xsim
+        filesets_append:
+            - sim_only
+            - tb
+        toplevel: ethernet_top_tb
+        tools:
+            xsim:
+                xelab_options: [
+                    --debug, typical,              # necessary to be able to inspect waveforms
+                    --timescale, 1ns/1ps           # default timescale for any moduels that don't specify one
+                ]
+
+    synth:
+        <<: *default_target
+        default_tool: vivado
+        toplevel: ethernet_top
+        filesets_append:
+            - synth_only
+        tools:
+            vivado:
+                part: xc7k325tffg900-2
+
+    lint:
+        <<: *default_target
+        default_tool: verilator
+        filesets_append:
+            - sim_only
+        toplevel: ethernet_top
+        tools:
+            verilator:
+                mode: lint-only
+                verilator_options:
+                - "-Wall"
+                - "--timing"

@@ -42,6 +42,12 @@
         compatible = "simple-bus";
         ranges;
 
+        ethernet: ethernet@30000000 {
+            compatible = "lowrisc,eth-v1";
+            reg = <0x0 0x30000000 0x0 0x6040>;
+            interrupts-extended = <&plic 31>; // Ethernet is PLIC interrupt source 31
+        };
+
         gpio: gpio@40000000 {
             compatible = "lowrisc,opentitan-gpio-v1";
             reg = <0x0 0x40000000 0x0 0x48>;

@@ -6,289 +6,260 @@
 `include "udp.rdl"
 
 addrmap ethernet {
-    reg {
-        desc = "MAC address low 32-bits.";
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x00890702;
-            desc = "MAC address lower 32 bits.";
-        } MAC_ADDR_LO[31:0];
-    } MACLO @ 0x800;
+    desc = "Ethernet peripheral. 64-bit data, 64-bit address bus interface.";
 
     reg {
-        desc = "MAC address high 16-bits and MAC ctrl.";
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x2301;
-            desc = "MAC address upper 16 bits.";
-        } MAC_ADDR_HI[15:0];
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x0;
-            desc = "Obsolete flag. Stored but not used.";
-        } COOKED[16:16];
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x0;
-            desc = "Obsolete flag. Stored but not used.";
-        } LOOPBACK[17:17];
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x0;
-            desc = "MAC spare. Obsolete. Stored but not used.";
-        } SPARE[21:18];
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x0;
-            desc = "Rx all packets (promiscuous mode).";
-        } PROMISCUOUS[22:22];
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x0;
-            desc = "Rx packet interrupt enable.";
-        } IRQ_EN[23:23];
-    } MACHI @ 0x808;
-
-    reg {
-        desc = "Transmit Status Register.";
-        field {
-            sw = rw;
-            hw = r;
-            reset = 0x0;
-            desc = "Tx packet length. Write to send packet.";
-        } PACKET_LEN[10:0];
+        desc = "Current interrupt status. Level interrupts clear automatically when the source condition deasserts.";
         field {
             sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "RX data buffer not empty (level).";
+        } RX_NOT_EMPTY[0:0];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "RX descriptor table almost full (level).";
+        } RX_TABLE_ALMOST_FULL[1:1];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "RX descriptor table full (level).";
+        } RX_TABLE_FULL[2:2];
+        field {
+            sw = r;
+            hw = w;
+            reset = 0x0;
+            desc = "RX data buffer almost full (level).";
+        } RX_BUF_ALMOST_FULL[3:3];
+        field {
+            sw = rw;
+            onwrite = woclr;
             hw = rw;
             reset = 0x0;
-            desc = "Tx frame address.";
-        } FRAME_ADDR[26:16];
-        field {
-            sw = r;
-            hw = w;
-            reset = 0x0;
-            desc = "Tx busy.";
-        } BUSY[31:31];
-    } TPLR @ 0x810;
-
-    external reg {
-        desc = "Tx frame check sequence register.";
+            desc = "A packet was lost (sticky). Write 1 to clear.";
+        } PACKET_LOST[4:4];
         field {
             sw = rw;
-            hw = w;
-            reset = 0xFFFFFFFF;
-            desc = "Tx frame check sequence (bit reversed). Write to stop transmit and reset TX packet length.";
-        } TX_FCS[31:0];
-    } TFCS @ 0x818;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "TX done (sticky). Write 1 to clear.";
+        } TX_DONE[5:5];
+        field {
+            sw = rw;
+            onwrite = woclr;
+            hw = rw;
+            reset = 0x0;
+            desc = "Manual IRQ (sticky). Set by writing 1 to INTR_TEST.SET_MANUAL_IRQ. Write 1 to clear.";
+        } MANUAL_IRQ[6:6];
+    } INTR_STATE @ 0x800;
 
     reg {
-        desc = "MDIO Control Register";
+        desc = "Per-source interrupt enable mask. 1 = enabled, 0 = masked.";
         field {
             sw = rw;
             hw = r;
             reset = 0x0;
-            desc = "MDIO Clock.";
-        } MDIOCLK[0:0];
+            desc = "Enable interrupt when !!INTR_STATE.rx_not_empty is set.";
+        } RX_NOT_EMPTY[0:0];
         field {
             sw = rw;
             hw = r;
             reset = 0x0;
-            desc = "MDIO Output.";
-        } MDIOOUT[1:1];
+            desc = "Enable interrupt when !!INTR_STATE.rx_table_almost_full is set.";
+        } RX_TABLE_ALMOST_FULL[1:1];
         field {
             sw = rw;
             hw = r;
             reset = 0x0;
-            desc = "MDIO Output Enable.";
-        } MDIOOEN[2:2];
+            desc = "Enable interrupt when !!INTR_STATE.rx_table_full is set.";
+        } RX_TABLE_FULL[2:2];
         field {
-            sw = r;
-            hw = w;
-            desc = "MDIO Input.";
-        } MDIOIN[3:3];
-    } MDIOCTRL @ 0x820;
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.rx_buf_almost_full is set.";
+        } RX_BUF_ALMOST_FULL[3:3];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.packet_lost is set.";
+        } PACKET_LOST[4:4];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.tx_done is set.";
+        } TX_DONE[5:5];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Enable interrupt when !!INTR_STATE.manual_irq is set.";
+        } MANUAL_IRQ[6:6];
+    } INTR_MASK @ 0x804;
 
     reg {
-        desc = "Rx frame check sequence register(read) and last register(write).";
+        desc = "Interrupt test register.";
         field {
             sw = w;
             hw = r;
             reset = 0x0;
-            desc = "Last available Rx buffer (static).";
-        } LAST_BUF[3:0];
-        /* Commented out due to issues in generated header with overlapping bit positions */
-        /* field {
-            sw = r;
-            hw = w;
-            reset = 0xFFFFFFFF;
-            desc = "Rx frame check sequence (bit reversed).";
-        } RX_FCS[31:0]; */
-    } RFCS @ 0x828;
+            desc = "Write 1 to set the manual_irq sticky bit in INTR_STATE.";
+        } SET_MANUAL_IRQ[0:0];
+    } INTR_TEST @ 0x808;
 
     reg {
-        desc = "Rx status and reset register.";
+        desc = "Control register.";
         field {
             sw = rw;
             hw = r;
             reset = 0x0;
-            desc = "First available Rx buffer (static).";
-        } FIRST_BUF[3:0];
+            desc = "Promiscuous mode. 0 = filter by local MAC address; 1 = capture all received frames.";
+        } PROMISCUOUS_MODE[0:0];
         field {
-            sw = r;
-            hw = rw;
-            reset = 0x0;
-            desc = "Current Rx buffer (volatile).";
-        } NEXT_BUF[7:4];
-        field {
-            sw = r;
+            sw = rw;
             hw = r;
             reset = 0x0;
-            desc = "Last available Rx buffer (static).";
-        } LAST_BUF[11:8];
+            desc = "Internal loopback enable. Loops TX frames back to the RX path (excluding MAC and PHY).";
+        } LOOPBACK[1:1];
+    } CTRL @ 0x810;
+
+    reg {
+        desc = "RX and TX status flags.";
         field {
             sw = r;
-            hw = rw;
+            hw = w;
             reset = 0x0;
-            desc = "Rx packet available.";
-        } RX_AVAIL[12:12];
+            desc = "RX data buffer not empty.";
+        } RX_NOT_EMPTY[0:0];
         field {
             sw = r;
-            hw = rw;
+            hw = w;
             reset = 0x0;
-            desc = "Rx irq.";
-        } RX_IRQ[13:13];
-    } RSR @ 0x830;
-
-    reg {
-        desc = "Rx buffer 0 packet length";
+            desc = "RX descriptor table almost full.";
+        } RX_TABLE_ALMOST_FULL[1:1];
         field {
             sw = r;
             hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR0 @ 0x840;
-
-    reg {
-        desc = "Rx buffer 1 packet length";
+            reset = 0x0;
+            desc = "RX descriptor table full.";
+        } RX_TABLE_FULL[2:2];
         field {
             sw = r;
             hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR1 @ 0x848;
-
-    reg {
-        desc = "Rx buffer 2 packet length";
+            reset = 0x0;
+            desc = "RX data buffer almost full.";
+        } RX_BUF_ALMOST_FULL[3:3];
         field {
             sw = r;
             hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR2 @ 0x850;
-
-    reg {
-        desc = "Rx buffer 3 packet length";
+            reset = 0x0;
+            desc = "A packet was lost.";
+        } PACKET_LOST[4:4];
         field {
             sw = r;
             hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR3 @ 0x858;
-
-    reg {
-        desc = "Rx buffer 4 packet length";
+            reset = 0x0;
+            desc = "TX busy. Asserted while a frame is being transmitted.";
+        } TX_BUSY[7:7];
         field {
             sw = r;
             hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR4 @ 0x860;
+            reset = 0x0;
+            desc = "Number of packets currently stored in the RX data buffer.";
+        } N_PACKETS_IN_RX_BUF[11:8];
+    } STATUS @ 0x814;
 
     reg {
-        desc = "Rx buffer 5 packet length";
+        desc = "Lower 32 bits of the local MAC address.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MAC address bits [31:0].";
+        } MAC_LO[31:0];
+    } MACLO @ 0x818;
+
+    reg {
+        desc = "Upper 16 bits of the local MAC address.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MAC address bits [47:32].";
+        } MAC_HI[15:0];
+    } MACHI @ 0x81C;
+
+    reg {
+        desc = "TX control register. Writing this register starts a transmission.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "Number of bytes to transmit from the TX data buffer.";
+        } TX_PACKET_LEN[10:0];
+    } TX_CTRL @ 0x820;
+
+    reg {
+        desc = "RX descriptor table pop register.";
+        field {
+            sw = w;
+            hw = r;
+            reset = 0x0;
+            desc = "Write 1 to pop the oldest entry from the RX descriptor table.";
+        } POP[0:0];
+    } RX_POP @ 0x828;
+
+    reg {
+        desc = "Bit-bang MDIO/MDC interface control register.";
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MDC clock output.";
+        } MDIO_CLK[0:0];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MDIO output data.";
+        } MDIO_O[1:1];
+        field {
+            sw = rw;
+            hw = r;
+            reset = 0x0;
+            desc = "MDIO output enable.";
+        } MDIO_OEN[2:2];
         field {
             sw = r;
             hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR5 @ 0x868;
-
-    reg {
-        desc = "Rx buffer 6 packet length";
-        field {
-            sw = r;
-            hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR6 @ 0x870;
-
-    reg {
-        desc = "Rx buffer 7 packet length";
-        field {
-            sw = r;
-            hw = w;
-            desc = "Rx packet length in bytes, including 4-byte FCS.";
-        } PACKET_LEN[10:0];
-    } RPLR7 @ 0x878;
+            desc = "MDIO input data sampled from the PHY.";
+        } MDIO_I[3:3];
+    } MDIO_CTRL @ 0x82C;
 
     external mem {
+        desc = "TX data buffer. 256 * 64-bit words (2 KiB).";
         memwidth = 0x40;
         mementries = 0x100;
-        sw = rw;
-    } TX_BUFFER @ 0x1000;
+        sw = w;
+    } TX_DATA_BUF @ 0x1000;
 
     external mem {
+        desc = "RX data buffer. 1024 * 64-bit words (8 KiB).";
         memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER0 @ 0x4000;
+        mementries = 0x400;
+        sw = r;
+    } RX_DATA_BUF @ 0x4000;
 
     external mem {
+        desc = "RX descriptor table. 8 * 64-bit entries.";
         memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER1 @ 0x4800;
-
-    external mem {
-        memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER2 @ 0x5000;
-
-    external mem {
-        memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER3 @ 0x5800;
-
-    external mem {
-        memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER4 @ 0x6000;
-
-    external mem {
-        memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER5 @ 0x6800;
-
-    external mem {
-        memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER6 @ 0x7000;
-
-    external mem {
-        memwidth = 0x40;
-        mementries = 0x100;
-        sw = rw;
-    } RX_BUFFER7 @ 0x7800;
+        mementries = 0x8;
+        sw = r;
+    } RX_DESC_TABLE @ 0x6000;
 };

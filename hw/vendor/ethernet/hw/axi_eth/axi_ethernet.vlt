@@ -1,0 +1,16 @@
+`verilator_config
+
+// The AXI utilities from Pulp have a lot of lint issues
+// We will waive these
+// TODO fix them upstream
+lint_off -rule DECLFILENAME  -file      "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule GENUNNAMED    -file      "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNUSEDSIGNAL  -file      "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNUSEDPARAM   -file      "*/pulp-platform*_axi*/src/*.sv" -match "*AxiIdWidth*"
+lint_off -rule WIDTHTRUNC    -file      "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule WIDTHEXPAND   -file      "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNOPTFLAT     -file      "*/pulp-platform*_axi*/src/*.sv"
+lint_off -rule UNUSEDPARAM   -file      "*/pulp-platform*_axi*/src/*.sv"
+
+lint_off -rule DECLFILENAME  -file      "*/lowrisc_common_cells*/rtl/*.sv"
+lint_off -rule GENUNNAMED    -file      "*/lowrisc_common_cells*/rtl/*.sv"
