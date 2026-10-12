@@ -29,6 +29,10 @@ class axi_mgr_read_data_seq extends uvm_sequence #(axi_response_accept_item, axi
   // Copy the m_use_fixed_*/m_fixed_* value above, so that a configured sequence can be used as a
   // template by clone()ing it.
   extern function void do_copy(uvm_object rhs);
+
+  // Accept any response type: reset returns axi_status_item, which uvm_sequence::put_response would
+  // reject as not axi_read_data_item. body() handles both.
+  extern virtual function void put_response(uvm_sequence_item response_item);
 endclass
 
 function axi_mgr_read_data_seq::new(string name="");
@@ -47,9 +51,16 @@ function void axi_mgr_read_data_seq::do_copy(uvm_object rhs);
   this.m_fixed_valid_to_ready_delay        = rhs_.m_fixed_valid_to_ready_delay;
 endfunction
 
+function void axi_mgr_read_data_seq::put_response(uvm_sequence_item response_item);
+  put_base_response(response_item);
+endfunction: put_response
+
 task axi_mgr_read_data_seq::body();
   axi_response_accept_item item = axi_response_accept_item::type_id::create("item");
   uvm_sequence_item base_response_item;
+
+  // Drop the response of an earlier start, so that a start cut by reset leaves rsp null
+  rsp = null;
 
   start_item(item);
 
