@@ -214,6 +214,10 @@ task axi_mgr_agent::run_layered_register_vseq(bit                    has_fixed_p
                                 .aruser_width   (m_vif.ar_if.user_req_width),
                                 .user_data_width(m_vif.w_if.user_data_width));
 
+  // A fixed AxPROT is an environment-specific restriction
+  layer_vseq.set_lite(m_vif.is_lite);
+  layer_vseq.set_fixed_prot(has_fixed_prot, fixed_prot);
+
   layer_vseq.start(null);
 
   // layer_vseq runs forever
