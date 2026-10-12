@@ -22,6 +22,9 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
   // before run_phase; see axi_agent_cfg::drive_x_when_idle for what the two settings mean.
   local bit m_drive_x_when_idle = 1'b1;
 
+  // Set AXI4-Lite mode with set_lite()
+  local bit m_is_lite;
+
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
 
@@ -33,6 +36,9 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
 
   // Set how the idle signals are driven. This must be called before run_phase.
   extern function void set_drive_x_when_idle(bit drive_x);
+
+  // Set AXI4-Lite mode before run_phase
+  extern function void set_lite(bit is_lite);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -85,6 +91,10 @@ endfunction
 function void axi_mgr_write_data_driver::set_drive_x_when_idle(bit drive_x);
   m_drive_x_when_idle = drive_x;
 endfunction
+
+function void axi_mgr_write_data_driver::set_lite(bit is_lite);
+  m_is_lite = is_lite;
+endfunction: set_lite
 
 task axi_mgr_write_data_driver::run_phase(uvm_phase phase);
   if (m_vif == null || m_clk_rst_vif == null) begin
@@ -203,6 +213,11 @@ task axi_mgr_write_data_driver::set_data_from_req();
                $sformatf({"Cannot represent req.m_user = 0x%0h. ",
                           "The interface user_data_width is %0d."},
                          req.m_user, m_vif.user_data_width))
+  end
+
+  // AXI4-Lite transfers have one beat, so WLAST is always 1 (AMBA AXI H.c B1.1.1)
+  if (m_is_lite && !req.m_last) begin
+    `uvm_error(get_full_name(), "AXI4-Lite needs WLAST 1 on every beat.")
   end
 
   m_vif.mgr_cb.wdata  <= req.m_data;
