@@ -19,9 +19,9 @@ class top_chip_dv_env extends uvm_env;
   i2c_agent  m_i2c_agent;
   uart_agent   m_uart_agent;
   // Passive AXI monitors on the xbar host (CVA6) + device ports; each self-gets its
-  // cfg (is_active=UVM_PASSIVE) from the config_db published by its axi_vip_if in the tb.
-  axi_agent m_mgr_axi[];
-  axi_agent m_sub_axi[];
+  // bus and passive mode from its axi_vip_if's config_db entries
+  axi_mgr_agent m_mgr_axi[];
+  axi_mgr_agent m_sub_axi[];
 
   top_chip_dv_axi_scoreboard m_axi_scb;
 
@@ -92,17 +92,17 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   uvm_config_db#(uart_agent_cfg)::set(this, "m_uart_agent*", "cfg", cfg.m_uart_agent_cfg);
 
   m_mgr_axi = new[top_pkg::AxiXbarHosts];
-  m_mgr_axi[top_pkg::CVA6]    = axi_agent::type_id::create("m_mgr_axi_CVA6", this);
-  m_mgr_axi[top_pkg::DM_HOST] = axi_agent::type_id::create("m_mgr_axi_DM_HOST", this);
+  m_mgr_axi[top_pkg::CVA6]    = axi_mgr_agent::type_id::create("m_mgr_axi_CVA6", this);
+  m_mgr_axi[top_pkg::DM_HOST] = axi_mgr_agent::type_id::create("m_mgr_axi_DM_HOST", this);
 
   m_sub_axi = new[top_pkg::AxiXbarDevices];
-  m_sub_axi[top_pkg::RomCtrlMem] = axi_agent::type_id::create("m_sub_axi_RomCtrlMem", this);
-  m_sub_axi[top_pkg::SRAM]       = axi_agent::type_id::create("m_sub_axi_SRAM", this);
-  m_sub_axi[top_pkg::DM_DEV]     = axi_agent::type_id::create("m_sub_axi_DM_DEV", this);
-  m_sub_axi[top_pkg::Mailbox]    = axi_agent::type_id::create("m_sub_axi_Mailbox", this);
-  m_sub_axi[top_pkg::RestOfChip] = axi_agent::type_id::create("m_sub_axi_RestOfChip", this);
-  m_sub_axi[top_pkg::TlCrossbar] = axi_agent::type_id::create("m_sub_axi_TlCrossbar", this);
-  m_sub_axi[top_pkg::DRAM]       = axi_agent::type_id::create("m_sub_axi_DRAM", this);
+  m_sub_axi[top_pkg::RomCtrlMem] = axi_mgr_agent::type_id::create("m_sub_axi_RomCtrlMem", this);
+  m_sub_axi[top_pkg::SRAM]       = axi_mgr_agent::type_id::create("m_sub_axi_SRAM", this);
+  m_sub_axi[top_pkg::DM_DEV]     = axi_mgr_agent::type_id::create("m_sub_axi_DM_DEV", this);
+  m_sub_axi[top_pkg::Mailbox]    = axi_mgr_agent::type_id::create("m_sub_axi_Mailbox", this);
+  m_sub_axi[top_pkg::RestOfChip] = axi_mgr_agent::type_id::create("m_sub_axi_RestOfChip", this);
+  m_sub_axi[top_pkg::TlCrossbar] = axi_mgr_agent::type_id::create("m_sub_axi_TlCrossbar", this);
+  m_sub_axi[top_pkg::DRAM]       = axi_mgr_agent::type_id::create("m_sub_axi_DRAM", this);
 
   m_axi_scb = top_chip_dv_axi_scoreboard::type_id::create("m_axi_scb", this);
 

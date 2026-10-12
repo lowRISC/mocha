@@ -57,9 +57,9 @@ function void axi_mgr_write_response_driver::set_vif(virtual axi_write_response_
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
+  if (vif.if_mode != Manager) begin
     `uvm_fatal(get_full_name(),
-               $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
+               $sformatf("Cannot drive this interface: it has mode %0s, not Manager.",
                          vif.if_mode.name()))
     return;
   end

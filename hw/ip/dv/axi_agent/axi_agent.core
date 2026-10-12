@@ -13,14 +13,14 @@ filesets:
       # Signal widths shared by the interfaces and the monitored items: must compile first.
       - axi_widths_pkg.sv
 
+      - axi_agent_pkg.sv
+
       - axi_read_data_if.sv
       - axi_read_request_if.sv
       - axi_write_data_if.sv
       - axi_write_request_if.sv
       - axi_write_response_if.sv
-
-      - axi_agent_pkg.sv
-      - axi_agent_cfg.svh: {is_include_file: true}
+      - axi_if.sv
 
       - axi_mon_types.svh: {is_include_file: true}
       - axi_mon_item.svh: {is_include_file: true}
@@ -55,8 +55,6 @@ filesets:
       - axi_reg_op_item.svh: {is_include_file: true}
       - axi_reg_adapter.svh: {is_include_file: true}
 
-      - axi_agent.svh: {is_include_file: true}
-
       - seq_lib/axi_mgr_txn_request_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_write_data_seq.svh: {is_include_file: true}
       - seq_lib/axi_mgr_write_single_data_seq.svh: {is_include_file: true}
@@ -70,6 +68,8 @@ filesets:
       - seq_lib/axi_mgr_read_burst_vseq.svh: {is_include_file: true}
 
       - seq_lib/axi_mgr_register_layer_vseq.svh: {is_include_file: true}
+
+      - axi_mgr_agent.svh: {is_include_file: true}
 
     file_type: systemVerilogSource
 
