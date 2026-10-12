@@ -49,6 +49,7 @@ filesets:
       - axi_mgr_read_request_driver.svh: {is_include_file: true}
       - axi_mgr_read_data_driver.svh: {is_include_file: true}
 
+      - axi_mgr_write_data_sequencer.svh: {is_include_file: true}
       - axi_response_router.svh: {is_include_file: true}
 
       - axi_reg_op_item.svh: {is_include_file: true}
