@@ -27,6 +27,10 @@ class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi
   // before run_phase; see axi_agent_cfg::drive_x_when_idle for what the two settings mean.
   local bit m_drive_x_when_idle = 1'b1;
 
+  // AXI4-Lite mode and AWSIZE; set with set_lite()
+  local bit          m_is_lite;
+  local int unsigned m_lite_size;
+
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
 
@@ -38,6 +42,9 @@ class axi_mgr_write_request_driver extends uvm_driver#(axi_txn_request_item, axi
 
   // Set how the idle signals are driven. This must be called before run_phase.
   extern function void set_drive_x_when_idle(bit drive_x);
+
+  // Set AXI4-Lite mode and data width before run_phase
+  extern function void set_lite(bit is_lite, int unsigned data_width);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -90,6 +97,11 @@ endfunction
 function void axi_mgr_write_request_driver::set_drive_x_when_idle(bit drive_x);
   m_drive_x_when_idle = drive_x;
 endfunction
+
+function void axi_mgr_write_request_driver::set_lite(bit is_lite, int unsigned data_width);
+  m_is_lite   = is_lite;
+  m_lite_size = $clog2(data_width / 8);
+endfunction: set_lite
 
 task axi_mgr_write_request_driver::run_phase(uvm_phase phase);
   if (m_vif == null || m_clk_rst_vif == null) begin
@@ -231,12 +243,22 @@ task axi_mgr_write_request_driver::set_data_from_req();
                          req.m_user, m_vif.user_req_width))
   end
 
+  // AXI4-Lite omits AWLEN, AWSIZE, AWLOCK and AWCACHE; use their implicit values (AMBA AXI H.c
+  // B1.1.1). For a single transfer, AWBURST is unused and defaults to INCR (A9.3).
+  if (m_is_lite &&
+      (req.m_len != 0 || req.m_size != m_lite_size || req.m_lock || req.m_cache != 0)) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"AXI4-Lite needs AWLEN 0, AWSIZE %0d, AWLOCK 0 and AWCACHE 0, ",
+                          "not %0d, %0d, %0d and 0x%0h."},
+                         m_lite_size, req.m_len, req.m_size, req.m_lock, req.m_cache))
+  end
+
   m_vif.mgr_cb.awid     <= req.m_id;
   m_vif.mgr_cb.awaddr   <= req.m_addr;
   m_vif.mgr_cb.awregion <= req.m_region;
   m_vif.mgr_cb.awlen    <= req.m_len;
   m_vif.mgr_cb.awsize   <= req.m_size;
-  m_vif.mgr_cb.awburst  <= req.m_burst;
+  m_vif.mgr_cb.awburst  <= m_is_lite ? BurstIncr : req.m_burst;
   m_vif.mgr_cb.awlock   <= req.m_lock;
   m_vif.mgr_cb.awcache  <= req.m_cache;
   m_vif.mgr_cb.awprot   <= req.m_prot;
