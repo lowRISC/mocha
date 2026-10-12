@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright lowRISC contributors.
+# Copyright lowRISC and contributors (COSMIC project).
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
@@ -63,7 +63,7 @@ def get_command_line(args) -> str:
 
 
 # REUSE-IgnoreStart
-LICENSE_HEADER = """Copyright lowRISC contributors (COSMIC project).
+LICENSE_HEADER = """Copyright lowRISC and contributors (COSMIC project).
 Licensed under the Apache License, Version 2.0, see LICENSE for details.
 SPDX-License-Identifier: Apache-2.0
 """

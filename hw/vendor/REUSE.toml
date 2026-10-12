@@ -67,4 +67,4 @@ SPDX-FileCopyrightText = ["2018 ETH Zurich and University of Bologna."]
 [[annotations]]
 path = ["patches/**"]
 SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = ["lowRISC Contributors (COSMIC project)."]
+SPDX-FileCopyrightText = ["lowRISC and contributors (COSMIC project)."]

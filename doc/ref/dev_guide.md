@@ -209,7 +209,7 @@ This license, as well as the licenses of all vendored sub-projects, can be found
 
 All code files must start with the following header (in the comment style applicable for the language):
 ```c
-// Copyright lowRISC contributors (COSMIC project).
+// Copyright lowRISC and contributors (COSMIC project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 ```

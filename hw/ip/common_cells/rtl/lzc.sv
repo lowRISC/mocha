@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors (COSMIC project).
+// Copyright lowRISC and contributors (COSMIC project).
 // Copyright 2018 ETH Zurich and University of Bologna.
 // Solderpad Hardware License, Version 0.51, see LICENSE for details.
 // SPDX-License-Identifier: SHL-0.51

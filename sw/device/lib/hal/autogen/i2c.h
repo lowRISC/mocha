@@ -1,4 +1,4 @@
-// Copyright lowRISC contributors (COSMIC project).
+// Copyright lowRISC and contributors (COSMIC project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 // Auto-generated: 'util/rdlgenerator.py gen-device-headers build/rdl/rdl.json sw/device/lib/hal/autogen'

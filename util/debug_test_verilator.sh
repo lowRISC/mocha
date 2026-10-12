@@ -1,5 +1,5 @@
 #!/usr/bin/env -S bash -eux
-# Copyright lowRISC contributors (COSMIC project).
+# Copyright lowRISC and contributors (COSMIC project).
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
