@@ -8,6 +8,17 @@ package axi_agent_pkg;
   `include "uvm_macros.svh"
   `include "dv_macros.svh"
 
+  // Active agents drive mgr_cb in Manager mode or sub_cb in Subordinate mode. Monitor mode is
+  // passive.
+  typedef enum bit [1:0] {
+    Manager,
+    Subordinate,
+    Monitor
+  } axi_if_mode_e;
+
+  // Canonical virtual interface type
+  typedef virtual axi_if axi_vif_t;
+
   // The possible encodings of the AxBURST signal
   typedef enum bit [AxiBurstWidth-1:0] {
     BurstFixed = 0,
@@ -60,8 +71,6 @@ package axi_agent_pkg;
       upper_lane = (aligned_addr % bus_bytes) + number_bytes - 1;
     end
   endfunction: axi_beat_lanes
-
-  `include "axi_agent_cfg.svh"
 
   `include "axi_txn_request_item.svh"
   `include "axi_read_data_item.svh"
@@ -123,4 +132,5 @@ package axi_agent_pkg;
   `include "axi_reg_adapter.svh"
 
   `include "axi_agent.svh"
+  `include "axi_mgr_agent.svh"
 endpackage
