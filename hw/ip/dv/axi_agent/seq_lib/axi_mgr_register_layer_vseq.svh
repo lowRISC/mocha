@@ -143,7 +143,7 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
   case (item.m_rw.kind)
     UVM_READ: begin
       // Single read
-      axi_mgr_read_fixed_vseq read_vseq = axi_mgr_read_fixed_vseq::type_id::create("read_vseq");
+      axi_mgr_read_burst_vseq read_vseq = axi_mgr_read_burst_vseq::type_id::create("read_vseq");
       bit          ar_complete, r_complete;
       bit [AxiMaxDataWidth-1:0] bit_mask;
 
@@ -151,8 +151,10 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
       read_vseq.set_read_response_router(m_read_response_router);
 
       if (!read_vseq.randomize() with {
-            m_fixed_req.m_addr == local::item.m_rw.addr;
-            m_fixed_req.m_size == local::axsize;
+            m_ar_req.m_len == 0;
+            m_ar_req.m_burst == BurstIncr;
+            m_ar_req.m_addr == local::item.m_rw.addr;
+            m_ar_req.m_size == local::axsize;
           }) begin
         `uvm_fatal(get_full_name(), "Failed to randomise read_vseq.")
       end
@@ -181,18 +183,25 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
 
     UVM_WRITE: begin
       // Single write
-      axi_mgr_write_fixed_vseq write_vseq = axi_mgr_write_fixed_vseq::type_id::create("write_vseq");
+      axi_mgr_write_burst_vseq write_vseq = axi_mgr_write_burst_vseq::type_id::create("write_vseq");
+      axi_write_data_item      w_beat = axi_write_data_item::type_id::create("w_beat");
       bit aw_complete, w_complete, b_complete;
 
       write_vseq.set_sequencers(m_aw_sequencer, m_w_sequencer, m_b_sequencer);
       write_vseq.set_write_response_router(m_write_response_router);
 
-      if (!write_vseq.randomize() with {
-            m_fixed_req.m_addr == local::item.m_rw.addr;
-            m_fixed_req.m_size == local::axsize;
+      if (!w_beat.randomize() with {
+            m_data == local::item.m_rw.data;
+            m_strb == local::byte_mask;
+          }) begin
+        `uvm_fatal(get_full_name(), "Failed to randomise w_beat.")
+      end
+      write_vseq.m_data_items.push_back(w_beat);
 
-            m_fixed_req.m_write_data_item.m_data == local::item.m_rw.data;
-            m_fixed_req.m_write_data_item.m_strb == local::byte_mask;
+      if (!write_vseq.randomize() with {
+            m_aw_req.m_burst == BurstIncr;
+            m_aw_req.m_addr == local::item.m_rw.addr;
+            m_aw_req.m_size == local::axsize;
           }) begin
         `uvm_fatal(get_full_name(), "Failed to randomise write_vseq.")
       end

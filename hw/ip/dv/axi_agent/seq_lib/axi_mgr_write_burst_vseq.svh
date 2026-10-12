@@ -2,8 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// A virtual sequence that sends a single AXI write burst of arbitrary length. This is the
-// multi-beat generalisation of axi_mgr_write_fixed_vseq.
+// A virtual sequence that sends a single AXI write burst of arbitrary length.
 //
 // To use it:
 //
