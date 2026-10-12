@@ -15,6 +15,14 @@ package axi_agent_pkg;
     BurstWrap  = 2
   } burst_e;
 
+  // AXI4 BRESP and RRESP encodings (AMBA AXI H.c A3.4.5)
+  typedef enum bit [AxiRespWidth-1:0] {
+    RespOkay   = 0,
+    RespExOkay = 1,
+    RespSlverr = 2,
+    RespDecerr = 3
+  } axi_resp_e;
+
   // Return the address and byte lanes [lower, upper] of zero-based beat n on a bus of bus_bytes
   // bytes, using the AMBA AXI H.c burst equations (A3.4.1, A3.4.2)
   function automatic void axi_beat_lanes(input  bit [AxiMaxAddrWidth-1:0] start_addr,
@@ -78,7 +86,6 @@ package axi_agent_pkg;
   `include "axi_reset_monitor.svh"
 
   `include "axi_reg_op_item.svh"
-  `include "axi_reg_adapter.svh"
 
   typedef uvm_sequencer#(axi_txn_request_item, axi_status_item)       write_request_sequencer_t;
   `include "axi_mgr_write_data_sequencer.svh"
@@ -113,6 +120,7 @@ package axi_agent_pkg;
   `include "axi_mon_write_item.svh"
   `include "axi_mon_read_item.svh"
   `include "axi_monitor.svh"
+  `include "axi_reg_adapter.svh"
 
   `include "axi_agent.svh"
 endpackage
