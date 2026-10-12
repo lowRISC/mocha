@@ -27,9 +27,6 @@ interface axi_read_data_if (input clk_i, input rst_ni);
   // The USER_DATA_WIDTH property. Set this by calling set_user_data_width().
   int unsigned user_data_width = AxiMaxDataUserWidth;
 
-  // The RRESP_WIDTH property. Set this by calling set_rresp_width().
-  int unsigned rresp_width = AxiRespWidth;
-
   // The USER_RESP_WIDTH property. Set this by calling set_user_resp_width().
   int unsigned user_resp_width = AxiMaxRespUserWidth;
 
@@ -74,12 +71,10 @@ interface axi_read_data_if (input clk_i, input rst_ni);
   // Masks used when converting some *_driven signals to *_internal
   logic [AxiMaxIdWidth-1:0]     rid_mask;
   logic [AxiMaxDataWidth-1:0]   rdata_mask;
-  logic [AxiRespWidth-1:0]      rresp_mask;
   logic [AxiMaxRUserWidth-1:0]  ruser_mask;
 
   assign rid_mask   = (AxiMaxIdWidth'(1) << id_r_width) - 1;
   assign rdata_mask = (AxiMaxDataWidth'(1) << data_width) - 1;
-  assign rresp_mask = (AxiRespWidth'(1) << rresp_width) - 1;
   assign ruser_mask = (AxiMaxRUserWidth'(1) << (user_data_width + user_resp_width)) - 1;
 
   clocking mon_cb @(posedge clk_i);
@@ -126,7 +121,7 @@ interface axi_read_data_if (input clk_i, input rst_ni);
       rready_internal = rready_driven;
       rid_internal    = rid_driven & rid_mask;
       rdata_internal  = rdata_driven & rdata_mask;
-      rresp_internal  = rresp_driven & rresp_mask;
+      rresp_internal  = rresp_driven;
       rlast_internal  = rlast_driven;
       ruser_internal  = ruser_driven & ruser_mask;
     end
@@ -184,18 +179,6 @@ interface axi_read_data_if (input clk_i, input rst_ni);
     end
 
     user_data_width = width;
-  endfunction
-
-  // Set the RRESP_WIDTH property. The allowed values are 0, 2, 3 (see AMBA AXI protocol
-  // specification, issue J, section B1.3)
-  function void set_rresp_width(int unsigned width);
-    if (! (width inside {0, 2, 3})) begin
-      `uvm_error($sformatf("%m"),
-                 $sformatf("Cannot set RRESP_WIDTH to %0d: must be 0, 2 or 3.", width))
-      width = 3;
-    end
-
-    rresp_width = width;
   endfunction
 
   // Set the USER_RESP_WIDTH property. The allowed range is 0..16 (see AMBA AXI protocol

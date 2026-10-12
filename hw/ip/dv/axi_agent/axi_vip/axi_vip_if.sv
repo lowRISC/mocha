@@ -184,7 +184,6 @@ interface axi_vip_if
     w_if.if_mode = mode;
 
     b_if.set_id_w_width(IdWidth);
-    b_if.set_bresp_width($bits(axi_resp.b.resp));
     b_if.set_user_resp_width(UserWidth);
     b_if.if_mode = mode;
 
@@ -196,7 +195,6 @@ interface axi_vip_if
     r_if.set_id_r_width(IdWidth);
     r_if.set_user_data_width(UserWidth);
     r_if.set_data_width(DataWidth);
-    r_if.set_rresp_width($bits(axi_resp.r.resp));
     r_if.set_user_resp_width(UserWidth);
     r_if.if_mode = mode;
 

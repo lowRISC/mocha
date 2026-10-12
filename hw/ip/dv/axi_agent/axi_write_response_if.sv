@@ -21,9 +21,6 @@ interface axi_write_response_if (input clk_i, input rst_ni);
   // The ID_W_WIDTH property. Set this by calling set_id_w_width().
   int unsigned id_w_width = AxiMaxIdWidth;
 
-  // The BRESP_WIDTH property. Set this by calling set_bresp_width().
-  int unsigned bresp_width = AxiRespWidth;
-
   // The USER_RESP_WIDTH property. Set this by calling set_user_resp_width().
   int unsigned user_resp_width = AxiMaxRespUserWidth;
 
@@ -63,11 +60,9 @@ interface axi_write_response_if (input clk_i, input rst_ni);
 
   // Masks used when converting some *_driven signals to *_internal
   logic [AxiMaxIdWidth-1:0]       bid_mask;
-  logic [AxiRespWidth-1:0]        bresp_mask;
   logic [AxiMaxRespUserWidth-1:0] buser_mask;
 
   assign bid_mask   = (AxiMaxIdWidth'(1) << id_w_width) - 1;
-  assign bresp_mask = (AxiRespWidth'(1) << bresp_width) - 1;
   assign buser_mask = (AxiMaxRespUserWidth'(1) << user_resp_width) - 1;
 
   clocking mon_cb @(posedge clk_i);
@@ -105,7 +100,7 @@ interface axi_write_response_if (input clk_i, input rst_ni);
       bvalid_internal = bvalid_driven;
       bready_internal = bready_driven;
       bid_internal    = bid_driven & bid_mask;
-      bresp_internal  = bresp_driven & bresp_mask;
+      bresp_internal  = bresp_driven;
       buser_internal  = buser_driven & buser_mask;
     end
   end
@@ -126,18 +121,6 @@ interface axi_write_response_if (input clk_i, input rst_ni);
     end
 
     id_w_width = width;
-  endfunction
-
-  // Set the BRESP_WIDTH property. The allowed values are 0, 2, 3 (see AMBA AXI protocol
-  // specification, issue J, section B1.3)
-  function void set_bresp_width(int unsigned width);
-    if (! (width inside {0, 2, 3})) begin
-      `uvm_error($sformatf("%m"),
-                 $sformatf("Cannot set BRESP_WIDTH to %0d: must be 0, 2 or 3.", width))
-      width = 3;
-    end
-
-    bresp_width = width;
   endfunction
 
   // Set the USER_RESP_WIDTH property. The allowed range is 0..16 (see AMBA AXI protocol
