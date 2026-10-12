@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // A monitored AXI write transaction: the write address (AW), the write data beats (W)
-// and the write response (B). Published on tx_ap once complete.
+// and the write response (B). Published on m_transaction_port once complete.
 
 class axi_mon_write_item extends axi_mon_item;
   `uvm_object_utils(axi_mon_write_item)

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // A monitored AXI read transaction: the read address (AR) and the read data beats (R).
-// Published on tx_ap once complete.
+// Published on m_transaction_port once complete.
 
 class axi_mon_read_item extends axi_mon_item;
   `uvm_object_utils(axi_mon_read_item)

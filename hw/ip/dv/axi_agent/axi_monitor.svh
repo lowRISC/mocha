@@ -4,7 +4,7 @@
 
 // Passive AXI transaction monitor. Snoops the five axi_*_if mon_cb clocking
 // blocks and rebuilds whole transactions: AW+W are paired in AW order, B/R are
-// matched to their request by ID. Completed transactions go out on tx_ap
+// matched to their request by ID. Completed transactions go out on m_transaction_port
 // (a write completes at B, a read at RLAST). The AXI interfaces are set by the
 // agent via the axi_monitor's set_interfaces() function.
 
@@ -18,9 +18,12 @@ class axi_monitor extends uvm_monitor;
   local virtual axi_read_data_if      m_r_vif;
   local virtual clk_rst_if            m_clk_rst_vif;   // shared ACLK/ARESETn
 
-  // Where finished transactions are handed off. Any number of components (a scoreboard, a coverage
-  // collector) can connect to it; with none connected the items are simply dropped.
-  uvm_analysis_port #(axi_mon_item) tx_ap;
+  // Publish requests at AW or AR handshakes with request fields only, responses at each B or R
+  // handshake with fields collected so far, and complete transactions at B or last R handshakes.
+  // Publish copies that the monitor never modifies.
+  uvm_analysis_port #(axi_mon_item) m_request_port;
+  uvm_analysis_port #(axi_mon_item) m_response_port;
+  uvm_analysis_port #(axi_mon_item) m_transaction_port;
 
   // Write requests/data awaiting their counterpart on the other write channel.
   protected axi_mon_write_item aw_pending_q[$];
@@ -49,7 +52,7 @@ class axi_monitor extends uvm_monitor;
 
   // One collector per channel, run concurrently by run_phase. Together they pair AW with W and
   // match B/R to their request by ID, so the B and R collectors are the ones that complete a
-  // transaction and publish it on tx_ap.
+  // transaction and publish it on m_transaction_port.
   //
   // Each collector reports a sampled X/Z as MON_X. The items are 4-state so an unknown does reach
   // the scoreboard, but it cannot be caught there: `!==` reports two X sides as identical, so an
@@ -79,7 +82,9 @@ endclass : axi_monitor
 
 function axi_monitor::new(string name, uvm_component parent);
   super.new(name, parent);
-  tx_ap = new("tx_ap", this);
+  m_request_port     = new("m_request_port", this);
+  m_response_port    = new("m_response_port", this);
+  m_transaction_port = new("m_transaction_port", this);
 endfunction : new
 
 function void axi_monitor::set_interfaces(virtual axi_write_request_if  aw_vif,
@@ -169,6 +174,7 @@ task axi_monitor::collect_aw_channel();
                  $sformatf("AW sampled with X/Z: id=%0h addr=%0h len=%0h size=%0h burst=%0h",
                            tr.m_awid, tr.m_awaddr, tr.m_awlen, tr.m_awsize, tr.m_awburst))
     end
+    m_request_port.write(tr.item_clone());
 
     if (w_pending_q.size() > 0) begin
       w_tr = w_pending_q.pop_front();
@@ -238,12 +244,16 @@ task axi_monitor::collect_b_channel();
       `uvm_error("MON_X", $sformatf("B sampled with X/Z: id=%0h resp=%0h", id, resp))
     end
     if (write_q_by_id.exists(id) && write_q_by_id[id].size() > 0) begin
+      axi_mon_item done;
+
       tr = write_q_by_id[id].pop_front();
       tr.m_bid      = id;
       tr.m_bresp    = resp;
       tr.m_buser    = m_b_vif.mon_cb.buser;
       `uvm_info(get_full_name(), $sformatf("FULL write complete: ID=%0h", id), UVM_HIGH)
-      tx_ap.write(tr.item_clone());
+      done = tr.item_clone();
+      m_response_port.write(done);
+      m_transaction_port.write(done);
     end else begin
       `uvm_error("MON_B", $sformatf("B response for unexpected ID: %0h", id))
     end
@@ -279,6 +289,7 @@ task axi_monitor::collect_ar_channel();
                            tr.m_arid, tr.m_araddr, tr.m_arlen, tr.m_arsize, tr.m_arburst))
     end
 
+    m_request_port.write(tr.item_clone());
     read_q_by_id[tr.m_arid].push_back(tr);
     `uvm_info(get_full_name(),
               $sformatf("AR collected: ID=%0h Addr=%0h", tr.m_arid, tr.m_araddr), UVM_HIGH)
@@ -310,11 +321,15 @@ task axi_monitor::collect_r_channel();
       tr.m_rdata.push_back(m_r_vif.mon_cb.rdata);
       tr.m_rresp.push_back(resp);
       tr.m_ruser.push_back(m_r_vif.mon_cb.ruser);
+      m_response_port.write(tr.item_clone());
 
       if (m_r_vif.mon_cb.rlast) begin
+        axi_mon_item done;
+
         void'(read_q_by_id[id].pop_front());
         `uvm_info(get_full_name(), $sformatf("FULL read complete: ID=%0h", id), UVM_HIGH)
-        tx_ap.write(tr.item_clone());
+        done = tr.item_clone();
+        m_transaction_port.write(done);
       end
     end else begin
       `uvm_error("MON_R", $sformatf("R data for unexpected ID: %0h", id))

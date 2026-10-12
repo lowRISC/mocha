@@ -10,6 +10,11 @@ class axi_agent extends uvm_agent;
 
   typedef uvm_sequencer #(axi_reg_op_item) layered_reg_sequencer_t;
 
+  // Analysis ports for requests, responses and complete transactions (see axi_monitor)
+  uvm_analysis_port #(axi_mon_item) m_request_port;
+  uvm_analysis_port #(axi_mon_item) m_response_port;
+  uvm_analysis_port #(axi_mon_item) m_transaction_port;
+
   // The agent config object, which allows the testbench to supply virtual interfaces. This can
   // either be set by calling set_cfg() before the build phase, or provided through uvm_config_db.
   local axi_agent_cfg m_cfg;
@@ -120,6 +125,10 @@ endfunction
 function void axi_agent::build_phase(uvm_phase phase);
   super.build_phase(phase);
 
+  m_request_port     = new("m_request_port", this);
+  m_response_port    = new("m_response_port", this);
+  m_transaction_port = new("m_transaction_port", this);
+
   if (m_cfg == null && !uvm_config_db#(axi_agent_cfg)::get(this, "", "cfg", m_cfg)) begin
     `uvm_fatal(get_full_name(), "failed to get cfg object from uvm_config_db")
   end
@@ -191,6 +200,10 @@ endfunction
 
 function void axi_agent::connect_phase(uvm_phase phase);
   super.connect_phase(phase);
+
+  m_monitor.m_request_port.connect(m_request_port);
+  m_monitor.m_response_port.connect(m_response_port);
+  m_monitor.m_transaction_port.connect(m_transaction_port);
 
   // If the agent is active, connect drivers to sequencers.
   if (m_cfg.is_active == UVM_ACTIVE) begin
