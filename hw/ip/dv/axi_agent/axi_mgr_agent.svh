@@ -207,6 +207,13 @@ task axi_mgr_agent::run_layered_register_vseq(bit                    has_fixed_p
                             m_read_data_sequencer);
   layer_vseq.set_response_routers(m_read_response_router, m_write_response_router);
 
+  layer_vseq.set_bus_properties(.data_width     (m_vif.w_if.data_width),
+                                .id_w_width     (m_vif.aw_if.id_w_width),
+                                .id_r_width     (m_vif.ar_if.id_r_width),
+                                .awuser_width   (m_vif.aw_if.user_req_width),
+                                .aruser_width   (m_vif.ar_if.user_req_width),
+                                .user_data_width(m_vif.w_if.user_data_width));
+
   layer_vseq.start(null);
 
   // layer_vseq runs forever

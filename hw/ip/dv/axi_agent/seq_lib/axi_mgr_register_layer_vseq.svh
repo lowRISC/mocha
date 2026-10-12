@@ -26,6 +26,14 @@ class axi_mgr_register_layer_vseq extends uvm_sequence;
   local axi_response_router        m_read_response_router;
   local axi_response_router        m_write_response_router;
 
+  // Constrain requests to data, ID and USER widths; call set_bus_properties before starting
+  local int unsigned m_data_width      = AxiMaxDataWidth;
+  local int unsigned m_id_w_width      = AxiMaxIdWidth;
+  local int unsigned m_id_r_width      = AxiMaxIdWidth;
+  local int unsigned m_awuser_width    = AxiMaxReqUserWidth;
+  local int unsigned m_aruser_width    = AxiMaxReqUserWidth;
+  local int unsigned m_user_data_width = AxiMaxDataUserWidth;
+
   extern function new(string name="");
   extern task body();
 
@@ -38,6 +46,13 @@ class axi_mgr_register_layer_vseq extends uvm_sequence;
 
   extern function void set_response_routers(axi_response_router read_response_router,
                                             axi_response_router write_response_router);
+
+  extern function void set_bus_properties(int unsigned data_width,
+                                          int unsigned id_w_width,
+                                          int unsigned id_r_width,
+                                          int unsigned awuser_width,
+                                          int unsigned aruser_width,
+                                          int unsigned user_data_width);
 
   // Send the request item through a layered sequence, passing any information back by modifying the
   // item argument (specifically, by modifying its m_rw field).
@@ -114,28 +129,61 @@ function void
   m_write_response_router = write_response_router;
 endfunction
 
+function void axi_mgr_register_layer_vseq::set_bus_properties(int unsigned data_width,
+                                                              int unsigned id_w_width,
+                                                              int unsigned id_r_width,
+                                                              int unsigned awuser_width,
+                                                              int unsigned aruser_width,
+                                                              int unsigned user_data_width);
+  m_data_width      = data_width;
+  m_id_w_width      = id_w_width;
+  m_id_r_width      = id_r_width;
+  m_awuser_width    = awuser_width;
+  m_aruser_width    = aruser_width;
+  m_user_data_width = user_data_width;
+endfunction: set_bus_properties
+
 task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
   // This task handles the bulk of the work that would normally be done by a uvm_reg_adapter's
   // reg2bus and bus2reg functions.
 
-  // item.m_rw.n_bits gives the number of bits that are being accessed. Since we don't support burst
-  // accesses, round this up to the next value for ARSIZE / AWSIZE by dividing down to bytes (and
-  // taking the ceiling), then taking clog2.
-  int unsigned axsize = $clog2((item.m_rw.n_bits + 7) / 8);
+  // n_bits describes bits accessed from the address; field byte_en may select higher bytes within
+  // the register. Bursts are unsupported, so cover both ranges and round up to ARSIZE/AWSIZE.
+  int unsigned num_bytes = (item.m_rw.n_bits + 7) / 8;
+  int unsigned axsize;
 
   // This is the maximum strb value possible, given axsize. If byte_en is not maximal, the strb
   // value to actually use might not have all of the bits set.
-  bit [AxiMaxStrbWidth-1:0] strb_from_size = (AxiMaxStrbWidth'(1) << (1 << axsize)) - 1;
+  bit [AxiMaxStrbWidth-1:0] strb_from_size;
+
+  // The register's lowest byte uses lane addr % bus_bytes (AMBA AXI H.c A3.4.1, A3.4.4)
+  int unsigned bus_bytes = m_data_width / 8;
+  int unsigned lane = item.m_rw.addr % bus_bytes;
 
   // The strb value to send on W, or the byte mask to use with rdata in an R response. This takes
-  // size and byte_en into account.
-  bit [AxiMaxStrbWidth-1:0] byte_mask = strb_from_size & item.m_rw.byte_en;
+  // size, byte_en and the byte lane into account.
+  bit [AxiMaxStrbWidth-1:0] byte_mask;
 
-  if (axsize > 7) begin
+  bit [AxiMaxDataWidth-1:0] wdata = AxiMaxDataWidth'(item.m_rw.data) << (8 * lane);
+
+  for (int unsigned i = 0; i < $bits(item.m_rw.byte_en); i++) begin
+    if (item.m_rw.byte_en[i] && i + 1 > num_bytes) begin
+      num_bytes = i + 1;
+    end
+  end
+  // A transfer carries the bytes from its address to the end of its AxSIZE-aligned container (AMBA
+  // AXI H.c A3.4.1). Use the smallest container that holds every byte of the access.
+  axsize = $clog2(num_bytes);
+  while ((1 << axsize) < bus_bytes && lane % (1 << axsize) + num_bytes > (1 << axsize)) begin
+    axsize++;
+  end
+  strb_from_size = (AxiMaxStrbWidth'(1) << (1 << axsize)) - 1;
+  byte_mask      = (strb_from_size & item.m_rw.byte_en) << lane;
+
+  if ((1 << axsize) > bus_bytes || lane % (1 << axsize) + num_bytes > (1 << axsize)) begin
     `uvm_error(get_full_name(),
-               $sformatf({"Cannot generate a sequence to represent an access with n_bits = %d: ",
-                          "for a single transfer, this would need an AxSIZE of %0d."},
-                         item.m_rw.n_bits, axsize))
+               $sformatf("A %0d-byte register access at 0x%0h does not fit one %0d-byte transfer.",
+                         num_bytes, item.m_rw.addr, bus_bytes))
     item.m_rw.status = UVM_NOT_OK;
     return;
   end
@@ -155,6 +203,10 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
             m_ar_req.m_burst == BurstIncr;
             m_ar_req.m_addr == local::item.m_rw.addr;
             m_ar_req.m_size == local::axsize;
+
+            (m_ar_req.m_id >> local::m_id_r_width) == 0;
+            (m_ar_req.m_user >> local::m_aruser_width) == 0;
+            m_ar_req.m_lock == 1'b0;
           }) begin
         `uvm_fatal(get_full_name(), "Failed to randomise read_vseq.")
       end
@@ -178,7 +230,8 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
                              axi_read_data_item::RRespExOkay}) ?
                          UVM_IS_OK :
                          UVM_NOT_OK;
-      item.m_rw.data   = r_complete ? (read_vseq.rsp.m_read_data[0].m_data & bit_mask) : 0;
+      item.m_rw.data   = r_complete ?
+                         ((read_vseq.rsp.m_read_data[0].m_data & bit_mask) >> (8 * lane)) : 0;
     end
 
     UVM_WRITE: begin
@@ -191,8 +244,9 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
       write_vseq.set_write_response_router(m_write_response_router);
 
       if (!w_beat.randomize() with {
-            m_data == local::item.m_rw.data;
+            m_data == local::wdata;
             m_strb == local::byte_mask;
+            (m_user >> local::m_user_data_width) == 0;
           }) begin
         `uvm_fatal(get_full_name(), "Failed to randomise w_beat.")
       end
@@ -202,6 +256,10 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
             m_aw_req.m_burst == BurstIncr;
             m_aw_req.m_addr == local::item.m_rw.addr;
             m_aw_req.m_size == local::axsize;
+
+            (m_aw_req.m_id >> local::m_id_w_width) == 0;
+            (m_aw_req.m_user >> local::m_awuser_width) == 0;
+            m_aw_req.m_lock == 1'b0;
           }) begin
         `uvm_fatal(get_full_name(), "Failed to randomise write_vseq.")
       end
