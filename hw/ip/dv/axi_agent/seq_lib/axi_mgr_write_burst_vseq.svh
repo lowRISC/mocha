@@ -99,6 +99,7 @@ task axi_mgr_write_burst_vseq::body();
   axi_mgr_write_response_seq     b_seq;
   uvm_sequence_item              write_response_item;
   axi_write_response_item        write_response;
+  int unsigned                   place;
 
   if (m_write_response_router == null) begin
     `uvm_fatal(get_full_name(), "Cannot run sequence because there is no write response router.")
@@ -160,10 +161,19 @@ task axi_mgr_write_burst_vseq::body();
     end
   end join_none
 
-  // Run AW and W, and wait for our B response.
+  // Take a place in the W sequencer's write order before AW, then send W when that place comes up
+  // without interleaving bursts (AMBA AXI H.c A5.2.2). Run AW and W and collect B.
+  m_write_data_sequencer.start_aw(place);
   fork
-    aw_seq.start(m_write_request_sequencer);
-    w_seq.start(m_write_data_sequencer);
+    begin
+      aw_seq.start(m_write_request_sequencer);
+      m_write_data_sequencer.aw_done();
+    end
+    begin
+      m_write_data_sequencer.wait_for_w(place);
+      w_seq.start(m_write_data_sequencer, this);
+      m_write_data_sequencer.w_done();
+    end
     m_write_response_router.wait_for_response(m_aw_req.m_id, write_response_item);
   join
 

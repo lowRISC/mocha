@@ -81,7 +81,8 @@ package axi_agent_pkg;
   `include "axi_reg_adapter.svh"
 
   typedef uvm_sequencer#(axi_txn_request_item, axi_status_item)       write_request_sequencer_t;
-  typedef uvm_sequencer#(axi_write_data_item, axi_status_item)        write_data_sequencer_t;
+  `include "axi_mgr_write_data_sequencer.svh"
+  typedef axi_mgr_write_data_sequencer                                write_data_sequencer_t;
   typedef uvm_sequencer#(axi_response_accept_item, uvm_sequence_item) write_response_sequencer_t;
   typedef uvm_sequencer#(axi_txn_request_item, axi_status_item)       read_request_sequencer_t;
   typedef uvm_sequencer#(axi_response_accept_item, uvm_sequence_item) read_data_sequencer_t;
