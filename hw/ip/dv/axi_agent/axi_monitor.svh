@@ -136,7 +136,9 @@ task axi_monitor::collect_aw_channel();
 
   forever begin
     @(m_aw_vif.mon_cb);
-    if (!(m_aw_vif.mon_cb.awvalid && m_aw_vif.mon_cb.awready)) continue;
+    if (!(m_aw_vif.mon_cb.awvalid === 1'b1 && m_aw_vif.mon_cb.awready === 1'b1)) begin
+      continue;
+    end
 
     tr = axi_mon_write_item::type_id::create("aw_tr");
 
@@ -175,7 +177,9 @@ task axi_monitor::collect_w_channel();
 
   forever begin
     @(m_w_vif.mon_cb);
-    if (!(m_w_vif.mon_cb.wvalid && m_w_vif.mon_cb.wready)) continue;
+    if (!(m_w_vif.mon_cb.wvalid === 1'b1 && m_w_vif.mon_cb.wready === 1'b1)) begin
+      continue;
+    end
 
     if (w_burst == null) w_burst = axi_mon_write_item::type_id::create("w_burst");
 
@@ -210,7 +214,9 @@ task axi_monitor::collect_b_channel();
 
   forever begin
     @(m_b_vif.mon_cb);
-    if (!(m_b_vif.mon_cb.bvalid && m_b_vif.mon_cb.bready)) continue;
+    if (!(m_b_vif.mon_cb.bvalid === 1'b1 && m_b_vif.mon_cb.bready === 1'b1)) begin
+      continue;
+    end
 
     id = m_b_vif.mon_cb.bid;
     if ($isunknown({m_b_vif.mon_cb.bid, m_b_vif.mon_cb.bresp})) begin
@@ -235,7 +241,9 @@ task axi_monitor::collect_ar_channel();
 
   forever begin
     @(m_ar_vif.mon_cb);
-    if (!(m_ar_vif.mon_cb.arvalid && m_ar_vif.mon_cb.arready)) continue;
+    if (!(m_ar_vif.mon_cb.arvalid === 1'b1 && m_ar_vif.mon_cb.arready === 1'b1)) begin
+      continue;
+    end
 
     tr = axi_mon_read_item::type_id::create("ar_tr");
 
@@ -269,7 +277,9 @@ task axi_monitor::collect_r_channel();
 
   forever begin
     @(m_r_vif.mon_cb);
-    if (!(m_r_vif.mon_cb.rvalid && m_r_vif.mon_cb.rready)) continue;
+    if (!(m_r_vif.mon_cb.rvalid === 1'b1 && m_r_vif.mon_cb.rready === 1'b1)) begin
+      continue;
+    end
 
     id = m_r_vif.mon_cb.rid;
     if ($isunknown({m_r_vif.mon_cb.rid, m_r_vif.mon_cb.rdata, m_r_vif.mon_cb.rresp,
