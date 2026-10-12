@@ -27,8 +27,8 @@ interface axi_read_data_if (input clk_i, input rst_ni);
   // The USER_DATA_WIDTH property. Set this by calling set_user_data_width().
   int unsigned user_data_width = AxiMaxDataUserWidth;
 
-  // The RRESP_WIDTH property. Set this by calling set_rresp_width().
-  int unsigned rresp_width = AxiRespWidth;
+  // RRESP_WIDTH is two bits in AXI4 (AMBA AXI H.c A3.4.5); set with set_rresp_width()
+  int unsigned rresp_width = 2;
 
   // The USER_RESP_WIDTH property. Set this by calling set_user_resp_width().
   int unsigned user_resp_width = AxiMaxRespUserWidth;
@@ -186,13 +186,14 @@ interface axi_read_data_if (input clk_i, input rst_ni);
     user_data_width = width;
   endfunction
 
-  // Set the RRESP_WIDTH property. The allowed values are 0, 2, 3 (see AMBA AXI protocol
-  // specification, issue J, section B1.3)
+  // Set RRESP_WIDTH to 0 or 2; three-bit encodings in later issues are unsupported (AMBA AXI H.c
+  // A3.4.5, A9.3.6)
   function void set_rresp_width(int unsigned width);
-    if (! (width inside {0, 2, 3})) begin
+    if (! (width inside {0, 2})) begin
       `uvm_error($sformatf("%m"),
-                 $sformatf("Cannot set RRESP_WIDTH to %0d: must be 0, 2 or 3.", width))
-      width = 3;
+                 $sformatf("Cannot set RRESP_WIDTH to %0d: must be 0 or 2; 3 is not supported yet.",
+                           width))
+      width = 2;
     end
 
     rresp_width = width;

@@ -21,8 +21,8 @@ interface axi_write_response_if (input clk_i, input rst_ni);
   // The ID_W_WIDTH property. Set this by calling set_id_w_width().
   int unsigned id_w_width = AxiMaxIdWidth;
 
-  // The BRESP_WIDTH property. Set this by calling set_bresp_width().
-  int unsigned bresp_width = AxiRespWidth;
+  // BRESP_WIDTH is two bits in AXI4 (AMBA AXI H.c A3.4.5); set with set_bresp_width()
+  int unsigned bresp_width = 2;
 
   // The USER_RESP_WIDTH property. Set this by calling set_user_resp_width().
   int unsigned user_resp_width = AxiMaxRespUserWidth;
@@ -128,13 +128,14 @@ interface axi_write_response_if (input clk_i, input rst_ni);
     id_w_width = width;
   endfunction
 
-  // Set the BRESP_WIDTH property. The allowed values are 0, 2, 3 (see AMBA AXI protocol
-  // specification, issue J, section B1.3)
+  // Set BRESP_WIDTH to 0 or 2; three-bit encodings in later issues are unsupported (AMBA AXI H.c
+  // A3.4.5, A9.3.6)
   function void set_bresp_width(int unsigned width);
-    if (! (width inside {0, 2, 3})) begin
+    if (! (width inside {0, 2})) begin
       `uvm_error($sformatf("%m"),
-                 $sformatf("Cannot set BRESP_WIDTH to %0d: must be 0, 2 or 3.", width))
-      width = 3;
+                 $sformatf("Cannot set BRESP_WIDTH to %0d: must be 0 or 2; 3 is not supported yet.",
+                           width))
+      width = 2;
     end
 
     bresp_width = width;
