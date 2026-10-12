@@ -31,6 +31,7 @@ filesets:
       - axi_reset_item.svh: {is_include_file: true}
       - axi_status_item.svh: {is_include_file: true}
       - axi_txn_request_item.svh: {is_include_file: true}
+      - axi_txn_response_item.svh: {is_include_file: true}
       - axi_response_accept_item.svh: {is_include_file: true}
       - axi_read_data_item.svh: {is_include_file: true}
       - axi_write_data_item.svh: {is_include_file: true}
@@ -67,6 +68,10 @@ filesets:
 
       - seq_lib/axi_mgr_register_layer_vseq.svh: {is_include_file: true}
 
+      - axi_mgr_sequencer.svh: {is_include_file: true}
+      - seq_lib/axi_transfer_seq.svh: {is_include_file: true}
+      - seq_lib/axi_single_read_seq.svh: {is_include_file: true}
+      - seq_lib/axi_single_write_seq.svh: {is_include_file: true}
       - axi_mgr_agent.svh: {is_include_file: true}
 
     file_type: systemVerilogSource

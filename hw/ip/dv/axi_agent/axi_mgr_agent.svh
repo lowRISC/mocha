@@ -25,6 +25,9 @@ class axi_mgr_agent extends axi_agent;
   local axi_response_router m_write_response_router;
   local axi_response_router m_read_response_router;
 
+  // Transfer sequencer with access to the channel sequencers and response routers
+  local axi_txn_sequencer_t m_sequencer;
+
   // Controls access to axi_mgr_register_layer_vseq. Create in build_phase when active; UVM forbids
   // creating components later.
   local layered_reg_sequencer_t m_layered_reg_sequencer;
@@ -38,6 +41,9 @@ class axi_mgr_agent extends axi_agent;
   extern function void connect_phase(uvm_phase phase);
 
   // Class specific methods
+
+  // For axi_transfer_seq; requires an active agent after build_phase
+  extern function axi_txn_sequencer_t get_sequencer();
 
   // Requires an active agent after build_phase
   extern function write_request_sequencer_t get_write_request_sequencer();
@@ -81,6 +87,7 @@ function void axi_mgr_agent::build_phase(uvm_phase phase);
                                                                    this);
     m_read_response_router = axi_response_router::type_id::create("m_read_response_router", this);
 
+    m_sequencer = axi_txn_sequencer_t::type_id::create("m_sequencer", this);
     m_layered_reg_sequencer = layered_reg_sequencer_t::type_id::create("m_layered_reg_sequencer",
                                                                        this);
 
@@ -136,8 +143,24 @@ function void axi_mgr_agent::connect_phase(uvm_phase phase);
 
     m_reset_monitor.m_analysis_port.connect(m_write_response_router.reset_imp);
     m_reset_monitor.m_analysis_port.connect(m_read_response_router.reset_imp);
+
+    m_sequencer.m_write_request_sequencer  = m_write_request_sequencer;
+    m_sequencer.m_write_data_sequencer     = m_write_data_sequencer;
+    m_sequencer.m_write_response_sequencer = m_write_response_sequencer;
+    m_sequencer.m_read_request_sequencer   = m_read_request_sequencer;
+    m_sequencer.m_read_data_sequencer      = m_read_data_sequencer;
+    m_sequencer.m_write_response_router    = m_write_response_router;
+    m_sequencer.m_read_response_router     = m_read_response_router;
+    m_sequencer.m_vif                      = m_vif;
   end
 endfunction: connect_phase
+
+function axi_txn_sequencer_t axi_mgr_agent::get_sequencer();
+  if (m_sequencer == null) begin
+    `uvm_fatal(get_full_name(), "m_sequencer is null.")
+  end
+  return m_sequencer;
+endfunction: get_sequencer
 
 function write_request_sequencer_t axi_mgr_agent::get_write_request_sequencer();
   if (m_write_request_sequencer == null) begin

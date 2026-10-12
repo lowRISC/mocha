@@ -82,6 +82,8 @@ package axi_agent_pkg;
 
   `include "axi_status_item.svh"
 
+  `include "axi_txn_response_item.svh"
+
   `include "axi_mgr_write_request_driver.svh"
   `include "axi_mgr_write_data_driver.svh"
   `include "axi_mgr_write_response_driver.svh"
@@ -128,5 +130,12 @@ package axi_agent_pkg;
   `include "axi_reg_adapter.svh"
 
   `include "axi_agent.svh"
+
+  // The manager agent, and the sequences that run on its sequencer
+  `include "axi_mgr_sequencer.svh"
+  typedef axi_mgr_sequencer axi_txn_sequencer_t;
+  `include "seq_lib/axi_transfer_seq.svh"
+  `include "seq_lib/axi_single_read_seq.svh"
+  `include "seq_lib/axi_single_write_seq.svh"
   `include "axi_mgr_agent.svh"
 endpackage
