@@ -72,8 +72,7 @@ class axi_mgr_read_burst_vseq extends uvm_sequence#(uvm_sequence_item, axi_fixed
   extern local task accept_one_beat(int unsigned beat_num);
 
   // Take n_beats responses for our AR channel's ID back out of the router, in beat order,
-  // appending each to m_read_beats. Returns early if a reset makes the router hand back a null
-  // item.
+  // appending each to m_read_beats. Returns early if there is a reset.
   extern local task collect_read_beats(int unsigned n_beats);
 
   // Set the read response router
@@ -136,13 +135,13 @@ task axi_mgr_read_burst_vseq::body();
     for (int unsigned i = 0; i < n_beats; i++) accept_one_beat(i);
   end join_none
 
-  // Send AR and drain the router for our n_beats responses, concurrently with the accepts. Because
-  // beats arrive in order, the router's per-ID FIFO preserves beat order regardless of sequencer
-  // arbitration order.
-  fork
-    ar_seq.start(m_read_request_sequencer);
+  // After sending AR, collect n_beats through the router while accepting beats. Its per-ID FIFO
+  // preserves beat order across sequencer arbitration. Wait only after AR to queue behind earlier
+  // same-ID reads (see axi_response_router::wait_for_responses).
+  ar_seq.start(m_read_request_sequencer);
+  if (ar_seq.rsp.m_sending_complete) begin
     collect_read_beats(n_beats);
-  join
+  end
 
   rsp = axi_fixed_read_rsp_item::type_id::create("rsp");
   rsp.m_ar_status = ar_seq.rsp;
@@ -173,14 +172,16 @@ task axi_mgr_read_burst_vseq::accept_one_beat(int unsigned beat_num);
 endtask : accept_one_beat
 
 task axi_mgr_read_burst_vseq::collect_read_beats(int unsigned n_beats);
-  for (int unsigned i = 0; i < n_beats; i++) begin
-    uvm_sequence_item  base_item;
+  uvm_sequence_item base_items[$];
+
+  // Take all beats in one call so same-ID reads cannot share them. Reset returns only beats
+  // received so far.
+  m_read_response_router.wait_for_responses(m_ar_req.m_id, n_beats, base_items);
+  foreach (base_items[i]) begin
     axi_read_data_item read_data_item;
 
-    m_read_response_router.wait_for_response(m_ar_req.m_id, base_item);
-    if (base_item == null) break;  // We have seen a reset
-    if (!$cast(read_data_item, base_item))
-      `uvm_fatal(get_full_name(), "wait_for_response returned unexpected item type")
+    if (!$cast(read_data_item, base_items[i]))
+      `uvm_fatal(get_full_name(), "wait_for_responses returned unexpected item type")
 
     m_read_beats.push_back(read_data_item);
   end
