@@ -34,6 +34,13 @@ class axi_mgr_register_layer_vseq extends uvm_sequence;
   local int unsigned m_aruser_width    = AxiMaxReqUserWidth;
   local int unsigned m_user_data_width = AxiMaxDataUserWidth;
 
+  // Set AXI4-Lite mode with set_lite before starting
+  local bit m_is_lite;
+
+  // Fixed AxPROT when m_has_fixed_prot is set; configure with set_fixed_prot before starting
+  local bit                    m_has_fixed_prot;
+  local bit [AxiProtWidth-1:0] m_fixed_prot;
+
   extern function new(string name="");
   extern task body();
 
@@ -53,6 +60,10 @@ class axi_mgr_register_layer_vseq extends uvm_sequence;
                                           int unsigned awuser_width,
                                           int unsigned aruser_width,
                                           int unsigned user_data_width);
+
+  extern function void set_lite(bit is_lite);
+
+  extern function void set_fixed_prot(bit has_fixed_prot, bit [AxiProtWidth-1:0] fixed_prot);
 
   // Send the request item through a layered sequence, passing any information back by modifying the
   // item argument (specifically, by modifying its m_rw field).
@@ -143,6 +154,16 @@ function void axi_mgr_register_layer_vseq::set_bus_properties(int unsigned data_
   m_user_data_width = user_data_width;
 endfunction: set_bus_properties
 
+function void axi_mgr_register_layer_vseq::set_lite(bit is_lite);
+  m_is_lite = is_lite;
+endfunction: set_lite
+
+function void axi_mgr_register_layer_vseq::set_fixed_prot(bit                    has_fixed_prot,
+                                                          bit [AxiProtWidth-1:0] fixed_prot);
+  m_has_fixed_prot = has_fixed_prot;
+  m_fixed_prot     = fixed_prot;
+endfunction: set_fixed_prot
+
 task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
   // This task handles the bulk of the work that would normally be done by a uvm_reg_adapter's
   // reg2bus and bus2reg functions.
@@ -188,6 +209,11 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
     return;
   end
 
+  // AXI4-Lite transfers use the full bus width; strobes select register bytes (AMBA AXI H.c B1.1)
+  if (m_is_lite) begin
+    axsize = $clog2(bus_bytes);
+  end
+
   case (item.m_rw.kind)
     UVM_READ: begin
       // Single read
@@ -199,7 +225,10 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
       read_vseq.set_read_response_router(m_read_response_router);
 
       if (!read_vseq.randomize() with {
+            // AXI4-Lite accesses are Non-modifiable and Non-bufferable (H.c B1.1)
+            local::m_is_lite -> m_fixed_req.m_cache == 4'b0000;
             m_fixed_req.m_addr == local::item.m_rw.addr;
+            local::m_has_fixed_prot -> m_fixed_req.m_prot == local::m_fixed_prot;
             m_fixed_req.m_size == local::axsize;
 
             (m_fixed_req.m_id >> local::m_id_r_width) == 0;
@@ -241,7 +270,10 @@ task axi_mgr_register_layer_vseq::send_op_item(axi_reg_op_item item);
       write_vseq.set_write_response_router(m_write_response_router);
 
       if (!write_vseq.randomize() with {
+            // AXI4-Lite accesses are Non-modifiable and Non-bufferable (H.c B1.1)
+            local::m_is_lite -> m_fixed_req.m_cache == 4'b0000;
             m_fixed_req.m_addr == local::item.m_rw.addr;
+            local::m_has_fixed_prot -> m_fixed_req.m_prot == local::m_fixed_prot;
             m_fixed_req.m_size == local::axsize;
 
             m_fixed_req.m_write_data_item.m_data == local::wdata;
