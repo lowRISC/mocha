@@ -8,15 +8,16 @@
 
 interface axi_read_request_if (input clk_i, input rst_ni);
   import axi_widths_pkg::*;
-  import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
+  import axi_agent_pkg::axi_if_mode_e;
+  import axi_agent_pkg::Manager;
+  import axi_agent_pkg::Subordinate;
+  import axi_agent_pkg::Monitor;
   import uvm_pkg::*;
 
   // The interface mode.
   //
-  //  - Host:    An agent is driving the interface signals through mgr_cb, acting as a Manager.
-  //  - Device:  An agent is driving the interface signals through sub_cb, acting as a Subordinate.
-  //  - Monitor: No agent is driving interface signals and the interface is purely passive.
-  if_mode_e if_mode = Monitor;
+  // Manager drives through mgr_cb; Subordinate drives through sub_cb; Monitor is passive.
+  axi_if_mode_e if_mode = Monitor;
 
   // The ID_R_WIDTH property. Set this by calling set_id_r_width().
   int unsigned id_r_width = AxiMaxIdWidth;
@@ -60,9 +61,8 @@ interface axi_read_request_if (input clk_i, input rst_ni);
   wire [AxiQosWidth-1:0]          arqos;
   wire [AxiMaxReqUserWidth-1:0]   aruser;
 
-  // Copies of the signals that are driven by mgr_cb (only used if if_mode == Host). The "*_driven"
-  // signals are directly driven by the clocking block. The "*_internal" signals track these, but
-  // take masks into account for signals with configurable length and are also cleared on reset.
+  // In Manager mode, mgr_cb drives *_driven; *_internal tracks it, masks configurable widths and
+  // clears on reset
   logic                           arvalid_driven, arvalid_internal;
   logic [AxiMaxIdWidth-1:0]       arid_driven, arid_internal;
   logic [AxiMaxAddrWidth-1:0]     araddr_driven, araddr_internal;
@@ -76,7 +76,7 @@ interface axi_read_request_if (input clk_i, input rst_ni);
   logic [AxiQosWidth-1:0]         arqos_driven, arqos_internal;
   logic [AxiMaxReqUserWidth-1:0]  aruser_driven, aruser_internal;
 
-  // A copy of arready, which is driven by sub_cb (only used if if_mode == Device). The
+  // A copy of arready, which is driven by sub_cb (only used if if_mode == Subordinate). The
   // arready_driven signal is directly driven by the clocking block. The arready_internal signal
   // tracks it, but is cleared on reset.
   logic                           arready_driven, arready_internal;
@@ -170,19 +170,19 @@ interface axi_read_request_if (input clk_i, input rst_ni);
     end
   end
 
-  assign arvalid  = (if_mode == Host)   ? arvalid_internal  : 'z;
-  assign arready  = (if_mode == Device) ? arready_internal  : 'z;
-  assign arid     = (if_mode == Host)   ? arid_internal     : 'z;
-  assign araddr   = (if_mode == Host)   ? araddr_internal   : 'z;
-  assign arregion = (if_mode == Host)   ? arregion_internal : 'z;
-  assign arlen    = (if_mode == Host)   ? arlen_internal    : 'z;
-  assign arsize   = (if_mode == Host)   ? arsize_internal   : 'z;
-  assign arburst  = (if_mode == Host)   ? arburst_internal  : 'z;
-  assign arlock   = (if_mode == Host)   ? arlock_internal   : 'z;
-  assign arcache  = (if_mode == Host)   ? arcache_internal  : 'z;
-  assign arprot   = (if_mode == Host)   ? arprot_internal   : 'z;
-  assign arqos    = (if_mode == Host)   ? arqos_internal    : 'z;
-  assign aruser   = (if_mode == Host)   ? aruser_internal   : 'z;
+  assign arvalid  = (if_mode == Manager)     ? arvalid_internal  : 'z;
+  assign arready  = (if_mode == Subordinate) ? arready_internal  : 'z;
+  assign arid     = (if_mode == Manager)     ? arid_internal     : 'z;
+  assign araddr   = (if_mode == Manager)     ? araddr_internal   : 'z;
+  assign arregion = (if_mode == Manager)     ? arregion_internal : 'z;
+  assign arlen    = (if_mode == Manager)     ? arlen_internal    : 'z;
+  assign arsize   = (if_mode == Manager)     ? arsize_internal   : 'z;
+  assign arburst  = (if_mode == Manager)     ? arburst_internal  : 'z;
+  assign arlock   = (if_mode == Manager)     ? arlock_internal   : 'z;
+  assign arcache  = (if_mode == Manager)     ? arcache_internal  : 'z;
+  assign arprot   = (if_mode == Manager)     ? arprot_internal   : 'z;
+  assign arqos    = (if_mode == Manager)     ? arqos_internal    : 'z;
+  assign aruser   = (if_mode == Manager)     ? aruser_internal   : 'z;
 
   // Set the ID_R_WIDTH property. The allowed range is 0..32 (see AMBA AXI protocol specification,
   // issue J, section B1.3)

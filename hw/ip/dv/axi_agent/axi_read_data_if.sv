@@ -8,15 +8,16 @@
 
 interface axi_read_data_if (input clk_i, input rst_ni);
   import axi_widths_pkg::*;
-  import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
+  import axi_agent_pkg::axi_if_mode_e;
+  import axi_agent_pkg::Manager;
+  import axi_agent_pkg::Subordinate;
+  import axi_agent_pkg::Monitor;
   import uvm_pkg::*;
 
   // The interface mode.
   //
-  //  - Host:    An agent is driving the interface signals through mgr_cb, acting as a Manager.
-  //  - Device:  An agent is driving the interface signals through sub_cb, acting as a Subordinate.
-  //  - Monitor: No agent is driving interface signals and the interface is purely passive.
-  if_mode_e if_mode = Monitor;
+  // Manager drives through mgr_cb; Subordinate drives through sub_cb; Monitor is passive.
+  axi_if_mode_e if_mode = Monitor;
 
   // The ID_R_WIDTH property. Set this by calling set_id_r_width().
   int unsigned id_r_width = AxiMaxIdWidth;
@@ -52,12 +53,10 @@ interface axi_read_data_if (input clk_i, input rst_ni);
   wire                          rlast;
   wire [AxiMaxRUserWidth-1:0]   ruser;
 
-  // A copy of rready, which is driven by mgr_cb (only used if if_mode == Host). The rready_driven
-  // signal is directly driven by the clocking block. The rready_internal signal tracks it, but is
-  // also cleared on reset.
+  // In Manager mode, mgr_cb drives rready_driven; rready_internal tracks it and clears on reset
   logic                         rready_driven, rready_internal;
 
-  // Copies of the signals that are driven by sub_cb (only used if if_mode == Device). The
+  // Copies of the signals that are driven by sub_cb (only used if if_mode == Subordinate). The
   // "*_driven" signals are directly driven by the clocking block. The "*_internal" signals track
   // these, but take masks into account for signals with configurable length and are also cleared on
   // reset.
@@ -127,13 +126,13 @@ interface axi_read_data_if (input clk_i, input rst_ni);
     end
   end
 
-  assign rvalid = (if_mode == Device) ? rvalid_internal : 'z;
-  assign rready = (if_mode == Host)   ? rready_internal : 'z;
-  assign rid    = (if_mode == Device) ? rid_internal    : 'z;
-  assign rdata  = (if_mode == Device) ? rdata_internal  : 'z;
-  assign rresp  = (if_mode == Device) ? rresp_internal  : 'z;
-  assign rlast  = (if_mode == Device) ? rlast_internal  : 'z;
-  assign ruser  = (if_mode == Device) ? ruser_internal  : 'z;
+  assign rvalid = (if_mode == Subordinate) ? rvalid_internal : 'z;
+  assign rready = (if_mode == Manager)     ? rready_internal : 'z;
+  assign rid    = (if_mode == Subordinate) ? rid_internal    : 'z;
+  assign rdata  = (if_mode == Subordinate) ? rdata_internal  : 'z;
+  assign rresp  = (if_mode == Subordinate) ? rresp_internal  : 'z;
+  assign rlast  = (if_mode == Subordinate) ? rlast_internal  : 'z;
+  assign ruser  = (if_mode == Subordinate) ? ruser_internal  : 'z;
 
   // Set the ID_R_WIDTH property. The allowed range is 0..32 (see AMBA AXI protocol specification,
   // issue J, section B1.3)

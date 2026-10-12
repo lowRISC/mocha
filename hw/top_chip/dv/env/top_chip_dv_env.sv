@@ -19,7 +19,7 @@ class top_chip_dv_env extends uvm_env;
   i2c_agent  m_i2c_agent;
   uart_agent   m_uart_agent;
   // Passive AXI monitors on the xbar host (CVA6) + device ports; each self-gets its
-  // cfg (is_active=UVM_PASSIVE) from the config_db published by its axi_vip_if in the tb.
+  // bus from its axi_vip_if's config_db entry and is passive in Monitor mode
   axi_agent m_mgr_axi[];
   axi_agent m_sub_axi[];
 

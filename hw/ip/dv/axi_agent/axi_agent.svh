@@ -2,125 +2,57 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// The AXI agent. When cfg.is_active it drives all five channels as a manager; when passive it
-// builds only the monitors, which is how it is used to tap subordinate ports.
+// AXI agent that observes an axi_if: the monitor, the reset monitor and the register adapter, with
+// the monitor's analysis ports. axi_mgr_agent extends it to drive the bus when the interface is in
+// Manager mode.
 
 class axi_agent extends uvm_agent;
   `uvm_component_utils(axi_agent)
-
-  typedef uvm_sequencer #(axi_reg_op_item) layered_reg_sequencer_t;
 
   // Analysis ports for requests, responses and complete transactions (see axi_monitor)
   uvm_analysis_port #(axi_mon_item) m_request_port;
   uvm_analysis_port #(axi_mon_item) m_response_port;
   uvm_analysis_port #(axi_mon_item) m_transaction_port;
 
-  // The agent config object, which allows the testbench to supply virtual interfaces. This can
-  // either be set by calling set_cfg() before the build phase, or provided through uvm_config_db.
-  local axi_agent_cfg m_cfg;
+  // Set the bus with set_vif() before build_phase or through uvm_config_db
+  protected axi_vif_t m_vif;
 
-  // Reset monitor for the shared AXI clock/reset (covers all five channels).
-  local axi_reset_monitor m_reset_monitor;
+  // Shared ACLK and ARESETn monitor
+  protected axi_reset_monitor m_reset_monitor;
 
-  // The write request channel (AW)
-  local axi_mgr_write_request_driver m_write_request_driver;
-  local write_request_sequencer_t    m_write_request_sequencer;
+  protected axi_monitor m_monitor;
 
-  // The write data channel (W)
-  local axi_mgr_write_data_driver m_write_data_driver;
-  local write_data_sequencer_t    m_write_data_sequencer;
+  // Stateless register adapter, available in every mode for a register predictor
+  protected axi_reg_adapter m_reg_adapter;
 
-  // The write response channel (B)
-  local axi_mgr_write_response_driver m_write_response_driver;
-  local write_response_sequencer_t    m_write_response_sequencer;
-
-  // The read request channel (AR)
-  local axi_mgr_read_request_driver m_read_request_driver;
-  local read_request_sequencer_t    m_read_request_sequencer;
-
-  // The read data channel (R)
-  local axi_mgr_read_data_driver m_read_data_driver;
-  local read_data_sequencer_t    m_read_data_sequencer;
-
-  // A response router for writes
-  local axi_response_router m_write_response_router;
-
-  // A response router for reads
-  local axi_response_router m_read_response_router;
-
-  // A transaction monitor. Built whether the agent is active or passive.
-  local axi_monitor m_monitor;
-
-  // A reg adapter. This is stateless, so gets created in build_phase whenever the agent is active.
-  // It's useful in conjunction with a layered sequencer (which is created by
-  // run_layered_register_vseq and can be retrieved with get_register_layering_sequencer).
-  local axi_reg_adapter m_reg_adapter;
-
-  // A sequencer that controls access to an instance of axi_mgr_register_layer_vseq that is
-  // currently running.
-  local layered_reg_sequencer_t m_layered_reg_sequencer;
-
-  extern function new (string name, uvm_component parent);
+  // Standard SV/UVM methods
+  extern function new(string name, uvm_component parent);
   extern function void build_phase(uvm_phase phase);
   extern function void connect_phase(uvm_phase phase);
 
-  // Set m_cfg to the provided cfg.
-  //
-  // This can only run once, and must be run before the build phase. If it is not run, build_phase
-  // will try to get the config object from uvm_config_db.
-  extern function void set_cfg(axi_agent_cfg cfg);
+  // Class specific methods
 
-  // Get the reset monitor for the shared AXI clock/reset. Can only be called after build_phase.
+  extern function void set_vif(axi_vif_t vif);
+
+  // Call after build_phase
+  extern function axi_vif_t get_vif();
+
+  // Call after build_phase
+  extern function axi_reg_adapter get_reg_adapter();
+
+  // Call after build_phase
   extern function axi_reset_monitor get_reset_monitor();
-
-  // Get the transaction monitor. Can only be called after build_phase.
   extern function axi_monitor get_monitor();
 
-  // Get the sequencer for the write request channel (AW). Can only be called after build_phase, and
-  // the agent must be active.
-  extern function write_request_sequencer_t get_write_request_sequencer();
+  // Return whether the agent drives a bus whose interface is in the given mode; in any other mode it
+  // only observes the bus
+  extern protected virtual function bit drives_in_mode(axi_if_mode_e mode);
+endclass: axi_agent
 
-  // Get the sequencer for the write data channel (W). Can only be called after build_phase, and the
-  // agent must be active.
-  extern function write_data_sequencer_t get_write_data_sequencer();
-
-  // Get the sequencer for the write response channel (B). Can only be called after build_phase, and
-  // the agent must be active.
-  extern function write_response_sequencer_t get_write_response_sequencer();
-
-  // Get the sequencer for the read request channel (AR). Can only be called after build_phase, and
-  // the agent must be active.
-  extern function read_request_sequencer_t get_read_request_sequencer();
-
-  // Get the sequencer for the read data channel (R). Can only be called after build_phase, and the
-  // agent must be active.
-  extern function read_data_sequencer_t get_read_data_sequencer();
-
-  // Get the write response router. Can only be called after build_phase, and the
-  // agent must be active.
-  extern function axi_response_router get_write_response_router();
-
-  // Get the read response router. Can only be called after build_phase, and the
-  // agent must be active.
-  extern function axi_response_router get_read_response_router();
-
-  // Get the reg adapter. Can only be called after build_phase, and the agent must be active.
-  extern function axi_reg_adapter get_layered_reg_adapter();
-
-  // Run the layered register vseq, which shouldn't already be running.
-  //
-  // This sequence will run forever and its layering sequencer can be retrieved with
-  // get_register_layering_sequencer().
-  extern task run_layered_register_vseq();
-
-  // Get a handle a the sequencer for a layered register vseq that is currently running. If there is
-  // not yet one running, this returns null.
-  extern function layered_reg_sequencer_t get_register_layering_sequencer();
-endclass
 
 function axi_agent::new(string name, uvm_component parent);
   super.new(name, parent);
-endfunction
+endfunction: new
 
 function void axi_agent::build_phase(uvm_phase phase);
   super.build_phase(phase);
@@ -129,74 +61,24 @@ function void axi_agent::build_phase(uvm_phase phase);
   m_response_port    = new("m_response_port", this);
   m_transaction_port = new("m_transaction_port", this);
 
-  if (m_cfg == null && !uvm_config_db#(axi_agent_cfg)::get(this, "", "cfg", m_cfg)) begin
-    `uvm_fatal(get_full_name(), "failed to get cfg object from uvm_config_db")
+  if (m_vif == null && !uvm_config_db#(axi_vif_t)::get(this, "", "vif", m_vif)) begin
+    `uvm_fatal(get_full_name(), "failed to get vif from uvm_config_db")
   end
+  if (m_vif == null) begin
+    `uvm_fatal(get_full_name(), "No non-null m_vif provided.")
+  end
+  is_active = drives_in_mode(m_vif.if_mode) ? UVM_ACTIVE : UVM_PASSIVE;
 
-  // One reset monitor for the shared AXI clock/reset (ACLK/ARESETn).
   m_reset_monitor = axi_reset_monitor::type_id::create("m_reset_monitor", this);
-  m_reset_monitor.set_vif(m_cfg.clk_rst_vif);
+  m_reset_monitor.set_vif(m_vif.u_clk_rst_if);
 
-  // Passive transaction monitor: built in both active and passive agents. It snoops all five
-  // channels, so set them all at once.
   m_monitor = axi_monitor::type_id::create("m_monitor", this);
-  m_monitor.set_interfaces(m_cfg.write_request_vif,
-                           m_cfg.write_data_vif,
-                           m_cfg.write_response_vif,
-                           m_cfg.read_request_vif,
-                           m_cfg.read_data_vif,
-                           m_cfg.clk_rst_vif);
+  m_monitor.set_interfaces(m_vif.aw_if, m_vif.w_if, m_vif.b_if, m_vif.ar_if, m_vif.r_if,
+                           m_vif.u_clk_rst_if);
 
-  if (m_cfg.is_active == UVM_ACTIVE) begin
-    // Create routers for write and read responses
-    m_write_response_router = axi_response_router::type_id::create("m_write_response_router", this);
-    m_read_response_router = axi_response_router::type_id::create("m_read_response_router", this);
-
-    m_reg_adapter = axi_reg_adapter::type_id::create("m_reg_adapter");
-
-    // Generate drivers and sequencers for the five channels. Each driver is configured here.
-
-    // The write request channel (AW)
-    m_write_request_driver =
-      axi_mgr_write_request_driver::type_id::create("m_write_request_driver", this);
-    m_write_request_driver.set_vif(m_cfg.write_request_vif);
-    m_write_request_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
-    m_write_request_driver.set_drive_x_when_idle(m_cfg.drive_x_when_idle);
-    m_write_request_sequencer =
-      write_request_sequencer_t::type_id::create("m_write_request_sequencer", this);
-
-    // The write data channel (W)
-    m_write_data_driver = axi_mgr_write_data_driver::type_id::create("m_write_data_driver", this);
-    m_write_data_driver.set_vif(m_cfg.write_data_vif);
-    m_write_data_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
-    m_write_data_driver.set_drive_x_when_idle(m_cfg.drive_x_when_idle);
-    m_write_data_sequencer =
-      write_data_sequencer_t::type_id::create("m_write_data_sequencer", this);
-
-    // The write response channel (B)
-    m_write_response_driver =
-      axi_mgr_write_response_driver::type_id::create("m_write_response_driver", this);
-    m_write_response_driver.set_vif(m_cfg.write_response_vif);
-    m_write_response_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
-    m_write_response_sequencer =
-      write_response_sequencer_t::type_id::create("m_write_response_sequencer", this);
-
-    // The read request channel (AR)
-    m_read_request_driver =
-      axi_mgr_read_request_driver::type_id::create("m_read_request_driver", this);
-    m_read_request_driver.set_vif(m_cfg.read_request_vif);
-    m_read_request_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
-    m_read_request_driver.set_drive_x_when_idle(m_cfg.drive_x_when_idle);
-    m_read_request_sequencer =
-      read_request_sequencer_t::type_id::create("m_read_request_sequencer", this);
-
-    // The read data channel (R)
-    m_read_data_driver = axi_mgr_read_data_driver::type_id::create("m_read_data_driver", this);
-    m_read_data_driver.set_vif(m_cfg.read_data_vif);
-    m_read_data_driver.set_clk_rst_vif(m_cfg.clk_rst_vif);
-    m_read_data_sequencer = read_data_sequencer_t::type_id::create("m_read_data_sequencer", this);
-  end
-endfunction
+  m_reg_adapter = axi_reg_adapter::type_id::create("m_reg_adapter");
+  m_reg_adapter.set_bus_bytes(m_vif.w_if.data_width / 8);
+endfunction: build_phase
 
 function void axi_agent::connect_phase(uvm_phase phase);
   super.connect_phase(phase);
@@ -204,109 +86,46 @@ function void axi_agent::connect_phase(uvm_phase phase);
   m_monitor.m_request_port.connect(m_request_port);
   m_monitor.m_response_port.connect(m_response_port);
   m_monitor.m_transaction_port.connect(m_transaction_port);
+endfunction: connect_phase
 
-  // If the agent is active, connect drivers to sequencers.
-  if (m_cfg.is_active == UVM_ACTIVE) begin
-    m_write_request_driver.seq_item_port.connect(m_write_request_sequencer.seq_item_export);
-    m_write_data_driver.seq_item_port.connect(m_write_data_sequencer.seq_item_export);
-    m_write_response_driver.seq_item_port.connect(m_write_response_sequencer.seq_item_export);
-    m_read_request_driver.seq_item_port.connect(m_read_request_sequencer.seq_item_export);
-    m_read_data_driver.seq_item_port.connect(m_read_data_sequencer.seq_item_export);
-
-    // Both response routers observe the same shared reset.
-    m_reset_monitor.m_analysis_port.connect(m_write_response_router.reset_imp);
-    m_reset_monitor.m_analysis_port.connect(m_read_response_router.reset_imp);
+function void axi_agent::set_vif(axi_vif_t vif);
+  if (m_vif != null) begin
+    `uvm_fatal(get_full_name(), "Cannot set vif: m_vif is already non-null.")
+  end else if (vif == null) begin
+    `uvm_fatal(get_full_name(), "Cannot set vif to null.")
+  end else begin
+    m_vif = vif;
   end
-endfunction
+endfunction: set_vif
 
-function void axi_agent::set_cfg(axi_agent_cfg cfg);
-  if (m_cfg != null) `uvm_fatal(get_full_name(), "Cannot set cfg: m_cfg is already non-null.")
-  m_cfg = cfg;
-endfunction
+function axi_vif_t axi_agent::get_vif();
+  if (m_vif == null) begin
+    `uvm_fatal(get_full_name(), "m_vif is null.")
+  end
+  return m_vif;
+endfunction: get_vif
+
+function axi_reg_adapter axi_agent::get_reg_adapter();
+  if (m_reg_adapter == null) begin
+    `uvm_fatal(get_full_name(), "m_reg_adapter is null.")
+  end
+  return m_reg_adapter;
+endfunction: get_reg_adapter
 
 function axi_reset_monitor axi_agent::get_reset_monitor();
-  if (m_reset_monitor == null) `uvm_fatal(get_full_name(), "m_reset_monitor is null.")
+  if (m_reset_monitor == null) begin
+    `uvm_fatal(get_full_name(), "m_reset_monitor is null.")
+  end
   return m_reset_monitor;
-endfunction
+endfunction: get_reset_monitor
 
 function axi_monitor axi_agent::get_monitor();
-  if (m_monitor == null) `uvm_fatal(get_full_name(), "m_monitor is null.")
-  return m_monitor;
-endfunction
-
-function write_request_sequencer_t axi_agent::get_write_request_sequencer();
-  if (m_write_request_sequencer == null)
-    `uvm_fatal(get_full_name(), "m_write_request_sequencer is null.")
-  return m_write_request_sequencer;
-endfunction
-
-function write_data_sequencer_t axi_agent::get_write_data_sequencer();
-  if (m_write_data_sequencer == null)
-    `uvm_fatal(get_full_name(), "m_write_data_sequencer is null.")
-  return m_write_data_sequencer;
-endfunction
-
-function write_response_sequencer_t axi_agent::get_write_response_sequencer();
-  if (m_write_response_sequencer == null)
-    `uvm_fatal(get_full_name(), "m_write_response_sequencer is null.")
-  return m_write_response_sequencer;
-endfunction
-
-function read_request_sequencer_t axi_agent::get_read_request_sequencer();
-  if (m_read_request_sequencer == null)
-    `uvm_fatal(get_full_name(), "m_read_request_sequencer is null.")
-  return m_read_request_sequencer;
-endfunction
-
-function read_data_sequencer_t axi_agent::get_read_data_sequencer();
-  if (m_read_data_sequencer == null)
-    `uvm_fatal(get_full_name(), "m_read_data_sequencer is null.")
-  return m_read_data_sequencer;
-endfunction
-
-function axi_response_router axi_agent::get_write_response_router();
-  if (m_write_response_router == null)
-    `uvm_fatal(get_full_name(), "m_write_response_router is null.")
-  return m_write_response_router;
-endfunction
-
-function axi_response_router axi_agent::get_read_response_router();
-  if (m_read_response_router == null)
-    `uvm_fatal(get_full_name(), "m_read_response_router is null.")
-  return m_read_response_router;
-endfunction
-
-function axi_reg_adapter axi_agent::get_layered_reg_adapter();
-  if (m_reg_adapter == null) `uvm_fatal(get_full_name(), "m_reg_adapter is null.")
-  return m_reg_adapter;
-endfunction
-
-task axi_agent::run_layered_register_vseq();
-  axi_mgr_register_layer_vseq layer_vseq;
-
-  if (m_layered_reg_sequencer != null) begin
-    `uvm_fatal(get_full_name(), "Overlapping runs of layered register vseq.")
+  if (m_monitor == null) begin
+    `uvm_fatal(get_full_name(), "m_monitor is null.")
   end
+  return m_monitor;
+endfunction: get_monitor
 
-  m_layered_reg_sequencer =
-    layered_reg_sequencer_t::type_id::create("m_layered_reg_sequencer", this);
-
-  layer_vseq = axi_mgr_register_layer_vseq::type_id::create("layer_vseq");
-
-  layer_vseq.set_sequencers(m_layered_reg_sequencer,
-                            m_write_request_sequencer,
-                            m_write_data_sequencer,
-                            m_write_response_sequencer,
-                            m_read_request_sequencer,
-                            m_read_data_sequencer);
-  layer_vseq.set_response_routers(m_read_response_router, m_write_response_router);
-
-  layer_vseq.start(null);
-
-  // Because layer_vseq never completes, we don't expect to get her.
-  `uvm_fatal(get_full_name(), "Instance of axi_mgr_register_layer_vseq ran to completion.")
-endtask
-
-function axi_agent::layered_reg_sequencer_t axi_agent::get_register_layering_sequencer();
-  return m_layered_reg_sequencer;
-endfunction
+function bit axi_agent::drives_in_mode(axi_if_mode_e mode);
+  return 1'b0;
+endfunction: drives_in_mode

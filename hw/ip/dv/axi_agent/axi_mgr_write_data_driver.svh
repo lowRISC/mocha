@@ -19,7 +19,7 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
   local bit m_in_reset;
 
   // How to drive this channel's payload while it is idle. Set this with set_drive_x_when_idle
-  // before run_phase; see axi_agent_cfg::drive_x_when_idle for what the two settings mean.
+  // before run_phase; see axi_if::drive_x_when_idle for what the two settings mean.
   local bit m_drive_x_when_idle = 1'b1;
 
   // Set AXI4-Lite mode with set_lite()
@@ -74,9 +74,9 @@ function void axi_mgr_write_data_driver::set_vif(virtual axi_write_data_if vif);
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
+  if (vif.if_mode != Manager) begin
     `uvm_fatal(get_full_name(),
-               $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
+               $sformatf("Cannot drive this interface: it has mode %0s, not Manager.",
                          vif.if_mode.name()))
     return;
   end
@@ -144,8 +144,7 @@ task axi_mgr_write_data_driver::clear_data();
   m_vif.mgr_cb.wvalid <= 1'b0;
 
   // AXI requires nothing of the payload while WVALID is low, so drive it meaningless: X by
-  // default, or randomised for a sink that cannot tolerate X
-  // (see axi_agent_cfg::drive_x_when_idle).
+  // default, or randomised for a sink that cannot tolerate X (see axi_if::drive_x_when_idle).
   if (m_drive_x_when_idle) begin
     m_vif.mgr_cb.wdata <= 'x;
     m_vif.mgr_cb.wstrb <= 'x;
