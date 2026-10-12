@@ -128,9 +128,9 @@ task axi_mgr_write_response_driver::drive_req();
         // Cycles elapsed since bvalid was first seen; zero means it has not been seen yet.
         int unsigned delay = 0;
 
-        // Drive bready and watch for the actual transfer. We track the value we drive in
-        // rather than reading it back from the clocking block, and we sample on that exact
-        // handshake edge. This is what makes the accept protocol correct:
+        // Count a transfer only when sampled BVALID and BREADY are both high (H.c A3.2.1). For an
+        // item received between edges, the newly driven BREADY reaches the bus at the next edge;
+        // use sampled BREADY to detect the handshake. This handles both cases below:
         //   * a speculative bready (asserted before bvalid via ready_without_valid_pct) that
         //     catches the response is detected and sampled, instead of consuming the
         //     response unsampled
@@ -149,19 +149,21 @@ task axi_mgr_write_response_driver::drive_req();
           end
 
           m_vif.mgr_cb.bready <= bready;
-          @(m_vif.mgr_cb);
+          @(m_vif.mon_cb);
 
-          if (m_vif.mgr_cb.bvalid === 1'b1) begin
-            if (bready) break;  // bvalid && bready on this edge: response accepted
+          if (m_vif.mon_cb.bvalid === 1'b1) begin
+            if (m_vif.mon_cb.bready === 1'b1) begin
+              break;
+            end
             delay++;            // count the cycle just elapsed, including the first bvalid one
           end
         end
 
         // The response has just transferred: sample it.
         response = axi_write_response_item::type_id::create("response");
-        response.m_id   = m_vif.mgr_cb.bid;
-        response.m_resp = axi_write_response_item::bresp_e'(m_vif.mgr_cb.bresp);
-        response.m_user = m_vif.mgr_cb.buser;
+        response.m_id   = m_vif.mon_cb.bid;
+        response.m_resp = axi_write_response_item::bresp_e'(m_vif.mon_cb.bresp);
+        response.m_user = m_vif.mon_cb.buser;
 
         // Set rsp, which will pass the response back to the sequencer.
         rsp = response;
