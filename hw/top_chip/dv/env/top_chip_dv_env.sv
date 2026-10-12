@@ -128,15 +128,15 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   m_i2c_agent.monitor.controller_mode_rd_item_port.connect(top_vsqr.i2c_rd_xfer_fifo.analysis_export);
 
   // Connect Monitors to scoreboard
-  m_mgr_axi[top_pkg::CVA6].get_monitor().tx_ap.connect(m_axi_scb.mgr0_cva6_imp);
-  m_mgr_axi[top_pkg::DM_HOST].get_monitor().tx_ap.connect(m_axi_scb.mgr1_dm_host_imp);
-  m_sub_axi[top_pkg::RomCtrlMem].get_monitor().tx_ap.connect(m_axi_scb.sub0_romctrlmem_imp);
-  m_sub_axi[top_pkg::SRAM].get_monitor().tx_ap.connect(m_axi_scb.sub1_sram_imp);
-  m_sub_axi[top_pkg::Mailbox].get_monitor().tx_ap.connect(m_axi_scb.sub2_mailbox_imp);
-  m_sub_axi[top_pkg::TlCrossbar].get_monitor().tx_ap.connect(m_axi_scb.sub3_tlcrossbar_imp);
-  m_sub_axi[top_pkg::DRAM].get_monitor().tx_ap.connect(m_axi_scb.sub4_dram_imp);
-  m_sub_axi[top_pkg::DM_DEV].get_monitor().tx_ap.connect(m_axi_scb.sub5_dm_dev_imp);
-  m_sub_axi[top_pkg::RestOfChip].get_monitor().tx_ap.connect(m_axi_scb.sub6_restofchip_imp);
+  m_mgr_axi[top_pkg::CVA6].m_transaction_port.connect(m_axi_scb.mgr0_cva6_imp);
+  m_mgr_axi[top_pkg::DM_HOST].m_transaction_port.connect(m_axi_scb.mgr1_dm_host_imp);
+  m_sub_axi[top_pkg::RomCtrlMem].m_transaction_port.connect(m_axi_scb.sub0_romctrlmem_imp);
+  m_sub_axi[top_pkg::SRAM].m_transaction_port.connect(m_axi_scb.sub1_sram_imp);
+  m_sub_axi[top_pkg::Mailbox].m_transaction_port.connect(m_axi_scb.sub2_mailbox_imp);
+  m_sub_axi[top_pkg::TlCrossbar].m_transaction_port.connect(m_axi_scb.sub3_tlcrossbar_imp);
+  m_sub_axi[top_pkg::DRAM].m_transaction_port.connect(m_axi_scb.sub4_dram_imp);
+  m_sub_axi[top_pkg::DM_DEV].m_transaction_port.connect(m_axi_scb.sub5_dm_dev_imp);
+  m_sub_axi[top_pkg::RestOfChip].m_transaction_port.connect(m_axi_scb.sub6_restofchip_imp);
 
   // Flush the scoreboard on AXI fabric reset (all taps share it, so one reset monitor suffices).
   m_mgr_axi[top_pkg::CVA6].get_reset_monitor().m_analysis_port.connect(m_axi_scb.reset_imp);
