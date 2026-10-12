@@ -165,7 +165,12 @@ task axi_mgr_write_data_driver::drive_req(output bit item_sent);
         set_data_from_req();
         m_vif.mgr_cb.wvalid <= 1;
 
-        do @(m_vif.mgr_cb); while (m_vif.mgr_cb.wready !== 1'b1);
+        // Count a transfer only when sampled WVALID and WREADY are both high (H.c A3.2.1). For an
+        // item received between edges, WVALID reaches the bus at the next edge; WREADY alone is
+        // insufficient.
+        do begin
+          @(m_vif.mon_cb);
+        end while (!(m_vif.mon_cb.wvalid === 1'b1 && m_vif.mon_cb.wready === 1'b1));
 
         clear_data();
 
