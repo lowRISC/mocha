@@ -73,6 +73,18 @@ class axi_txn_request_item extends uvm_sequence_item;
   //
   // This constraint comes from AMBA AXI protocol specification, issue J, section A4.1.4.
   extern constraint wrap_alignment_c;
+
+  // Exclusive accesses require a power-of-two total size of at most 128 bytes, at most 16
+  // transfers, and an address aligned to the total size (AMBA AXI H.c A7.2.4)
+  extern constraint exclusive_access_c;
+
+  // Allow only defined memory-type encodings for ARCACHE and AWCACHE (AMBA AXI H.c A4.4, Table
+  // A4-5)
+  extern constraint cache_encoding_c;
+
+  // Default AxREGION to 0; tests with a region map may override this soft constraint. The region
+  // identifier is constant within each 4KB address space (AMBA AXI H.c A8.2.1, A9.3).
+  extern constraint region_c;
 endclass
 
 function axi_txn_request_item::new(string name = "");
@@ -167,4 +179,20 @@ constraint axi_txn_request_item::wrap_alignment_c {
   // The size of each transfer is (1 << m_size). m_addr is divisible by that value if its bottom
   // m_size bits are zero.
   (m_burst == BurstWrap) -> (m_addr & ((1 << m_size) - 1)) == '0;
+}
+
+constraint axi_txn_request_item::exclusive_access_c {
+  // Total size is a power of two exactly when m_len + 1 is
+  m_lock -> m_len inside {0, 1, 3, 7, 15};
+  m_lock -> ((m_len + 1) << m_size) <= 128;
+  m_lock -> (m_addr & (((m_len + 1) << m_size) - 1)) == '0;
+}
+
+constraint axi_txn_request_item::cache_encoding_c {
+  m_cache inside {4'b0000, 4'b0001, 4'b0010, 4'b0011, 4'b0110,
+                  4'b0111, 4'b1010, 4'b1011, 4'b1110, 4'b1111};
+}
+
+constraint axi_txn_request_item::region_c {
+  soft m_region == '0;
 }
