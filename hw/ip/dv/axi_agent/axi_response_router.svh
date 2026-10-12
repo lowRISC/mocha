@@ -17,6 +17,12 @@ class axi_response_router extends uvm_component;
   // on a given ID by just waiting for the ID to have some value.
   local item_queue_t m_id_to_responses[int unsigned];
 
+  // Queue wait_for_responses tickets per ID in call order. Same-ID responses follow request order
+  // (AMBA AXI H.c A5.1); the first caller takes all its requested responses.
+  local int unsigned m_id_to_waiters[int unsigned][$];
+
+  local int unsigned m_next_ticket;
+
   // A flag that is set by assert_reset and cleared by clear_reset. When this is set,
   // m_id_to_responses will be empty and all calls to wait_for_response will return immediately.
   local bit m_in_reset;
@@ -37,7 +43,14 @@ class axi_response_router extends uvm_component;
   //
   // This returns when such a response is seen, setting rsp. If there is a reset, this task will
   // return, setting rsp = null.
+  //
+  // Equivalent to wait_for_responses with n = 1; call only after sending the request.
   extern task wait_for_response(int unsigned id, output uvm_sequence_item rsp);
+
+  // Return the next n responses for this ID in rsps. Call only after sending the request so same-ID
+  // callers queue in bus order and each takes n consecutive responses. Reset returns the responses
+  // received so far.
+  extern task wait_for_responses(int unsigned id, int unsigned n, output uvm_sequence_item rsps[$]);
 
   // Notify the router that there has been the given response, for the supplied id.
   extern function void on_response(int unsigned id, uvm_sequence_item rsp);
@@ -56,6 +69,7 @@ function void axi_response_router::write(axi_reset_item item);
     if (!m_in_reset) begin
       m_in_reset = 1'b1;
       m_id_to_responses.delete();
+      m_id_to_waiters.delete();
       m_update_event.trigger();
     end
   end else begin
@@ -66,11 +80,35 @@ endfunction
 
 task axi_response_router::wait_for_response(int unsigned             id,
                                             output uvm_sequence_item rsp);
-  while (!m_id_to_responses.exists(id) && !m_in_reset) m_update_event.wait_trigger();
+  uvm_sequence_item rsps[$];
 
+  wait_for_responses(id, 1, rsps);
+  rsp = (rsps.size() > 0) ? rsps[0] : null;
+endtask
+
+task axi_response_router::wait_for_responses(int unsigned             id,
+                                             int unsigned             n,
+                                             output uvm_sequence_item rsps[$]);
+  int unsigned ticket;
+
+  rsps.delete();
   if (m_in_reset) begin
-    rsp = null;
-  end else begin
+    return;
+  end
+
+  ticket = m_next_ticket++;
+  m_id_to_waiters[id].push_back(ticket);
+
+  while (rsps.size() < n) begin
+    while (!m_in_reset &&
+           !(m_id_to_waiters.exists(id) && m_id_to_waiters[id][0] == ticket &&
+             m_id_to_responses.exists(id))) begin
+      m_update_event.wait_trigger();
+    end
+    if (m_in_reset) begin
+      return;
+    end
+
     // The logic just below should ensure that m_id_to_responses[id] is never an empty queue, but it
     // probably makes sense to add an extra check here for debugging.
     if (m_id_to_responses[id].size() == 0) begin
@@ -78,13 +116,20 @@ task axi_response_router::wait_for_response(int unsigned             id,
                  $sformatf("m_id_to_responses[0x%0h] is an empty queue.", id))
     end
 
-    rsp = m_id_to_responses[id].pop_front;
+    rsps.push_back(m_id_to_responses[id].pop_front());
 
     if (m_id_to_responses[id].size() == 0) begin
       m_id_to_responses.delete(id);
     end
   end
-endtask
+
+  // Wake the next caller, which may already have a queued response
+  void'(m_id_to_waiters[id].pop_front());
+  if (m_id_to_waiters[id].size() == 0) begin
+    m_id_to_waiters.delete(id);
+  end
+  m_update_event.trigger();
+endtask: wait_for_responses
 
 function void axi_response_router::on_response(int unsigned id, uvm_sequence_item rsp);
   if (rsp == null) `uvm_fatal(get_full_name(), "rsp must not be null.")

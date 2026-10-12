@@ -98,12 +98,13 @@ task axi_mgr_read_fixed_vseq::body();
     end
   end join_none
 
-  // Run the other sequences. This waits for ar_seq to complete and for a response from
-  // m_read_response_router (which may or may not be the response to r_seq).
-  fork
-    ar_seq.start(m_read_request_sequencer);
+  // Run channel sequences, then collect from m_read_response_router; its response need not belong
+  // to r_seq. Wait only after AR to queue behind earlier same-ID reads (see
+  // axi_response_router::wait_for_responses).
+  ar_seq.start(m_read_request_sequencer);
+  if (ar_seq.rsp.m_sending_complete) begin
     m_read_response_router.wait_for_response(m_fixed_req.m_id, read_data_item);
-  join
+  end
 
   // At this point, the AR sequence has completed (either by sending its items or by seeing a reset)
   // and wait_for_response has completed, writing to read_data.
