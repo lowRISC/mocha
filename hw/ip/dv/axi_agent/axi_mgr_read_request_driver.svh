@@ -192,7 +192,12 @@ task axi_mgr_read_request_driver::drive_req(output bit item_sent);
         set_data_from_req();
         m_vif.mgr_cb.arvalid <= 1;
 
-        do @(m_vif.mgr_cb); while (m_vif.mgr_cb.arready !== 1'b1);
+        // Count a transfer only when sampled ARVALID and ARREADY are both high (H.c A3.2.1). For an
+        // item received between edges, ARVALID reaches the bus at the next edge; ARREADY alone is
+        // insufficient.
+        do begin
+          @(m_vif.mon_cb);
+        end while (!(m_vif.mon_cb.arvalid === 1'b1 && m_vif.mon_cb.arready === 1'b1));
 
         clear_data();
 
