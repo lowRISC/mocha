@@ -32,6 +32,6 @@ package axi_widths_pkg;
   localparam int unsigned AxiProtWidth   = 3;
   localparam int unsigned AxiQosWidth    = 4;
   localparam int unsigned AxiRegionWidth = 4;
-  localparam int unsigned AxiRespWidth   = 3;
+  localparam int unsigned AxiRespWidth   = 2;
 
 endpackage

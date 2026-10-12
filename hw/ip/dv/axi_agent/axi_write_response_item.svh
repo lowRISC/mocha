@@ -9,14 +9,10 @@ class axi_write_response_item extends uvm_sequence_item;
 
   // The possible encoded values of the BRESP signal
   typedef enum bit [AxiRespWidth-1:0] {
-    BRespOkay        = 0,
-    BRespExOkay      = 1,
-    BRespSlverr      = 2,
-    BRespDecErr      = 3,
-    BRespDefer       = 4,
-    BRespTransfault  = 5,
-    // (Note the gap at index 6: there is a reserved value here, unlike RRESP, which has it at 7)
-    BRespUnsupported = 7
+    BRespOkay   = 0,
+    BRespExOkay = 1,
+    BRespSlverr = 2,
+    BRespDecErr = 3
   } bresp_e;
 
   // Transaction identifier for the write channels

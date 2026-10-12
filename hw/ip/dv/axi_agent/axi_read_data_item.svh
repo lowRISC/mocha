@@ -9,13 +9,10 @@ class axi_read_data_item extends uvm_sequence_item;
 
   // The possible encoded values of the RRESP signal
   typedef enum bit [AxiRespWidth-1:0] {
-    RRespOkay       = 0,
-    RRespExOkay     = 1,
-    RRespSlverr     = 2,
-    RRespDecErr     = 3,
-    RRespPrefetched = 4,
-    RRespTransfault = 5,
-    RRespOkayDirty  = 6
+    RRespOkay   = 0,
+    RRespExOkay = 1,
+    RRespSlverr = 2,
+    RRespDecErr = 3
   } rresp_e;
 
   // Transaction identifier for the read channel
