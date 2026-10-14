@@ -18,6 +18,21 @@ There are three clock domains in Mocha.<!-- rfj4pd_x -->
    Both the main and IO clocks can be disabled and are turned off when a system reset is requested.<!-- 68url6_x -->
    The always on clock drives the clock, reset and power managers and allows the system to come out of reset.<!-- w5ylk6_x -->
 
+## Power domains
+
+Mocha has two power domains: a lower-power always on domain (AON) and power-consuming main power domain.<!-- ng5cds_x -->
+The always on domain is always powered and clocked, and it contains the clock, reset and power managers.<!-- 57toat_x -->
+The rest of Mocha sits in the main power domain, which can be clock or power gated to enter a low power state while the always on domain waits for a wakeup.<!-- boexf1_x -->
+
+The always on domain listens to:<!-- bdqdkb_x -->
+
+1. A power good indication for the main domain and a validity indication for each source clock.<!-- lvtp3p_x -->
+   The main domain has to be held in reset until its supply and its clocks are stable, and a later loss of main power has to take the SoC subsystem through a full reset.<!-- qwm70c_x -->
+2. An external reset request, so that a surrounding SoC can reset the enclave, and an external wakeup request, so that it can bring up the main domain out of low power mode.<!-- e2k9ck_x -->
+3. An indication that the core is idle, as low power may only be entered once software has asked for it and the core has stopped executing.<!-- tefcy6_x -->
+4. The result of the ROM integrity check, which has to pass before the core is released and the ROM is made reachable.<!-- 1fywj5_x -->
+5. DFT enable and debug enable, which still need to be hooked up to the top.<!-- lz4jh2_x -->
+
 ## Memory map
 
 This is the current memory map for Mocha, where the base and top addresses are inclusive, and reserved is the amount of memory reserved for this function:<!-- mcbp27_x -->
