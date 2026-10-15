@@ -14,6 +14,9 @@ class top_chip_dv_base_vseq extends uvm_sequence;
   bit do_dut_init       = 1'b1;
   bit do_apply_reset    = 1'b1;
 
+  // Knob to wait for the software test to finish in post_start
+  bit do_wait_for_sw_test_done = 1'b1;
+
   // Standard SV/UVM methods
   extern function new(string name = "");
   extern task body();
@@ -71,7 +74,9 @@ endtask : pre_start
 
 task top_chip_dv_base_vseq::post_start();
   super.post_start();
-  wait_for_sw_test_done();
+  if (do_wait_for_sw_test_done) begin
+    wait_for_sw_test_done();
+  end
 endtask : post_start
 
 function void top_chip_dv_base_vseq::set_handles();
