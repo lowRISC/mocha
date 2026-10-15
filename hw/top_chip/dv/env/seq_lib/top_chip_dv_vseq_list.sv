@@ -9,3 +9,4 @@
 `include "top_chip_dv_i2c_host_tx_rx_vseq.sv"
 `include "top_chip_dv_dv_log_smoketest_vseq.sv"
 `include "top_chip_dv_i2c_device_tx_rx_vseq.sv"
+`include "top_chip_dv_axi_driver_smoke_vseq.sv"

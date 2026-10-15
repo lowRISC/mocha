@@ -22,6 +22,9 @@ class top_chip_dv_env extends uvm_env;
   // cfg (is_active=UVM_PASSIVE) from the config_db published by its axi_vip_if in the tb.
   axi_agent m_mgr_axi[];
   axi_agent m_sub_axi[];
+  // Active agent driving the CVA6 host port through axi_driver_to_cva6_bridge. Only built when the
+  // bridge replaces CVA6.
+  axi_agent m_cva6_axi_agent;
 
   top_chip_dv_axi_scoreboard m_axi_scb;
 
@@ -45,6 +48,8 @@ function top_chip_dv_env::new(string name = "", uvm_component parent = null);
 endfunction : new
 
 function void top_chip_dv_env::build_phase(uvm_phase phase);
+  axi_agent_cfg cva6_axi_agent_cfg;
+
   super.build_phase(phase);
 
   foreach (CHIP_MEM_LIST[i]) begin
@@ -104,6 +109,17 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   m_sub_axi[top_pkg::TlCrossbar] = axi_agent::type_id::create("m_sub_axi_TlCrossbar", this);
   m_sub_axi[top_pkg::DRAM]       = axi_agent::type_id::create("m_sub_axi_DRAM", this);
 
+  // When the axi_driver_to_cva6_bridge replaces CVA6, build an active agent. The agent config is 
+  // published by the axi_vip_if within the axi_driver_to_cva6_bridge.
+  if (uvm_config_db#(axi_agent_cfg)::get(this, "m_cva6_axi_agent", "cfg", cva6_axi_agent_cfg)) begin
+
+    // Configure the agent to drive defined values when idle
+    cva6_axi_agent_cfg.drive_x_when_idle = 1'b0;
+
+    m_cva6_axi_agent = axi_agent::type_id::create("m_cva6_axi_agent", this);
+    m_cva6_axi_agent.set_cfg(cva6_axi_agent_cfg);
+  end
+
   m_axi_scb = top_chip_dv_axi_scoreboard::type_id::create("m_axi_scb", this);
 
   uvm_config_db#(top_chip_dv_env_cfg)::set(this, "", "cfg", cfg);
@@ -119,6 +135,7 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Allows virtual sequences to use the agents to drive RX items.
   top_vsqr.uart_sqr = m_uart_agent.sequencer;
   top_vsqr.i2c_sqr  = m_i2c_agent.sequencer;
+  top_vsqr.cva6_axi_agent = m_cva6_axi_agent;
 
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.
