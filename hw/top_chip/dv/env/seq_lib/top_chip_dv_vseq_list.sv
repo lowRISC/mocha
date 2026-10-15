@@ -11,3 +11,4 @@
 `include "top_chip_dv_i2c_device_tx_rx_vseq.sv"
 `include "top_chip_dv_spi_device_smoke_vseq.sv"
 `include "top_chip_dv_spi_host_smoke_vseq.sv"
+`include "top_chip_dv_axi_driver_smoke_vseq.sv"
