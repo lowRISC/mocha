@@ -27,9 +27,30 @@
     "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"
   ]
 
-  sim_tops: [""]
+  // Elaborate tb_cfg instead of tb. Lists merge by appending, so setting sim_tops would keep the
+  // common ["{tb}"] and pass both as tops. tb stays as is, since {tb} also names the hierarchy
+  // root.
+  overrides: [
+    {
+      name: sim_tops
+      value: ["tb_cfg"]
+    }
+  ]
 
-  build_opts: [""]
+  // Let Xcelium parse the SV config.
+  build_opts: ["{tb_cfg_{tool}_build_opts}"]
+  tb_cfg_xcelium_build_opts: "-compcnfg"
+  tb_cfg_vcs_build_opts: ""
+
+  // Build mode replacing CVA6 with axi_driver_to_cva6_bridge (see tb/tb_cfg.sv).
+  build_modes: [
+    {
+      name: axi_driver_to_cva6_bridge
+      build_opts: ["+define+SWAP_CVA6_WITH_AXI_DRIVER"]
+    }
+  ]
+  axi_driver_to_cva6_bridge_xcelium_cov_cfg_file: "{default_xcelium_cov_cfg_file}"
+  axi_driver_to_cva6_bridge_vcs_cov_cfg_file: "{default_vcs_cov_cfg_file}"
 
   // Default iterations for all tests - each test entry can override this.
   reseed: 1
