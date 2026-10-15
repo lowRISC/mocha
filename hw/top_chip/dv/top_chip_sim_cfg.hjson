@@ -397,6 +397,14 @@
       run_opts: ["+ChipMemDRAM_image_file={run_dir}/kmac_smoketest_cheri.vmem",
                  "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
+    {
+      // No CPU runs, but the ROM is still loaded so rom_ctrl's boot-time check reads defined data.
+      name: axi_driver_smoke
+      build_mode: axi_driver_to_cva6_bridge
+      uvm_test_seq: top_chip_dv_axi_driver_smoke_vseq
+      sw_images: ["bootrom:5"]
+      run_opts: ["+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -444,6 +452,7 @@
         "entropy_src_smoke_cheri",
         "kmac_rom_app_test",
         "kmac_rom_app_test_cheri",
+        "axi_driver_smoke",
       ]
     }
     {
