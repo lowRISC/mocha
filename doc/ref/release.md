@@ -95,7 +95,7 @@ Linux Mocha <version>-<hash> #1 <date> <time> <year> riscv64 riscv64 riscv64 GNU
 
 Make sure the simulation builds:
 ```sh
-fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="--threads 2 --trace-threads 2" --make_options="-j 8"
+fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="--threads 2" --make_options="-j 8"
 ```
 
 Run all the tests and make sure they all pass:
