@@ -22,6 +22,8 @@ filesets:
       - cva6_cheri/core/include/cv64a6_imafdczcheri_sv39_hpdcache_wb_config_pkg.sv
       - cva6_cheri/core/include/riscv_pkg.sv
       - cva6_cheri/core/include/cva6_cheri_pkg.sv
+      - cva6_cheri/core/include/aes_pkg.sv
+      - cva6_cheri/core/include/triggers_pkg.sv
       - cva6_cheri/core/include/wt_cache_pkg.sv
       - cva6_cheri/core/include/build_config_pkg.sv
       - cva6_cheri/core/include/ariane_pkg.sv
@@ -30,6 +32,8 @@ filesets:
       # CVA6.
       - cva6_cheri/core/cva6.sv
       - cva6_cheri/core/cva6_rvfi_probes.sv
+      - cva6_cheri/core/aes.sv
+      - cva6_cheri/core/trigger_module.sv
       - cva6_cheri/core/alu.sv
       - cva6_cheri/core/alu_wrapper.sv
       - cva6_cheri/core/branch_unit.sv
