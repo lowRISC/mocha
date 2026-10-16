@@ -27,7 +27,7 @@ static bool rapid_write_test()
         "test_start:\n\t");
 
     // Using inline assembly to keep writes and reads back-to-back
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     __asm__ volatile(
         // Get capability to storage in t0.
         "lly t0, storage\n\t"
@@ -55,7 +55,7 @@ static bool rapid_write_test()
           "=r"(res8)
         : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8)
         : "t0", "memory");
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     __asm__ volatile(
         // Get pointer to storage t0.
         "lla t0, storage\n\t"
@@ -83,7 +83,7 @@ static bool rapid_write_test()
           "=r"(res8)
         : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8)
         : "t0", "memory");
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
     if (d1 != res1 || d2 != res2 || d3 != res3 || d4 != res4 || d5 != res5 || d6 != res6 ||
         d7 != res7 || d8 != res8) {

@@ -7,9 +7,9 @@
 #include "hal/mocha.h"
 #include <stddef.h>
 #include <stdint.h>
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
 #include <cheriintrin.h>
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
 static const uintptr_t rom_base = 0x80000ul;
 static const uintptr_t mailbox_base = 0x20010000ul;
@@ -28,7 +28,7 @@ static const uintptr_t timer_base = 0x44000000ul;
 static const uintptr_t spi_host_base = 0x45000000ul;
 static const uintptr_t plic_base = 0x48000000ul;
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
 /* initialised by boot.S */
 extern void *_infinite_cap;
 
@@ -46,159 +46,159 @@ static void *create_mmio_capability(uintptr_t address, size_t length)
     cap = cheri_perms_and(cap, CHERI_PERM_READ | CHERI_PERM_WRITE);
     return cap;
 }
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
 rom_t mocha_system_rom(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (rom_t)create_mmio_capability(rom_base, 0x8000u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (rom_t)rom_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 mailbox_t mocha_system_mailbox(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (mailbox_t)create_mmio_capability(mailbox_base, 0x50u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (mailbox_t)mailbox_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 ethernet_t mocha_system_ethernet(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (ethernet_t)create_mmio_capability(ethernet_base, 0x8000u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (ethernet_t)ethernet_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 gpio_t mocha_system_gpio(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (gpio_t)create_mmio_capability(gpio_base, 0x48u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (gpio_t)gpio_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 clkmgr_t mocha_system_clkmgr(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (clkmgr_t)create_mmio_capability(clkmgr_base, sizeof(struct clkmgr_memory_layout));
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (clkmgr_t)clkmgr_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 rstmgr_t mocha_system_rstmgr(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (rstmgr_t)create_mmio_capability(rstmgr_base, 0x48u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (rstmgr_t)rstmgr_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 pwrmgr_t mocha_system_pwrmgr(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (pwrmgr_t)create_mmio_capability(pwrmgr_base, 0x44u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (pwrmgr_t)pwrmgr_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 rom_ctrl_t mocha_system_rom_ctrl(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (rom_ctrl_t)create_mmio_capability(rom_ctrl_base, 0x48u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (rom_ctrl_t)rom_ctrl_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 entropy_src_t mocha_system_entropy_src(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (entropy_src_t)create_mmio_capability(entropy_src_base,
                                                  sizeof(struct entropy_src_memory_layout));
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (entropy_src_t)entropy_src_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 uart_t mocha_system_uart(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (uart_t)create_mmio_capability(uart_base, sizeof(struct uart_memory_layout));
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (uart_t)uart_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 i2c_t mocha_system_i2c(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (i2c_t)create_mmio_capability(i2c_base, 0x80u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (i2c_t)i2c_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 spi_device_t mocha_system_spi_device(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (spi_device_t)create_mmio_capability(spi_device_base, 0x1FC0u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (spi_device_t)spi_device_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 timer_t mocha_system_timer(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (timer_t)create_mmio_capability(timer_base, sizeof(struct timer_memory_layout));
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (timer_t)timer_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 spi_host_t mocha_system_spi_host(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (spi_host_t)create_mmio_capability(spi_host_base, 0x38u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (spi_host_t)spi_host_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 plic_t mocha_system_plic(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (plic_t)create_mmio_capability(plic_base, sizeof(struct plic_memory_layout));
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (plic_t)plic_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 void *mocha_system_dram(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return create_mmio_capability(dram_base, 0x3F800000u);
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (void *)dram_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
 dv_window_t mocha_system_dv_window(void)
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     return (
         dv_window_t)create_mmio_capability(dv_window_base, sizeof(struct dv_window_memory_layout));
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     return (dv_window_t)dv_window_base;
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
