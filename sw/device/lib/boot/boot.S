@@ -3,6 +3,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
 #include "boot/scratchpad.h"
+#include "boot/trap.h"
 
 .section .text
 
@@ -41,21 +42,19 @@ _start:
     mv t5, zero
     mv t6, zero
 
-#if defined(__riscv_zcherihybrid)
-    /* enable CHERI instructions */
-    csrs mseccfg, (1 << 3) /* mseccfg.CRE */
+#if defined(__riscv_zyhybrid)
     /* switch to capability mode */
-    modesw.cap
+    ymodeswy
 
-    /* initialise ca0 as the infinite capability */
-    auipc ca0, 0
-    scaddr ca0, ca0, zero
-    scmode ca0, ca0, zero
+    /* initialise a0 as the infinite capability */
+    auipc a0, 0
+    yaddrw a0, a0, zero
+    ymodew a0, a0, zero
     /* store it for use by C code */
-    llc ca1, _infinite_cap
-    scaddr ca1, ca0, a1
-    sc ca0, 0(ca1)
-    mv ca1, cnull
+    lly a1, _infinite_cap
+    yaddrw a1, a0, a1
+    sy a0, 0(a1)
+    ymv a1, zero
 
     /* perform capability relocation.
      * the system memory starts with all tag bits unset, therefore we must
@@ -75,37 +74,38 @@ _start:
      * see the CHERI-RISC-V ELF psABI for more information.
      */
 cap_relocs:
-    /* ct0 holds the pointer to the current capability relocation entry */
-    llc ct0, __start___cap_relocs
-    llc ct1, __stop___cap_relocs
+    /* t0 holds the pointer to the current capability relocation entry */
+    lly t0, __start___cap_relocs
+    lly t1, __stop___cap_relocs
     sub t2, t1, t0
-    scaddr ct0, ca0, t0
-    scbndsr ct0, ct0, t2
+    yaddrw t0, a0, t0
+    ybndsrw t0, t0, t2
 cap_relocs_loop:
     beq t0, t1, cap_relocs_end
 
-    ld t2, 0(ct0)  /* t2 = cr_location */
-    ld t3, 8(ct0)  /* t3 = cr_base */
-    ld t4, 16(ct0) /* t4 = cr_offset */
-    ld t5, 24(ct0) /* t5 = cr_length */
-    ld t6, 32(ct0) /* t6 = cr_flags */
+    ld t2, 0(t0)  /* t2 = cr_location */
+    ld t3, 8(t0)  /* t3 = cr_base */
+    ld t4, 16(t0) /* t4 = cr_offset */
+    ld t5, 24(t0) /* t5 = cr_length */
+    ld t6, 32(t0) /* t6 = cr_flags */
 
     /* create the capability from the infinite capability,
      * setting the base address and offset */
-    scaddr cs0, ca0, t3
-    add cs0, cs0, t4
+    yaddrw s0, a0, t3
+    yadd s0, s0, t4
     /* set capability mode to capability pointer mode */
-    scmode cs0, cs0, zero
+    ymodew s0, s0, zero
 
-    /* restrict capability permissions based on the flags field */
+    /* YPERMC clears the selected permissions (unlike the old ACPERM mask).
+     * Restrict capability permissions based on the flags field. */
     /* t3 is reused to test each flag */
     li t3, (1 << 63) /* executable capability if set, otherwise data capability */
     and t3, t3, t6
     bnez t3, cap_reloc_executable
 
     /* data capability, exclude execute permissions */
-    li t3, ~(__CHERI_CAP_PERMISSION_EXECUTE__)
-    acperm cs0, cs0, t3
+    li t3, __CHERI_CAP_PERMISSION_EXECUTE__
+    ypermc s0, s0, t3
     li t3, (1 << 62) /* if data capability, next bit determines whether it is read-only */
     and t3, t3, t6
     bnez t3, cap_reloc_data_ro
@@ -114,61 +114,61 @@ cap_relocs_loop:
 
 cap_reloc_executable:
     /* remove write permissions and do not set bounds for executable capabilities */
-    li t3, ~(__CHERI_CAP_PERMISSION_WRITE__)
-    acperm cs0, cs0, t3
+    li t3, __CHERI_CAP_PERMISSION_WRITE__
+    ypermc s0, s0, t3
     j cap_reloc_write_cap
 
 cap_reloc_data_ro:
     /* remove write permissions for read-only data capabilities */
-    li t3, ~(__CHERI_CAP_PERMISSION_WRITE__)
-    acperm cs0, cs0, t3
+    li t3, __CHERI_CAP_PERMISSION_WRITE__
+    ypermc s0, s0, t3
     /* fallthrough */
 
 cap_reloc_data:
     /* set bounds for all data capabilities */
-    scbndsr cs0, cs0, t5
+    ybndsrw s0, s0, t5
     /* fallthrough */
 
 cap_reloc_write_cap:
     /* write created capability to the corresponding location */
-    scaddr cs1, ca0, t2
-    sc cs0, 0(cs1)
+    yaddrw s1, a0, t2
+    sy s0, 0(s1)
 
     /* next relocation entry */
-    add ct0, ct0, 40
+    yadd t0, t0, 40
     j cap_relocs_loop
 cap_relocs_end:
     /* clear used registers */
-    mv ct0, cnull
-    mv ct1, cnull
-    mv cs0, cnull
-    mv cs1, cnull
-    mv ct2, cnull
-    mv ct3, cnull
-    mv ct4, cnull
-    mv ct5, cnull
-    mv ct6, cnull
-#endif /* defined(__riscv_zcherihybrid) */
+    ymv t0, zero
+    ymv t1, zero
+    ymv s0, zero
+    ymv s1, zero
+    ymv t2, zero
+    ymv t3, zero
+    ymv t4, zero
+    ymv t5, zero
+    ymv t6, zero
+#endif /* defined(__riscv_zyhybrid) */
 
     /* zero out bss */
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
 cheri_zero_bss:
-    llc ct0, _bss_start
-    llc ct1, _bss_end
+    lly t0, _bss_start
+    lly t1, _bss_end
     sub t2, t1, t0
-    scaddr ct0, ca0, t0
-    scbndsr ct0, ct0, t2
+    yaddrw t0, a0, t0
+    ybndsrw t0, t0, t2
 cheri_zero_bss_loop:
     beq t0, t1, cheri_zero_bss_end
-    sd zero, 0(ct0)
-    add ct0, ct0, 8
+    sd zero, 0(t0)
+    yadd t0, t0, 8
     j cheri_zero_bss_loop
 cheri_zero_bss_end:
     /* clear used registers */
-    mv ct0, cnull
-    mv ct1, cnull
-    mv ct2, cnull
-#else /* !defined(__riscv_zcherihybrid) */
+    ymv t0, zero
+    ymv t1, zero
+    ymv t2, zero
+#else /* !defined(__riscv_zyhybrid) */
 zero_bss:
     la t0, _bss_start
     la t1, _bss_end
@@ -181,72 +181,72 @@ zero_bss_end:
     /* clear used registers */
     mv t0, zero
     mv t1, zero
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     /* derive a stack pointer from the infinite capability */
     /* limit stack size */
-    llc csp, _stack_bottom
-    lgc ct0, _stack_len
-    scaddr csp, ca0, sp
-    scbnds csp, csp, t0
+    lly sp, _stack_bottom
+    lgy t0, _stack_len
+    yaddrw sp, a0, sp
+    ybndsw sp, sp, t0
     /* stack grows downwards, so adjust address to top */
-    add csp, csp, t0
+    yadd sp, sp, t0
     /* disable execute permissions on the stack */
-    li t0, ~(__CHERI_CAP_PERMISSION_EXECUTE__)
-    acperm csp, csp, t0
-    mv ct0, cnull
-#else /* !defined(__riscv_zcherihybrid) */
+    li t0, __CHERI_CAP_PERMISSION_EXECUTE__
+    ypermc sp, sp, t0
+    ymv t0, zero
+#else /* !defined(__riscv_zyhybrid) */
     /* in non-CHERI mode, just load the stack top */
     la sp, _stack_top
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
 setup_trap_vector:
-#if defined(__riscv_zcherihybrid)
-    /* create a trap handler capability and install it in mtvecc */
-    llc ct0, _trap_vector
-    scaddr ct0, ca0, t0
-    csrw mtvecc, ct0
-    mv ct0, cnull
-#else /* !defined(__riscv_zcherihybrid) */
+#if defined(__riscv_zyhybrid)
+    /* create a trap handler capability and install it in mtvec */
+    lly t0, _trap_vector
+    yaddrw t0, a0, t0
+    csrw CSR_MTVEC, t0
+    ymv t0, zero
+#else /* !defined(__riscv_zyhybrid) */
     /* install a new trap handler */
     la t0, _trap_vector
-    csrw mtvec, t0
+    csrw CSR_MTVEC, t0
     mv t0, zero
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
 setup_scratchpad:
-    /* create capability for scratchpad area in ca1 */
-    llc ct0, _scratch
+    /* create capability for scratchpad area in a1 */
+    lly t0, _scratch
     li t1, SCRATCHPAD_SIZE
-    scaddr ct0, ca0, t0
-    scbnds ca1, ct0, t1
+    yaddrw t0, a0, t0
+    ybndsw a1, t0, t1
 
     /* set up a known-good stack capability in the scratchpad area */
-    llc ct0, _stack_bottom
-    lgc ct1, _stack_len
-    scaddr ct0, ca0, t0
-    scbnds ct0, ct0, t1
-    add ct0, ct0, t1
-    li t1, ~(__CHERI_CAP_PERMISSION_EXECUTE__)
-    acperm ct0, ct0, t1
-    sc ct0, SCRATCHPAD_TRAP_STACK_OFFSET(ca1)
+    lly t0, _stack_bottom
+    lgy t1, _stack_len
+    yaddrw t0, a0, t0
+    ybndsw t0, t0, t1
+    yadd t0, t0, t1
+    li t1, __CHERI_CAP_PERMISSION_EXECUTE__
+    ypermc t0, t0, t1
+    sy t0, SCRATCHPAD_TRAP_STACK_OFFSET(a1)
     /* mscratch will contain this scratchpad area */
-    csrw mscratchc, ca1
-    mv ct0, cnull
-    mv ca1, cnull
+    csrw CSR_MSCRATCH, a1
+    ymv t0, zero
+    ymv a1, zero
     mv t1, zero
-#else /* !defined(__riscv_zcherihybrid) */
+#else /* !defined(__riscv_zyhybrid) */
     la t0, _scratch
-    csrw mscratch, t0
+    csrw CSR_MSCRATCH, t0
     mv t0, zero
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     /* destroy infinite capability, we have already stored it away */
-    mv ca0, cnull
-#endif /* defined(__riscv_zcherihybrid) */
+    ymv a0, zero
+#endif /* defined(__riscv_zyhybrid) */
 
     /* jump into main */
     jal main
@@ -260,7 +260,7 @@ failure:
     wfi
     j failure
 
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
 /* storage for the infinite capability for use by C code. */
 .section .data
 .align 4
@@ -271,4 +271,4 @@ _infinite_cap:
 /* the size must be provided, otherwise the linker will not know how to
  * generate a cap_reloc entry for it. */
 .size _infinite_cap, . - _infinite_cap
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */

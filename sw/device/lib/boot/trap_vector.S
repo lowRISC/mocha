@@ -16,14 +16,14 @@
 .align 4 /* capability alignment */
 .type _scratch, @object
 _scratch:
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     .chericap 0 /* we use this as a known-good stack capability to derive permissions from */
     .chericap 0 /* temporary capability storage */
     .chericap 0 /* temporary capability storage */
-#else /* !defined(__riscv_zcherihybrid) */
+#else /* !defined(__riscv_zyhybrid) */
     .dword 0, 0 /* temporary register storage */
+#endif /* defined(__riscv_zyhybrid) */
 .size _scratch, . - _scratch
-#endif /* defined(__riscv_zcherihybrid) */
 
 .section .text
 
@@ -31,68 +31,68 @@ _scratch:
 .align 4
 .type _trap_vector, @function
 _trap_vector:
-#if defined(__riscv_zcherihybrid)
-    /* swap ca0 with scratchpad capability */
-    csrrw ca0, mscratchc, ca0
+#if defined(__riscv_zyhybrid)
+    /* swap a0 with scratchpad capability */
+    csrrw a0, CSR_MSCRATCH, a0
     /* save two more registers to scratchpad area */
-    sc csp, SCRATCHPAD_SAVED_SP_OFFSET(ca0)
-    sc ca1, SCRATCHPAD_SAVED_A1_OFFSET(ca0)
+    sy sp, SCRATCHPAD_SAVED_SP_OFFSET(a0)
+    sy a1, SCRATCHPAD_SAVED_A1_OFFSET(a0)
     /* bump down stack pointer address to next multiple of capability alignment */
     li a1, 0xf
     not a1, a1
     and sp, sp, a1
     /* load known-good capability to use for our stack */
-    lc ca1, SCRATCHPAD_TRAP_STACK_OFFSET(ca0)
+    ly a1, SCRATCHPAD_TRAP_STACK_OFFSET(a0)
     /* recreate a valid stack capability */
-    scaddr csp, ca1, sp
+    yaddrw sp, a1, sp
     /* now we have a valid stack, allocate struct trap_registers and save registers to it */
-    add csp, csp, -512
-    sc cnull, 0(csp)
-    sc cra,   16(csp)
-    /* csp is in scratchpad, do not store yet */
-    sc cgp,   48(csp)
-    sc ctp,   64(csp)
-    sc ct0,   80(csp)
-    sc ct1,   96(csp)
-    sc ct2,   112(csp)
-    sc cs0,   128(csp)
-    sc cs1,   144(csp)
-    /* ca0 is in mscratchc, do not store yet */
-    /* ca1 is in scratchpad, do not store yet */
-    sc ca2,   192(csp)
-    sc ca3,   208(csp)
-    sc ca4,   224(csp)
-    sc ca5,   240(csp)
-    sc ca6,   256(csp)
-    sc ca7,   272(csp)
-    sc cs2,   288(csp)
-    sc cs3,   304(csp)
-    sc cs4,   320(csp)
-    sc cs5,   336(csp)
-    sc cs6,   352(csp)
-    sc cs7,   368(csp)
-    sc cs8,   384(csp)
-    sc cs9,   400(csp)
-    sc cs10,  416(csp)
-    sc cs11,  432(csp)
-    sc ct3,   448(csp)
-    sc ct4,   464(csp)
-    sc ct5,   480(csp)
-    sc ct6,   496(csp)
-    /* reload csp, ca1 from scratchpad */
-    lc ct0, SCRATCHPAD_SAVED_SP_OFFSET(ca0)
-    sc ct0, 32(csp)
-    lc ct1, SCRATCHPAD_SAVED_A1_OFFSET(ca0)
-    sc ct1, 176(csp)
-    /* swap back ca0 with scratchpad capability */
-    csrrw ca0, mscratchc, ca0
-    sc ca0, 160(csp)
+    yadd sp, sp, -512
+    sy zero, 0(sp)
+    sy ra,   16(sp)
+    /* sp is in scratchpad, do not store yet */
+    sy gp,   48(sp)
+    sy tp,   64(sp)
+    sy t0,   80(sp)
+    sy t1,   96(sp)
+    sy t2,   112(sp)
+    sy s0,   128(sp)
+    sy s1,   144(sp)
+    /* a0 is in mscratch, do not store yet */
+    /* a1 is in scratchpad, do not store yet */
+    sy a2,   192(sp)
+    sy a3,   208(sp)
+    sy a4,   224(sp)
+    sy a5,   240(sp)
+    sy a6,   256(sp)
+    sy a7,   272(sp)
+    sy s2,   288(sp)
+    sy s3,   304(sp)
+    sy s4,   320(sp)
+    sy s5,   336(sp)
+    sy s6,   352(sp)
+    sy s7,   368(sp)
+    sy s8,   384(sp)
+    sy s9,   400(sp)
+    sy s10,  416(sp)
+    sy s11,  432(sp)
+    sy t3,   448(sp)
+    sy t4,   464(sp)
+    sy t5,   480(sp)
+    sy t6,   496(sp)
+    /* reload sp, a1 from scratchpad */
+    ly t0, SCRATCHPAD_SAVED_SP_OFFSET(a0)
+    sy t0, 32(sp)
+    ly t1, SCRATCHPAD_SAVED_A1_OFFSET(a0)
+    sy t1, 176(sp)
+    /* swap back a0 with scratchpad capability */
+    csrrw a0, CSR_MSCRATCH, a0
+    sy a0, 160(sp)
     /* set capability in first argument register */
     li a0, 512
-    scbnds ca0, csp, a0
-#else /* !defined(__riscv_zcherihybrid) */
+    ybndsw a0, sp, a0
+#else /* !defined(__riscv_zyhybrid) */
     /* swap a0 with scratchpad pointer */
-    csrrw a0, mscratch, a0
+    csrrw a0, CSR_MSCRATCH, a0
     /* save two more registers to scratchpad area */
     sd sp, SCRATCHPAD_SAVED_SP_OFFSET(a0)
     sd a1, SCRATCHPAD_SAVED_A1_OFFSET(a0)
@@ -140,95 +140,97 @@ _trap_vector:
     ld t0, SCRATCHPAD_SAVED_A1_OFFSET(a0)
     sd t0, 88(sp)
     /* swap back a0 with scratchpad pointer */
-    csrrw a0, mscratch, a0
+    csrrw a0, CSR_MSCRATCH, a0
     sd a0, 80(sp)
     /* set pointer in first argument register */
     mv a0, sp
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     /* allocate struct trap_context and save registers to it */
-    add csp, csp, -TRAP_CONTEXT_SIZE
-    csrr ct0, mepcc
-    sc ct0, TRAP_CONTEXT_EPC_OFFSET(csp)
+    yadd sp, sp, -TRAP_CONTEXT_SIZE
+    csrr t0, CSR_MEPC
+    sy t0, TRAP_CONTEXT_EPC_OFFSET(sp)
     csrr t0, mcause
-    sd t0, TRAP_CONTEXT_CAUSE_OFFSET(csp)
+    sd t0, TRAP_CONTEXT_CAUSE_OFFSET(sp)
     csrr t0, mtval
-    sd t0, TRAP_CONTEXT_TVAL_OFFSET(csp)
-    csrr t0, mtval2
-    sd t0, TRAP_CONTEXT_TVAL2_OFFSET(csp)
+    sd t0, TRAP_CONTEXT_TVAL_OFFSET(sp)
+    /* Mocha has no H extension, so mtval2 is unavailable. */
+    li t0, 0
+    sd t0, TRAP_CONTEXT_TVAL2_OFFSET(sp)
     /* set capability in second argument register */
     li a1, TRAP_CONTEXT_SIZE
-    scbnds ca1, csp, a1
-#else /* !defined(__riscv_zcherihybrid) */
+    ybndsw a1, sp, a1
+#else /* !defined(__riscv_zyhybrid) */
     /* allocate struct trap_context and save registers to it */
     add sp, sp, -TRAP_CONTEXT_SIZE
-    csrr t0, mepc
+    csrr t0, CSR_MEPC
     sd t0, TRAP_CONTEXT_EPC_OFFSET(sp)
     csrr t0, mcause
     sd t0, TRAP_CONTEXT_CAUSE_OFFSET(sp)
     csrr t0, mtval
     sd t0, TRAP_CONTEXT_TVAL_OFFSET(sp)
-    csrr t0, mtval2
+    /* Mocha has no H extension, so mtval2 is unavailable. */
+    li t0, 0
     sd t0, TRAP_CONTEXT_TVAL2_OFFSET(sp)
     /* set pointer in second argument register */
     mv a1, sp
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
     /* call into trap handler in C */
     call _trap_handler
 
-#if defined(__riscv_zcherihybrid)
-    /* load in new mepcc */
-    lc ct0, TRAP_CONTEXT_EPC_OFFSET(csp)
-    csrw mepcc, ct0
+#if defined(__riscv_zyhybrid)
+    /* load in new mepc */
+    ly t0, TRAP_CONTEXT_EPC_OFFSET(sp)
+    csrw CSR_MEPC, t0
     /* deallocate */
-    add csp, csp, TRAP_CONTEXT_SIZE
-#else /* !defined(__riscv_zcherihybrid) */
+    yadd sp, sp, TRAP_CONTEXT_SIZE
+#else /* !defined(__riscv_zyhybrid) */
     /* load in new mepc */
     ld t0, TRAP_CONTEXT_EPC_OFFSET(sp)
-    csrw mepc, t0
+    csrw CSR_MEPC, t0
     /* deallocate */
     add sp, sp, TRAP_CONTEXT_SIZE
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     /* reload regs */
-    lc cnull, 0(csp)
-    lc cra,   16(csp)
-    /* we are still using stack, do not load csp yet */
-    lc cgp,   48(csp)
-    lc ctp,   64(csp)
-    lc ct0,   80(csp)
-    lc ct1,   96(csp)
-    lc ct2,   112(csp)
-    lc cs0,   128(csp)
-    lc cs1,   144(csp)
-    lc ca0,   160(csp)
-    lc ca1,   176(csp)
-    lc ca2,   192(csp)
-    lc ca3,   208(csp)
-    lc ca4,   224(csp)
-    lc ca5,   240(csp)
-    lc ca6,   256(csp)
-    lc ca7,   272(csp)
-    lc cs2,   288(csp)
-    lc cs3,   304(csp)
-    lc cs4,   320(csp)
-    lc cs5,   336(csp)
-    lc cs6,   352(csp)
-    lc cs7,   368(csp)
-    lc cs8,   384(csp)
-    lc cs9,   400(csp)
-    lc cs10,  416(csp)
-    lc cs11,  432(csp)
-    lc ct3,   448(csp)
-    lc ct4,   464(csp)
-    lc ct5,   480(csp)
-    lc ct6,   496(csp)
-    /* done with stack, restore csp */
-    lc csp, 32(csp)
-#else /* !defined(__riscv_zcherihybrid) */
+    ly zero, 0(sp)
+    ly ra,   16(sp)
+    /* we are still using stack, do not load sp yet */
+    ly gp,   48(sp)
+    ly tp,   64(sp)
+    ly t0,   80(sp)
+    ly t1,   96(sp)
+    ly t2,   112(sp)
+    ly s0,   128(sp)
+    ly s1,   144(sp)
+    ly a0,   160(sp)
+    ly a1,   176(sp)
+    ly a2,   192(sp)
+    ly a3,   208(sp)
+    ly a4,   224(sp)
+    ly a5,   240(sp)
+    ly a6,   256(sp)
+    ly a7,   272(sp)
+    ly s2,   288(sp)
+    ly s3,   304(sp)
+    ly s4,   320(sp)
+    ly s5,   336(sp)
+    ly s6,   352(sp)
+    ly s7,   368(sp)
+    ly s8,   384(sp)
+    ly s9,   400(sp)
+    ly s10,  416(sp)
+    ly s11,  432(sp)
+    ly t3,   448(sp)
+    ly t4,   464(sp)
+    ly t5,   480(sp)
+    ly t6,   496(sp)
+    /* done with stack, restore sp */
+    ly sp, 32(sp)
+#else /* !defined(__riscv_zyhybrid) */
     /* reload regs */
     ld zero, 0(sp)
     ld ra,   8(sp)
@@ -264,6 +266,6 @@ _trap_vector:
     ld t6,   248(sp)
     /* done with stack, restore sp */
     ld sp, 16(sp)
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
     mret
 .size _trap_vector, . - _trap_vector
