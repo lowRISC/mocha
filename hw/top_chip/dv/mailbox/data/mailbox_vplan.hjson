@@ -1,0 +1,406 @@
+// Copyright lowRISC contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Mailbox block-level verification plan (vPlan), for DVPlan.
+//
+// Status: skeleton. Section structure, metric names and requirement references are in place; the
+// evidence is not.
+//
+// What this file is
+// -----------------
+// The vPlan holds the features to verify and, once filled, the evidence that each one is covered.
+// The testplan (mailbox_testplan.hjson) holds the testpoints, meaning the tests that produce that
+// evidence. Where a feature needs a test, the test is in the testplan and reaches this plan as a
+// testcase item, so the two files are not copies of each other.
+//
+// Structure
+// ---------
+// Sections group features by where a feature is measured:
+//
+//   interfaces          The two AXI4-Lite ports, the two interrupt outputs, clock and reset.
+//   functional_features Behaviour observed from the ports, split into the legal behaviour and the
+//                       exception handling.
+//   structural_features Behaviour measured inside the design.
+//   scenarios           End-to-end use cases.
+//
+// Requirement references
+// ----------------------
+// Each metric cites the requirement it verifies in Reference, one `<document>#<section>` token per
+// line. The token carries no spaces, so dvplan trace never reads a word of it as a spec tag.
+// The documents are:
+//
+//   axi_lite_mailbox  hw/vendor/pulp_axi/doc/axi_lite_mailbox.md, the block specification
+//   mocha_mailbox     doc/proj/mailbox.md, the Mocha instance and its parameters
+//   stages            doc/proj/stages.md, the verification stages
+//
+// The block specification is vendored, so it cannot carry spec tags without a vendor patch.
+//
+// Open specification questions
+// ----------------------------
+// Where the documents do not settle the expected result, the Description ends with a TODO stating
+// the open question, and Issue names the issue tracking it once there is one. Such a metric stays a
+// coverage hole until the question is decided. The behaviour of the current RTL is not an expected
+// result, so a test that passes against it earns no coverage here.
+//
+// What is deliberately absent
+// ---------------------------
+// Items, Metric_Type, Owner and Weight come once the environment exists and it is known which
+// covergroup, assertion, test or inspection answers for each feature. Goal is set only where
+// stages.md names a figure.
+//
+// Milestone is set on metric leaves, because a milestone on a section applies to everything below
+// it. Priority 0 marks an open specification question that has to be settled before the tests
+// around it can be written. Everything else is 1.
+{
+    mailbox:
+    {
+        Reference:
+            '''
+            axi_lite_mailbox#axi4-lite-mailbox
+            mocha_mailbox#mailbox
+            '''
+        Description: Two AXI4-Lite subordinate ports connected back to back over a pair of FIFOs, with a per-port interrupt on fill level and on error. Verified as instantiated in Mocha, with AxiDataWidth 64, MailboxDepth 3 and level-sensitive active-high interrupts.
+        Node_Type: dut_name
+
+        ///////////////////////////////////////////////////////////////////////
+        // Interfaces                                                        //
+        ///////////////////////////////////////////////////////////////////////
+        interfaces:
+        {
+            Description: Protocol compliance and signal-level behaviour at the ports of axi_lite_mailbox. What the ports carry functionally lives under functional_features.
+            Node_Type: section_title
+
+            axil_ports:
+            {
+                Description: The two AXI4-Lite subordinate ports.
+                Node_Type: section_title
+
+                axil_write_handshake:
+                {
+                    Reference: axi_lite_mailbox#module-ports
+                    Description: Each port completes every write whichever of AW and W arrives first, under random valid and ready timing on the AW, W and B channels.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                axil_read_handshake:
+                {
+                    Reference: axi_lite_mailbox#module-ports
+                    Description: Each port completes every read under random valid and ready timing on the AR and R channels.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                axil_protocol:
+                {
+                    Reference: axi_lite_mailbox#module-ports
+                    Description: Every response is OKAY or SLVERR, and the B and R payloads hold steady while their valid is high and ready is low.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                port_base_address:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#register-address-mapping
+                        mocha_mailbox#mailbox
+                        '''
+                    Description: Each port decodes the register set from its own base_addr_i, 0x2001_0000 for the main port and 0x1000 for the external port in Mocha.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 1
+                }
+            }
+            irq:
+            {
+                Description: The two interrupt outputs, irq_o[0] for the main port and irq_o[1] for the external port.
+                Node_Type: section_title
+
+                irq_level:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#module-parameters
+                        axi_lite_mailbox#irqp-register
+                        '''
+                    Description: Each interrupt output is high exactly while the IRQP register of its port is non-zero, with IrqEdgeTrig 0 and IrqActHigh 1 as instantiated in Mocha.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+            }
+            clk_rst:
+            {
+                Description: Clock and reset.
+                Node_Type: section_title
+
+                reset_values:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#register-address-mapping
+                        axi_lite_mailbox#status-register
+                        axi_lite_mailbox#error-register
+                        '''
+                    Description: Out of reset STATUS reads 0x1, with only EMPTY set, and every other readable register reads 0. TODO: the register table gives ERROR a default of 0x0 while the ERROR bit table gives READ_ERR a reset value of 1.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 0
+                }
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // Functional features                                               //
+        ///////////////////////////////////////////////////////////////////////
+        functional_features:
+        {
+            Description: Behaviour observed from the two ports.
+            Node_Type: section_title
+
+            legal_behaviour:
+            {
+                Description: What the mailbox does for accesses its specification allows.
+                Node_Type: section_title
+
+                data_transfer:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#mboxw-register
+                        axi_lite_mailbox#mboxr-register
+                        '''
+                    Description: A 64-bit word written to MBOXW on one port is read unchanged from MBOXR on the other port, in write order, in both directions.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 1
+                }
+                fifo_depth:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#module-parameters
+                        mocha_mailbox#mailbox
+                        '''
+                    Description: Each direction holds exactly MailboxDepth words, 3 in Mocha, before it reports full.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                status_empty_full:
+                {
+                    Reference: axi_lite_mailbox#status-register
+                    Description: STATUS.EMPTY is set exactly while the port's read FIFO is empty, and STATUS.FULL exactly while its write FIFO is full.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                status_threshold_flags:
+                {
+                    Reference: axi_lite_mailbox#status-register
+                    Description: STATUS.WFIFOL is set exactly while the write FIFO level is higher than WIRQT, and STATUS.RFIFOL exactly while the read FIFO level is higher than RIRQT. TODO: the RFIFOL description reads "Write FIFO level is less or equal to the threshold" for 0; the read FIFO is assumed.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                register_map:
+                {
+                    Reference: axi_lite_mailbox#register-address-mapping
+                    Description: The ten registers sit at base_addr_i + n * AxiDataWidth/8, 8-byte steps in Mocha, with the access type the specification gives each. TODO: the register table lists CTRL as R/W while its bit table lists both bits as W.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 0
+                }
+                threshold_registers:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#wirqt-register
+                        axi_lite_mailbox#rirqt-register
+                        '''
+                    Description: WIRQT and RIRQT each hold a $clog2(MailboxDepth)-bit threshold, 2 bits in Mocha, and a written value larger than or equal to MailboxDepth reads back as MailboxDepth - 1.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                threshold_irq_status:
+                {
+                    Reference: axi_lite_mailbox#irqs-register
+                    Description: IRQS.WTIRQ and IRQS.RTIRQ are set when the write or read FIFO level rises above its threshold, stay set, and clear only when 1 is written to them. TODO: the specification calls the bits sticky and set "when the trigger condition is fulfilled", without saying whether a bit acknowledged while the level is still above the threshold is set again.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                }
+                error_irq_status:
+                {
+                    Reference: axi_lite_mailbox#irqs-register
+                    Description: IRQS.EIRQ is set by a read from an empty mailbox or a write to a full one, stays set, and clears only when 1 is written to it.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                irq_status_without_enable:
+                {
+                    Reference: axi_lite_mailbox#irqs-register
+                    Description: IRQS bits are set whether or not the matching IRQEN bit is set.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                irq_enable_pending:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#irqen-register
+                        axi_lite_mailbox#irqp-register
+                        '''
+                    Description: IRQP equals IRQS AND IRQEN bit for bit, and the port's interrupt is the OR of its IRQP bits.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                flush:
+                {
+                    Reference: axi_lite_mailbox#ctrl-register
+                    Description: Writing 1 to CTRL bit 0 empties the port's write FIFO and to bit 1 its read FIFO, a FIFO is flushed when either port asks for it, and the register returns to 0 after the write. TODO: the specification names the two CTRL bits WTIRQ and RTIRQ, like the interrupt bits; flush write FIFO and flush read FIFO are assumed.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+            }
+            exception_handling:
+            {
+                Description: What the mailbox does for accesses its specification refuses or leaves open.
+                Node_Type: section_title
+
+                write_full:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#mboxw-register
+                        axi_lite_mailbox#error-register
+                        '''
+                    Description: A write to MBOXW while the write FIFO is full answers SLVERR, is never delivered, and sets ERROR.WRITE_ERR.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                read_empty:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#mboxr-register
+                        axi_lite_mailbox#error-register
+                        '''
+                    Description: A read of MBOXR while the read FIFO is empty answers SLVERR and sets ERROR.READ_ERR.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                error_clear_on_read:
+                {
+                    Reference: axi_lite_mailbox#error-register
+                    Description: Reading ERROR returns the flags raised since it was last read and clears them. TODO: the specification does not say what happens to an error raised in the same cycle as ERROR is read.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                access_type_errors:
+                {
+                    Reference:
+                        '''
+                        axi_lite_mailbox#register-address-mapping
+                        axi_lite_mailbox#error-register
+                        '''
+                    Description: A write to an R register and a read of a W register answer SLVERR and change no state. TODO: the specification does not say whether such an access sets ERROR or IRQS.EIRQ, since ERROR only describes full and empty.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                }
+                unmapped_access:
+                {
+                    Reference: axi_lite_mailbox#register-address-mapping
+                    Description: An access to an address that maps to no register changes no state. TODO: the specification does not give the response.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                }
+                partial_writes:
+                {
+                    Reference: axi_lite_mailbox#register-address-mapping
+                    Description: A write with only some byte strobes set. TODO: the specification does not say what a partial write delivers through MBOXW or leaves in the R/W registers.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                }
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // Structural features                                               //
+        ///////////////////////////////////////////////////////////////////////
+        structural_features:
+        {
+            Description: Behaviour measured inside axi_lite_mailbox.
+            Node_Type: section_title
+
+            code_coverage:
+            {
+                Reference: stages#hardware-ip-block-verification-stages
+                Description: Line, branch, condition, toggle and FSM coverage of axi_lite_mailbox and the FIFOs it instantiates.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+                Goal: 90
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // Scenarios                                                         //
+        ///////////////////////////////////////////////////////////////////////
+        scenarios:
+        {
+            Description: End-to-end use cases.
+            Node_Type: section_title
+
+            request_response:
+            {
+                Reference:
+                    '''
+                    axi_lite_mailbox#axi4-lite-mailbox
+                    mocha_mailbox#mailbox
+                    '''
+                Description: One port sends a request of several words, the other collects it on its read threshold interrupt and answers, and the first collects the answer on its own interrupt.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            concurrent_bidirectional:
+            {
+                Reference: axi_lite_mailbox#axi4-lite-mailbox
+                Description: Both ports write and read at the same time, each FIFO filling and draining independently of the other.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            flush_during_traffic:
+            {
+                Reference: axi_lite_mailbox#ctrl-register
+                Description: A flush from either port while words are in flight leaves both ports consistent, and the next word is delivered intact.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            reset_during_traffic:
+            {
+                Reference: axi_lite_mailbox#module-ports
+                Description: A reset in the middle of traffic returns every register to its reset value, and the next word is delivered intact.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+        }
+    }
+}
