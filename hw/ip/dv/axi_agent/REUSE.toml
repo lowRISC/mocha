@@ -1,0 +1,8 @@
+# Licenses and Copyright information for files that couldn't otherwise contain it.
+
+version = 1
+
+[[annotations]]
+path = ["*.md"]
+SPDX-FileCopyrightText = "lowRISC and contributors (COSMIC project)."
+SPDX-License-Identifier = "Apache-2.0"
