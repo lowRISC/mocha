@@ -11,8 +11,6 @@ class clkmgr_stress_all_vseq extends clkmgr_base_vseq;
 
   task body();
     string seq_names[] = {
-      "clkmgr_frequency_timeout_vseq",
-      "clkmgr_frequency_vseq",
       "clkmgr_peri_vseq",
       "clkmgr_smoke_vseq",
       "clkmgr_trans_vseq"

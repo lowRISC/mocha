@@ -1,6 +1,14 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+<%doc>
+Clock measurement is intentionally disabled in this configuration: the source clocks are supplied
+from outside the top and are assumed already stable, so there is no calibration step and calib_rdy
+is tied MuBi4False. clkmgr_meas_chk then clears the measurement enable and measure_ctrl_regwen is
+held open, so any sequence exercising measurement cannot pass. These are gated on measurement_live
+rather than deleted, so they return automatically if the configuration ever changes.
+</%doc>\
+<% measurement_live = ext_clk_bypass %>\
 {
   // Name of the sim cfg - typically same as the name of the DUT.
   name: clkmgr
@@ -12,7 +20,7 @@
   tb: tb
 
   // Simulator used to sign off this block
-  tool: vcs
+  tool: xcelium
 
   // Fusesoc core file used for building the file list.
   fusesoc_core: ${instance_vlnv("lowrisc:dv:clkmgr_sim:0.1")}
@@ -25,14 +33,14 @@
 
   // Import additional common sim cfg files.
   import_cfgs: [// Project wide common sim cfg file
-                "{proj_root}/hw/dv/tools/dvsim/common_sim_cfg.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson",
                 // Common CIP test lists
-                "{proj_root}/hw/dv/tools/dvsim/tests/csr_tests.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/alert_test.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/tl_access_tests.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/stress_tests.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/sec_cm_tests.hjson",
-                "{proj_root}/hw/dv/tools/dvsim/tests/shadow_reg_errors_tests.hjson"
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/csr_tests.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/alert_test.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/tl_access_tests.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/stress_tests.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/sec_cm_tests.hjson",
+                "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/tests/shadow_reg_errors_tests.hjson"
                 ]
 
   // Add additional tops for simulation.
@@ -76,6 +84,7 @@
       uvm_test_seq: clkmgr_extclk_vseq
     }
   % endif
+  % if measurement_live:
     {
       name: clkmgr_frequency
       uvm_test_seq: clkmgr_frequency_vseq
@@ -84,6 +93,7 @@
       name: clkmgr_frequency_timeout
       uvm_test_seq: clkmgr_frequency_timeout_vseq
     }
+  % endif
     {
       name: clkmgr_peri
       uvm_test_seq: clkmgr_peri_vseq

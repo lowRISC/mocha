@@ -43,7 +43,9 @@
             - Measurement error should trigger a recoverable alert
             '''
       stage: V2S
-      tests: ["clkmgr_frequency"]
+      // Unverified: measurement is intentionally disabled in this configuration, so this
+      // countermeasure cannot be exercised. The clkmgr_meas_chk hardware is still instantiated.
+      tests: []
     }
     {
       name: sec_cm_timeout_clk_bkgn_chk
@@ -55,7 +57,9 @@
             - Timeout should cause a recoverable alert
             '''
       stage: V2S
-      tests: ["clkmgr_frequency_timeout"]
+      // Unverified: measurement is intentionally disabled in this configuration, so this
+      // countermeasure cannot be exercised. The clkmgr_meas_chk hardware is still instantiated.
+      tests: []
     }
     {
       name: sec_cm_meas_config_shadow

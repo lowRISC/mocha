@@ -54,7 +54,19 @@ task alert_receiver_alert_rsp_seq::default_rsp_thread();
                                      int_err           == 0;
                                      )
       finish_item(rsp);
-      get_response(rsp);
+      // Stop waiting for the response on reset. The driver only reports done for items already
+      // queued in m_pending_alert_rsps, so an item accepted just as reset asserts never gets its
+      // response and get_response() would block forever, leaving this agent unable to ack any
+      // further alert for the rest of the simulation. Only the response wait is escaped here:
+      // killing start_item/finish_item instead would abort sequencer arbitration and trip
+      // SEQREQZMB.
+      fork begin : isolation_fork
+        fork
+          get_response(rsp);
+          wait (cfg.in_reset);
+        join_any
+        disable fork;
+      end join
     end : send_rsp
   join
 endtask : default_rsp_thread
