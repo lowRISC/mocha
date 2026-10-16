@@ -43,6 +43,7 @@
     system_outputs = system: let
       pkgs = import nixpkgs {inherit system;};
       lrPkgs = lowrisc-nix.outputs.packages.${system};
+      llvm_cheri = lrPkgs.llvm_cheri_rvy_0910;
 
       workspace = inputs.uv2nix.lib.workspace.loadWorkspace {workspaceRoot = ./.;};
       overlay = workspace.mkPyprojectOverlay {
@@ -68,13 +69,14 @@
           pkgs
           pythonEnv
           ;
-        llvm = lrPkgs.llvm_cheri;
+        llvm = llvm_cheri;
         ftditool = ftditool-cli;
       };
       ftditool-cli = inputs.ftditool.packages.${system}.default;
-      cheri-toolchain = pkgs.callPackage ./nix/cheri_toolchain.nix {inherit (lrPkgs) llvm_cheri;};
+      cheri-toolchain = pkgs.callPackage ./nix/cheri_toolchain.nix {inherit llvm_cheri;};
     in rec {
       formatter = pkgs.alejandra;
+      packages.llvm-cheri = llvm_cheri;
       devShells = rec {
         default = baremetal;
         # CHERI baremetal + EDA development shell, built on lowrisc-nix's generic
@@ -122,16 +124,14 @@
               zlib
               zlib.dev
             ])
-            ++ (with lrPkgs; [
-              verilator_5_040
-              llvm_cheri
-            ]);
+            ++ [lrPkgs.verilator_5_040 llvm_cheri];
           # Project env, appended after the EDA setup (mkEdaShell has no `env`
           # attr — buildFHSEnv takes a bash profile fragment instead).
           profile = ''
             # Prevent uv from managing Python downloads; force the nixpkgs interpreter.
             export UV_PYTHON_DOWNLOADS=never
             export UV_PYTHON=${pythonSet.python.interpreter}
+            export CHERI_LLVM_BIN=${llvm_cheri}/bin
 
             export SYSROOT_PURECAP=${cheri-toolchain.linux-headers-purecap}/usr/include
             export COMPILER_RT_PURECAP=${cheri-toolchain.compiler-rt-builtins-purecap}/lib
