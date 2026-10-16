@@ -8,9 +8,9 @@
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
 #include <cheriintrin.h>
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
 /* represents an object that can be written to. */
 struct sink {
@@ -172,7 +172,7 @@ static size_t format_hex(char buf[static 2 * sizeof(uint64_t)], size_t bytes, ui
     return 2 * bytes;
 }
 
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
 
 static size_t format_string_literal(char *buf, const char *str)
 {
@@ -263,7 +263,7 @@ static size_t format_capability(char *buf, const uintptr_t value)
     }
     return total;
 }
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
 static void do_format_specifier(struct sink sink, size_t *written, const enum format_spec spec,
                                 va_list *arg)
@@ -298,19 +298,19 @@ static void do_format_specifier(struct sink sink, size_t *written, const enum fo
         break;
     case FMT_PTR:
         /* %p: pointer */
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
         len = format_hex(buf, sizeof(unsigned long), cheri_address_get(va_arg(*arg, void *)));
-#else /* !defined(__riscv_zcherihybrid) */
+#else /* !defined(__riscv_zyhybrid) */
         len = format_hex(buf, sizeof(unsigned long), (uintptr_t)va_arg(*arg, void *));
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
         break;
     case FMT_CAP:
         /* %#p: capability (CHERI) */
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
         len = format_capability(buf, *va_arg(*arg, uintptr_t *));
-#else /* !defined(__riscv_zcherihybrid) */
+#else /* !defined(__riscv_zyhybrid) */
         len = format_hex(buf, sizeof(unsigned long), (uintptr_t)va_arg(*arg, void *));
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
         break;
     default:
         return;

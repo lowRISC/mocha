@@ -27,35 +27,35 @@ static bool rapid_write_test()
         "test_start:\n\t");
 
     // Using inline assembly to keep writes and reads back-to-back
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     __asm__ volatile(
-        // Get capability to storage in ct0.
-        "llc ct0, storage\n\t"
+        // Get capability to storage in t0.
+        "lly t0, storage\n\t"
 
         // Writes
-        "sd %8, 0(ct0)\n\t"
-        "sd %9, 8(ct0)\n\t"
-        "sd %10, 16(ct0)\n\t"
-        "sd %11, 24(ct0)\n\t"
-        "sd %12, 32(ct0)\n\t"
-        "sd %13, 40(ct0)\n\t"
-        "sd %14, 48(ct0)\n\t"
-        "sd %15, 56(ct0)\n\t"
+        "sd %8, 0(t0)\n\t"
+        "sd %9, 8(t0)\n\t"
+        "sd %10, 16(t0)\n\t"
+        "sd %11, 24(t0)\n\t"
+        "sd %12, 32(t0)\n\t"
+        "sd %13, 40(t0)\n\t"
+        "sd %14, 48(t0)\n\t"
+        "sd %15, 56(t0)\n\t"
 
         // Reads
-        "ld %0, 0(ct0)\n\t"
-        "ld %1, 8(ct0)\n\t"
-        "ld %2, 16(ct0)\n\t"
-        "ld %3, 24(ct0)\n\t"
-        "ld %4, 32(ct0)\n\t"
-        "ld %5, 40(ct0)\n\t"
-        "ld %6, 48(ct0)\n\t"
-        "ld %7, 56(ct0)\n\t"
+        "ld %0, 0(t0)\n\t"
+        "ld %1, 8(t0)\n\t"
+        "ld %2, 16(t0)\n\t"
+        "ld %3, 24(t0)\n\t"
+        "ld %4, 32(t0)\n\t"
+        "ld %5, 40(t0)\n\t"
+        "ld %6, 48(t0)\n\t"
+        "ld %7, 56(t0)\n\t"
         : "=r"(res1), "=r"(res2), "=r"(res3), "=r"(res4), "=r"(res5), "=r"(res6), "=r"(res7),
           "=r"(res8)
         : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8)
-        : "ct0", "memory");
-#else /* !defined(__riscv_zcherihybrid) */
+        : "t0", "memory");
+#else /* !defined(__riscv_zyhybrid) */
     __asm__ volatile(
         // Get pointer to storage t0.
         "lla t0, storage\n\t"
@@ -83,7 +83,7 @@ static bool rapid_write_test()
           "=r"(res8)
         : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8)
         : "t0", "memory");
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
 
     if (d1 != res1 || d2 != res2 || d3 != res3 || d4 != res4 || d5 != res5 || d6 != res6 ||
         d7 != res7 || d8 != res8) {
