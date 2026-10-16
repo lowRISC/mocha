@@ -2,10 +2,12 @@
 # Licensed under the Apache License, Version 2.0, see LICENSE for details.
 # SPDX-License-Identifier: Apache-2.0
 
-set(CHERI_FLAGS -march=rv64imac_zcherihybrid -mabi=l64pc128 -mcmodel=medany)
+set(CHERI_FLAGS -march=rv64ymac_zyhybrid -mabi=l64pc128 -mcmodel=medany)
 set(VANILLA_FLAGS -march=rv64imac -mabi=lp64 -mcmodel=medany)
 
 set(CMAKE_SYSTEM_NAME Generic)
+# Bare-metal targets provide their own startup code and linker scripts.
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 if (DEFINED ENV{CHERI_LLVM_BIN})
     set(CMAKE_CXX_COMPILER "$ENV{CHERI_LLVM_BIN}/clang++")
@@ -52,5 +54,5 @@ set(CMAKE_ASM_FLAGS_INIT
 )
 
 set(CMAKE_EXE_LINKER_FLAGS_INIT
-    "-nodefaultlibs"
+    "-nostdlib"
 )

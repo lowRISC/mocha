@@ -89,7 +89,7 @@ static const size_t register_name_max = 5;
 
 static const char *register_abi_name[32] = {
 /* clang-format off */
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     "cnull", "cra", "csp",  "cgp",
     "ctp",   "ct0", "ct1",  "ct2",
     "cs0",   "cs1", "ca0",  "ca1",
@@ -98,7 +98,7 @@ static const char *register_abi_name[32] = {
     "cs4",   "cs5", "cs6",  "cs7",
     "cs8",   "cs9", "cs10", "cs11",
     "ct3",   "ct4", "ct5",  "ct6",
-#else /* !defined(__riscv_zcherihybrid) */
+#else /* !defined(__riscv_zyhybrid) */
     "zero", "ra", "sp",  "gp",
     "tp",   "t0", "t1",  "t2",
     "s0",   "s1", "a0",  "a1",
@@ -107,18 +107,18 @@ static const char *register_abi_name[32] = {
     "s4",   "s5", "s6",  "s7",
     "s8",   "s9", "s10", "s11",
     "t3",   "t4", "t5",  "t6",
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
     /* clang-format on */
 };
 
 void print_register_trace(struct trap_registers *registers, struct trap_context *context)
 {
     uart_t console = mocha_system_uart();
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
     uprintf(console, "epcc:  %#p\n", &context->epc);
-#else /* !defined(__riscv_zcherihybrid) */
+#else /* !defined(__riscv_zyhybrid) */
     uprintf(console, "epc:   %lx\n", (unsigned long)context->epc);
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
     uprintf(console, "cause: %lx\n", context->cause);
     uprintf(console, "tval:  %lx\n", context->tval);
     uprintf(console, "tval2: %lx\n", context->tval2);
@@ -129,11 +129,11 @@ void print_register_trace(struct trap_registers *registers, struct trap_context 
         while (reg_name_len++ < register_name_max) {
             uart_putchar(console, ' ');
         }
-#if defined(__riscv_zcherihybrid)
+#if defined(__riscv_zyhybrid)
         uprintf(console, "%#p\n", &registers->x[i]);
-#else /* !defined(__riscv_zcherihybrid) */
+#else /* !defined(__riscv_zyhybrid) */
         uprintf(console, "%lx\n", (unsigned long)registers->x[i]);
-#endif /* defined(__riscv_zcherihybrid) */
+#endif /* defined(__riscv_zyhybrid) */
     }
 }
 
