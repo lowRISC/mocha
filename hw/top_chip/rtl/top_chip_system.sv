@@ -130,7 +130,7 @@ module top_chip_system #(
   always_comb begin : gen_boot_cap
     boot_cap                = cva6_cheri_pkg::REG_ROOT_CAP;
     boot_cap.addr           = top_pkg::RomCtrlMemBase + 'h80;
-    boot_cap.flags.int_mode = 1'b1;
+    boot_cap.hperms.int_mode = 1'b1;
   end
 
   // AXI crossbar configuration
