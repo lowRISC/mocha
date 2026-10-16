@@ -16,7 +16,7 @@
     {
         "name": "Verilator",
         "vendor": "Veripool",
-        "version": "v5.040",
+        "version": "v5.054",
         "comment": "Open source simulation tool."
     },
     {

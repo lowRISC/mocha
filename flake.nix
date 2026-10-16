@@ -45,6 +45,8 @@
       lrPkgs = lowrisc-nix.outputs.packages.${system};
       llvm_cheri = lrPkgs.llvm_cheri_rvy_0910;
 
+      verilator = lrPkgs.verilator_5_054;
+
       workspace = inputs.uv2nix.lib.workspace.loadWorkspace {workspaceRoot = ./.;};
       overlay = workspace.mkPyprojectOverlay {
         sourcePreference = "wheel";
@@ -124,7 +126,7 @@
               zlib
               zlib.dev
             ])
-            ++ [lrPkgs.verilator_5_040 llvm_cheri];
+            ++ [verilator llvm_cheri];
           # Project env, appended after the EDA setup (mkEdaShell has no `env`
           # attr — buildFHSEnv takes a bash profile fragment instead).
           profile = ''
