@@ -42,7 +42,11 @@ _start:
     mv t5, zero
     mv t6, zero
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
+    /* The ROM enters in integer mode, so purecap startup requires Zyhybrid. */
+#if !defined(__riscv_zyhybrid)
+#error "Purecap startup from the integer boot ROM requires Zyhybrid"
+#endif
     /* switch to capability mode */
     ymodeswy
 
@@ -148,10 +152,10 @@ cap_relocs_end:
     ymv t4, zero
     ymv t5, zero
     ymv t6, zero
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
     /* zero out bss */
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
 cheri_zero_bss:
     lly t0, _bss_start
     lly t1, _bss_end
@@ -168,7 +172,7 @@ cheri_zero_bss_end:
     ymv t0, zero
     ymv t1, zero
     ymv t2, zero
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
 zero_bss:
     la t0, _bss_start
     la t1, _bss_end
@@ -181,9 +185,9 @@ zero_bss_end:
     /* clear used registers */
     mv t0, zero
     mv t1, zero
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     /* derive a stack pointer from the infinite capability */
     /* limit stack size */
     lly sp, _stack_bottom
@@ -196,26 +200,26 @@ zero_bss_end:
     li t0, __CHERI_CAP_PERMISSION_EXECUTE__
     ypermc sp, sp, t0
     ymv t0, zero
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     /* in non-CHERI mode, just load the stack top */
     la sp, _stack_top
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
 setup_trap_vector:
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     /* create a trap handler capability and install it in mtvec */
     lly t0, _trap_vector
     yaddrw t0, a0, t0
     csrw CSR_MTVEC, t0
     ymv t0, zero
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     /* install a new trap handler */
     la t0, _trap_vector
     csrw CSR_MTVEC, t0
     mv t0, zero
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
 setup_scratchpad:
     /* create capability for scratchpad area in a1 */
     lly t0, _scratch
@@ -237,16 +241,16 @@ setup_scratchpad:
     ymv t0, zero
     ymv a1, zero
     mv t1, zero
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     la t0, _scratch
     csrw CSR_MSCRATCH, t0
     mv t0, zero
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     /* destroy infinite capability, we have already stored it away */
     ymv a0, zero
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
     /* jump into main */
     jal main
@@ -260,7 +264,7 @@ failure:
     wfi
     j failure
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
 /* storage for the infinite capability for use by C code. */
 .section .data
 .align 4
@@ -271,4 +275,4 @@ _infinite_cap:
 /* the size must be provided, otherwise the linker will not know how to
  * generate a cap_reloc entry for it. */
 .size _infinite_cap, . - _infinite_cap
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */

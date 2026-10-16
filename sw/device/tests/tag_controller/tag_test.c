@@ -13,7 +13,7 @@ enum {
 
 bool tag_test()
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     // Using lots of registers for passing results to make sure memory accesses are rapid
     // enough to reveal a known bug in the tag controller that have since been worked around.
     uint64_t res1, res2, res3, res4, res5, res6, res7, res8, res9, res10, res11, res12, res13,
@@ -178,12 +178,12 @@ bool tag_test()
     if (!(res1 != 0 && res2 != 0 && res3 != 0 && res4 == 0 && res5 != 0 && res6 == 0)) {
         return false;
     }
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
     return true;
 }
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
 void write_valid_cap(const uint64_t addr)
 {
     asm volatile(
@@ -232,11 +232,11 @@ bool cap_is_valid(const uint64_t addr)
 
     return res != 0;
 }
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
 bool tag_cache_evict_test()
 {
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     for (int i = 0; i < evict_test_capabilities; ++i) {
         write_valid_cap(0x81000000UL + (i << 24));
     }
@@ -264,7 +264,7 @@ bool tag_cache_evict_test()
             }
         }
     }
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
     return true;
 }

@@ -16,13 +16,13 @@
 .align 4 /* capability alignment */
 .type _scratch, @object
 _scratch:
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     .chericap 0 /* we use this as a known-good stack capability to derive permissions from */
     .chericap 0 /* temporary capability storage */
     .chericap 0 /* temporary capability storage */
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     .dword 0, 0 /* temporary register storage */
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 .size _scratch, . - _scratch
 
 .section .text
@@ -31,7 +31,7 @@ _scratch:
 .align 4
 .type _trap_vector, @function
 _trap_vector:
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     /* swap a0 with scratchpad capability */
     csrrw a0, CSR_MSCRATCH, a0
     /* save two more registers to scratchpad area */
@@ -90,7 +90,7 @@ _trap_vector:
     /* set capability in first argument register */
     li a0, 512
     ybndsw a0, sp, a0
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     /* swap a0 with scratchpad pointer */
     csrrw a0, CSR_MSCRATCH, a0
     /* save two more registers to scratchpad area */
@@ -144,9 +144,9 @@ _trap_vector:
     sd a0, 80(sp)
     /* set pointer in first argument register */
     mv a0, sp
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     /* allocate struct trap_context and save registers to it */
     yadd sp, sp, -TRAP_CONTEXT_SIZE
     csrr t0, CSR_MEPC
@@ -161,7 +161,7 @@ _trap_vector:
     /* set capability in second argument register */
     li a1, TRAP_CONTEXT_SIZE
     ybndsw a1, sp, a1
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     /* allocate struct trap_context and save registers to it */
     add sp, sp, -TRAP_CONTEXT_SIZE
     csrr t0, CSR_MEPC
@@ -175,26 +175,26 @@ _trap_vector:
     sd t0, TRAP_CONTEXT_TVAL2_OFFSET(sp)
     /* set pointer in second argument register */
     mv a1, sp
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
     /* call into trap handler in C */
     call _trap_handler
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     /* load in new mepc */
     ly t0, TRAP_CONTEXT_EPC_OFFSET(sp)
     csrw CSR_MEPC, t0
     /* deallocate */
     yadd sp, sp, TRAP_CONTEXT_SIZE
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     /* load in new mepc */
     ld t0, TRAP_CONTEXT_EPC_OFFSET(sp)
     csrw CSR_MEPC, t0
     /* deallocate */
     add sp, sp, TRAP_CONTEXT_SIZE
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     /* reload regs */
     ly zero, 0(sp)
     ly ra,   16(sp)
@@ -230,7 +230,7 @@ _trap_vector:
     ly t6,   496(sp)
     /* done with stack, restore sp */
     ly sp, 32(sp)
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     /* reload regs */
     ld zero, 0(sp)
     ld ra,   8(sp)
@@ -266,6 +266,6 @@ _trap_vector:
     ld t6,   248(sp)
     /* done with stack, restore sp */
     ld sp, 16(sp)
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
     mret
 .size _trap_vector, . - _trap_vector

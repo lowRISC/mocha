@@ -57,7 +57,7 @@ bool rapid_write_test()
     uint64_t d8 = 0x0E918F4F7B4F4F31UL, res8;
 
     // Using inline assembly to keep writes and reads back-to-back
-#if defined(__riscv_zyhybrid)
+#if defined(__CHERI_PURE_CAPABILITY__)
     __asm__ volatile(
         // Get capability to dram in t0.
         "auipc t0, 0\n\t"
@@ -87,7 +87,7 @@ bool rapid_write_test()
         : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8),
           "r"((uint64_t)dram_base) // NOLINT(cheri-PtrToIntCast): Need a uint to load into register
         : "t0", "memory");
-#else /* !defined(__riscv_zyhybrid) */
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
     __asm__ volatile(
         // Get pointer to dram t0.
         "mv t0, %16\n\t"
@@ -116,7 +116,7 @@ bool rapid_write_test()
         : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8),
           "r"((uint64_t)dram_base) // NOLINT(cheri-PtrToIntCast): Need a uint to load into register
         : "t0", "memory");
-#endif /* defined(__riscv_zyhybrid) */
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
 
     if (d1 != res1 || d2 != res2 || d3 != res3 || d4 != res4 || d5 != res5 || d6 != res6 ||
         d7 != res7 || d8 != res8) {
