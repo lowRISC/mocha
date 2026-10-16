@@ -41,7 +41,7 @@ def main() -> None:
     traced = []
     if args.traced:
         traced = [
-            f"--verilator_options=-j {jobs} --threads 2 --trace-threads 2",
+            f"--verilator_options=-j {jobs} --threads 2",
             f"--make_options=-j {jobs}",
         ]
 

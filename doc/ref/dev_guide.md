@@ -66,16 +66,14 @@ We use Verilator to simulate our hardware design and use FuseSoC as a build syst
 To build and run a Verilator simulation of Mocha, run:
 ```sh
 # Build simulator.
-fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="--threads 2 --trace-threads 2" --make_options="-j 4"
+fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="--threads 2" --make_options="-j 4"
 # Run simulator.
 build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -r build/sw/device/bootrom/bootrom_scrambled.vmem -E build/sw/device/examples/hello_world
 # Check the UART output.
 cat uart0.log
 ```
 
-Note that the `-j 4` argument speeds up simulator building, while the `--threads 2 --trace-threads 2` arguments speed up simulator running.
-For maximum tracing performance, omit `--threads 2`.
-For maximum non-tracing performance, or when using Verilator v5.048 onwards, omit `--trace-threads 2`.
+The `-j 4` argument enables parallel C++ compilation, while `--threads 2` enables two simulation threads.
 
 One specific feature of our simulator is that you can exit the simulation by using the following magic string:
 `Safe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7`

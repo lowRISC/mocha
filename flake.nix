@@ -123,7 +123,7 @@
               zlib
               zlib.dev
             ])
-            ++ [lrPkgs.verilator_5_040 llvm_cheri];
+            ++ [lrPkgs.verilator_5_054 llvm_cheri];
           # Project env, appended after the EDA setup (mkEdaShell has no `env`
           # attr — buildFHSEnv takes a bash profile fragment instead).
           profile = ''
