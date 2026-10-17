@@ -18,6 +18,40 @@ There are three clock domains in Mocha.<!-- rfj4pd_x -->
    Both the main and IO clocks can be disabled and are turned off when a system reset is requested.<!-- 68url6_x -->
    The always on clock drives the clock, reset and power managers and allows the system to come out of reset.<!-- w5ylk6_x -->
 
+## Power sequencing
+
+The power manager sequences the clocks and resets of Mocha's two power domains, `Aon` and `Main`, through cold boot and reset.<!-- edji36_x -->
+It contains two state machines, a slow one on the always on clock and a fast one on the IO clock.<!-- fviuf3_x -->
+The slow state machine drives the main domain power controls and the source clock enables towards the AST (Analog Sensor Top), but Mocha has no AST, so in practice it only starts the fast state machine after the power-on reset and then stays idle.<!-- bjwe3p_x -->
+The fast state machine runs the rest of the power-up sequence, including the clock manager and reset manager handshakes.<!-- 1qitt6_x -->
+
+Cold boot follows the vendored sequence, but most of the handshakes it waits on are tied off in Mocha.<!-- gqtuab_x -->
+
+1. The slow state machine waits for the AST to report the main power as good and the clocks as valid. `pwr_ast_i` is tied to a default that reports both straight away and `pwr_ast_o` is left unconnected, so the main domain is always powered and never isolated.<!-- f1ik37_x -->
+2. The slow state machine then requests the fast state machine to leave its low power state and start its part of the sequence. The fast state machine releases the main root clock and IO root clock gates in the clock manager and waits for the clock manager to report them released.<!-- uubyud_x -->
+3. The fast state machine asks the reset manager to release the life cycle and system resets and waits for the life cycle reset to conclude, then waits for the OTP controller to finish sensing and the life cycle controller to decode the life cycle state before acknowledging the slow state machine's request. Mocha has neither `otp_ctrl` nor `lc_ctrl`, so `pwr_otp_i` and `pwr_lc_i` are tied to their done and idle defaults and neither step waits on another block.<!-- i3myfx_x -->
+4. The fast state machine pulses `strap_o`, which tells the GPIO block to capture its input pins as boot straps for the rest of the system to read. Mocha instantiates the GPIO block with `GpioAsHwStrapsEn = 0`, which removes that capture logic, so the pulse is ignored and no straps are stored.<!-- psbuse_x -->
+5. The fast state machine waits for the ROM controller to report its integrity check as `done` and `good`. Bypassing the integrity check needs both `lc_dft_en` and `lc_hw_debug_en` asserted, and Mocha ties `lc_dft_en_i` to `Off`, so the check cannot be skipped. `fetch_en_o` then releases the core and lifts the isolation in front of the ROM, so a failing check leaves the core held and the ROM contents unreachable.<!-- cbobz4_x -->
+
+The power manager IP also supports low power entry and exit, but Mocha does not use them.<!-- q1rz33_x -->
+To enter low power mode, software sets `CONTROL.LOW_POWER_HINT` and then executes a WFI, which the core reports to the power manager on `pwr_cpu_i`.<!-- 6lv64z_x -->
+In Mocha `pwr_cpu_i` is tied to zero, so the power manager never sees the WFI, setting the hint has no effect and `low_power_o` is left unconnected.<!-- 1xp1ry_x -->
+The [Mocha configuration](../../hw/top_chip/data/pwrmgr_cfg.hjson) declares a single wakeup source from low power, `ext_wkup_req`.<!-- d9esmg_x -->
+In Mocha, `ext_wkup_req` is tied off at the instantiation, so the wakeup status and wakeup info never record a wakeup, and the wakeup interrupt never fires because low power is never entered.<!-- 7zmotv_x -->
+The `CORE_CLK_EN`, `IO_CLK_EN` and `MAIN_PD_N` fields of `CONTROL` consequently have no effect either, and low power entry and exit are exercised only in the block-level testbench.<!-- hscs2u_x -->
+
+The reset requests the power manager accepts are described under [reset domains](#reset-domains).<!-- cdyqu3_x -->
+Of these, the main power supply glitch reset is raised by the power manager itself and cannot fire in Mocha because the AST tie-off reports the main power as always good.<!-- 3xnfam_x -->
+The power manager also watches its escalation clock and requests an escalation reset if that clock stops toggling, but in Mocha that clock is the same IO clock that drives the check, so the timeout cannot fire.<!-- udig6x_x -->
+
+The vendored [theory of operation](../../hw/top_chip/ip_autogen/pwrmgr/doc/theory_of_operation.md) describes the two state machines and the power-up and reset sequences correctly, but it is written for the OpenTitan configuration and differs from Mocha, mainly:<!-- lynxn6_x -->
+
+1. It has AST power up the main domain and report power okay and clock valid, which Mocha ties off as described above.<!-- phfl3n_x -->
+2. It relies on `otp_ctrl` and `lc_ctrl` for OTP sensing, life cycle initialisation and the ROM check bypass, which Mocha ties off as described above.<!-- 5scbe0_x -->
+3. The flash handling sections describe `flash_ctrl` and a vendor flash macro, neither of which Mocha has, so `pwr_nvm_i` is tied to idle.<!-- vfatcx_x -->
+4. It says the WFI indication is exported from Ibex as `core_sleeping_o`. Mocha uses CVA6-CHERI and ties `pwr_cpu_i` off as described above.<!-- t1szt2_x -->
+5. It says a non-debug-module reset leaves the debug module state and the TAP muxing inside the pinmux untouched. Mocha has no pinmux, and how the debug module stays out of reset is described under [reset domains](#reset-domains).<!-- c22rd1_x -->
+
 ## Memory map
 
 This is the current memory map for Mocha, where the base and top addresses are inclusive, and reserved is the amount of memory reserved for this function:<!-- mcbp27_x -->
