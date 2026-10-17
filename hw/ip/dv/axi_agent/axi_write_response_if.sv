@@ -8,21 +8,22 @@
 
 interface axi_write_response_if (input clk_i, input rst_ni);
   import axi_widths_pkg::*;
-  import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
+  import axi_agent_pkg::axi_if_mode_e;
+  import axi_agent_pkg::Manager;
+  import axi_agent_pkg::Subordinate;
+  import axi_agent_pkg::Monitor;
   import uvm_pkg::*;
 
   // The interface mode.
   //
-  //  - Host:    An agent is driving the interface signals through mgr_cb, acting as a Manager.
-  //  - Device:  An agent is driving the interface signals through sub_cb, acting as a Subordinate.
-  //  - Monitor: No agent is driving interface signals and the interface is purely passive.
-  if_mode_e if_mode = Monitor;
+  // Manager drives through mgr_cb; Subordinate drives through sub_cb; Monitor is passive.
+  axi_if_mode_e if_mode = Monitor;
 
   // The ID_W_WIDTH property. Set this by calling set_id_w_width().
   int unsigned id_w_width = AxiMaxIdWidth;
 
-  // The BRESP_WIDTH property. Set this by calling set_bresp_width().
-  int unsigned bresp_width = AxiRespWidth;
+  // BRESP_WIDTH is two bits in AXI4 (AMBA AXI H.c A3.4.5); set with set_bresp_width()
+  int unsigned bresp_width = 2;
 
   // The USER_RESP_WIDTH property. Set this by calling set_user_resp_width().
   int unsigned user_resp_width = AxiMaxRespUserWidth;
@@ -47,12 +48,10 @@ interface axi_write_response_if (input clk_i, input rst_ni);
   wire [AxiRespWidth-1:0]         bresp;
   wire [AxiMaxRespUserWidth-1:0]  buser;
 
-  // A copy of bready, which is driven by mgr_cb (only used if if_mode == Host). The bready_driven
-  // signal is directly driven by the clocking block. The bready_internal signal tracks it, but is
-  // also cleared on reset.
+  // In Manager mode, mgr_cb drives bready_driven; bready_internal tracks it and clears on reset
   logic                           bready_driven, bready_internal;
 
-  // Copies of the signals that are driven by sub_cb (only used if if_mode == Device). The
+  // Copies of the signals that are driven by sub_cb (only used if if_mode == Subordinate). The
   // "*_driven" signals are directly driven by the clocking block. The "*_internal" signals track
   // these, but take masks into account for signals with configurable length and are also cleared on
   // reset.
@@ -110,11 +109,11 @@ interface axi_write_response_if (input clk_i, input rst_ni);
     end
   end
 
-  assign bvalid = (if_mode == Device) ? bvalid_internal : 'z;
-  assign bready = (if_mode == Host)   ? bready_internal : 'z;
-  assign bid    = (if_mode == Device) ? bid_internal    : 'z;
-  assign bresp  = (if_mode == Device) ? bresp_internal  : 'z;
-  assign buser  = (if_mode == Device) ? buser_internal  : 'z;
+  assign bvalid = (if_mode == Subordinate) ? bvalid_internal : 'z;
+  assign bready = (if_mode == Manager)     ? bready_internal : 'z;
+  assign bid    = (if_mode == Subordinate) ? bid_internal    : 'z;
+  assign bresp  = (if_mode == Subordinate) ? bresp_internal  : 'z;
+  assign buser  = (if_mode == Subordinate) ? buser_internal  : 'z;
 
   // Set the ID_W_WIDTH property. The allowed range is 0..32 (see AMBA AXI protocol specification,
   // issue J, section B1.3)
@@ -128,13 +127,14 @@ interface axi_write_response_if (input clk_i, input rst_ni);
     id_w_width = width;
   endfunction
 
-  // Set the BRESP_WIDTH property. The allowed values are 0, 2, 3 (see AMBA AXI protocol
-  // specification, issue J, section B1.3)
+  // Set BRESP_WIDTH to 0 or 2; three-bit encodings in later issues are unsupported (AMBA AXI H.c
+  // A3.4.5, A9.3.6)
   function void set_bresp_width(int unsigned width);
-    if (! (width inside {0, 2, 3})) begin
+    if (! (width inside {0, 2})) begin
       `uvm_error($sformatf("%m"),
-                 $sformatf("Cannot set BRESP_WIDTH to %0d: must be 0, 2 or 3.", width))
-      width = 3;
+                 $sformatf("Cannot set BRESP_WIDTH to %0d: must be 0 or 2; 3 is not supported yet.",
+                           width))
+      width = 2;
     end
 
     bresp_width = width;

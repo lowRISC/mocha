@@ -22,6 +22,13 @@ class axi_monitor extends uvm_monitor;
   // collector) can connect to it; with none connected the items are simply dropped.
   uvm_analysis_port #(axi_mon_item) tx_ap;
 
+  // Publish requests at AW or AR handshakes with request fields only, responses at each B or R
+  // handshake with fields collected so far, and complete transactions at B or last R handshakes, as
+  // on tx_ap. Publish copies that the monitor never modifies.
+  uvm_analysis_port #(axi_mon_item) m_request_port;
+  uvm_analysis_port #(axi_mon_item) m_response_port;
+  uvm_analysis_port #(axi_mon_item) m_transaction_port;
+
   // Write requests/data awaiting their counterpart on the other write channel.
   protected axi_mon_write_item aw_pending_q[$];
   protected axi_mon_write_item w_pending_q[$];
@@ -65,11 +72,24 @@ class axi_monitor extends uvm_monitor;
   // Return a copy of req with the AW attributes from aw_item merged in.
   extern protected function axi_mon_write_item merge_aw(axi_mon_write_item req,
                                                         axi_mon_write_item aw_item);
+
+  // Mask active data bits: strobed W lanes or the next beat's lanes for the oldest read with ID id
+  // (all lanes if no read matches). Other lanes may be X (AMBA AXI H.c A3.2.2, A3.4.4).
+  extern protected function logic [AxiMaxDataWidth-1:0] w_data_mask(
+      logic [AxiMaxStrbWidth-1:0] strb);
+  extern protected function logic [AxiMaxDataWidth-1:0] r_data_mask(axi_id_t id);
+
+  // Mask the low width bits, which the configured bus carries; the other bits of a maximum-width
+  // signal may be undriven
+  extern protected function logic [AxiMaxDataWidth-1:0] in_use(int unsigned width);
 endclass : axi_monitor
 
 function axi_monitor::new(string name, uvm_component parent);
   super.new(name, parent);
   tx_ap = new("tx_ap", this);
+  m_request_port     = new("m_request_port", this);
+  m_response_port    = new("m_response_port", this);
+  m_transaction_port = new("m_transaction_port", this);
 endfunction : new
 
 function void axi_monitor::set_interfaces(virtual axi_write_request_if  aw_vif,
@@ -136,12 +156,14 @@ task axi_monitor::collect_aw_channel();
 
   forever begin
     @(m_aw_vif.mon_cb);
-    if (!(m_aw_vif.mon_cb.awvalid && m_aw_vif.mon_cb.awready)) continue;
+    if (!(m_aw_vif.mon_cb.awvalid === 1'b1 && m_aw_vif.mon_cb.awready === 1'b1)) begin
+      continue;
+    end
 
     tr = axi_mon_write_item::type_id::create("aw_tr");
 
-    tr.m_awid     = m_aw_vif.mon_cb.awid;
-    tr.m_awaddr   = m_aw_vif.mon_cb.awaddr;
+    tr.m_awid     = m_aw_vif.mon_cb.awid & in_use(m_aw_vif.id_w_width);
+    tr.m_awaddr   = m_aw_vif.mon_cb.awaddr & in_use(m_aw_vif.addr_width);
     tr.m_awlen    = m_aw_vif.mon_cb.awlen;
     tr.m_awsize   = m_aw_vif.mon_cb.awsize;
     tr.m_awburst  = m_aw_vif.mon_cb.awburst;
@@ -157,6 +179,7 @@ task axi_monitor::collect_aw_channel();
                  $sformatf("AW sampled with X/Z: id=%0h addr=%0h len=%0h size=%0h burst=%0h",
                            tr.m_awid, tr.m_awaddr, tr.m_awlen, tr.m_awsize, tr.m_awburst))
     end
+    m_request_port.write(tr.item_clone());
 
     if (w_pending_q.size() > 0) begin
       w_tr = w_pending_q.pop_front();
@@ -170,24 +193,29 @@ task axi_monitor::collect_aw_channel();
 endtask : collect_aw_channel
 
 task axi_monitor::collect_w_channel();
-  axi_mon_write_item w_burst;
-  axi_mon_write_item aw_tr;
+  axi_mon_write_item          w_burst;
+  axi_mon_write_item          aw_tr;
+  logic [AxiMaxStrbWidth-1:0] wstrb;
 
   forever begin
     @(m_w_vif.mon_cb);
-    if (!(m_w_vif.mon_cb.wvalid && m_w_vif.mon_cb.wready)) continue;
+    if (!(m_w_vif.mon_cb.wvalid === 1'b1 && m_w_vif.mon_cb.wready === 1'b1)) begin
+      continue;
+    end
 
     if (w_burst == null) w_burst = axi_mon_write_item::type_id::create("w_burst");
 
+    wstrb = m_w_vif.mon_cb.wstrb & in_use(m_w_vif.data_width / 8);
     w_burst.m_wdata.push_back(m_w_vif.mon_cb.wdata);
-    w_burst.m_wstrb.push_back(m_w_vif.mon_cb.wstrb);
+    w_burst.m_wstrb.push_back(wstrb);
     w_burst.m_wuser.push_back(m_w_vif.mon_cb.wuser);
 
-    if ($isunknown({m_w_vif.mon_cb.wdata, m_w_vif.mon_cb.wstrb, m_w_vif.mon_cb.wlast})) begin
+    if ($isunknown({wstrb, m_w_vif.mon_cb.wlast}) ||
+        $isunknown(m_w_vif.mon_cb.wdata & w_data_mask(wstrb))) begin
       `uvm_error("MON_X",
                  $sformatf("W beat %0d sampled with X/Z: data=%0h strb=%0h last=%0b",
-                           w_burst.m_wdata.size() - 1, m_w_vif.mon_cb.wdata,
-                           m_w_vif.mon_cb.wstrb, m_w_vif.mon_cb.wlast))
+                           w_burst.m_wdata.size() - 1, m_w_vif.mon_cb.wdata, wstrb,
+                           m_w_vif.mon_cb.wlast))
     end
 
     if (m_w_vif.mon_cb.wlast) begin
@@ -207,23 +235,31 @@ endtask : collect_w_channel
 task axi_monitor::collect_b_channel();
   axi_id_t id;
   axi_mon_write_item tr;
+  logic [AxiRespWidth-1:0] resp;
 
   forever begin
     @(m_b_vif.mon_cb);
-    if (!(m_b_vif.mon_cb.bvalid && m_b_vif.mon_cb.bready)) continue;
+    if (!(m_b_vif.mon_cb.bvalid === 1'b1 && m_b_vif.mon_cb.bready === 1'b1)) begin
+      continue;
+    end
 
-    id = m_b_vif.mon_cb.bid;
-    if ($isunknown({m_b_vif.mon_cb.bid, m_b_vif.mon_cb.bresp})) begin
-      `uvm_error("MON_X", $sformatf("B sampled with X/Z: id=%0h resp=%0h",
-                                    m_b_vif.mon_cb.bid, m_b_vif.mon_cb.bresp))
+    id   = m_b_vif.mon_cb.bid & in_use(m_b_vif.id_w_width);
+    resp = m_b_vif.mon_cb.bresp & in_use(m_b_vif.bresp_width);
+    if ($isunknown({id, resp})) begin
+      `uvm_error("MON_X", $sformatf("B sampled with X/Z: id=%0h resp=%0h", id, resp))
     end
     if (write_q_by_id.exists(id) && write_q_by_id[id].size() > 0) begin
+      axi_mon_item done;
+
       tr = write_q_by_id[id].pop_front();
       tr.m_bid      = id;
-      tr.m_bresp    = m_b_vif.mon_cb.bresp;
+      tr.m_bresp    = resp;
       tr.m_buser    = m_b_vif.mon_cb.buser;
       `uvm_info(get_full_name(), $sformatf("FULL write complete: ID=%0h", id), UVM_HIGH)
-      tx_ap.write(tr.item_clone());
+      done = tr.item_clone();
+      m_response_port.write(done);
+      tx_ap.write(done);
+      m_transaction_port.write(done);
     end else begin
       `uvm_error("MON_B", $sformatf("B response for unexpected ID: %0h", id))
     end
@@ -235,12 +271,14 @@ task axi_monitor::collect_ar_channel();
 
   forever begin
     @(m_ar_vif.mon_cb);
-    if (!(m_ar_vif.mon_cb.arvalid && m_ar_vif.mon_cb.arready)) continue;
+    if (!(m_ar_vif.mon_cb.arvalid === 1'b1 && m_ar_vif.mon_cb.arready === 1'b1)) begin
+      continue;
+    end
 
     tr = axi_mon_read_item::type_id::create("ar_tr");
 
-    tr.m_arid     = m_ar_vif.mon_cb.arid;
-    tr.m_araddr   = m_ar_vif.mon_cb.araddr;
+    tr.m_arid     = m_ar_vif.mon_cb.arid & in_use(m_ar_vif.id_r_width);
+    tr.m_araddr   = m_ar_vif.mon_cb.araddr & in_use(m_ar_vif.addr_width);
     tr.m_arlen    = m_ar_vif.mon_cb.arlen;
     tr.m_arsize   = m_ar_vif.mon_cb.arsize;
     tr.m_arburst  = m_ar_vif.mon_cb.arburst;
@@ -257,6 +295,7 @@ task axi_monitor::collect_ar_channel();
                            tr.m_arid, tr.m_araddr, tr.m_arlen, tr.m_arsize, tr.m_arburst))
     end
 
+    m_request_port.write(tr.item_clone());
     read_q_by_id[tr.m_arid].push_back(tr);
     `uvm_info(get_full_name(),
               $sformatf("AR collected: ID=%0h Addr=%0h", tr.m_arid, tr.m_araddr), UVM_HIGH)
@@ -266,29 +305,38 @@ endtask : collect_ar_channel
 task axi_monitor::collect_r_channel();
   axi_id_t id;
   axi_mon_read_item tr;
+  logic [AxiRespWidth-1:0] resp;
 
   forever begin
     @(m_r_vif.mon_cb);
-    if (!(m_r_vif.mon_cb.rvalid && m_r_vif.mon_cb.rready)) continue;
+    if (!(m_r_vif.mon_cb.rvalid === 1'b1 && m_r_vif.mon_cb.rready === 1'b1)) begin
+      continue;
+    end
 
-    id = m_r_vif.mon_cb.rid;
-    if ($isunknown({m_r_vif.mon_cb.rid, m_r_vif.mon_cb.rdata, m_r_vif.mon_cb.rresp,
-                    m_r_vif.mon_cb.rlast})) begin
+    id   = m_r_vif.mon_cb.rid & in_use(m_r_vif.id_r_width);
+    resp = m_r_vif.mon_cb.rresp & in_use(m_r_vif.rresp_width);
+    // Error responses leave data unspecified (H.c A3.4.5)
+    if ($isunknown({id, resp, m_r_vif.mon_cb.rlast}) ||
+        (resp[1] === 1'b0 && $isunknown(m_r_vif.mon_cb.rdata & r_data_mask(id)))) begin
       `uvm_error("MON_X", $sformatf("R beat sampled with X/Z: id=%0h data=%0h resp=%0h last=%0b",
-                                    m_r_vif.mon_cb.rid, m_r_vif.mon_cb.rdata,
-                                    m_r_vif.mon_cb.rresp, m_r_vif.mon_cb.rlast))
+                                    id, m_r_vif.mon_cb.rdata, resp, m_r_vif.mon_cb.rlast))
     end
     if (read_q_by_id.exists(id) && read_q_by_id[id].size() > 0) begin
       tr = read_q_by_id[id][0];
       tr.m_rid = id;
       tr.m_rdata.push_back(m_r_vif.mon_cb.rdata);
-      tr.m_rresp.push_back(m_r_vif.mon_cb.rresp);
+      tr.m_rresp.push_back(resp);
       tr.m_ruser.push_back(m_r_vif.mon_cb.ruser);
+      m_response_port.write(tr.item_clone());
 
       if (m_r_vif.mon_cb.rlast) begin
+        axi_mon_item done;
+
         void'(read_q_by_id[id].pop_front());
         `uvm_info(get_full_name(), $sformatf("FULL read complete: ID=%0h", id), UVM_HIGH)
-        tx_ap.write(tr.item_clone());
+        done = tr.item_clone();
+        tx_ap.write(done);
+        m_transaction_port.write(done);
       end
     end else begin
       `uvm_error("MON_R", $sformatf("R data for unexpected ID: %0h", id))
@@ -320,3 +368,38 @@ function axi_mon_write_item axi_monitor::merge_aw(axi_mon_write_item req,
 
   return write_item;
 endfunction : merge_aw
+
+function logic [AxiMaxDataWidth-1:0] axi_monitor::w_data_mask(logic [AxiMaxStrbWidth-1:0] strb);
+  logic [AxiMaxDataWidth-1:0] mask = '0;
+
+  for (int unsigned lane = 0; lane < AxiMaxStrbWidth; lane++) begin
+    if (strb[lane] === 1'b1) begin
+      mask[8 * lane +: 8] = 8'hff;
+    end
+  end
+  return mask;
+endfunction : w_data_mask
+
+function logic [AxiMaxDataWidth-1:0] axi_monitor::in_use(int unsigned width);
+  return (AxiMaxDataWidth'(1) << width) - 1;
+endfunction : in_use
+
+function logic [AxiMaxDataWidth-1:0] axi_monitor::r_data_mask(axi_id_t id);
+  logic [AxiMaxDataWidth-1:0] mask = '0;
+  axi_mon_read_item           tr;
+  bit [AxiMaxAddrWidth-1:0]   addr;
+  int unsigned                lower, upper;
+
+  if (!read_q_by_id.exists(id) || read_q_by_id[id].size() == 0 ||
+      $isunknown({read_q_by_id[id][0].m_araddr, read_q_by_id[id][0].m_arsize,
+                  read_q_by_id[id][0].m_arlen, read_q_by_id[id][0].m_arburst})) begin
+    return '1;
+  end
+  tr = read_q_by_id[id][0];
+  axi_beat_lanes(tr.m_araddr, tr.m_arsize, tr.m_arlen, tr.m_arburst, m_r_vif.data_width / 8,
+                 tr.m_rdata.size(), addr, lower, upper);
+  for (int unsigned lane = lower; lane <= upper && lane < AxiMaxStrbWidth; lane++) begin
+    mask[8 * lane +: 8] = 8'hff;
+  end
+  return mask;
+endfunction : r_data_mask

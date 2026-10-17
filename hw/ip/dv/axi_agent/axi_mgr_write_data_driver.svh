@@ -19,8 +19,11 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
   local bit m_in_reset;
 
   // How to drive this channel's payload while it is idle. Set this with set_drive_x_when_idle
-  // before run_phase; see axi_agent_cfg::drive_x_when_idle for what the two settings mean.
+  // before run_phase; see axi_if::drive_x_when_idle for what the two settings mean.
   local bit m_drive_x_when_idle = 1'b1;
+
+  // Set AXI4-Lite mode with set_lite()
+  local bit m_is_lite;
 
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
@@ -33,6 +36,9 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
 
   // Set how the idle signals are driven. This must be called before run_phase.
   extern function void set_drive_x_when_idle(bit drive_x);
+
+  // Set AXI4-Lite mode before run_phase
+  extern function void set_lite(bit is_lite);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -68,9 +74,9 @@ function void axi_mgr_write_data_driver::set_vif(virtual axi_write_data_if vif);
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
+  if (vif.if_mode != Manager) begin
     `uvm_fatal(get_full_name(),
-               $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
+               $sformatf("Cannot drive this interface: it has mode %0s, not Manager.",
                          vif.if_mode.name()))
     return;
   end
@@ -85,6 +91,10 @@ endfunction
 function void axi_mgr_write_data_driver::set_drive_x_when_idle(bit drive_x);
   m_drive_x_when_idle = drive_x;
 endfunction
+
+function void axi_mgr_write_data_driver::set_lite(bit is_lite);
+  m_is_lite = is_lite;
+endfunction: set_lite
 
 task axi_mgr_write_data_driver::run_phase(uvm_phase phase);
   if (m_vif == null || m_clk_rst_vif == null) begin
@@ -134,8 +144,7 @@ task axi_mgr_write_data_driver::clear_data();
   m_vif.mgr_cb.wvalid <= 1'b0;
 
   // AXI requires nothing of the payload while WVALID is low, so drive it meaningless: X by
-  // default, or randomised for a sink that cannot tolerate X
-  // (see axi_agent_cfg::drive_x_when_idle).
+  // default, or randomised for a sink that cannot tolerate X (see axi_if::drive_x_when_idle).
   if (m_drive_x_when_idle) begin
     m_vif.mgr_cb.wdata <= 'x;
     m_vif.mgr_cb.wstrb <= 'x;
@@ -165,7 +174,12 @@ task axi_mgr_write_data_driver::drive_req(output bit item_sent);
         set_data_from_req();
         m_vif.mgr_cb.wvalid <= 1;
 
-        do @(m_vif.mgr_cb); while (m_vif.mgr_cb.wready !== 1'b1);
+        // Count a transfer only when sampled WVALID and WREADY are both high (H.c A3.2.1). For an
+        // item received between edges, WVALID reaches the bus at the next edge; WREADY alone is
+        // insufficient.
+        do begin
+          @(m_vif.mon_cb);
+        end while (!(m_vif.mon_cb.wvalid === 1'b1 && m_vif.mon_cb.wready === 1'b1));
 
         clear_data();
 
@@ -198,6 +212,11 @@ task axi_mgr_write_data_driver::set_data_from_req();
                $sformatf({"Cannot represent req.m_user = 0x%0h. ",
                           "The interface user_data_width is %0d."},
                          req.m_user, m_vif.user_data_width))
+  end
+
+  // AXI4-Lite transfers have one beat, so WLAST is always 1 (AMBA AXI H.c B1.1.1)
+  if (m_is_lite && !req.m_last) begin
+    `uvm_error(get_full_name(), "AXI4-Lite needs WLAST 1 on every beat.")
   end
 
   m_vif.mgr_cb.wdata  <= req.m_data;

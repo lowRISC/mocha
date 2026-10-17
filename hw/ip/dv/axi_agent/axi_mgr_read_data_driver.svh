@@ -57,9 +57,9 @@ function void axi_mgr_read_data_driver::set_vif(virtual axi_read_data_if vif);
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
+  if (vif.if_mode != Manager) begin
     `uvm_fatal(get_full_name(),
-               $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
+               $sformatf("Cannot drive this interface: it has mode %0s, not Manager.",
                          vif.if_mode.name()))
     return;
   end
@@ -125,9 +125,9 @@ task axi_mgr_read_data_driver::drive_req();
         // Cycles elapsed since rvalid was first seen; zero means it has not been seen yet.
         int unsigned delay = 0;
 
-        // Drive rready and watch for the actual transfer. We track the value we drive in
-        // rather than reading it back from the clocking block, and we sample on that exact
-        // handshake edge. This is what makes the accept protocol correct:
+        // Count a transfer only when sampled RVALID and RREADY are both high (H.c A3.2.1). For an
+        // item received between edges, the newly driven RREADY reaches the bus at the next edge;
+        // use sampled RREADY to detect the handshake. This handles both cases below:
         //   * a speculative rready (asserted before rvalid via ready_without_valid_pct) that
         //     catches the beat is detected and sampled, instead of consuming the beat unsampled
         //   * two accepts running back-to-back (no clock edge between sequence items) cannot
@@ -145,21 +145,24 @@ task axi_mgr_read_data_driver::drive_req();
           end
 
           m_vif.mgr_cb.rready <= rready;
-          @(m_vif.mgr_cb);
+          @(m_vif.mon_cb);
 
-          if (m_vif.mgr_cb.rvalid === 1'b1) begin
-            if (rready) break;  // rvalid && rready on this edge: beat transferred
+          if (m_vif.mon_cb.rvalid === 1'b1) begin
+            if (m_vif.mon_cb.rready === 1'b1) begin
+              break;
+            end
             delay++;            // count the cycle just elapsed, including the first rvalid one
           end
         end
 
         // The beat transferred on the edge that just happened: sample the value.
         read_data_item = axi_read_data_item::type_id::create("read_data_item");
-        read_data_item.m_id   = m_vif.mgr_cb.rid;
-        read_data_item.m_data = m_vif.mgr_cb.rdata;
-        read_data_item.m_resp = axi_read_data_item::rresp_e'(m_vif.mgr_cb.rresp);
-        read_data_item.m_last = m_vif.mgr_cb.rlast;
-        read_data_item.m_user = m_vif.mgr_cb.ruser;
+        read_data_item.m_id   = m_vif.mon_cb.rid;
+        read_data_item.m_data = m_vif.mon_cb.rdata;
+        read_data_item.m_resp = axi_read_data_item::rresp_e'(
+            m_vif.mon_cb.rresp & ((AxiRespWidth'(1) << m_vif.rresp_width) - 1));
+        read_data_item.m_last = m_vif.mon_cb.rlast;
+        read_data_item.m_user = m_vif.mon_cb.ruser;
 
         rsp = read_data_item;
 

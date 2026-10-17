@@ -8,15 +8,16 @@
 
 interface axi_write_data_if (input clk_i, input rst_ni);
   import axi_widths_pkg::*;
-  import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
+  import axi_agent_pkg::axi_if_mode_e;
+  import axi_agent_pkg::Manager;
+  import axi_agent_pkg::Subordinate;
+  import axi_agent_pkg::Monitor;
   import uvm_pkg::*;
 
   // The interface mode.
   //
-  //  - Host:    An agent is driving the interface signals through mgr_cb, acting as a Manager.
-  //  - Device:  An agent is driving the interface signals through sub_cb, acting as a Subordinate.
-  //  - Monitor: No agent is driving interface signals and the interface is purely passive.
-  if_mode_e if_mode = Monitor;
+  // Manager drives through mgr_cb; Subordinate drives through sub_cb; Monitor is passive.
+  axi_if_mode_e if_mode = Monitor;
 
   // The DATA_WIDTH property. Set this by calling set_data_width().
   int unsigned data_width = AxiMaxDataWidth;
@@ -41,16 +42,15 @@ interface axi_write_data_if (input clk_i, input rst_ni);
   wire                            wlast;
   wire [AxiMaxDataUserWidth-1:0]  wuser;
 
-  // Copies of the signals that are driven by mgr_cb (only used if if_mode == Host). The "*_driven"
-  // signals are directly driven by the clocking block. The "*_internal" signals track these, but
-  // take masks into account for signals with configurable length and are also cleared on reset.
+  // In Manager mode, mgr_cb drives *_driven; *_internal tracks it, masks configurable widths and
+  // clears on reset
   logic                           wvalid_driven, wvalid_internal;
   logic [AxiMaxDataWidth-1:0]     wdata_driven, wdata_internal;
   logic [AxiMaxStrbWidth-1:0]     wstrb_driven, wstrb_internal;
   logic                           wlast_driven, wlast_internal;
   logic [AxiMaxDataUserWidth-1:0] wuser_driven, wuser_internal;
 
-  // A copy of wready, which is driven by sub_cb (only used if if_mode == Device). The
+  // A copy of wready, which is driven by sub_cb (only used if if_mode == Subordinate). The
   // wready_driven signal is directly driven by the clocking block. The wready_internal signal
   // tracks it, but is also cleared on reset.
   logic                           wready_driven, wready_internal;
@@ -109,12 +109,12 @@ interface axi_write_data_if (input clk_i, input rst_ni);
     end
   end
 
-  assign wvalid = (if_mode == Host)   ? wvalid_internal : 'z;
-  assign wready = (if_mode == Device) ? wready_internal : 'z;
-  assign wdata  = (if_mode == Host)   ? wdata_internal  : 'z;
-  assign wstrb  = (if_mode == Host)   ? wstrb_internal  : 'z;
-  assign wlast  = (if_mode == Host)   ? wlast_internal  : 'z;
-  assign wuser  = (if_mode == Host)   ? wuser_internal  : 'z;
+  assign wvalid = (if_mode == Manager)     ? wvalid_internal : 'z;
+  assign wready = (if_mode == Subordinate) ? wready_internal : 'z;
+  assign wdata  = (if_mode == Manager)     ? wdata_internal  : 'z;
+  assign wstrb  = (if_mode == Manager)     ? wstrb_internal  : 'z;
+  assign wlast  = (if_mode == Manager)     ? wlast_internal  : 'z;
+  assign wuser  = (if_mode == Manager)     ? wuser_internal  : 'z;
 
   // Set the DATA_WIDTH property. The allowed values are 8, 16, 32, 64, 128, 256, 512, 1024 (see
   // AMBA AXI protocol specification, issue J, section B1.3)

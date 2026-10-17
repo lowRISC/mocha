@@ -24,8 +24,12 @@ class axi_mgr_read_request_driver extends uvm_driver#(axi_txn_request_item, axi_
   local bit m_in_reset;
 
   // How to drive this channel's payload while it is idle. Set this with set_drive_x_when_idle
-  // before run_phase; see axi_agent_cfg::drive_x_when_idle for what the two settings mean.
+  // before run_phase; see axi_if::drive_x_when_idle for what the two settings mean.
   local bit m_drive_x_when_idle = 1'b1;
+
+  // AXI4-Lite mode and ARSIZE; set with set_lite()
+  local bit          m_is_lite;
+  local int unsigned m_lite_size;
 
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
@@ -38,6 +42,9 @@ class axi_mgr_read_request_driver extends uvm_driver#(axi_txn_request_item, axi_
 
   // Set how the idle signals are driven. This must be called before run_phase.
   extern function void set_drive_x_when_idle(bit drive_x);
+
+  // Set AXI4-Lite mode and data width before run_phase
+  extern function void set_lite(bit is_lite, int unsigned data_width);
 
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
@@ -73,9 +80,9 @@ function void axi_mgr_read_request_driver::set_vif(virtual axi_read_request_if v
     return;
   end
 
-  if (vif.if_mode != dv_utils_pkg::Host) begin
+  if (vif.if_mode != Manager) begin
     `uvm_fatal(get_full_name(),
-               $sformatf("Cannot drive this interface: it has mode %0s, not Host.",
+               $sformatf("Cannot drive this interface: it has mode %0s, not Manager.",
                          vif.if_mode.name()))
     return;
   end
@@ -90,6 +97,11 @@ endfunction
 function void axi_mgr_read_request_driver::set_drive_x_when_idle(bit drive_x);
   m_drive_x_when_idle = drive_x;
 endfunction
+
+function void axi_mgr_read_request_driver::set_lite(bit is_lite, int unsigned data_width);
+  m_is_lite   = is_lite;
+  m_lite_size = $clog2(data_width / 8);
+endfunction: set_lite
 
 task axi_mgr_read_request_driver::run_phase(uvm_phase phase);
   if (m_vif == null || m_clk_rst_vif == null) begin
@@ -146,8 +158,7 @@ task axi_mgr_read_request_driver::clear_data();
   m_vif.mgr_cb.arvalid  <= 1'b0;
 
   // AXI requires nothing of the payload while ARVALID is low, so drive it meaningless: X by
-  // default, or randomised for a sink that cannot tolerate X
-  // (see axi_agent_cfg::drive_x_when_idle).
+  // default, or randomised for a sink that cannot tolerate X (see axi_if::drive_x_when_idle).
   if (m_drive_x_when_idle) begin
     m_vif.mgr_cb.arid     <= 'x;
     m_vif.mgr_cb.araddr   <= 'x;
@@ -192,7 +203,12 @@ task axi_mgr_read_request_driver::drive_req(output bit item_sent);
         set_data_from_req();
         m_vif.mgr_cb.arvalid <= 1;
 
-        do @(m_vif.mgr_cb); while (m_vif.mgr_cb.arready !== 1'b1);
+        // Count a transfer only when sampled ARVALID and ARREADY are both high (H.c A3.2.1). For an
+        // item received between edges, ARVALID reaches the bus at the next edge; ARREADY alone is
+        // insufficient.
+        do begin
+          @(m_vif.mon_cb);
+        end while (!(m_vif.mon_cb.arvalid === 1'b1 && m_vif.mon_cb.arready === 1'b1));
 
         clear_data();
 
@@ -226,12 +242,22 @@ task axi_mgr_read_request_driver::set_data_from_req();
                          req.m_user, m_vif.user_req_width))
   end
 
+  // AXI4-Lite omits ARLEN, ARSIZE, ARLOCK and ARCACHE; use their implicit values (AMBA AXI H.c
+  // B1.1.1). For a single transfer, ARBURST is unused and defaults to INCR (A9.3).
+  if (m_is_lite &&
+      (req.m_len != 0 || req.m_size != m_lite_size || req.m_lock || req.m_cache != 0)) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"AXI4-Lite needs ARLEN 0, ARSIZE %0d, ARLOCK 0 and ARCACHE 0, ",
+                          "not %0d, %0d, %0d and 0x%0h."},
+                         m_lite_size, req.m_len, req.m_size, req.m_lock, req.m_cache))
+  end
+
   m_vif.mgr_cb.arid     <= req.m_id;
   m_vif.mgr_cb.araddr   <= req.m_addr;
   m_vif.mgr_cb.arregion <= req.m_region;
   m_vif.mgr_cb.arlen    <= req.m_len;
   m_vif.mgr_cb.arsize   <= req.m_size;
-  m_vif.mgr_cb.arburst  <= req.m_burst;
+  m_vif.mgr_cb.arburst  <= m_is_lite ? BurstIncr : req.m_burst;
   m_vif.mgr_cb.arlock   <= req.m_lock;
   m_vif.mgr_cb.arcache  <= req.m_cache;
   m_vif.mgr_cb.arprot   <= req.m_prot;

@@ -8,15 +8,16 @@
 
 interface axi_write_request_if (input clk_i, input rst_ni);
   import axi_widths_pkg::*;
-  import dv_utils_pkg::if_mode_e, dv_utils_pkg::Host, dv_utils_pkg::Device, dv_utils_pkg::Monitor;
+  import axi_agent_pkg::axi_if_mode_e;
+  import axi_agent_pkg::Manager;
+  import axi_agent_pkg::Subordinate;
+  import axi_agent_pkg::Monitor;
   import uvm_pkg::*;
 
   // The interface mode.
   //
-  //  - Host:    An agent is driving the interface signals through mgr_cb, acting as a Manager.
-  //  - Device:  An agent is driving the interface signals through sub_cb, acting as a Subordinate.
-  //  - Monitor: No agent is driving interface signals and the interface is purely passive.
-  if_mode_e if_mode = Monitor;
+  // Manager drives through mgr_cb; Subordinate drives through sub_cb; Monitor is passive.
+  axi_if_mode_e if_mode = Monitor;
 
   // The ID_W_WIDTH property. Set this by calling set_id_w_width().
   int unsigned id_w_width = AxiMaxIdWidth;
@@ -65,9 +66,8 @@ interface axi_write_request_if (input clk_i, input rst_ni);
   wire [AxiQosWidth-1:0]          awqos;
   wire [AxiMaxReqUserWidth-1:0]   awuser;
 
-  // Copies of the signals that are driven by mgr_cb (only used if if_mode == Host). The "*_driven"
-  // signals are directly driven by the clocking block. The "*_internal" signals track these, but
-  // take masks into account for signals with configurable length and are also cleared on reset.
+  // In Manager mode, mgr_cb drives *_driven; *_internal tracks it, masks configurable widths and
+  // clears on reset
   logic                           awvalid_driven, awvalid_internal;
   logic [AxiMaxIdWidth-1:0]       awid_driven, awid_internal;
   logic [AxiMaxAddrWidth-1:0]     awaddr_driven, awaddr_internal;
@@ -81,7 +81,7 @@ interface axi_write_request_if (input clk_i, input rst_ni);
   logic [AxiQosWidth-1:0]         awqos_driven, awqos_internal;
   logic [AxiMaxReqUserWidth-1:0]  awuser_driven, awuser_internal;
 
-  // A copy of awready, which is driven by sub_cb (only used if if_mode == Device). The
+  // A copy of awready, which is driven by sub_cb (only used if if_mode == Subordinate). The
   // awready_driven signal is directly driven by the clocking block. The awready_internal signal
   // tracks it, but is also cleared on reset.
   logic                           awready_driven, awready_internal;
@@ -175,19 +175,19 @@ interface axi_write_request_if (input clk_i, input rst_ni);
     end
   end
 
-  assign awvalid  = (if_mode == Host)   ? awvalid_internal  : 'z;
-  assign awready  = (if_mode == Device) ? awready_internal  : 'z;
-  assign awid     = (if_mode == Host)   ? awid_internal     : 'z;
-  assign awaddr   = (if_mode == Host)   ? awaddr_internal   : 'z;
-  assign awregion = (if_mode == Host)   ? awregion_internal : 'z;
-  assign awlen    = (if_mode == Host)   ? awlen_internal    : 'z;
-  assign awsize   = (if_mode == Host)   ? awsize_internal   : 'z;
-  assign awburst  = (if_mode == Host)   ? awburst_internal  : 'z;
-  assign awlock   = (if_mode == Host)   ? awlock_internal   : 'z;
-  assign awcache  = (if_mode == Host)   ? awcache_internal  : 'z;
-  assign awprot   = (if_mode == Host)   ? awprot_internal   : 'z;
-  assign awqos    = (if_mode == Host)   ? awqos_internal    : 'z;
-  assign awuser   = (if_mode == Host)   ? awuser_internal   : 'z;
+  assign awvalid  = (if_mode == Manager)     ? awvalid_internal  : 'z;
+  assign awready  = (if_mode == Subordinate) ? awready_internal  : 'z;
+  assign awid     = (if_mode == Manager)     ? awid_internal     : 'z;
+  assign awaddr   = (if_mode == Manager)     ? awaddr_internal   : 'z;
+  assign awregion = (if_mode == Manager)     ? awregion_internal : 'z;
+  assign awlen    = (if_mode == Manager)     ? awlen_internal    : 'z;
+  assign awsize   = (if_mode == Manager)     ? awsize_internal   : 'z;
+  assign awburst  = (if_mode == Manager)     ? awburst_internal  : 'z;
+  assign awlock   = (if_mode == Manager)     ? awlock_internal   : 'z;
+  assign awcache  = (if_mode == Manager)     ? awcache_internal  : 'z;
+  assign awprot   = (if_mode == Manager)     ? awprot_internal   : 'z;
+  assign awqos    = (if_mode == Manager)     ? awqos_internal    : 'z;
+  assign awuser   = (if_mode == Manager)     ? awuser_internal   : 'z;
 
   // Set the ID_W_WIDTH property. The allowed range is 0..32 (see AMBA AXI protocol specification,
   // issue J, section B1.3)

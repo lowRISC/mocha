@@ -47,6 +47,12 @@ class axi_fixed_read_req_item extends uvm_sequence_item;
   extern function void do_print(uvm_printer printer);
   extern function void do_copy(uvm_object rhs);
   extern function bit do_compare(uvm_object rhs, uvm_comparer comparer);
+
+  // Single-transfer versions of axi_txn_request_item::exclusive_access_c, cache_encoding_c and
+  // region_c (AMBA AXI H.c A7.2.4, A4.4, A8.2.1, A9.3)
+  extern constraint exclusive_access_c;
+  extern constraint cache_encoding_c;
+  extern constraint region_c;
 endclass
 
 function axi_fixed_read_req_item::new(string name = "");
@@ -104,3 +110,16 @@ function bit axi_fixed_read_req_item::do_compare(uvm_object rhs, uvm_comparer co
           comparer.compare_field_int("m_qos", m_qos, rhs_.m_qos, 4, UVM_HEX) &
           comparer.compare_field("m_user", m_user, rhs_.m_user, 128, UVM_HEX));
 endfunction
+
+constraint axi_fixed_read_req_item::exclusive_access_c {
+  m_lock -> (m_addr & ((1 << m_size) - 1)) == '0;
+}
+
+constraint axi_fixed_read_req_item::cache_encoding_c {
+  m_cache inside {4'b0000, 4'b0001, 4'b0010, 4'b0011, 4'b0110,
+                  4'b0111, 4'b1010, 4'b1011, 4'b1110, 4'b1111};
+}
+
+constraint axi_fixed_read_req_item::region_c {
+  soft m_region == '0;
+}
