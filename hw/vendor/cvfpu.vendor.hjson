@@ -1,0 +1,14 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "cvfpu",
+  target_dir: "cvfpu",
+  upstream: {
+    url: "https://github.com/openhwgroup/cvfpu.git",
+    rev: "develop",
+  },
+  exclude_from_upstream: [
+    ".github",
+  ],
+}
