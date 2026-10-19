@@ -103,8 +103,6 @@ module top_chip_system #(
     config_pkg::cva6_user_cfg_t cfg = CVA6UserCfg;
     // Extensions
     cfg.RVZiCond                    = bit'(0);
-    cfg.RVF                         = bit'(0);
-    cfg.RVD                         = bit'(0);
     cfg.CvxifEn                     = bit'(0);
     // Memory map
     cfg.DmBaseAddress               = top_pkg::DebugMemBase;
