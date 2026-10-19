@@ -12,6 +12,7 @@ filesets:
       - pulp-platform.org::axi
       - lowrisc:common_cells:all
       - lowrisc:cosmic:hpdcache
+      - lowrisc:cosmic:cvfpu
       - lowrisc:prim:lfsr
     files:
       # Includes.
@@ -45,6 +46,7 @@ filesets:
       - cva6_cheri/core/csr_regfile.sv
       - cva6_cheri/core/decoder.sv
       - cva6_cheri/core/ex_stage.sv
+      - cva6_cheri/core/fpu_wrap.sv
       - cva6_cheri/core/instr_realign.sv
       - cva6_cheri/core/id_stage.sv
       - cva6_cheri/core/issue_read_operands.sv
