@@ -17,6 +17,7 @@
     ".github",
     ".gitlab-ci",
     // External dependencies.
+    // CVFPU is imported separately by cvfpu.vendor.hjson.
     "core/cvfpu",
     "corev_apu",
     "vendor",
