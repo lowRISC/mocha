@@ -1,0 +1,15 @@
+diff --git a/cip_lib/seq_lib/cip_base_vseq__sec_cm_fi.svh b/cip_lib/seq_lib/cip_base_vseq__sec_cm_fi.svh
+index 9c74ddf4..80beca1a 100644
+--- a/cip_lib/seq_lib/cip_base_vseq__sec_cm_fi.svh
++++ b/cip_lib/seq_lib/cip_base_vseq__sec_cm_fi.svh
+@@ -34,7 +34,9 @@ virtual task check_sec_cm_fi_resp(sec_cm_base_if_proxy if_proxy);
+   // This is a fatal alert and design keeps sending it until reset is issued.
+   // Check alerts are triggered for a few times
+   repeat (5) begin
+-    wait_alert_trigger(cfg.sec_cm_alert_name, .wait_complete(1));
++    // The fault is latched on the design clock but the alert interface watches an asynchronous
++    // clock, so the alert can arrive one cycle later than the shared default allows.
++    wait_alert_trigger(cfg.sec_cm_alert_name, .max_wait_cycle(8), .wait_complete(1));
+   end
+ endtask : check_sec_cm_fi_resp
+ 
