@@ -1,0 +1,62 @@
+diff --git a/data/clkmgr.hjson.tpl b/data/clkmgr.hjson.tpl
+index c6495a3a..e6a9b381 100644
+--- a/data/clkmgr.hjson.tpl
++++ b/data/clkmgr.hjson.tpl
+@@ -303,9 +303,11 @@ rg_srcs = get_rg_srcs(typed_clocks)
+     { name: "MEAS.CONFIG.REGWEN",
+       desc: "The measurement controls protected with regwen."
+     }
++  % if ext_clk_bypass:
+     { name: "CLK_CTRL.CONFIG.REGWEN",
+       desc: "Software controlled clock requests are proteced with regwen."
+     }
++  % endif
+ 
+   ]
+ 
+diff --git a/data/clkmgr_sec_cm_testplan.hjson.tpl b/data/clkmgr_sec_cm_testplan.hjson.tpl
+index fb6cdffb..365b72d0 100644
+--- a/data/clkmgr_sec_cm_testplan.hjson.tpl
++++ b/data/clkmgr_sec_cm_testplan.hjson.tpl
+@@ -213,25 +213,16 @@
+       tests: ["N/A"]
+     % endif
+     }
++  % if ext_clk_bypass:
+     {
+       name: sec_cm_clk_ctrl_config_regwen
+       desc: '''Verify the countermeasure(s) CLK_CTRL.CONFIG.REGWEN.
+ 
+-    % if ext_clk_bypass:
+             This is covered by auto csr test.
+-    % else:
+-            Not applicable in this configuration: this regwen locks EXTCLK_CTRL, which is not
+-            built when ext_clk_bypass is false. The generated register description still declares
+-            the countermeasure, which is a template bug: the countermeasure list should be gated
+-            on ext_clk_bypass as well.
+-    % endif
+             '''
+       stage: V2S
+-    % if ext_clk_bypass:
+       tests: ["clkmgr_csr_rw"]
+-    % else:
+-      tests: ["N/A"]
+-    % endif
+     }
++  % endif
+   ]
+ }
+diff --git a/rtl/clkmgr.sv.tpl b/rtl/clkmgr.sv.tpl
+index 3071298b..83a132cc 100644
+--- a/rtl/clkmgr.sv.tpl
++++ b/rtl/clkmgr.sv.tpl
+@@ -210,7 +210,9 @@ rg_srcs = get_rg_srcs(typed_clocks)
+ 
+   // SEC_CM: MEAS.CONFIG.REGWEN
+   // SEC_CM: MEAS.CONFIG.SHADOW
++% if ext_clk_bypass:
+   // SEC_CM: CLK_CTRL.CONFIG.REGWEN
++% endif
+   clkmgr_reg_top u_reg (
+     .clk_i,
+     .rst_ni,
