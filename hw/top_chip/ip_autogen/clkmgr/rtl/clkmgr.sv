@@ -114,7 +114,6 @@
 
   // SEC_CM: MEAS.CONFIG.REGWEN
   // SEC_CM: MEAS.CONFIG.SHADOW
-  // SEC_CM: CLK_CTRL.CONFIG.REGWEN
   clkmgr_reg_top u_reg (
     .clk_i,
     .rst_ni,

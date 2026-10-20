@@ -303,9 +303,11 @@ rg_srcs = get_rg_srcs(typed_clocks)
     { name: "MEAS.CONFIG.REGWEN",
       desc: "The measurement controls protected with regwen."
     }
+  % if ext_clk_bypass:
     { name: "CLK_CTRL.CONFIG.REGWEN",
       desc: "Software controlled clock requests are proteced with regwen."
     }
+  % endif
 
   ]
 

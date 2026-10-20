@@ -173,9 +173,6 @@
     { name: "MEAS.CONFIG.REGWEN",
       desc: "The measurement controls protected with regwen."
     }
-    { name: "CLK_CTRL.CONFIG.REGWEN",
-      desc: "Software controlled clock requests are proteced with regwen."
-    }
 
   ]
 

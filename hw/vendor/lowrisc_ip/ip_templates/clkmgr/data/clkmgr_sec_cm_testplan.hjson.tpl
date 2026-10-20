@@ -213,25 +213,16 @@
       tests: ["N/A"]
     % endif
     }
+  % if ext_clk_bypass:
     {
       name: sec_cm_clk_ctrl_config_regwen
       desc: '''Verify the countermeasure(s) CLK_CTRL.CONFIG.REGWEN.
 
-    % if ext_clk_bypass:
             This is covered by auto csr test.
-    % else:
-            Not applicable in this configuration: this regwen locks EXTCLK_CTRL, which is not
-            built when ext_clk_bypass is false. The generated register description still declares
-            the countermeasure, which is a template bug: the countermeasure list should be gated
-            on ext_clk_bypass as well.
-    % endif
             '''
       stage: V2S
-    % if ext_clk_bypass:
       tests: ["clkmgr_csr_rw"]
-    % else:
-      tests: ["N/A"]
-    % endif
     }
+  % endif
   ]
 }
