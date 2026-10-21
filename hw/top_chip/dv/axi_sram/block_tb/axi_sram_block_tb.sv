@@ -46,6 +46,17 @@ module axi_sram_block_tb;
     .axi_resp  (sram_resp)
   );
 
+  bind axi_sram axi_sram_assert u_axi_sram_assert (
+    .clk_i,
+    .rst_ni,
+    .axi_req_i,
+    .axi_resp_o,
+    .sram_req,
+    .sram_we_d,
+    .sram_be,
+    .sram_cheri_w_tag
+  );
+
   axi_sram #(
     .AddrWidth(SramAddrWidth)
   ) dut (

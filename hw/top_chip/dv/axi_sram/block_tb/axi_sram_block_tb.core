@@ -12,7 +12,7 @@ filesets:
       - lowrisc:mocha_dv:axi_sram_env
       - lowrisc:mocha_dv:axi_vip
       - lowrisc:mocha:axi_sram
-      # Assertions bound into the DUT.
+      - lowrisc:mocha_dv:axi_sram_sva
     files:
       - axi_sram_block_tb.sv
     file_type: systemVerilogSource
