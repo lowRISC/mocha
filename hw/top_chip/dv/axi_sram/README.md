@@ -57,6 +57,29 @@ dvsim hw/top_chip/dv/axi_sram/block_tb/axi_sram_block_sim_cfg.hjson -i block --c
 
 The cfg is part of the batch group in [`mocha_sim_cfgs.hjson`](../mocha_sim_cfgs.hjson).
 
+## Assertions
+
+The verification plan's assertion items are carried by
+[`sva/axi_sram_assert.sv`](./sva/axi_sram_assert.sv), which
+[`axi_sram_block_tb`](./block_tb/axi_sram_block_tb.sv) binds into the DUT. The bind reaches the
+tag signals by name, since they are internal to `axi_sram`. The DUT's own output-known checks stay
+in the RTL.
+
+| Plan item | Assertion |
+| --- | --- |
+| `sram_geometry` | `GeometryMatchesSpec_A`, `SramSizeMatchesSpec_A`, plus the RTL's own `TagRamCoversDataRam_A` and `SramSizeMatchesMap_A` |
+| `assert_wuser_not_full_cap` | `TagSetNeedsFullStrobe_A` |
+| `burst_wrap` | `AwNo4kbCrossing_A`, `ArNo4kbCrossing_A` |
+| `bounded_response` | `BValidBounded_A`, `RValidBounded_A` |
+| `cap_both_ruser_set` | `CapReadRuserBeatsAgree_A` |
+| `misaligned_read_clears_tag` | `NonCapReadHasNoTag_A` |
+
+The response bounds are measured from the point the memory has everything it needs -- the last
+write beat, or the read request -- so they do not depend on how the manager paces the channels.
+`CapReadRuserBeatsAgree_A` excludes a tag write landing between a capability read's two beats: the
+beats are separate memory accesses, and a write the manager has not ordered against the read may
+be seen by either of them.
+
 ## Not covered yet
 
 The bridge in front of the memory, `axi_to_detailed_mem`, accepts one burst per direction and
@@ -81,7 +104,7 @@ alignment, and nothing else, so a write that is not a full capability write can 
 
 `axi_sram_wuser_partial_strobe` fails. A capability-shaped write that does not strobe every byte
 is not a full capability write, but there is no WSTRB term anywhere on the tag path, so it forges
-a tag on a slot it only partly wrote.
+a tag on a slot it only partly wrote. `TagSetNeedsFullStrobe_A` fires on it.
 
 `axi_sram_wuser_mismatch` fails. A capability-shaped write whose two beats disagree on `WUSER` is
 not a full capability write and must leave the tag clear, but the tag RAM is written on every beat,

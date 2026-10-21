@@ -17,6 +17,7 @@ filesets:
       # generic implementation at build time via fusesoc --mapping.
       - lowrisc:mocha:axi_sram
       # Assertions bound into the DUT.
+      - lowrisc:mocha_dv:axi_sram_sva
     files:
       - axi_sram_block_tb.sv
     file_type: systemVerilogSource
