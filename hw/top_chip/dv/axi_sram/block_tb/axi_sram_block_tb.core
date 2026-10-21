@@ -1,0 +1,30 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_sram_block_tb"
+description: "Block-level tb for axi_sram"
+
+filesets:
+  files_tb:
+    depend:
+      - lowrisc:mocha_dv:axi_sram_env
+      - lowrisc:mocha_dv:axi_vip
+      - lowrisc:mocha:axi_sram
+      # Assertions bound into the DUT.
+    files:
+      - axi_sram_block_tb.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_tb
+    toplevel: axi_sram_block_tb
+
+  # dvsim only runs fusesoc up to filelist generation;
+  # the vcs backend emits a flat <core>.scr that is fed to `xrun -f`.
+  sim:
+    <<: *default_target
+    default_tool: vcs
