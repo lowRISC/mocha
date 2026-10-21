@@ -1,0 +1,36 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_sram_env"
+description: "Shared AXI SRAM UVM verification environment"
+
+filesets:
+  files_env:
+    depend:
+      - lowrisc:mocha_constants:top_pkg
+      - pulp-platform.org::axi
+      - lowrisc:dv:dv_utils
+      - lowrisc:dv:common_ifs
+      - lowrisc:mocha_dv:axi_agent:0.1
+    files:
+      # Blocks of the test package, `included by axi_sram_test_pkg.sv
+      - axi_sram_ref_model.svh: {is_include_file: true}
+      - axi_sram_scoreboard.svh: {is_include_file: true}
+      - axi_sram_virtual_sequencer.svh: {is_include_file: true}
+      - axi_sram_env.svh: {is_include_file: true}
+      - axi_sram_base_test.svh: {is_include_file: true}
+      - seq_lib/axi_sram_vseq_list.sv: {is_include_file: true}
+      - seq_lib/axi_sram_base_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_rst_sanity_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_write_read_vseq.sv: {is_include_file: true}
+
+      - axi_sram_test_pkg.sv
+      - axi_sram_cov.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_env

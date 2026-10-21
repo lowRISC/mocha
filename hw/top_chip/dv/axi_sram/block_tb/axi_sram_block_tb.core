@@ -1,0 +1,34 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_sram_block_tb"
+description: "Block-level tb: axi_sram driven directly by an axi_vip_if (no chip, no crossbar)"
+
+filesets:
+  files_tb:
+    depend:
+      # axi_sram UVM env.
+      - lowrisc:mocha_dv:axi_sram_env
+      # Shared AXI VIP interface (active manager on the device-side req/resp here).
+      - lowrisc:mocha_dv:axi_vip
+      # The block DUT. Its abstract prims (prim:ram_1p, ...) are resolved to the
+      # generic implementation at build time via fusesoc --mapping.
+      - lowrisc:mocha:axi_sram
+      # Assertions bound into the DUT.
+    files:
+      - axi_sram_block_tb.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_tb
+    toplevel: axi_sram_block_tb
+
+  # dvsim only runs fusesoc up to filelist generation;
+  # the vcs backend emits a flat <core>.scr (no -makelib) that is fed to `xrun -f`.
+  sim:
+    <<: *default_target
+    default_tool: vcs

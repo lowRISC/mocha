@@ -1,0 +1,33 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: axi_sram_block
+
+  // DUT + testbench (dut_instance defaults to {tb}.dut in common_sim_cfg).
+  dut: axi_sram
+  tb:  axi_sram_block_tb
+
+  // Simulator used to sign off this block
+  tool: xcelium
+
+  fusesoc_core: lowrisc:mocha_dv:axi_sram_block_tb:0
+
+  import_cfgs: [
+    "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"
+  ]
+
+  // Directed tests (one vseq each); each runs once.
+  reseed: 1
+  uvm_test: axi_sram_base_test
+
+  tests: [
+    { name: "axi_sram_write_read",              uvm_test_seq: "axi_sram_write_read_vseq" }
+    { name: "axi_sram_rst_sanity",              uvm_test_seq: "axi_sram_rst_sanity_vseq" }
+  ]
+
+  // The block-level regression = every test in this cfg.
+  regressions: [
+    { name: "block" }
+  ]
+}
