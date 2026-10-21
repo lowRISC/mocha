@@ -596,10 +596,10 @@
                     Description: Accesses inside the SRAM range should reach axi_sram and should round-trip correctly through the interconnect
                     Node_Type: metric
                     Priority: 0
-                    Comment: Implicit
+                    Comment: Covered by the first two round trips in sram_boundary, which write and read the first and last SRAM words through the crossbar. Every other integration testcase also round-trips SRAMBase as its control before checking a DECERR
                     Items:
                     [
-                        testcase:TODO_sram_reachable
+                        testcase:axi_sram_sram_boundary
                     ]
                 }
                 out_of_range_error:
@@ -611,8 +611,7 @@
                     Comment: Fully-out-of-range accesses result in an error; the partial-out-of-range part is enforced by proxy of AXI4 not allowing bursts to span a 4KB boundary
                     Items:
                     [
-                        testcase:axi_sram_out_of_range_error_test
-                        testcase:axi_sram_wrong_region_decerr_test
+                        testcase:axi_sram_out_of_range_error
                     ]
                 }
                 burst_wrap:
@@ -636,7 +635,7 @@
                     Priority: 1
                     Items:
                     [
-                        testcase:axi_sram_sram_boundary_test
+                        testcase:axi_sram_sram_boundary
                     ]
                 }
                 execute_from_sram:

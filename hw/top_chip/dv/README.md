@@ -63,6 +63,9 @@ With `+define+SWAP_CVA6_WITH_AXI_DRIVER`, the `tb_cfg` SV config replaces the CV
 The environment builds that agent only in this build mode; it is null otherwise.
 Vseqs drive it through `p_sequencer.cva6_axi_sqr` and clear `do_wait_for_sw_test_done` in `new()`, since no software runs and the test ends when the sequence does.
 
+The tests built on it so far pin down the SRAM aperture in the address map: `axi_sram_sram_boundary` and `axi_sram_out_of_range_error` check that the words inside it round-trip and that everything outside it is answered with DECERR.
+Block-level SRAM verification lives in [`axi_sram`](./axi_sram/README.md).
+
 ```bash
 dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i axi_driver_smoke -t xcelium
 ```
