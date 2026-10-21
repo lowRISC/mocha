@@ -34,7 +34,8 @@ The W and R channels carry no address, so it keeps small AW/AR attribute queues 
 # One test
 dvsim hw/top_chip/dv/axi_sram/block_tb/axi_sram_block_sim_cfg.hjson -i axi_sram_write_read
 
-# Every test in this cfg
+# The four-test smoke set, or every test in this cfg
+dvsim hw/top_chip/dv/axi_sram/block_tb/axi_sram_block_sim_cfg.hjson -i smoke
 dvsim hw/top_chip/dv/axi_sram/block_tb/axi_sram_block_sim_cfg.hjson -i block
 
 # With functional coverage
@@ -42,6 +43,20 @@ dvsim hw/top_chip/dv/axi_sram/block_tb/axi_sram_block_sim_cfg.hjson -i block --c
 ```
 
 The cfg is part of the batch group in [`mocha_sim_cfgs.hjson`][mocha_sim_cfgs].
+
+## Not covered yet
+
+The bridge in front of the memory, `axi_to_detailed_mem`, accepts one burst per direction: it holds `AxREADY` low until the burst in progress in that direction has been serviced.
+It interleaves the read and the write beats on a single memory port, serving a single-beat write ahead of a read beat that is not the read's last, so a write can land inside a read burst of three or more beats.
+`multiple_outstanding_transactions` therefore never has more than one burst per direction in flight, and `raw_war_same_region` races only single-beat accesses and capability bursts, not a longer read burst.
+Both are recorded in the plan with that reason.
+
+`atomic_excluded` has no stimulus.
+The plan asks for four ATOP encodings driven and answered with SLVERR, but `axi_if` carries no AWATOP and `axi_vip_if` drives `aw.atop` as zero, so a non-zero ATOP cannot be driven at all.
+The item needs AWATOP support in the AXI agent first.
+
+`backpressure` throttles the response side only.
+The agent exposes READY timing on the B and R accepts, which the test randomises per transaction, but nothing delays the manager's own AW, W or AR VALID, so the plan's request-channel throttling needs that support in the agent first.
 
 [axi_sram]: ../../rtl/axi_sram.sv
 [arch]: ../../../../doc/ref/arch.md
