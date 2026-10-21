@@ -44,6 +44,24 @@ dvsim hw/top_chip/dv/axi_sram/block_tb/axi_sram_block_sim_cfg.hjson -i block --c
 
 The cfg is part of the batch group in [`mocha_sim_cfgs.hjson`][mocha_sim_cfgs].
 
+## Assertions
+
+The verification plan's assertion items are carried by [`sva/axi_sram_assert.sv`][assert], which [`sva/axi_sram_bind.sv`][bind] binds into every `axi_sram` instance, so the block tb and the top-level build both carry it.
+The bind reaches the tag signals by name, since they are internal to `axi_sram`.
+The DUT's own output-known checks stay in the RTL.
+
+| Plan item | Assertion |
+| --- | --- |
+| `sram_geometry` | `GeometryMatchesSpec_A`, `SramSizeMatchesSpec_A`, plus the RTL's own `TagRamCoversDataRam_A` and `SramSizeMatchesMap_A` |
+| `partial_strobe_clears_tag` | `TagSetNeedsFullStrobe_A` |
+| `burst_wrap` | `AwNo4kbCrossing_A`, `ArNo4kbCrossing_A` |
+| `bounded_response` | `BValidBounded_A`, `RValidBounded_A` |
+| `cap_both_ruser_set` | `CapReadRuserBeatsAgree_A` |
+| `misaligned_read_clears_tag` | `NonCapReadHasNoTag_A` |
+
+The response bounds are measured from the point the memory has everything it needs -- the last write beat, or the read request -- so they do not depend on how the manager paces the channels.
+`CapReadRuserBeatsAgree_A` excludes a tag write landing between a capability read's two beats: the beats are separate memory accesses, and a write the manager has not ordered against the read may be seen by either of them.
+
 ## Not covered yet
 
 The bridge in front of the memory, `axi_to_detailed_mem`, accepts one burst per direction: it holds `AxREADY` low until the burst in progress in that direction has been serviced.
@@ -69,3 +87,5 @@ The agent exposes READY timing on the B and R accepts, which the test randomises
 [scoreboard]: ./env/axi_sram_scoreboard.svh
 [cov]: ./env/axi_sram_cov.sv
 [mocha_sim_cfgs]: ../mocha_sim_cfgs.hjson
+[assert]: ./sva/axi_sram_assert.sv
+[bind]: ./sva/axi_sram_bind.sv
