@@ -9,4 +9,8 @@
 `include "top_chip_dv_i2c_host_tx_rx_vseq.sv"
 `include "top_chip_dv_dv_log_smoketest_vseq.sv"
 `include "top_chip_dv_i2c_device_tx_rx_vseq.sv"
+`include "top_chip_dv_axi_driver_base_vseq.sv"
 `include "top_chip_dv_axi_driver_smoke_vseq.sv"
+`include "top_chip_dv_axi_sram_out_of_range_error_vseq.sv"
+`include "top_chip_dv_axi_sram_wrong_region_decerr_vseq.sv"
+`include "top_chip_dv_axi_sram_sram_boundary_vseq.sv"
