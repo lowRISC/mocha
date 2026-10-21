@@ -80,6 +80,11 @@ write beat, or the read request -- so they do not depend on how the manager pace
 beats are separate memory accesses, and a write the manager has not ordered against the read may
 be seen by either of them.
 
+Two plan items are not expressible as assertions and are recorded as reviews of the declaration
+instead. `interface_geometry` is the module's port list, which the compiler already enforces, and
+`tag_separate_memory` is structural -- two `prim_ram_1p` instances with no shared storage -- so
+there is no run-time condition to check.
+
 ## Not covered yet
 
 The bridge in front of the memory, `axi_to_detailed_mem`, accepts one burst per direction and

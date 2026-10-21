@@ -20,9 +20,10 @@
                     Description: The SRAM block should have four ports: clock / reset / AXI4 request in / AXI4 response out
                     Node_Type: metric
                     Priority: 0
+                    Comment: Not expressible as an assertion: the port list is fixed by the module declaration and any departure from it breaks every instantiation at compile time. Recorded as a review of the declaration instead
                     Items:
                     [
-                        assert:TODO_interface_geometry
+                        review:axi_sram.sv port list
                     ]
                 }
                 sram_geometry:
@@ -39,7 +40,10 @@
                     Comment: SramMemSize 128 KiB, last word 0x1FFF8 and last cap slot 0x1FFF0 are derived from SRAMLength in top_pkg (0x2_0000) and 5scstu.
                     Items:
                     [
-                        assert:TODO_sram_geometry
+                        assert:axi_sram_assert.GeometryMatchesSpec_A
+                        assert:axi_sram_assert.SramSizeMatchesSpec_A
+                        assert:axi_sram.TagRamCoversDataRam_A
+                        assert:axi_sram.SramSizeMatchesMap_A
                     ]
                 }
             }
@@ -63,7 +67,7 @@
                         Priority: 0
                         Items:
                         [
-                            testcase:axi_sram_rst_sanity_test
+                            testcase:axi_sram_rst_sanity
                         ]
                     }
                     rst_mid_burst:
@@ -75,7 +79,7 @@
                         Comment: Transaction should be dropped cleanly. The next transaction after an in-flight reset should still be accepted as normal. Would be good to clarification on the expected state of SRAM after a reset (i.e if a reset comes in during a 2-beat capability write)
                         Items:
                         [
-                            testcase:TODO_rst_mid_burst
+                            testcase:axi_sram_rst_mid_burst
                         ]
                     }
                     init_value_undefined:
@@ -87,7 +91,7 @@
                         Comment: The vseq reads an un-written location with no value expectation of its own, then checks the same location is deterministic after a write. The ref model returns 0 for un-written bytes, so the scoreboard does pin that first read to 0 - stricter than the requirement, but it matches the SRAM model's power-up contents
                         Items:
                         [
-                            testcase:axi_sram_init_value_undefined_test
+                            testcase:axi_sram_init_value_undefined
                         ]
                     }
                 }
@@ -108,7 +112,7 @@
                         Priority: 0
                         Items:
                         [
-                            testcase:axi_sram_write_read_test
+                            testcase:axi_sram_write_read
                         ]
                     }
                     address_boundaries:
@@ -119,7 +123,7 @@
                         Priority: 0
                         Items:
                         [
-                            testcase:axi_sram_address_boundaries_test
+                            testcase:axi_sram_address_boundaries
                         ]
                     }
                     data_all_bits:
@@ -130,7 +134,7 @@
                         Priority: 0
                         Items:
                         [
-                            testcase:axi_sram_data_all_bits_test
+                            testcase:axi_sram_data_all_bits
                         ]
                     }
                     aligned_only:
@@ -141,7 +145,7 @@
                         Priority: 1
                         Items:
                         [
-                            testcase:axi_sram_aligned_only_test
+                            testcase:axi_sram_aligned_only
                         ]
                     }
                 }
@@ -161,7 +165,7 @@
                         Priority: 0
                         Items:
                         [
-                            testcase:axi_sram_burst_last_test
+                            testcase:axi_sram_burst_last
                         ]
                     }
                     resp_id_match:
@@ -170,10 +174,10 @@
                         Description: Response (B/R) AXI4 ID should equal the originating request ID
                         Node_Type: metric
                         Priority: 0
-                        Comment: Checked explicitly by the SV scoreboard
+                        Comment: Checked in the vseq, not the scoreboard: run_write and run_read compare BID and RID against the request ID when m_check_resp_id is set, which this testcase and multiple_outstanding_transactions turn on
                         Items:
                         [
-                            testcase:axi_sram_resp_id_match_test
+                            testcase:axi_sram_resp_id_match
                         ]
                     }
                     atomic_excluded:
@@ -182,9 +186,10 @@
                         Description: Atomic support is excluded, so an access carrying a non-zero awatop must be answered with a slave error rather than being serviced. Drive ATOP_ATOMICSTORE (awatop[5:4]=01), ATOP_ATOMICLOAD (10), ATOP_ATOMICSWAP (6'b110000) and ATOP_ATOMICCMP (6'b110001) at an in-range address and check that bresp is RESP_SLVERR (2'b10) with the request ID, that the atop[5] classes which also return read data report rresp RESP_SLVERR on every R beat with rlast on the final beat, that the addressed memory is left unchanged, and that the CHERI tag of the covering 128-bit slot is left unchanged because the rejected access must not write. A plain access to the same address afterwards must still succeed, so the error must not wedge the block
                         Node_Type: metric
                         Priority: 1
+                        Comment: Not testable with the current AXI agent: axi_if carries no AWATOP and axi_vip_if drives aw.atop as zero, so a non-zero ATOP cannot be driven at all. Needs AWATOP support in the agent first
                         Items:
                         [
-                            testcase:axi_sram_atomics_excluded_test
+                            testcase:TODO_atomic_excluded
                         ]
                     }
                     bounded_response:
@@ -193,9 +198,11 @@
                         Description: Every request should receive a response within a bounded time proportional to burst length
                         Node_Type: metric
                         Priority: 1
+                        Comment: The bound is a fixed 32-cycle window rather than one scaled by burst length, and it is measured from the point the memory has everything it needs: BVALID after the last W beat is accepted, RVALID after the AR handshake. Only the first response beat is bounded; the later beats of a read burst are not
                         Items:
                         [
-                            assert:TODO_bounded_response
+                            assert:axi_sram_assert.BValidBounded_A
+                            assert:axi_sram_assert.RValidBounded_A
                         ]
                     }
                     backpressure:
@@ -204,9 +211,10 @@
                         Description: Master side constrained random ready-throttling under load. the VIP holds r_ready/b_ready low with a random low duty cycle and injects valid-delays on the request channels (aw/w/ar), forcing the DUT's shallow internal FIFOs to fill and deassert its own aw_ready/w_ready/ar_ready. Data and CHERI tag must be intact once the master resumes.
                         Node_Type: metric
                         Priority: 1
+                        Comment: Response side only. The agent exposes READY timing on the B and R accepts, and the testcase draws both the duty cycle and the valid-to-ready delay randomly per transaction, but it exposes no delay on the manager's own AW/W/AR VALID, so the request channels cannot be throttled. That half needs request-channel pacing in the agent first
                         Items:
                         [
-                            testcase:TODO_backpressure
+                            testcase:axi_sram_backpressure
                         ]
                     }
                 }
@@ -220,9 +228,10 @@
                         Description: A plain-data write and a capability write issued concurrently should both complete and should read back correctly
                         Node_Type: metric
                         Priority: 1
+                        Comment: The two writes go out sequentially, not together: AXI4 forbids write-data interleaving, so two write sequences sharing the W channel would have to be coordinated to keep W in AW order and the agent does not do that. The reads are issued together on distinct IDs, though axi_to_detailed_mem accepts one read burst at a time, so they do not overlap on the bus either
                         Items:
                         [
-                            testcase:axi_sram_concurrent_data_tag_test
+                            testcase:axi_sram_concurrent_data_tag
                         ]
                     }
                     multiple_outstanding_transactions:
@@ -231,9 +240,10 @@
                         Description: multiple reads+writes to distinct addresses in flight should all complete, data+tag should be correct, and ids should match
                         Node_Type: metric
                         Priority: 1
+                        Comment: Nothing is ever outstanding together: axi_to_detailed_mem accepts one burst per direction and holds AxREADY low until it has been serviced, so the bridge is single-outstanding by construction. The test issues its eight reads together on distinct IDs, which is the most the DUT accepts, and the writes that set the data up go out sequentially; the overlap itself is unreachable
                         Items:
                         [
-                            testcase:TODO_multiple_outstanding_transactions
+                            testcase:axi_sram_multiple_outstanding_transactions
                         ]
                     }
                     waw_same_address:
@@ -244,7 +254,7 @@
                         Priority: 1
                         Items:
                         [
-                            testcase:TODO_waw_same_address
+                            testcase:axi_sram_waw_same_address
                         ]
                     }
                     raw_war_same_region:
@@ -253,10 +263,10 @@
                         Description: A read and a write to the same region both in flight concurrently. Exercises both RAW (the read may observe the region before or after the write lands) and WAR (the write lands while the read is still in flight).
                         Node_Type: metric
                         Priority: 2
-                        Comment: both old and new data are legal outcomes (axi doesn't mandate how the race is handled), so the scoreboard is relaxed on value. Still, the racing read's data must equal the pre or post-write value fully (not bit-torn or X), each beat of a multi-beat read is independently a clean old or new value, and the CHERI tag (ruser) must be consistent with whichever data snapshot that beat observed. Strict invariants are still checked: no deadlock, both transactions receive responses with correct ID / BRESP / RRESP / RLAST. a subsequent ordered read returns the new data (RAW) and the final stored value equals the write data (WAR).
+                        Comment: Unreachable on this DUT: axi_to_detailed_mem arbitrates both directions onto one memory port and back-pressures AxREADY, so a read and a write to one region cannot be in flight together and no RAW/WAR hazard arises. The test issues them together and checks the settled result: the racing read returns either the pre-write or the post-write value whole, a subsequent ordered read returns the new data (RAW), and the final stored value equals the write data (WAR). The per-beat invariants a real hazard would need -- each beat independently a clean old or new value, with ruser matching the snapshot that beat saw -- are not checked, because the two beats of a capability read are separate memory accesses that a write may land between.
                         Items:
                         [
-                            testcase:TODO_raw_war_same_region
+                            testcase:axi_sram_raw_war_same_region
                         ]
                     }
                 }
@@ -277,7 +287,7 @@
                         Priority: 0
                         Items:
                         [
-                            testcase:axi_sram_tag_write_test
+                            testcase:axi_sram_tag_write
                         ]
                     }
                     no_tag_single_beat:
@@ -293,7 +303,7 @@
                         Comment: Corner: tag only on full capability burst
                         Items:
                         [
-                            testcase:axi_sram_no_tag_single_beat_test
+                            testcase:axi_sram_no_tag_single_beat
                         ]
                     }
                     no_tag_misaligned:
@@ -305,7 +315,7 @@
                         Comment: Corner: alignment gating
                         Items:
                         [
-                            testcase:axi_sram_no_tag_misaligned_test
+                            testcase:axi_sram_no_tag_misaligned
                         ]
                     }
                     no_tag_two_bursts:
@@ -321,7 +331,7 @@
                         Comment: Corner: full region covered across two separate bursts still leaves the tag 0
                         Items:
                         [
-                            testcase:axi_sram_no_tag_two_bursts_test
+                            testcase:axi_sram_no_tag_two_bursts
                         ]
                     }
                     assert_wuser_not_full_cap:
@@ -330,9 +340,11 @@
                         Description: Assertion should fire when wuser=1 on a write that is not part of a full capability write
                         Node_Type: metric
                         Priority: 1
+                        Comment: The assertion covers the strobe dimension only. It fires on the tag write itself (cheri_w_tag implies every byte strobed), and for a single-beat or a misaligned write the RTL has already cleared cheri_w_tag, so those shapes cannot reach it; they are covered by no_tag_single_beat, no_tag_misaligned and no_tag_two_bursts instead
                         Items:
                         [
-                            assert:TODO_assert_wuser_not_full_cap
+                            assert:axi_sram_assert.TagSetNeedsFullStrobe_A
+                            testcase:axi_sram_wuser_partial_strobe
                         ]
                     }
                     assert_wuser_mismatch:
@@ -346,11 +358,10 @@
                         Node_Type: metric
                         Priority: 1
                         Issue: https://github.com/lowRISC/mocha/issues/717
-                        Comment: The (0, 1) order stores a set tag today. The tag RAM is written on every beat and both beats of a 2-beat capability write, so the stored value is the last beat's cheri_w_tag, and reduces to the last beat's wuser for an aligned, correctly sized burst. This results in a forged capability tag on a write that was never a full capability write. Stated against the architectural requirement, so the testpoint stays valid whatever the RTL currently does
+                        Comment: The (0, 1) order stores a set tag today. The tag RAM is written on every beat and both beats of a 2-beat capability write, so the stored value is the last beat's cheri_w_tag, and reduces to the last beat's wuser for an aligned, correctly sized burst. This results in a forged capability tag on a write that was never a full capability write. Stated against the architectural requirement, so the testpoint stays valid whatever the RTL currently does. There is no assertion for the mismatch: nothing in the SVA compares the two beats' wuser, so the readback in the testcase is the whole check
                         Items:
                         [
-                            assert:TODO_assert_wuser_mismatch
-                            testcase:axi_sram_wuser_mismatch_test
+                            testcase:axi_sram_wuser_mismatch
                         ]
                     }
                     cg_tag_write:
@@ -383,7 +394,7 @@
                         Comment: Corner: any non-cap write zeroes the tag bit
                         Items:
                         [
-                            testcase:axi_sram_tag_cleared_by_write_test
+                            testcase:axi_sram_tag_cleared_by_write
                         ]
                     }
                     partial_strobe_clears_tag:
@@ -395,7 +406,7 @@
                         Comment: Corner: partial strobe clears tag
                         Items:
                         [
-                            testcase:axi_sram_partial_strobe_clears_tag_test
+                            testcase:axi_sram_partial_strobe_clears_tag
                         ]
                     }
                     subword_read_clears_tag:
@@ -411,7 +422,7 @@
                         Comment: Tag is returned as clear in the response, but not modified in memory.
                         Items:
                         [
-                            testcase:axi_sram_subword_read_clears_tag_test
+                            testcase:axi_sram_subword_read_clears_tag
                         ]
                     }
                 }
@@ -433,8 +444,8 @@
                         Comment: the SRAM invalidate a cap by clearing one or both `ruser` bits, so the two flits are not guaranteed equal by spec. Rather than treat the asymmetric (1,0) case as not-applicable, bind an SVA that on every 2-beat capability read both flits are equal and match the single stored tag bit (ruser_flit0 == ruser_flit1). This proves the one-bit-per-region design never emits a false-valid asymmetric result.
                         Items:
                         [
-                            assert:TODO_cap_both_ruser_set
-                            testcase:axi_sram_cap_ruser_test
+                            assert:axi_sram_assert.CapReadRuserBeatsAgree_A
+                            testcase:axi_sram_cap_ruser
                         ]
                     }
                     burst_read_mixed_tags:
@@ -443,9 +454,23 @@
                         Description: A read spanning a tagged and an untagged capability slot should return the correct per-beat ruser for each
                         Node_Type: metric
                         Priority: 2
+                        Comment: The spanning read is logged, not checked. axi_sram gates ruser on arlen==1, so every beat of a longer burst returns 0 and per-beat tags across such a burst are the tag controller's job, not this block's. What the testcase checks is the two slots read as their own 2-beat capability reads, each returning its own tag
                         Items:
                         [
-                            testcase:axi_sram_burst_read_mixed_tags_test
+                            testcase:axi_sram_burst_read_mixed_tags
+                        ]
+                    }
+                    misaligned_read_clears_tag:
+                    {
+                        Reference: NA
+                        Description: A 2-beat 8-byte read that starts half way into a capability slot is capability-shaped but not capability-aligned, so it must return a cleared tag on both beats and must leave the stored tag alone
+                        Node_Type: metric
+                        Priority: 1
+                        Comment: The read-side counterpart of no_tag_misaligned. is_r_cap_aligned wants araddr[3:0]==0 on the first beat and ==8 on the last, so a burst that starts mid-slot reports no tag. The reference model carries the same rule, so the scoreboard checks it on every read of this shape, and the assertion holds it over all traffic rather than the shapes a test happens to issue
+                        Items:
+                        [
+                            assert:axi_sram_assert.NonCapReadHasNoTag_A
+                            testcase:axi_sram_misaligned_read_clears_tag
                         ]
                     }
                     cg_tag_read:
@@ -476,7 +501,7 @@
                         Priority: 0
                         Items:
                         [
-                            testcase:axi_sram_tag_isolation_test
+                            testcase:axi_sram_tag_isolation
                         ]
                     }
                     tag_aliasing:
@@ -488,7 +513,7 @@
                         Comment: The 16 KiB stride is the regression check for the tag address width fix in #716
                         Items:
                         [
-                            testcase:TODO_tag_aliasing
+                            testcase:axi_sram_tag_aliasing
                         ]
                     }
                     tag_separate_memory:
@@ -497,9 +522,10 @@
                         Description: Tags should be stored in a separate memory block from data
                         Node_Type: metric
                         Priority: 2
+                        Comment: Not expressible as an assertion: the separation is structural, two prim_ram_1p instances with no shared storage, so there is no run-time condition to check. Recorded as a review of the instantiations instead
                         Items:
                         [
-                            assert:TODO_tag_separate_memory
+                            review:axi_sram.sv u_ram / u_tag_ram
                         ]
                     }
                 }
@@ -517,7 +543,7 @@
                     Priority: 1
                     Items:
                     [
-                        testcase:axi_sram_random_data_test
+                        testcase:axi_sram_random_data
                     ]
                 }
                 random_capabilities:
@@ -532,7 +558,7 @@
                     Priority: 1
                     Items:
                     [
-                        testcase:axi_sram_random_capabilities_test
+                        testcase:axi_sram_random_capabilities
                     ]
                 }
             }
@@ -551,10 +577,10 @@
                     Description: Accesses inside the SRAM range should reach axi_sram and should round-trip correctly through the interconnect
                     Node_Type: metric
                     Priority: 0
-                    Comment: Implicit
+                    Comment: Covered by the first two round trips in sram_boundary, which write and read the first and last SRAM words through the crossbar. Every other integration testcase also round-trips SRAMBase as its control before checking a DECERR
                     Items:
                     [
-                        testcase:TODO_sram_reachable
+                        testcase:axi_sram_sram_boundary
                     ]
                 }
                 out_of_range_error:
@@ -566,8 +592,8 @@
                     Comment: Fully-out-of-range accesses result in an error; the partial-out-of-range part is enforced by proxy of AXI4 not allowing bursts to span a 4KB boundary
                     Items:
                     [
-                        testcase:axi_sram_out_of_range_error_test
-                        testcase:axi_sram_wrong_region_decerr_test
+                        testcase:axi_sram_out_of_range_error
+                        testcase:axi_sram_wrong_region_decerr
                     ]
                 }
                 burst_wrap:
@@ -579,7 +605,9 @@
                     Comment: axi_sram does not range-check (mem_err_i=0; it masks the address and would silently wrap), so range enforcement rests on master compliance. The SRAM region is 4 KB aligned at both ends, so the boundary assertion covers every burst that could leave it
                     Items:
                     [
-                        assert:TODO_assert_no_4kb_crossing
+                        assert:axi_sram_assert.AwNo4kbCrossing_A
+                        assert:axi_sram_assert.ArNo4kbCrossing_A
+                        testcase:axi_sram_burst_wrap
                     ]
                 }
                 sram_boundary:
@@ -590,7 +618,7 @@
                     Priority: 1
                     Items:
                     [
-                        testcase:axi_sram_sram_boundary_test
+                        testcase:axi_sram_sram_boundary
                     ]
                 }
                 execute_from_sram:
@@ -602,7 +630,7 @@
                     Comment: only the arprot[2]=instruction dimension is SRAM-specific
                     Items:
                     [
-                        testcase:axi_sram_execute_from_sram_test
+                        testcase:axi_sram_execute_from_sram
                     ]
                 }
             }
