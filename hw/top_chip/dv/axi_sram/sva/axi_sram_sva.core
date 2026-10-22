@@ -1,0 +1,21 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_sram_sva"
+description: "Assertions for axi_sram, bound into the DUT"
+
+filesets:
+  files_sva:
+    depend:
+      - lowrisc:mocha_constants:top_pkg
+      - lowrisc:prim:assert:0.1
+    files:
+      - axi_sram_assert.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_sva

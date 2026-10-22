@@ -14,6 +14,7 @@ filesets:
     depend:
       - lowrisc:mocha_dv:sim_sram_axi:0.1
       - lowrisc:mocha_dv:sim_dram_axi:0.1
+      - lowrisc:mocha_dv:axi_driver_to_cva6_bridge:0.1
       - lowrisc:dv:sw_test_status
       - lowrisc:dv:sw_logger_if
       - lowrisc:mocha_dv:top_chip_dv_test
@@ -30,6 +31,7 @@ filesets:
       - lowrisc:mocha:rng
     files:
       - tb/tb.sv
+      - tb/tb_cfg.sv
       - tb/chip_hier_macros.svh: {is_include_file: true}
     file_type: systemVerilogSource
 

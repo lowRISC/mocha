@@ -38,6 +38,8 @@
     "{proj_root}/hw/top_chip/tmp_sim_cfg/rv_dm_use_jtag_interface_sim_cfg.hjson",
 
     // Top-level IPs.
+    "{proj_root}/hw/top_chip/dv/axi_sram/block_tb/axi_sram_block_sim_cfg.hjson",
+
     // Top level.
     "{proj_root}/hw/top_chip/dv/top_chip_sim_cfg.hjson"
   ]

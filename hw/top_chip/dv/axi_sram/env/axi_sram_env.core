@@ -1,0 +1,66 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_sram_env"
+description: "Shared AXI SRAM UVM verification environment"
+
+filesets:
+  files_env:
+    depend:
+      - lowrisc:mocha_constants:top_pkg
+      - pulp-platform.org::axi
+      - lowrisc:dv:dv_utils
+      - lowrisc:dv:common_ifs
+      - lowrisc:mocha_dv:axi_agent:0.1
+    files:
+      # Blocks of the test package, `included by axi_sram_test_pkg.sv
+      - axi_sram_ref_model.svh: {is_include_file: true}
+      - axi_sram_scoreboard.svh: {is_include_file: true}
+      - axi_sram_virtual_sequencer.svh: {is_include_file: true}
+      - axi_sram_env.svh: {is_include_file: true}
+      - axi_sram_base_test.svh: {is_include_file: true}
+      - seq_lib/axi_sram_vseq_list.sv: {is_include_file: true}
+      - seq_lib/axi_sram_base_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_rst_sanity_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_write_read_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_data_all_bits_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_address_boundaries_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_burst_last_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_resp_id_match_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_tag_write_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_no_tag_single_beat_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_tag_cleared_by_write_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_tag_isolation_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_cap_ruser_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_aligned_only_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_no_tag_misaligned_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_no_tag_two_bursts_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_wuser_mismatch_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_partial_strobe_clears_tag_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_subword_read_clears_tag_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_misaligned_read_clears_tag_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_concurrent_data_tag_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_random_data_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_random_capabilities_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_init_value_undefined_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_execute_from_sram_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_burst_read_mixed_tags_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_burst_wrap_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_tag_aliasing_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_rst_mid_burst_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_backpressure_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_multiple_outstanding_transactions_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_waw_same_address_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_raw_war_same_region_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_sram_wuser_partial_strobe_vseq.sv: {is_include_file: true}
+
+      - axi_sram_test_pkg.sv
+      - axi_sram_cov.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_env

@@ -1,0 +1,73 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: axi_sram_block
+
+  // DUT + testbench (dut_instance defaults to {tb}.dut in common_sim_cfg).
+  dut: axi_sram
+  tb:  axi_sram_block_tb
+
+  // Simulator used to sign off this block
+  tool: xcelium
+
+  fusesoc_core: lowrisc:mocha_dv:axi_sram_block_tb:0
+
+  import_cfgs: [
+    "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"
+  ]
+
+  // Directed tests (one vseq each); each runs once.
+  reseed: 1
+  uvm_test: axi_sram_base_test
+
+  tests: [
+    { name: "axi_sram_write_read",              uvm_test_seq: "axi_sram_write_read_vseq" }
+    { name: "axi_sram_rst_sanity",              uvm_test_seq: "axi_sram_rst_sanity_vseq" }
+    { name: "axi_sram_data_all_bits",           uvm_test_seq: "axi_sram_data_all_bits_vseq" }
+    { name: "axi_sram_address_boundaries",      uvm_test_seq: "axi_sram_address_boundaries_vseq" }
+    { name: "axi_sram_burst_last",              uvm_test_seq: "axi_sram_burst_last_vseq" }
+    { name: "axi_sram_resp_id_match",           uvm_test_seq: "axi_sram_resp_id_match_vseq" }
+    { name: "axi_sram_tag_write",               uvm_test_seq: "axi_sram_tag_write_vseq" }
+    { name: "axi_sram_no_tag_single_beat",      uvm_test_seq: "axi_sram_no_tag_single_beat_vseq" }
+    { name: "axi_sram_tag_cleared_by_write",    uvm_test_seq: "axi_sram_tag_cleared_by_write_vseq" }
+    { name: "axi_sram_tag_isolation",           uvm_test_seq: "axi_sram_tag_isolation_vseq" }
+    { name: "axi_sram_cap_ruser",               uvm_test_seq: "axi_sram_cap_ruser_vseq" }
+    { name: "axi_sram_aligned_only",            uvm_test_seq: "axi_sram_aligned_only_vseq" }
+    { name: "axi_sram_no_tag_misaligned",       uvm_test_seq: "axi_sram_no_tag_misaligned_vseq" }
+    { name: "axi_sram_no_tag_two_bursts",       uvm_test_seq: "axi_sram_no_tag_two_bursts_vseq" }
+    { name: "axi_sram_wuser_mismatch",          uvm_test_seq: "axi_sram_wuser_mismatch_vseq" }
+    { name: "axi_sram_partial_strobe_clears_tag", uvm_test_seq: "axi_sram_partial_strobe_clears_tag_vseq" }
+    { name: "axi_sram_subword_read_clears_tag", uvm_test_seq: "axi_sram_subword_read_clears_tag_vseq" }
+    { name: "axi_sram_misaligned_read_clears_tag",
+      uvm_test_seq: "axi_sram_misaligned_read_clears_tag_vseq" }
+    { name: "axi_sram_concurrent_data_tag",     uvm_test_seq: "axi_sram_concurrent_data_tag_vseq" }
+    // The two randomised tests get several seeds; the directed ones are deterministic.
+    { name: "axi_sram_random_data",             uvm_test_seq: "axi_sram_random_data_vseq",
+      reseed: 10 }
+    { name: "axi_sram_random_capabilities",     uvm_test_seq: "axi_sram_random_capabilities_vseq",
+      reseed: 10 }
+    { name: "axi_sram_init_value_undefined",    uvm_test_seq: "axi_sram_init_value_undefined_vseq" }
+    { name: "axi_sram_execute_from_sram",       uvm_test_seq: "axi_sram_execute_from_sram_vseq" }
+    { name: "axi_sram_burst_read_mixed_tags",   uvm_test_seq: "axi_sram_burst_read_mixed_tags_vseq" }
+    { name: "axi_sram_burst_wrap",              uvm_test_seq: "axi_sram_burst_wrap_vseq" }
+    { name: "axi_sram_tag_aliasing",            uvm_test_seq: "axi_sram_tag_aliasing_vseq" }
+    { name: "axi_sram_rst_mid_burst",           uvm_test_seq: "axi_sram_rst_mid_burst_vseq" }
+    { name: "axi_sram_backpressure",            uvm_test_seq: "axi_sram_backpressure_vseq" }
+    { name: "axi_sram_multiple_outstanding_transactions",
+      uvm_test_seq: "axi_sram_multiple_outstanding_transactions_vseq" }
+    { name: "axi_sram_waw_same_address",        uvm_test_seq: "axi_sram_waw_same_address_vseq" }
+    { name: "axi_sram_raw_war_same_region",     uvm_test_seq: "axi_sram_raw_war_same_region_vseq" }
+    { name: "axi_sram_wuser_partial_strobe",    uvm_test_seq: "axi_sram_wuser_partial_strobe_vseq" }
+  ]
+
+  // The block-level regression = every test in this cfg.
+  regressions: [
+    {
+      name: smoke
+      tests: ["axi_sram_rst_sanity", "axi_sram_write_read", "axi_sram_tag_write",
+              "axi_sram_cap_ruser"]
+    }
+    { name: "block" }
+  ]
+}
