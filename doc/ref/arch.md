@@ -18,6 +18,26 @@ There are three clock domains in Mocha.<!-- rfj4pd_x -->
    Both the main and IO clocks can be disabled and are turned off when a system reset is requested.<!-- 68url6_x -->
    The always on clock drives the clock, reset and power managers and allows the system to come out of reset.<!-- w5ylk6_x -->
 
+## Power domains
+
+Mocha has two power domains, `Aon` and `Main`.<!-- ng5cds_x -->
+The always on domain is always powered and clocked and holds the clock, reset and power managers.<!-- 57toat_x -->
+The rest of Mocha sits in the main domain, which can be clock or power gated to enter a low power state while the always on domain waits for a wakeup.<!-- boexf1_x -->
+Nothing in Mocha needs to be powered independently of those two, so there are no further domains, and the reset tree and the clock enables are organised per domain.<!-- 84r0bb_x -->
+
+The always on domain listens to:<!-- bdqdkb_x -->
+
+1. A power good indication for the main domain and a validity indication for each source clock.<!-- lvtp3p_x -->
+   The main domain has to be held in reset until its supply and its clocks are stable, and a later loss of main power has to take the chip through a full reset rather than let it carry on.<!-- qwm70c_x -->
+2. An external reset request, so that a surrounding SoC can reset the enclave, and an external wakeup request, so that it can bring the main domain back from low power.<!-- e2k9ck_x -->
+3. A reset request from the debug module, which has to reset the main domain without resetting the debug module itself, as described under [reset domains](#reset-domains).<!-- cdyqu3_x -->
+4. An indication that the core is idle, as low power may only be entered once software has asked for it and the core has stopped executing.<!-- tefcy6_x -->
+5. The result of the ROM integrity check, which has to pass before the core is released and the ROM is made reachable.<!-- 1fywj5_x -->
+6. DFT enable and debug enable, which still need to be hooked up to the top.<!-- lz4jh2_x -->
+
+Mocha ties the power and clock indications, the external requests and the idle indication off, so it boots straight into its running state and takes a hardware reset request only from the debug module.<!-- nmyhcg_x -->
+CVA6-CHERI reports nothing when it stops executing either, so low power cannot be entered at all and the main domain is always powered.<!-- 6qzz27_x -->
+
 ## Memory map
 
 This is the current memory map for Mocha, where the base and top addresses are inclusive, and reserved is the amount of memory reserved for this function:<!-- mcbp27_x -->
