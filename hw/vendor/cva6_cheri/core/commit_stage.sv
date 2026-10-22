@@ -123,14 +123,15 @@ module commit_stage
   end
 
   always_comb begin : prepare_pc_o
-    // Recalculate the PCC with correct address. Representability check not required because this was in-bounds at issue.
-    automatic
-    cva6_cheri_pkg::cap_reg_t
-    pcc_o = cva6_cheri_pkg::set_cap_reg_addr(
-        pcc_i, commit_instr_i[0].pc
-    );
-    pcc_o = cva6_cheri_pkg::set_cap_reg_flags(pcc_o, commit_instr_i[0].int_mode);
-    pc_o  = pcc_o;
+    // Recalculate the PCC with correct address.
+    // Representability check _is_ required because this will be used in exception cases
+    // TODO note that this metadata calculation is currently duplicated with the issue stage
+    automatic cva6_cheri_pkg::cap_meta_data_t pcc_meta;
+    automatic cva6_cheri_pkg::cap_reg_t pcc_o;
+    pcc_meta = cva6_cheri_pkg::get_cap_reg_meta_data(pcc_i);
+    pcc_o = cva6_cheri_pkg::set_cap_reg_address(pcc_i, commit_instr_i[0].pc, pcc_meta);
+    pcc_o = cva6_cheri_pkg::set_cap_reg_int_mode(pcc_o, commit_instr_i[0].int_mode);
+    pc_o = pcc_o;
   end
   if (CVA6Cfg.RVFI_DII) assign dii_id_o = commit_instr_i[0].dii_id;
   // Dirty the FP state if we are committing anything related to the FPU
@@ -417,7 +418,7 @@ module commit_stage
       // ------------------------
       if (csr_exception_i.valid) begin
         exception_o = csr_exception_i;
-        if (!CVA6Cfg.CheriPresent || csr_exception_i.cause != cva6_cheri_pkg::CAP_EXCEPTION) begin
+        if (!CVA6Cfg.CheriPresent || csr_exception_i.cause < cva6_cheri_pkg::CAP_INSTR_ACCESS_FAULT) begin
           // if no earlier exception happened the commit instruction will still contain
           // the instruction bits from the ID stage. If a earlier exception happened we don't care
           // as we will overwrite it anyway in the next IF bl

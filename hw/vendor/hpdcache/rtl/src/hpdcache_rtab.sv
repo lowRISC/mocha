@@ -1,22 +1,8 @@
 /*
- *  Copyright 2023 CEA*
- *  *Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+ *  Copyright 2023 CEA Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
  *  Copyright 2025 Inria, Universite Grenoble-Alpes, TIMA
  *
  *  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
- *
- *  Licensed under the Solderpad Hardware License v 2.1 (the “License”); you
- *  may not use this file except in compliance with the License, or, at your
- *  option, the Apache License version 2.0. You may obtain a copy of the
- *  License at
- *
- *  https://solderpad.org/licenses/SHL-2.1/
- *
- *  Unless required by applicable law or agreed to in writing, any work
- *  distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
  */
 /*
  *  Authors       : Cesar Fuguet
@@ -37,6 +23,7 @@ import hpdcache_pkg::*;
     parameter type hpdcache_req_addr_t = logic,
 
     parameter type rtab_ptr_t = logic,
+    parameter type rtab_cnt_t = logic,
     parameter type rtab_entry_t = logic
 )
 //  }}}
@@ -73,7 +60,6 @@ import hpdcache_pkg::*;
     input  logic                  pop_try_i,
     output rtab_entry_t           pop_try_req_o,
     output rtab_ptr_t             pop_try_ptr_o,
-    output logic                  pop_try_error_o,
 
     //  Pop Commit signals
     //     This interface allows to actually remove a popped request
@@ -108,7 +94,10 @@ import hpdcache_pkg::*;
     input  logic                  flush_ready_i,      // Flush controller is available
 
     //  Configuration parameters
-    input  logic                  cfg_single_entry_i // Enable only one entry of the table
+    input  logic                  cfg_single_entry_i, // Enable only one entry of the table
+
+    //  Global control signals
+    input  logic                  no_pend_trans_i
 );
 //  }}}
 
@@ -193,12 +182,16 @@ import hpdcache_pkg::*;
     hpdcache_rtab_deps_t[N-1:0]  alloc_deps_set;
     hpdcache_rtab_deps_t[N-1:0]  pop_rback_deps_set;
 
+    // bits indicating refill grant
+    logic [N-1:0]  waiters_mshr_full, waiters_mshr_full_gnt;
+    logic [N-1:0]  waiters_dir_unavailable, waiters_dir_unavailable_gnt;
+
     logic               [N-1:0]  nodeps;
     hpdcache_nline_t    [N-1:0]  nline;
     hpdcache_req_addr_t [N-1:0]  addr;
     logic               [N-1:0]  is_read_bv;
-    logic               [N-1:0]  is_amo_bv;
     logic               [N-1:0]  fence_bv;
+    logic                        fence_only;
     logic               [N-1:0]  check_hit;
     logic               [N-1:0]  match_check_nline;
     logic               [N-1:0]  match_check_tail;
@@ -215,6 +208,8 @@ import hpdcache_pkg::*;
     logic               [N-1:0]  pop_rback_ptr_bv;
     logic               [N-1:0]  pop_try_bv;
     logic               [N-1:0]  ready;
+
+    rtab_entry_t                 pop_try_req;
 
     genvar                       gen_i;
 //  }}}
@@ -246,15 +241,15 @@ import hpdcache_pkg::*;
 //  Check interface
 //  {{{
     for (gen_i = 0; gen_i < N; gen_i++) begin : gen_check
-        assign addr[gen_i] = {req_q[gen_i].req.addr_tag, req_q[gen_i].req.addr_offset};
+        assign addr[gen_i] = {req_q[gen_i].req.req.addr_tag, req_q[gen_i].req.req.addr_offset};
         assign nline[gen_i] = addr[gen_i][HPDcacheCfg.clOffsetWidth +: HPDcacheCfg.nlineWidth];
         assign match_check_nline[gen_i] = (check_nline_i == nline[gen_i]);
-        assign is_read_bv[gen_i] = is_load(req_q[gen_i].req.op) |
-                                   is_cmo_prefetch(req_q[gen_i].req.op);
-        assign is_amo_bv[gen_i] = is_amo(req_q[gen_i].req.op);
+        assign is_read_bv[gen_i] = is_load(req_q[gen_i].req.req.op) |
+                                   is_cmo_prefetch(req_q[gen_i].req.req.op);
+        assign fence_bv[gen_i] = deps_q[gen_i].pend_trans;
     end
 
-    assign fence_bv         = valid_q & is_amo_bv;
+    assign fence_only       = (valid_q == fence_bv);
     assign check_hit        = valid_q & match_check_nline;
     assign check_hit_o      = |check_hit;
     assign match_check_tail = check_hit & tail_q;
@@ -298,6 +293,36 @@ import hpdcache_pkg::*;
     for (gen_i = 0; gen_i < N; gen_i++) begin : gen_match_flush
         assign match_flush_nline[gen_i] = (flush_ack_nline_i == nline[gen_i]);
     end
+
+    // generate bit vector for waiters on mshr full and dir unavailable
+    for (gen_i = 0; gen_i < N; gen_i++) begin : gen_waiters
+        assign waiters_mshr_full[gen_i] = valid_q[gen_i] & deps_q[gen_i].mshr_full &
+                                        match_refill_mshr_set[gen_i];
+        assign waiters_dir_unavailable[gen_i] = valid_q[gen_i] & deps_q[gen_i].dir_unavailable
+                                        & match_refill_set[gen_i];
+    end
+
+    // arbitrate among waiters on mshr full
+    hpdcache_rrarb #(
+        .N              (N)
+    ) waiters_mshr_full_arb_i (
+        .clk_i,
+        .rst_ni,
+        .req_i          (waiters_mshr_full),
+        .gnt_o          (waiters_mshr_full_gnt),
+        .ready_i        (refill_i)
+    );
+
+    // arbitrate among waiters on dir unavailable
+    hpdcache_rrarb #(
+        .N              (N)
+    ) waiters_dir_unavailable_arb_i (
+        .clk_i,
+        .rst_ni,
+        .req_i          (waiters_dir_unavailable),
+        .gnt_o          (waiters_dir_unavailable_gnt),
+        .ready_i        (refill_i)
+    );
 
     //  Update write buffer hit dependencies
     //  {{{
@@ -396,10 +421,10 @@ import hpdcache_pkg::*;
             //  Update refill dependencies
             //  {{{
             if (refill_i) begin
-                deps_rst[i].mshr_full = match_refill_mshr_set[i];
+                deps_rst[i].mshr_full = waiters_mshr_full_gnt[i];
                 deps_rst[i].mshr_hit = match_refill_nline[i];
                 deps_rst[i].write_miss = match_refill_nline[i];
-                deps_rst[i].dir_unavailable = match_refill_set[i];
+                deps_rst[i].dir_unavailable = waiters_dir_unavailable_gnt[i];
                 deps_rst[i].dir_fetch = match_refill_set[i] & match_refill_way[i];
             end
             //  }}}
@@ -409,6 +434,11 @@ import hpdcache_pkg::*;
             deps_rst[i].flush_hit = flush_ack_i & match_flush_nline[i];
             deps_rst[i].flush_not_ready = flush_ready_i;
             //  }}}
+
+            //  Update pending transaction dependency
+            //  {{{
+            deps_rst[i].pend_trans = no_pend_trans_i & fence_only;
+            // }}}
         end
     end
 //  }}}
@@ -516,7 +546,7 @@ import hpdcache_pkg::*;
     ) pop_mux_i (
         .data_i         (req_q),
         .sel_i          (pop_sel),
-        .data_o         (pop_try_req_o)
+        .data_o         (pop_try_req)
     );
 
     //  Temporarily unset the head bit of the popped request to prevent it to be rescheduled
@@ -529,7 +559,11 @@ import hpdcache_pkg::*;
     assign pop_try_ptr_o = rtab_bv_to_index(pop_sel);
 
     //  Forward the error bit
-    assign pop_try_error_o = |(pop_sel & error_q);
+    always_comb
+    begin : pop_try_req_comb
+        pop_try_req_o              = pop_try_req;
+        pop_try_req_o.req.is_error = |(pop_sel & error_q);
+    end
     //  }}}
 
     //  Pop commit process
@@ -620,15 +654,19 @@ import hpdcache_pkg::*;
         end
     end
 
-    always_ff @(posedge clk_i)
+    always_ff @(posedge clk_i or negedge rst_ni)
     begin : rtab_ff
-        for (int i = 0; i < N; i++) begin
-            //  Update the request array
-            //    A RTAB request is stored at allocation time, but can be modified during
-            //    a roll-back. Some fields such as the way_fetch are part of the RTAB request, and
-            //    may need to be modified when rolling it back
-            if (valid_set[i] | pop_rback_bv[i]) begin
-                req_q[i] <= alloc_req_i;
+        if (!rst_ni) begin
+            req_q <= '0;
+        end else begin
+            for (int i = 0; i < N; i++) begin
+                //  Update the request array
+                //    A RTAB request is stored at allocation time, but can be modified during
+                //    a roll-back. Some fields such as the way_fetch are part of the RTAB request, and
+                //    may need to be modified when rolling it back
+                if (valid_set[i] | pop_rback_bv[i]) begin
+                    req_q[i] <= alloc_req_i;
+                end
             end
         end
     end
@@ -647,10 +685,10 @@ import hpdcache_pkg::*;
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
             alloc_and_link_i |->
-                    ({alloc_req_i.req.addr_tag,
-                      alloc_req_i.req.addr_offset[HPDcacheCfg.clOffsetWidth +:
-                                                  HPDcacheCfg.setWidth]} == check_nline_i)) else
-                    $error("rtab: nline for alloc and link shall match the one being checked");
+                    ({alloc_req_i.req.req.addr_tag,
+                      alloc_req_i.req.req.addr_offset[HPDcacheCfg.clOffsetWidth +:
+                                                      HPDcacheCfg.setWidth]} == check_nline_i))
+                    else $error("rtab: nline for alloc and link shall match the one being checked");
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
             alloc_i |-> !alloc_and_link_i) else
@@ -664,7 +702,7 @@ import hpdcache_pkg::*;
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
             pop_commit_i |-> valid_q[pop_commit_ptr_i]) else
-                    $error("rtab: commiting an invalid entry");
+                    $error("rtab: committing an invalid entry");
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
             pop_rback_i |-> valid_q[pop_rback_ptr_i]) else
@@ -685,6 +723,10 @@ import hpdcache_pkg::*;
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
             alloc_and_link_i |-> ~cfg_single_entry_i) else
                     $error("rtab: trying to link a request in single entry mode");
+
+    assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
+            $onehot0(fence_bv)) else
+                    $error("rtab: more than one pending operation with fence semantics");
 `endif
 //  }}}
 endmodule

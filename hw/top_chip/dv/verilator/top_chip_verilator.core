@@ -53,6 +53,9 @@ targets:
       verilator:
         mode: cc
         verilator_options:
+          # Verilator 5.040 crashes in V3DfgSynthesize on the RVY HPDCache
+          # invalidation tie-off after inlining. Keep the other DFG passes.
+          - '-fno-dfg-post-inline'
           # Disabling tracing reduces compile times but doesn't have a
           # huge influence on runtime performance.
           - '--trace'
@@ -77,3 +80,6 @@ targets:
     tools:
       verilator:
         mode: lint-only
+        verilator_options:
+          # Same Verilator 5.040 workaround as the simulation build above.
+          - '-fno-dfg-post-inline'

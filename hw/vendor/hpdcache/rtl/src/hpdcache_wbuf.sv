@@ -42,7 +42,7 @@ import hpdcache_pkg::*;
     localparam int unsigned WBUF_WORD_WIDTH = HPDcacheCfg.u.reqWords*HPDcacheCfg.u.wordWidth,
     localparam type wbuf_user_t = logic [HPDcacheCfg.u.reqWords-1:0][HPDcacheCfg.u.wordUserWidth-1:0],
     localparam type wbuf_data_t = logic [WBUF_WORD_WIDTH-1:0],
-    localparam type wbuf_be_t = logic [WBUF_WORD_WIDTH/8-1:0]
+    localparam type wbuf_be_t = logic [WBUF_WORD_WIDTH/((HPDcacheCfg.u.wordWidth > 8) ? 8 : HPDcacheCfg.u.wordWidth)-1:0]
 )
     //  }}}
 
@@ -110,9 +110,10 @@ import hpdcache_pkg::*;
     localparam int unsigned WBUF_DIR_NENTRIES = HPDcacheCfg.u.wbufDirEntries;
     localparam int unsigned WBUF_DATA_NENTRIES = HPDcacheCfg.u.wbufDataEntries;
     localparam int unsigned WBUF_DATA_NWORDS = HPDcacheCfg.u.wbufWords;
-    localparam int unsigned WBUF_OFFSET_WIDTH = $clog2((WBUF_WORD_WIDTH/8)*WBUF_DATA_NWORDS);
+    localparam int unsigned WBUF_ATOM_WIDTH = (HPDcacheCfg.u.wordWidth > 8) ? 8 : HPDcacheCfg.u.wordWidth;
+    localparam int unsigned WBUF_OFFSET_WIDTH = $clog2(WBUF_WORD_WIDTH/WBUF_ATOM_WIDTH*WBUF_DATA_NWORDS);
     localparam int unsigned WBUF_TAG_WIDTH = HPDcacheCfg.u.paWidth - WBUF_OFFSET_WIDTH;
-    localparam int unsigned WBUF_WORD_OFFSET = $clog2(WBUF_WORD_WIDTH/8);
+    localparam int unsigned WBUF_WORD_OFFSET = $clog2(WBUF_WORD_WIDTH/WBUF_ATOM_WIDTH);
     localparam int          WBUF_SEND_FIFO_DEPTH = WBUF_DATA_NENTRIES;
     localparam int unsigned WBUF_READ_MATCH_WIDTH = HPDcacheCfg.nlineWidth;
     localparam int unsigned WBUF_MEM_DATA_RATIO = (HPDcacheCfg.u.memDataWidth+HPDcacheCfg.wbufDataWidth-1)/
@@ -179,10 +180,10 @@ import hpdcache_pkg::*;
             input  wbuf_data_buf_t wbuf_new_data,
             input  wbuf_be_buf_t   wbuf_new_be);
         for (int unsigned w = 0; w < WBUF_DATA_NWORDS; w++) begin
-            for (int unsigned b = 0; b < WBUF_WORD_WIDTH/8; b++) begin
-                wbuf_ret_data[w][b*8 +: 8] = wbuf_new_be[w][b] ?
-                        wbuf_new_data[w][b*8 +: 8] :
-                        wbuf_old_data[w][b*8 +: 8];
+            for (int unsigned b = 0; b < WBUF_WORD_WIDTH/WBUF_ATOM_WIDTH; b++) begin
+                wbuf_ret_data[w][b*WBUF_ATOM_WIDTH +: WBUF_ATOM_WIDTH] = wbuf_new_be[w][b] ?
+                        wbuf_new_data[w][b*WBUF_ATOM_WIDTH +: WBUF_ATOM_WIDTH] :
+                        wbuf_old_data[w][b*WBUF_ATOM_WIDTH +: WBUF_ATOM_WIDTH];
             end
             wbuf_ret_be[w] = wbuf_old_be[w] | wbuf_new_be[w];
         end
@@ -688,7 +689,7 @@ import hpdcache_pkg::*;
     //  {{{
     assign mem_req_write_o.mem_req_addr = { wbuf_meta_send_q.meta_tag, {WBUF_OFFSET_WIDTH{1'b0}} };
     assign mem_req_write_o.mem_req_len = 0;
-    assign mem_req_write_o.mem_req_size = get_hpdcache_mem_size(HPDcacheCfg.wbufDataWidth/8);
+    assign mem_req_write_o.mem_req_size = get_hpdcache_mem_size(HPDcacheCfg.wbufDataWidth/WBUF_ATOM_WIDTH);
     assign mem_req_write_o.mem_req_id = hpdcache_mem_id_t'(wbuf_meta_send_q.meta_id);
     assign mem_req_write_o.mem_req_command = HPDCACHE_MEM_WRITE;
     assign mem_req_write_o.mem_req_atomic = HPDCACHE_MEM_ATOMIC_ADD;
@@ -697,12 +698,12 @@ import hpdcache_pkg::*;
     assign mem_req_write_data_o.mem_req_w_last = 1'b1;
 
     if (WBUF_MEM_DATA_RATIO > 1) begin : gen_wbuf_data_upsizing
-        logic [HPDcacheCfg.wbufDataWidth/8-1:0][WBUF_MEM_DATA_RATIO-1:0] mem_req_be;
+        logic [HPDcacheCfg.wbufDataWidth/WBUF_ATOM_WIDTH-1:0][WBUF_MEM_DATA_RATIO-1:0] mem_req_be;
 
         //  demux send BE
         hpdcache_demux #(
             .NOUTPUT     (WBUF_MEM_DATA_RATIO),
-            .DATA_WIDTH  (HPDcacheCfg.wbufDataWidth/8),
+            .DATA_WIDTH  (HPDcacheCfg.wbufDataWidth/WBUF_ATOM_WIDTH),
             .ONE_HOT_SEL (1'b0)
         ) mem_write_be_demux_i (
             .data_i      (send_be),
@@ -725,7 +726,14 @@ import hpdcache_pkg::*;
 
     //  Internal state assignment
     //  {{{
-    always_ff @(posedge clk_i) wbuf_data_q <= wbuf_data_d;
+    always_ff @(posedge clk_i or negedge rst_ni)
+    begin: wbuf_write_ff
+        if (!rst_ni) begin
+            wbuf_data_q <= '0;
+        end else begin
+            wbuf_data_q <= wbuf_data_d;
+        end
+    end : wbuf_write_ff
 
     always_ff @(posedge clk_i or negedge rst_ni)
     begin : wbuf_state_ff

@@ -168,12 +168,6 @@
   logic [Cfg.XLEN-1:0] acc_cons_q; \
   riscv::pmpcfg_t [63:0] pmpcfg_q; \
   logic [63:0][Cfg.PLEN-3:0] pmpaddr_q; \
-  logic [Cfg.REGLEN-1:0] mtcc_q; \
-  logic [Cfg.REGLEN-1:0] mtdc_q; \
-  logic [Cfg.REGLEN-1:0] mepcc_q; \
-  logic [Cfg.REGLEN-1:0] stcc_q; \
-  logic [Cfg.REGLEN-1:0] stdc_q; \
-  logic [Cfg.REGLEN-1:0] sepcc_q; \
   logic [Cfg.REGLEN-1:0] ddc_q; \
 }
 

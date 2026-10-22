@@ -30,15 +30,16 @@ module hpdcache_regbank_wbyteenable_1rw
     parameter int unsigned DEPTH = 2**ADDR_SIZE
 )
 (
-    input  logic                   clk,
-    input  logic                   rst_n,
-    input  logic                   cs,
-    input  logic                   we,
-    input  logic [ADDR_SIZE-1:0]   addr,
-    input  logic [DATA_SIZE-1:0]   wdata,
-    input  logic [DATA_SIZE/8-1:0] wbyteenable,
-    output logic [DATA_SIZE-1:0]   rdata
+    input  logic                         clk,
+    input  logic                         rst_n,
+    input  logic                         cs,
+    input  logic                         we,
+    input  logic [ADDR_SIZE-1:0]         addr,
+    input  logic [DATA_SIZE-1:0]         wdata,
+    input  logic [(DATA_SIZE+8-1)/8-1:0] wbyteenable,
+    output logic [DATA_SIZE-1:0]         rdata
 );
+    localparam ATOM_SIZE = DATA_SIZE >= 8 ? 8 : DATA_SIZE;
 
     /*
      *  Internal memory array declaration
@@ -49,15 +50,20 @@ module hpdcache_regbank_wbyteenable_1rw
     /*
      *  Process to update or read the memory array
      */
-    always_ff @(posedge clk)
+    always_ff @(posedge clk or negedge rst_n)
     begin : mem_update_ff
-        if (cs == 1'b1) begin
-            if (we == 1'b1) begin
-                for (int i = 0; i < DATA_SIZE/8; i++) begin
-                    if (wbyteenable[i]) mem[addr][i*8 +: 8] <= wdata[i*8 +: 8];
+        if (!rst_n) begin
+            for (int i = 0; i < DEPTH; i++)
+                mem[i] <= '0;
+        end else begin
+            if (cs == 1'b1) begin
+                if (we == 1'b1) begin
+                    for (int i = 0; i < (DATA_SIZE+8-1)/8; i++) begin
+                        if (wbyteenable[i]) mem[addr][i*ATOM_SIZE +: ATOM_SIZE] <= wdata[i*ATOM_SIZE +: ATOM_SIZE];
+                    end
                 end
+                rdata <= mem[addr];
             end
-            rdata <= mem[addr];
         end
     end : mem_update_ff
 endmodule : hpdcache_regbank_wbyteenable_1rw

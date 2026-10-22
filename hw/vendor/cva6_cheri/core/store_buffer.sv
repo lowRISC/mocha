@@ -17,9 +17,10 @@
 module store_buffer
   import ariane_pkg::*;
 #(
-    parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
-    parameter type dcache_req_i_t = logic,
-    parameter type dcache_req_o_t = logic
+    parameter config_pkg::cva6_cfg_t CVA6Cfg        = config_pkg::cva6_cfg_empty,
+    parameter type                   dcache_req_i_t = logic,
+    parameter type                   dcache_req_o_t = logic,
+    parameter type                   cbo_t          = logic
 ) (
     input logic clk_i,  // Clock
     input logic rst_ni,  // Asynchronous reset active low
@@ -46,6 +47,7 @@ module store_buffer
     input logic [CVA6Cfg.CheriCapTagWidth-1:0] cap_tag_i,  // capability tag bit
     input logic [(CVA6Cfg.CLEN/8)-1:0] be_i,  // byte enable in
     input logic [CVA6Cfg.DCACHE_DATA_SIZE_WIDTH-1:0] data_size_i,  // type of request we are making (e.g.: bytes to write)
+    input cbo_t cbo_op_i,  // type of cache block operation
 
     // D$ interface
     input  dcache_req_o_t req_port_i,
@@ -61,7 +63,9 @@ module store_buffer
     logic [CVA6Cfg.CheriCapTagWidth-1:0] cap_tag;
     logic [(CVA6Cfg.CLEN/8)-1:0] be;
     logic [CVA6Cfg.DCACHE_DATA_SIZE_WIDTH-1:0] data_size;
+    cbo_t cbo_op;
     logic valid;  // this entry is valid, we need this for checking if the address offset matches
+    logic wait_rvalid;  // need to wait for rvalid...
   }
       speculative_queue_n[DEPTH_SPEC-1:0],
       speculative_queue_q[DEPTH_SPEC-1:0],
@@ -99,6 +103,8 @@ module store_buffer
       speculative_queue_n[speculative_write_pointer_q].be = be_i;
       speculative_queue_n[speculative_write_pointer_q].data_size = data_size_i;
       speculative_queue_n[speculative_write_pointer_q].valid = 1'b1;
+      speculative_queue_n[speculative_write_pointer_q].cbo_op = cbo_op_i;
+      speculative_queue_n[speculative_write_pointer_q].wait_rvalid = 1'b0;
       // advance the write pointer
       speculative_write_pointer_n = speculative_write_pointer_q + 1'b1;
       speculative_status_cnt++;
@@ -152,7 +158,6 @@ module store_buffer
   assign req_port_o.data_wuser = commit_queue_q[commit_read_pointer_q].cap_tag;
   assign req_port_o.data_be = commit_queue_q[commit_read_pointer_q].be;
   assign req_port_o.data_size = commit_queue_q[commit_read_pointer_q].data_size;
-  assign req_port_o.strip_tag = '0;
 
   assign rvfi_mem_paddr_o = speculative_queue_q[speculative_read_pointer_q].address;
 
@@ -170,19 +175,40 @@ module store_buffer
     commit_queue_n         = commit_queue_q;
 
     req_port_o.data_req    = 1'b0;
+    req_port_o.cbo_op      = commit_queue_q[commit_read_pointer_q].cbo_op;
 
     // there should be no commit when we are flushing
     // if the entry in the commit queue is valid and not speculative anymore we can issue this instruction
-    if (commit_queue_q[commit_read_pointer_q].valid && !stall_st_pending_i) begin
+    if (commit_queue_q[commit_read_pointer_q].valid && !stall_st_pending_i && !commit_queue_q[commit_read_pointer_q].wait_rvalid) begin
       req_port_o.data_req = 1'b1;
       if (req_port_i.data_gnt) begin
-        // we can evict it from the commit buffer
+        if (commit_queue_q[commit_read_pointer_q].cbo_op == ariane_pkg::CBO_NONE || req_port_i.data_rvalid) begin
+          // not CBO or rvalid as well -> we can evict it from the commit buffer
+          // check for rvalid is technically superfluous, as CBO latency is >= 1 cycle, but check it anyway just to be safe
+          commit_queue_n[commit_read_pointer_q].valid = 1'b0;
+          // advance the read_pointer
+          commit_read_pointer_n = commit_read_pointer_q + 1'b1;
+          commit_status_cnt--;
+        end else if (commit_queue_q[commit_read_pointer_q].cbo_op != ariane_pkg::CBO_NONE) begin
+          // CBO and have gotten data grant -> proceed to wait for rvalid
+          commit_queue_n[commit_read_pointer_q].wait_rvalid = 1'b1;
+        end
+      end
+    end
+
+    if(commit_queue_q[commit_read_pointer_q].valid && commit_queue_q[commit_read_pointer_q].wait_rvalid)
+    begin
+      // wait for rvalid, but no need to raise another request / wait for grant
+      if (req_port_i.data_rvalid) begin
+        // CMO did commit
+        // we can evict the entry from the commit buffer
         commit_queue_n[commit_read_pointer_q].valid = 1'b0;
         // advance the read_pointer
         commit_read_pointer_n = commit_read_pointer_q + 1'b1;
         commit_status_cnt--;
       end
     end
+
     // we ignore the rvalid signal for now as we assume that the store
     // happened if we got a grant
 

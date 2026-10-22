@@ -336,3 +336,7 @@ lint_off -rule UNUSEDPARAM -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for
 lint_off -rule UNUSEDSIGNAL -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for vendored in code.
 lint_off -rule WIDTHEXPAND -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.
 lint_off -rule WIDTHTRUNC -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.
+
+// With the post-inline DFG pass disabled for Verilator 5.040's HPDCache
+// compiler crash, the existing SHA3 combinational path is also reported here.
+lint_off -rule UNOPTFLAT -file "*/lowrisc_ip_sha3_*/rtl/sha3pad.sv" -match "*inc_sentmsg*"

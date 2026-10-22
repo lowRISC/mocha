@@ -1,0 +1,15 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "fpu_div_sqrt_mvp",
+  target_dir: "fpu_div_sqrt_mvp",
+  upstream: {
+    url: "https://github.com/pulp-platform/fpu_div_sqrt_mvp.git",
+    // Divide/square-root submodule revision selected by the pinned CVFPU.
+    rev: "86e1f558b3c95e91577c41b2fc452c86b04e85ac",
+  },
+  exclude_from_upstream: [
+    ".github",
+  ],
+}

@@ -6,8 +6,9 @@
   target_dir: "cva6_cheri",
 
   upstream: {
-    url: "https://github.com/lowRISC/cva6-cheri.git",
-    rev: "mocha",
+    url: "https://github.com/Capabilities-Limited/cheri-cva6.git",
+    // Mocha integration branch rebased onto RVY 0.9.10 (d00909435).
+    rev: "mocha-update-RVY",
   },
 
   exclude_from_upstream: [
@@ -17,6 +18,7 @@
     ".github",
     ".gitlab-ci",
     // External dependencies.
+    // CVFPU is imported separately by cvfpu.vendor.hjson.
     "core/cvfpu",
     "corev_apu",
     "vendor",

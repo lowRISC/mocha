@@ -1,22 +1,8 @@
 ##
-#  Copyright 2023,2024 CEA*
-#  *Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
-#  Copyright 2025 Inria, Universite Grenoble-Alpes, TIMA
+#  Copyright 2023,2024 Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+#  Copyright 2025 Univ. Grenoble Alpes, Inria, TIMA Laboratory
 #
 #  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
-#
-#  Licensed under the Solderpad Hardware License v 2.1 (the “License”); you
-#  may not use this file except in compliance with the License, or, at your
-#  option, the Apache License version 2.0. You may obtain a copy of the
-#  License at
-#
-#  https://solderpad.org/licenses/SHL-2.1/
-#
-#  Unless required by applicable law or agreed to in writing, any work
-#  distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#  License for the specific language governing permissions and limitations
-#  under the License.
 ##
 ##
 #  Author     : Cesar Fuguet
@@ -25,13 +11,13 @@
 ##
 -include user_conf.mk
 
-TB_DIR              := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-HPDCACHE_DIR        ?= $(TB_DIR)/../..
-
 ifndef SYSTEMC_LIBDIR
 $(error "SYSTEMC_LIBDIR not defined")
 endif
 
+TB_DIR              := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+HPDCACHE_DIR        ?= $(TB_DIR)/../..
+MINIZ_DIR           := $(TB_DIR)/thirdparty/miniz
 VERILATOR           ?= verilator
 VERILATOR_COV       ?= verilator_coverage
 TOUCH               := touch
@@ -43,7 +29,7 @@ SCANLOG             := $(TB_DIR)/scripts/scan_logs.pl -listwarnings -listerrors
 SHELL               := bash
 
 Q                   ?= @
-NTRANSACTIONS       ?= 10000
+NTRANSACTIONS       ?= $(if $(filter from_trace,$(SEQUENCE)),-1,10000)
 TIMEOUT             ?= $$(( $(NTRANSACTIONS)*1000 ))
 SEQUENCE            ?= random
 LOG_LEVEL           ?= 1
@@ -51,18 +37,22 @@ SEED                ?= 1234
 ERROR_LIMIT         ?= 0
 NTESTS              ?= 128
 TRACE               ?= 0
+TRACE_SEQ_FILE      ?=
+CONFIG              ?= configs/default_config.mk
 
-BUILD_DIR           := build
-LOG_DIR             := logs
-COV_DIR             := coverage
-COV_HTML_DIR        := coverage_html
+BUILD_DIR           := $(TB_DIR)/build
+LOG_DIR             := $(TB_DIR)/logs
+COV_DIR             := $(TB_DIR)/coverage
+COV_HTML_DIR        := $(TB_DIR)/coverage_html
 VERILATE_LOG        := $(BUILD_DIR)/verilate.log
 BUILD_LOG           := $(BUILD_DIR)/build.log
-
-RUN_LOG             ?= $(LOG_DIR)/run_$(SEQUENCE)_$(SEED).log
-TRACE_FILE          ?= $(LOG_DIR)/run_$(SEQUENCE)_$(SEED).vcd
-COV_FILE            ?= $(COV_DIR)/cov_$(SEQUENCE)_$(SEED).dat
+TRACE_LOG_SUFFIX     = $(if $(TRACE_SEQ_FILE),_$(notdir $(TRACE_SEQ_FILE:.bin.gz=)))
+LOG_SUFFIX           = $(if $(filter from_trace,$(SEQUENCE)),$(TRACE_LOG_SUFFIX))
+RUN_LOG             ?= $(LOG_DIR)/run_$(SEQUENCE)_$(SEED)$(LOG_SUFFIX).log
+TRACE_FILE          ?= $(LOG_DIR)/run_$(SEQUENCE)_$(SEED)$(LOG_SUFFIX).vcd
+COV_FILE            ?= $(COV_DIR)/cov_$(SEQUENCE)_$(SEED)$(LOG_SUFFIX).dat
 COV_MERGEFILE       ?= $(COV_DIR)/cov_result.dat
+CONFIG_NAME          = $(notdir $(basename $(CONFIG)))
 DATE_TIME           ?= $(shell date "+%Y_%m_%d-%H%M")
 
 export CXX             := $(CXX)
@@ -72,22 +62,41 @@ export PERL5LIB        := $(TB_DIR)/scripts/perl5
 
 CONF_DEFINES =
 
-ifdef CONFIG
 include $(CONFIG)
-else
-include configs/default_config.mk
-endif
-
 include rtl_conf.mk
 
-USER_CPPFLAGS       += -I$(TB_DIR) \
+CONF_HPDCACHE_DPI ?= $(CONF_HPDCACHE_ECC_ENABLE)
+
+CONF_HPDCACHE_TEST_FAULT_INJ        ?= 0
+CONF_HPDCACHE_TEST_DOUBLE_FAULT_INJ ?= 0
+CONF_HPDCACHE_TEST_FAULT_INJ_DIR    ?= 0
+ifeq ($(CONF_HPDCACHE_TEST_DOUBLE_FAULT_INJ),1)
+  CONF_DEFINES += -DCONF_HPDCACHE_TEST_FAULT_INJ=1
+  CONF_DEFINES += -DCONF_HPDCACHE_TEST_FAULT_INJ_DIR=$(CONF_HPDCACHE_TEST_FAULT_INJ_DIR)
+  CONF_DEFINES += -DCONF_HPDCACHE_TEST_DOUBLE_FAULT_INJ=1
+else
+  ifeq ($(CONF_HPDCACHE_TEST_FAULT_INJ),1)
+    CONF_DEFINES += -DCONF_HPDCACHE_TEST_FAULT_INJ=1
+    CONF_DEFINES += -DCONF_HPDCACHE_TEST_FAULT_INJ_DIR=$(CONF_HPDCACHE_TEST_FAULT_INJ_DIR)
+    CONF_DEFINES += -DCONF_HPDCACHE_TEST_DOUBLE_FAULT_INJ=0
+  endif
+endif
+
+USER_CPPFLAGS       += -I$(TB_DIR)/include \
                        -I$(TB_DIR)/sc_verif_lib/include \
                        -I$(TB_DIR)/sc_verif_lib/modules/generic_cache/include \
                        -I$(TB_DIR)/sc_verif_lib/modules/mem_model/include \
+                       -I$(MINIZ_DIR) \
                        -DDEBUG_HPDCACHE_TEST_SCOREBOARD=1 \
+		       -std=c++17 \
                        -DDEBUG_HPDCACHE_TEST_MEM_RESP_MODEL=1 \
+                       $(if $(filter 1,$(CONF_HPDCACHE_DPI)),-DHPDCACHE_DPI_ON=1) \
                        $(if $(filter 1,$(DEBUG)),-DDEBUG) \
                        $(CONF_DEFINES)
+
+ifdef CREATE_FILE
+USER_CPPFLAGS       += -DCREATE_FILE=1
+endif
 
 VERILATOR_FLAGS     += -Wall -Wno-fatal \
                        -Werror-PINMISSING \
@@ -97,37 +106,28 @@ VERILATOR_FLAGS     += -Wall -Wno-fatal \
                        -Wno-PINCONNECTEMPTY \
                        --report-unoptflat \
                        --pins-bv 2 \
+                       $(if $(filter 1,$(CONF_HPDCACHE_DPI)),-DHPDCACHE_DPI_ON=1) \
                        -O3 -I$(HPDCACHE_DIR)/rtl/src \
                        --x-assign unique --x-initial unique
 
 ifneq ($(DISABLE_TRACE),1)
-$(info make: Tracing support enabled)
 VERILATOR_FLAGS += --trace --trace-structs
-else
-$(info make: Tracing support disabled)
 endif
 
 ifneq ($(DISABLE_ASSERT),1)
-$(info make: Assertions support enabled)
 VERILATOR_FLAGS += --assert
-else
-$(info make: Assertions support disabled)
 endif
 
 ifeq ($(PROF),1)
-$(info make: Profiling support enabled)
 VERILATOR_FLAGS += --prof-cfuncs -CFLAGS "-g -pg"
 else
-$(info make: Profiling support disabled)
 VERILATOR_FLAGS += -CFLAGS "-O3"
 endif
 
 ifeq ($(COV),1)
 $(shell mkdir -p $(COV_DIR))
-$(info make: Coverage support enabled)
 VERILATOR_FLAGS += --coverage
 else
-$(info make: Coverage support disabled)
 endif
 
 VERILATOR_FLAGS     += $(CONF_DEFINES)
@@ -136,11 +136,15 @@ VERILATOR_MAKEFLAGS += USER_CPPFLAGS="$(USER_CPPFLAGS)" \
                        USER_LDFLAGS="-Wl,-rpath,$(SYSTEMC_LIBDIR)" \
                        USER_LDLIBS="-lscv"
 
+
+
+
 VERILATOR_RUNFLAGS  += +verilator+seed+$(SEED) \
                        +verilator+rand+reset+1 \
                        +verilator+error+limit+50 \
                        -m $(TIMEOUT) \
                        -n $(NTRANSACTIONS) \
+                       $(if $(filter from_trace,$(SEQUENCE)),-f $(TRACE_SEQ_FILE)) \
                        -s $(SEQUENCE) \
                        -l $(LOG_LEVEL) \
                        -r $(SEED) \
@@ -156,10 +160,15 @@ export SC_COPYRIGHT_MESSAGE=DISABLE
 .PHONY: all
 all: help
 
-.PHONY: verilate build run
+.PHONY: verilate build run run_no_check run_clobber
 verilate: $(VERILATE_LOG)
-build: $(BUILD_LOG)
-run: $(RUN_LOG)
+$(VERILATE_LOG): print_config
+build: $(VERILATE_LOG) $(BUILD_LOG)
+run: $(BUILD_LOG) $(RUN_LOG) check
+run_no_check: $(BUILD_LOG) $(RUN_LOG)
+run_clobber: clean $(BUILD_LOG) $(RUN_LOG) check
+
+.NOTPARALLEL: run run_no_check build run_clobber
 
 define help_message
 help: make [target] [arguments]
@@ -188,6 +197,7 @@ run <options>                Execute the specified test sequence on the
                              testbench
 
     [SEQUENCE=$(SEQUENCE)] - test sequence
+    [TRACE_SEQ_FILE=<path_to_file>] - execution trace file. Use it with SEQUENCE=from_trace
     [TRACE=$(TRACE)] - generate waveform (on VCD format)
     [TIMEOUT=$(TIMEOUT)] - maximum nb of run cycles
     [LOG_LEVEL=$(LOG_LEVEL)] - level of log verbosity (low = 0, 1, 2, high = 3)
@@ -220,14 +230,17 @@ help:
 
 .PHONY: $(RUN_LOG)
 $(RUN_LOG):
-	$(Q)$(ECHO) "make: run (LOG: $@)"
+	$(Q)$(ECHO) "Running simulation... (LOG: $@)"
 	$(Q)$(MKDIR) $(dir $@)
 	$(Q)$(RM) $(TRACE_FILE)
 	$(Q)$(BUILD_DIR)/V$(DUT) $(VERILATOR_RUNFLAGS) >& $@
-	$(Q)$(ECHO) "RUN FINISHED" >> $@
+
+.PHONY: check
+check: $(RUN_LOG)
+	$(Q)$(ECHO) "Checking log... (LOG: $<)"
 	$(Q)$(SCANLOG) -pat scripts/scan_patterns/run_patterns.pat \
 	    -att scripts/scan_patterns/run_attributes.pat \
-	    -nowarn $@  >$@.scan 2>&1
+	    -nowarn $< 2>&1 | tee $<.scan ; exit $${PIPESTATUS[0]}
 
 .PHONY: debug
 debug: build
@@ -241,18 +254,15 @@ nonreg: nonregression
 .PHONY: nonregression
 nonregression:
 	$(Q)$(ECHO) "Running non-regression testsuite with SEQUENCE=$(SEQUENCE)..."
-	$(Q)$(MKDIR) $(LOG_DIR)/nonreg_$(DATE_TIME)
-	$(Q)i=1 ; \
-	for s in $(shell head -n $(NTESTS) scripts/random_numbers.dat | tr '\n' ' ') ; do \
-	    $(ECHO) "[$$i/$(NTESTS)] Running sequence $(SEQUENCE) SEED=$$s" ; \
-	    ((i++)) ; \
-	    $(MAKE) -s run SEED=$$s \
-	            RUN_LOG=$(LOG_DIR)/nonreg_$(DATE_TIME)/$(SEQUENCE)_$$s.log ; \
-	done ;
-	$(Q)$(SCANLOG) -pat scripts/scan_patterns/run_patterns.pat \
-	        -att scripts/scan_patterns/run_attributes.pat \
-	        -nowarn $(LOG_DIR)/nonreg_$(DATE_TIME)/$(SEQUENCE)_*.log \
-	        |& tee $(LOG_DIR)/nonreg_$(DATE_TIME)/nonreg.scan.log
+	./scripts/run_nonregression.sh \
+	    -s ${SEQUENCE} \
+	    -n ${NTESTS} \
+	    -t ${NTRANSACTIONS} \
+	    -l ${LOG_DIR}/nonreg_${CONFIG_NAME}_${DATE_TIME} \
+	    -c ${CONFIG} \
+	    -d ${LOG_LEVEL} \
+	    -f \
+	    $(if $(filter 1,$(COV)),-e $(COV))
 
 .PHONY: cov
 cov: $(COV_MERGEFILE) $(COV_MERGEFILE).info
@@ -276,27 +286,30 @@ cov_html: cov $(COV_HTML_DIR)/index.html
 $(COV_HTML_DIR)/index.html: $(COV_MERGEFILE).info
 	genhtml --branch-coverage --function-coverage -o coverage_html $<
 
-$(VERILATE_LOG): print_config $(SVLOG_SOURCES) $(TB_TOP).cpp
+$(VERILATE_LOG): $(SVLOG_SOURCES) $(BUILD_DIR)/miniz.o $(TB_TOP).cpp
 	$(Q)$(ECHO) "Verilating the RTL sources... (LOG: $@)"
 	$(Q)$(MKDIR) $(dir $@)
 	$(Q)$(VERILATOR) --sc $(VERILATOR_FLAGS) -Mdir $(BUILD_DIR) \
 	        $(if $(filter $(DISABLE_WAIVERS),1),,scripts/verilate_waivers.vlt) \
 	        +incdir+$(HPDCACHE_DIR)/rtl/include \
+	        +incdir+$(HPDCACHE_DIR)/rtl/src/utils/ecc \
 	        $(SVLOG_SOURCES) \
-	        --exe $(TB_TOP).cpp --top-module $(DUT) >& $@
+	        --exe $(TB_TOP).cpp --top-module $(DUT) $(BUILD_DIR)/miniz.o >& $@
 	$(Q)$(ECHO) "VERILATE FINISHED" >> $@
 	$(Q)$(SCANLOG) -pat scripts/scan_patterns/verilate_patterns.pat \
-	        -nowarn $@ |& tee $@.scan
-	$(Q)$(ECHO) "Verilate done"
+	        -nowarn $@ |& tee $@.scan ; exit $${PIPESTATUS[0]}
 
-$(BUILD_LOG): print_config $(VERILATE_LOG) $(TB_TOP).cpp
-	$(Q)$(ECHO) "Build the testbench... (LOG: $@)"
+$(BUILD_LOG): $(TB_TOP).cpp
+	$(Q)$(ECHO) "Building the testbench... (LOG: $@)"
 	$(Q)$(MKDIR) $(dir $@)
-	$(Q)$(MAKE) -C $(BUILD_DIR) -f "V$(DUT).mk" "V$(DUT)" $(VERILATOR_MAKEFLAGS) >& $@
+	$(Q)$(MAKE) -s -C $(BUILD_DIR) -f "V$(DUT).mk" "V$(DUT)" $(VERILATOR_MAKEFLAGS) >& $@
 	$(Q)$(ECHO) "BUILD FINISHED" >> $@
 	$(Q)$(SCANLOG) -pat scripts/scan_patterns/build_patterns.pat \
-	        -nowarn $@ |& tee $@.scan
-	$(Q)$(ECHO) "Build done"
+	        -nowarn $@ |& tee $@.scan ; exit $${PIPESTATUS[0]}
+
+$(BUILD_DIR)/miniz.o: $(MINIZ_DIR)/miniz.c $(MINIZ_DIR)/miniz.h
+	$(Q)$(MKDIR) $(dir $@)
+	$(Q)$(CC) -I$(MINIZ_DIR) -c -g -o $@ $<
 
 .PHONY: clean clean_log clean_cover clean_all distclean
 clean:
@@ -354,3 +367,5 @@ print_config:
 	@printf "CONF_HPDCACHE_USER_ENABLE=$(CONF_HPDCACHE_USER_ENABLE)\n"
 	@printf "CONF_HPDCACHE_CAP_AMO_ENABLE=$(CONF_HPDCACHE_CAP_AMO_ENABLE)\n"
 	@printf "CONF_HPDCACHE_LOW_LATENCY=$(CONF_HPDCACHE_LOW_LATENCY)\n"
+	@printf "CONF_HPDCACHE_ECC_ENABLE=$(CONF_HPDCACHE_ECC_ENABLE)\n"
+	@printf "CONF_HPDCACHE_ECC_SCRUBBER_ENABLE=$(CONF_HPDCACHE_ECC_SCRUBBER_ENABLE)\n"
