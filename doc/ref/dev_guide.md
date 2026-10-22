@@ -172,7 +172,20 @@ Some peripheral tests require additional hardware to be connected to the Genesys
 ## Debugging
 
 FPGA debugging is supported through the PMOD header JD.
-First connect your JTAG adapter to PMOD JD according to the pinout in [pins_genesys2.xdc](../../hw/top_chip/data/pins_genesys2.xdc), then connect OpenOCD to Mocha with the following command:
+First connect your JTAG adapter to PMOD JD according to the pinout in [pins_genesys2.xdc](../../hw/top_chip/data/pins_genesys2.xdc).
+The OpenOCD configuration assumes an [Olimex ARM-USB-TINY-H adapter](https://www.olimex.com/Products/ARM/JTAG/ARM-USB-TINY-H/), which should be wired from its 20-pin JTAG connector to PMOD JD as follows:
+
+| Signal | Olimex pin | PMOD JD pin | Note |
+|--------|------------|-------------|------|
+| TCK    | 9          | 1           |
+| TMS    | 7          | 2           |
+| TDI    | 5          | 3           |
+| TRST_n | 3          | 4           | Can be left disconnected
+| GND    | 4          | 5           |
+| VREF   | 1          | 6           | 3.3 V
+| TDO    | 13         | 7           |
+
+Then connect OpenOCD to Mocha with the following command:
 ```sh
 openocd -f util/genesys2-openocd-cfg.tcl
 ```
