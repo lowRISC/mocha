@@ -1,0 +1,35 @@
+diff --git a/sva/rstmgr_cascading_sva_if.sv.tpl b/sva/rstmgr_cascading_sva_if.sv.tpl
+index 143d0ed5..f8853b04 100644
+--- a/sva/rstmgr_cascading_sva_if.sv.tpl
++++ b/sva/rstmgr_cascading_sva_if.sv.tpl
+@@ -184,16 +184,22 @@ interface rstmgr_cascading_sva_if (
+ % endfor
+ 
+   // Controlled by rst_lc_src_n.
+-  `CASCADED_ASSERTS(CascadeLcToLcAon, rst_lc_src_n[rstmgr_pkg::DomainAonSel],
+-                    resets_o.rst_lc_aon_n[rstmgr_pkg::DomainAonSel], SysCycles, clk_aon_i)
+-  `CASCADED_ASSERTS(CascadeLcToLc, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
+-                    resets_o.rst_lc_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
++  `CASCADED_ASSERTS(CascadeLcToAon, rst_lc_src_n[rstmgr_pkg::DomainAonSel],
++                    resets_o.rst_aon_n[rstmgr_pkg::DomainAonSel], SysCycles, clk_aon_i)
++  `CASCADED_ASSERTS(CascadeLcToMain, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_main_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
++  `CASCADED_ASSERTS(CascadeLcToIo, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_io_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_io_i)
++  `CASCADED_ASSERTS(CascadeLcToSpiDevice, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_spi_device_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_io_i)
++  `CASCADED_ASSERTS(CascadeLcToSpiHost, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_spi_host_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_io_i)
++  `CASCADED_ASSERTS(CascadeLcToI2c, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_i2c_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_io_i)
+ 
+   // Controlled by rst_sys_src_n.
+-  `CASCADED_ASSERTS(CascadeSysToSys, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
+-                    resets_o.rst_sys_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_main_i)
+-  `CASCADED_ASSERTS(CascadeLcToLcShadowed, rst_lc_src_n[rstmgr_pkg::DomainMainSel],
+-                    resets_o.rst_lc_shadowed_n[rstmgr_pkg::DomainMainSel], SysCycles, clk_main_i)
++  `CASCADED_ASSERTS(CascadeSysToDebug, rst_sys_src_n[rstmgr_pkg::DomainMainSel],
++                    resets_o.rst_debug_n[rstmgr_pkg::DomainMainSel], PeriCycles, clk_main_i)
+ 
+   `undef FALL_ASSERT
+   `undef RISE_ASSERTS

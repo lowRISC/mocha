@@ -28,8 +28,9 @@ class kmac_app_host_seq extends kmac_app_base_seq;
 
     while (msg_size_bytes > 0) begin
 
-      bit [KmacDataIfWidth-1:0] req_data = '0;
-      bit [KmacDataIfWidth/8-1:0] req_strb = '1;
+      // We send the data unmasked (share 1 is fixed to '0).
+      bit [kmac_pkg::MsgWidth-1:0] req_data_s0 = '0;
+      bit [kmac_pkg::MsgWidth/8-1:0] req_strb = '1;
       bit req_last = 0;
 
       // create push_pull_host_seq
@@ -38,19 +39,19 @@ class kmac_app_host_seq extends kmac_app_base_seq;
       `DV_CHECK_RANDOMIZE_FATAL(host_seq)
 
       // Assemble the message chunk and strb
-      for (int i = 0; i < KmacDataIfWidth / 8; i ++) begin
+      for (int i = 0; i < kmac_pkg::MsgWidth / 8; i ++) begin
         if (msg_size_bytes == 0) break;
 
         if (cfg.inject_zero_in_host_strb) begin
           `DV_CHECK_STD_RANDOMIZE_WITH_FATAL(req_strb,
-              ($countones(req_strb ^ {req_strb[KmacDataIfWidth/8-2:0], 1'b0}) <= 2);)
+              ($countones(req_strb ^ {req_strb[kmac_pkg::MsgWidth/8-2:0], 1'b0}) <= 2);)
         end
         if (req_strb[i] == 1) begin
-          req_data[i*8 +: 8] = 8'(req.byte_data_q.pop_front());
+          req_data_s0[i*8 +: 8] = 8'(req.byte_data_q.pop_front());
           req_strb[i] = 1'b1;
           msg_size_bytes -= 1;
         end else begin
-          req_data[i*8 +: 8] = $urandom_range(0, (1'b1<<9)-1);
+          req_data_s0[i*8 +: 8] = $urandom_range(0, (1'b1<<9)-1);
           req_strb[i] = 1'b0;
         end
       end
@@ -58,7 +59,9 @@ class kmac_app_host_seq extends kmac_app_base_seq;
       // Set the last bit
       req_last = (msg_size_bytes == 0);
 
-      cfg.m_data_push_agent_cfg.add_h_user_data({req_data, req_strb, req_last});
+      // For now, a static app is assumed to be always ready to accept a response.
+      cfg.m_data_push_agent_cfg.add_h_user_data(
+          {req_data_s0, req_strb, req_last});
 
       `uvm_send(host_seq)
 

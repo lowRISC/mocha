@@ -1,0 +1,48 @@
+diff --git a/tb/tb.sv b/tb/tb.sv
+--- a/tb/tb.sv
++++ b/tb/tb.sv
+@@ -41,8 +41,8 @@
+   // Memory configuration signals. These signals are currently driven in:
+   // spi_device_ram_cfg_vseq. They are connected here to avoid a warning
+-  prim_ram_1r1w_pkg::ram_1r1w_cfg_req_t  ram_cfg_sys2spi;
+-  prim_ram_1r1w_pkg::ram_1r1w_cfg_req_t  ram_cfg_spi2sys;
++  prim_ram_2p_pkg::ram_2p_cfg_t           ram_cfg_sys2spi;
++  prim_ram_2p_pkg::ram_2p_cfg_t           ram_cfg_spi2sys;
+   assign ram_cfg_sys2spi = 0;
+   assign ram_cfg_spi2sys = 0;
+
+   // RACL:
+@@ -99,9 +99,9 @@
+     .sck_monitor_o(),
+
+     .ram_cfg_sys2spi_i(ram_cfg_sys2spi),
+-    .ram_cfg_sys2spi_o(),
++    .ram_cfg_rsp_sys2spi_o(),
+     .ram_cfg_spi2sys_i(ram_cfg_spi2sys),
+-    .ram_cfg_spi2sys_o(),
++    .ram_cfg_rsp_spi2sys_o(),
+
+     .mbist_en_i     (1'b0),
+     .scan_clk_i     (1'b0),
+diff --git a/env/seq_lib/spi_device_vseq_list.sv b/env/seq_lib/spi_device_vseq_list.sv
+--- a/env/seq_lib/spi_device_vseq_list.sv
++++ b/env/seq_lib/spi_device_vseq_list.sv
+@@ -7,7 +7,6 @@
+ `include "spi_device_common_vseq.sv"
+ `include "spi_device_csb_read_vseq.sv"
+ `include "spi_device_mem_parity_vseq.sv"
+-`include "spi_device_ram_cfg_vseq.sv"
+ `include "spi_device_tpm_base_vseq.sv"
+ `include "spi_device_tpm_read_hw_reg_vseq.sv"
+ `include "spi_device_tpm_all_vseq.sv"
+diff --git a/env/spi_device_env.core b/env/spi_device_env.core
+--- a/env/spi_device_env.core
++++ b/env/spi_device_env.core
+@@ -23,7 +23,6 @@
+       - seq_lib/spi_device_common_vseq.sv: {is_include_file: true}
+       - seq_lib/spi_device_csb_read_vseq.sv: {is_include_file: true}
+       - seq_lib/spi_device_mem_parity_vseq.sv: {is_include_file: true}
+-      - seq_lib/spi_device_ram_cfg_vseq.sv: {is_include_file: true}
+       - seq_lib/spi_device_tpm_base_vseq.sv: {is_include_file: true}
+       - seq_lib/spi_device_tpm_read_hw_reg_vseq.sv: {is_include_file: true}
+       - seq_lib/spi_device_tpm_all_vseq.sv: {is_include_file: true}

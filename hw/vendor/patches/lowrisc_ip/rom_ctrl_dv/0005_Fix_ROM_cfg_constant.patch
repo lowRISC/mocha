@@ -1,0 +1,13 @@
+diff --git a/tb/tb.sv b/tb/tb.sv
+--- a/tb/tb.sv
++++ b/tb/tb.sv
+@@ -45,8 +45,7 @@
+     .clk_i                (clk),
+     .rst_ni               (rst_n),
+
+-    .rom_cfg_i            (prim_rom_pkg::ROM_CFG_REQ_DEFAULT),
+-    .rom_cfg_o            (),
++    .rom_cfg_i            (prim_rom_pkg::ROM_CFG_DEFAULT),
+
+     .rom_tl_i             (tl_rom_if.h2d),
+     .rom_tl_o             (tl_rom_if.d2h),

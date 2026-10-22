@@ -472,11 +472,19 @@ class Desc:
     def import_from_upstream(self, upstream_path):
         log.info('Copying upstream sources to {}'.format(self.target_dir))
 
-        # Remove existing directories before importing them again
-        shutil.rmtree(str(self.target_dir), ignore_errors=True)
-
         items = (self.mapping.items if self.mapping is not None
                  else [Mapping1.make_default(self.patch_dir is not None)])
+
+        # Remove only the paths managed by this vendor config rather than the
+        # entire target_dir. This allows multiple vendor configs to share the
+        # same target_dir without each run erasing the other's content.
+        for map1 in items:
+            managed_path = self.target_dir / map1.to_path
+            if managed_path.is_dir():
+                shutil.rmtree(str(managed_path))
+            elif managed_path.is_file():
+                managed_path.unlink()
+
         for map1 in items:
             map1.import_from_upstream(upstream_path,
                                       self.target_dir,
@@ -521,18 +529,43 @@ def _export_patches(patchrepo_clone_url, target_patch_dir, upstream_rev,
 
 
 def ignore_patterns(base_dir, *patterns):
-    """Similar to shutil.ignore_patterns, but with support for directory excludes."""
+    """Similar to shutil.ignore_patterns, but with support for directory excludes.
+
+    Unlike fnmatch, '*' does not match path separators. Use '**' to match
+    across directory boundaries.
+    """
+    import re as _re
+
+    def _compile(pattern):
+        # Convert glob pattern to regex: * matches within one component,
+        # ** matches across components, ? matches one non-separator character.
+        i, result = 0, ''
+        while i < len(pattern):
+            if pattern[i:i+2] == '**':
+                result += '.*'
+                i += 2
+            elif pattern[i] == '*':
+                result += '[^/]*'
+                i += 1
+            elif pattern[i] == '?':
+                result += '[^/]'
+                i += 1
+            else:
+                result += _re.escape(pattern[i])
+                i += 1
+        return _re.compile('^' + result + '$')
+
+    compiled = [_compile(p) for p in patterns]
+
     def _rel_to_base(path, name):
         return os.path.relpath(os.path.join(path, name), base_dir)
 
     def _ignore_patterns(path, names):
         ignored_names = []
-        for pattern in patterns:
-            pattern_matches = [
-                n for n in names
-                if fnmatch.fnmatch(_rel_to_base(path, n), pattern)
-            ]
-            ignored_names.extend(pattern_matches)
+        for regex in compiled:
+            ignored_names.extend(
+                n for n in names if regex.match(_rel_to_base(path, n))
+            )
         return set(ignored_names)
 
     return _ignore_patterns

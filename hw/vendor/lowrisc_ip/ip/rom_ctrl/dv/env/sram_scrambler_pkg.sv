@@ -193,6 +193,7 @@ package sram_scrambler_pkg;
 
   // Encrypts the target SRAM address using the custom S&P network.
   function automatic state_t encrypt_sram_addr(logic addr[], int addr_width,
+                                               int depth,
                                                logic full_nonce[]);
 
     logic nonce[] = new[addr_width];
@@ -215,6 +216,7 @@ package sram_scrambler_pkg;
 
   // Decrypts the target SRAM address using the custom S&P network.
   function automatic state_t decrypt_sram_addr(logic addr[], int addr_width,
+                                               int depth,
                                                logic full_nonce[]);
 
     logic nonce[] = new[addr_width];
