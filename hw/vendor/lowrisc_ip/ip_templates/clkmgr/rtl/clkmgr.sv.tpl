@@ -210,7 +210,9 @@ rg_srcs = get_rg_srcs(typed_clocks)
 
   // SEC_CM: MEAS.CONFIG.REGWEN
   // SEC_CM: MEAS.CONFIG.SHADOW
+% if ext_clk_bypass:
   // SEC_CM: CLK_CTRL.CONFIG.REGWEN
+% endif
   clkmgr_reg_top u_reg (
     .clk_i,
     .rst_ni,

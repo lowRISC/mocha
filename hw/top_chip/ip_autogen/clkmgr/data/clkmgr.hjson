@@ -173,9 +173,6 @@
     { name: "MEAS.CONFIG.REGWEN",
       desc: "The measurement controls protected with regwen."
     }
-    { name: "CLK_CTRL.CONFIG.REGWEN",
-      desc: "Software controlled clock requests are proteced with regwen."
-    }
 
   ]
 
@@ -319,6 +316,8 @@
           '''
         },
       ]
+      // calib_rdy is tied off, so hardware keeps this register at 1 and a write of 0 is ignored.
+      tags: ["excl:CsrNonInitTests:CsrExclWrite"]
     },
     { name: "IO_MEAS_CTRL_EN",
       desc: '''

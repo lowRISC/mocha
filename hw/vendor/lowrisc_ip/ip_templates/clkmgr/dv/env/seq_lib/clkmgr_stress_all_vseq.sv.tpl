@@ -1,6 +1,10 @@
 // Copyright lowRISC contributors (OpenTitan project).
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
+## measurement_live: measurement cannot run when ext_clk_bypass is false, because
+## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
+## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
+<% measurement_live = ext_clk_bypass %>\
 
 // combine all clkmgr seqs (except below seqs) in one seq to run sequentially
 // 1. csr seq, which requires scb to be disabled
@@ -14,8 +18,10 @@ class clkmgr_stress_all_vseq extends clkmgr_base_vseq;
     % if ext_clk_bypass:
       "clkmgr_extclk_vseq",
     % endif
+    % if measurement_live:
       "clkmgr_frequency_timeout_vseq",
       "clkmgr_frequency_vseq",
+    % endif
       "clkmgr_peri_vseq",
       "clkmgr_smoke_vseq",
       "clkmgr_trans_vseq"
