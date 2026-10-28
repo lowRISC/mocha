@@ -1,7 +1,15 @@
 ## Copyright lowRISC contributors (OpenTitan project).
 ## Licensed under the Apache License, Version 2.0, see LICENSE for details.
 ## SPDX-License-Identifier: Apache-2.0
-<% from topgen.lib import Name %>\
+## measurement_live: measurement cannot run when ext_clk_bypass is false, because
+## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
+## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
+<%
+from topgen.lib import Name
+from ipgen.clkmgr_gen import get_hint_targets
+hint_targets = get_hint_targets(typed_clocks)
+measurement_live = ext_clk_bypass
+%>\
 # CLKMGR DV document
 
 ${"##"} Goals
@@ -61,7 +69,12 @@ All common types and methods defined at the package level can be found in
     Peri${Name.to_camel_case(clk['src_name'])}${sep}
 % endfor
   } peri_e;
-  typedef enum int {TransAes, TransHmac, TransKmac, TransOtbn} trans_e;
+  typedef enum int {
+% for target in hint_targets:
+<% sep = "" if loop.last else "," %>\
+    Trans${Name.to_camel_case(target)}${sep}
+% endfor
+  } trans_e;
 ```
 
 ${"###"} TL_agent
@@ -91,7 +104,7 @@ All test sequences are extended from `clkmgr_base_vseq`, and are described below
 
 ${"####"} clkmgr_peri_vseq
 
-The sequence `clkmgr_peri_vseq` randomizes the stimuli that drive the four peripheral clocks.
+The sequence `clkmgr_peri_vseq` randomizes the stimuli that drive the peripheral clocks.
 These clocks are mutually independent so they are tested in parallel.
 They depend on
 * The `clk_enables` CSR, which has a dedicated enable for each peripheral clock
@@ -102,7 +115,7 @@ The sequence runs a number of iterations, each randomizing the above except for 
 
 ${"####"} clkmgr_trans_vseq
 
-The sequence `clkmgr_trans_vseq` randomizes the stimuli that drive the five transactional unit clocks.
+The sequence `clkmgr_trans_vseq` randomizes the stimuli that drive the transactional unit clocks.
 These are also mutually independent so they are tested in parallel.
 They depend on the `clk_hints` CSR, which has a separate bit for each, `main_ip_clk_en` and `scanmode_i`, similar to the peripheral clocks.
 They also depend on the `idle_i` input, which also has a separate multi-bit value for each unit.
@@ -119,6 +132,7 @@ When the external clock is selected and `scanmode_i` is not set to `prim_mubi_pk
 * If `extclk_ctrl.hi_speed_sel` CSR is `prim_mubi_pkg::MuBi4True`, when the selection is enabled by software.
 
 % endif
+% if measurement_live:
 ${"####"} clkmgr_frequency_vseq
 
 The sequence `clkmgr_frequency_vseq` randomly programs the frequency measurement for each clock so its measurement is either okay, slow, or fast.
@@ -132,6 +146,7 @@ The sequence `clkmgr_frequency_timeout_vseq` programs the frequency measurement 
 It randomly stops one of the clocks, and checks the corresponding bit in the `recov_err_code` show a timeout.
 It also checks the recoverable alerts trigger as expected for a timeout.
 
+% endif
 ${"####"} clkmgr_clk_status_vseq
 
 This checks that the `pwr_o.*_status` outputs track the `pwr_i.*_ip_clk_en` inputs.
@@ -145,8 +160,10 @@ The following covergroups have been developed to prove that the test intent has 
   These are wrapped in class `clkmgr_peri_cg_wrap` and instantiated in `clkmgr_env_cov`.
 * Covergroups for inputs to each transactional gated unit clock.
   These are wrapped in class `clkmgr_trans_cg_wrap` and instantiated in `clkmgr_env_cov`.
+% if measurement_live:
 * Covergroups for the outcome of each clock measurement.
   These are wrapped in class `freq_measure_cg_wrap` and instantiated in `clkmgr_env_cov`.
+% endif
 % if ext_clk_bypass:
 * Covergroup for the external clock selection logic: `extclk_cg` in `clkmgr_env_cov`.
 % endif
@@ -176,14 +193,16 @@ ${"###"} Assertions
 * Pwrmgr enable-status assertions: Interface `clkmgr_pwrmgr_sva_if` contains concurrent SVA that checks that edges of the various ip_clk_en are followed by corresponding edges of their clk_status.
   The clocks checked are `main`, `io`, and `usb`.
 * Gated clock assertions: Interface `clkmgr_gated_clock_sva_if` contains concurrent SVA that checks each gated clock is either running or stopped based on their control logic.
-  There is one assertion for each of the four peripheral clock and four hintable clocks.
+  There is one assertion for each peripheral clock and each hintable clock.
 * Transactional clock assertions: Interface `clkmgr_trans_sva_if` contains concurrent SVA that checks each transactional clock is either running or stopped based on their control logic.
-  There is one assertion for each of the four hintable clocks.
+  There is one assertion for each hintable clock.
 * Clock divider assertions: Interface `clkmgr_div_sva_if` contains concurrent SVA that checks the `io_div2` and `io_div4` clocks are running at nominal frequency, or are divided by two each in response to the `extclk` logic.
 * External clock assertions: Interface `clkmgr_extclk_sva_if` contains concurrent SVA that checks the external control outputs respond correctly to the various CSR or inputs that control them.
 * Clock gating assertions: Interface `clkmgr_cg_en_sva_if` contains concurrent assertions that check a clock's cg_en output is active when the clock is disabled, and viceversa.
   As a special case, interface `clkmgr_aon_cg_en_sva_if` checks cg_en is never active for an aon clock.
+% if ext_clk_bypass:
 * Lost calibration assertions: Interfaces `clkmgr_lost_calib_ctrl_en_sva_if` and `clkmgr_lost_calib_regwen_sva_if` check that losing calibration turns off clock measurements and re-enables measure control writes.
+% endif
 * TLUL assertions: `clkmgr_bind.sv` binds the `tlul_assert` [assertions](../../../../ip/tlul/doc/TlulProtocolChecker.md) to the IP to ensure TileLink interface protocol compliance.
 * Unknown checks on DUT outputs: The RTL has assertions to ensure all outputs are initialized to known values after coming out of reset.
 

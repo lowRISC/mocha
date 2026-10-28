@@ -21,6 +21,10 @@
 //
 // Please ensure that this testplan is imported in:
 // .../clkmgr/data/clkmgr_testplan.hjson
+## measurement_live: measurement cannot run when ext_clk_bypass is false, because
+## rtl/clkmgr.sv.tpl ties u_calib_rdy_sync .mubi_i to MuBi4False in that case.
+## Full rationale in dv/clkmgr_sim_cfg.hjson.tpl.
+<% measurement_live = ext_clk_bypass %>\
 {
   testpoints: [
     {
@@ -41,9 +45,19 @@
               whether the module can detect measurement error for each test
               clock.
             - Measurement error should trigger a recoverable alert
+    % if not measurement_live:
+
+            Not applicable in this configuration: calib_rdy is tied to MuBi4False, so measurement
+            never runs and the error this countermeasure detects cannot occur. The hardware is
+            still built, it just sits idle.
+    % endif
             '''
       stage: V2S
+    % if measurement_live:
       tests: ["clkmgr_frequency"]
+    % else:
+      tests: ["N/A"]
+    % endif
     }
     {
       name: sec_cm_timeout_clk_bkgn_chk
@@ -53,9 +67,19 @@
               clk_main, clk_usb, clk_io, clk_io_div2 and clk_io_div4 are choose
               and stopped. This will leads to timeout event.
             - Timeout should cause a recoverable alert
+    % if not measurement_live:
+
+            Not applicable in this configuration: calib_rdy is tied to MuBi4False, so measurement
+            never runs and the timeout this countermeasure detects cannot occur. The hardware is
+            still built, it just sits idle.
+    % endif
             '''
       stage: V2S
+    % if measurement_live:
       tests: ["clkmgr_frequency_timeout"]
+    % else:
+      tests: ["N/A"]
+    % endif
     }
     {
       name: sec_cm_meas_config_shadow
@@ -174,11 +198,22 @@
       name: sec_cm_meas_config_regwen
       desc: '''Verify the countermeasure(s) MEAS.CONFIG.REGWEN.
 
+    % if measurement_live:
             This is covered by auto csr test.
+    % else:
+            Not applicable in this configuration: calib_rdy is tied to MuBi4False and hardware
+            holds MEASURE_CTRL_REGWEN at 1, so writes to it are excluded from the CSR tests.
+            The register is still built.
+    % endif
             '''
       stage: V2S
+    % if measurement_live:
       tests: ["clkmgr_csr_rw"]
+    % else:
+      tests: ["N/A"]
+    % endif
     }
+  % if ext_clk_bypass:
     {
       name: sec_cm_clk_ctrl_config_regwen
       desc: '''Verify the countermeasure(s) CLK_CTRL.CONFIG.REGWEN.
@@ -188,5 +223,6 @@
       stage: V2S
       tests: ["clkmgr_csr_rw"]
     }
+  % endif
   ]
 }

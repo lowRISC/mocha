@@ -303,9 +303,11 @@ rg_srcs = get_rg_srcs(typed_clocks)
     { name: "MEAS.CONFIG.REGWEN",
       desc: "The measurement controls protected with regwen."
     }
+  % if ext_clk_bypass:
     { name: "CLK_CTRL.CONFIG.REGWEN",
       desc: "Software controlled clock requests are proteced with regwen."
     }
+  % endif
 
   ]
 
@@ -553,6 +555,10 @@ rg_srcs = get_rg_srcs(typed_clocks)
           '''
         },
       ]
+% if not ext_clk_bypass:
+      // calib_rdy is tied off, so hardware keeps this register at 1 and a write of 0 is ignored.
+      tags: ["excl:CsrNonInitTests:CsrExclWrite"]
+% endif
     },
 % for src in rg_srcs:
     { name: "${src.upper()}_MEAS_CTRL_EN",
