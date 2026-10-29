@@ -47,8 +47,6 @@ module load_unit
     output logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id_o,
     // Load result - ISSUE_STAGE
     output logic [CVA6Cfg.REGLEN-1:0] result_o,
-    // Load result - strip CHERI Tag - ISSUE_STAGE
-    output logic strip_tag_o,
     // Load exception - ISSUE_STAGE
     output exception_t ex_o,
     // Request address translation - MMU
@@ -66,7 +64,7 @@ module load_unit
     // Physical address - MMU
     input logic [CVA6Cfg.PLEN-1:0] paddr_i,
     // Strip capability tag on load - MMU
-    input logic strip_tag_i,
+    input logic allow_tag_mmu_i,
     // Excepted which appears before load - MMU
     input exception_t ex_i,
     // Data TLB hit - MMU
@@ -97,21 +95,26 @@ module load_unit
     ABORT_TRANSACTION_NI,
     WAIT_TRANSLATION,
     WAIT_FLUSH,
-    WAIT_WB_EMPTY
+    WAIT_WB_EMPTY,
+    WAIT_SPEC_LOAD
   }
       state_d, state_q;
 
   // in order to decouple the response interface from the request interface,
   // we need a a buffer which can hold all inflight memory load requests
   typedef struct packed {
-    logic [CVA6Cfg.TRANS_ID_BITS-1:0]    trans_id;          // scoreboard identifier
-    logic [CVA6Cfg.CLEN_ALIGN_BYTES-1:0] address_offset;    // least significant bits of the address
-    fu_op                                operation;         // type of load
-    logic                                clr_tag;
-    logic                                clr_elevate;
-    logic                                clr_cap_level;
-    logic                                clr_load_mutable;
+    logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id;  // scoreboard identifier
+    logic [CVA6Cfg.CLEN_ALIGN_BYTES-1:0] address_offset;  // least significant bits of the address
+    fu_op operation;  // type of load
+    logic allow_tag;
+    logic allow_elevate;
+    logic allow_cap_level;
+    logic allow_load_mutable;
   } ldbuf_t;
+
+  // additionally add a buffer for information that also needs to be
+  // tracked, but came a cycle late due to the TLB delay
+  typedef struct packed {logic allow_tag_mmu;} ldbuf_tlb_info_t;
 
 
   // to support a throughput of one load per cycle, if the number of entries
@@ -129,16 +132,19 @@ module load_unit
   logic [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_flushed_q, ldbuf_flushed_d;
   ldbuf_t [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_q;
   logic ldbuf_empty, ldbuf_full;
-  ldbuf_id_t ldbuf_free_index;
-  logic      ldbuf_w;
-  ldbuf_t    ldbuf_wdata;
-  ldbuf_id_t ldbuf_windex;
-  ldbuf_id_t ldbuf_cap_ex_windex_q, ldbuf_cap_ex_windex_d;
-  logic      ldbuf_r;
-  ldbuf_t    ldbuf_rdata;
-  ldbuf_id_t ldbuf_rindex;
-  ldbuf_id_t ldbuf_last_id_q;
-  exception_t [CVA6Cfg.NrLoadBufEntries-1:0] cheri_ex_q, cheri_ex_d;
+  ldbuf_id_t                                      ldbuf_free_index;
+  logic                                           ldbuf_w;
+  ldbuf_t                                         ldbuf_wdata;
+  ldbuf_id_t                                      ldbuf_windex;
+  logic                                           ldbuf_r;
+  ldbuf_t                                         ldbuf_rdata;
+  ldbuf_id_t                                      ldbuf_rindex;
+  ldbuf_id_t                                      ldbuf_last_id_q;
+
+  ldbuf_tlb_info_t [CVA6Cfg.NrLoadBufEntries-1:0] ldbuf_tlb_info_q;
+  ldbuf_tlb_info_t                                ldbuf_tlb_info_wdata;
+  ldbuf_tlb_info_t                                ldbuf_tlb_info_rdata;
+  logic                                           ldbuf_prev_w_q;
 
   assign ldbuf_full = &ldbuf_valid_q;
 
@@ -166,8 +172,6 @@ module load_unit
   always_comb begin : ldbuf_comb
     ldbuf_flushed_d = ldbuf_flushed_q;
     ldbuf_valid_d   = ldbuf_valid_q;
-    if (CVA6Cfg.CheriPresent) ldbuf_cap_ex_windex_d = ldbuf_cap_ex_windex_q;
-    else ldbuf_cap_ex_windex_d = 1'b0;
 
     //  In case of flush, raise the flushed flag in all slots.
     if (flush_i) begin
@@ -182,7 +186,6 @@ module load_unit
     if (ldbuf_w) begin
       ldbuf_flushed_d[ldbuf_windex] = 1'b0;
       ldbuf_valid_d[ldbuf_windex]   = 1'b1;
-      if (CVA6Cfg.CheriPresent) ldbuf_cap_ex_windex_d = ldbuf_windex;
     end
   end
 
@@ -192,6 +195,10 @@ module load_unit
       ldbuf_valid_q   <= '0;
       ldbuf_last_id_q <= '0;
       ldbuf_q         <= '0;
+      if (CVA6Cfg.CheriPresent) begin
+        ldbuf_prev_w_q   <= 1'b0;
+        ldbuf_tlb_info_q <= '0;
+      end
     end else begin
       ldbuf_flushed_q <= ldbuf_flushed_d;
       ldbuf_valid_q   <= ldbuf_valid_d;
@@ -199,15 +206,11 @@ module load_unit
         ldbuf_last_id_q       <= ldbuf_windex;
         ldbuf_q[ldbuf_windex] <= ldbuf_wdata;
       end
-    end
-  end
-
-  if (CVA6Cfg.CheriPresent) begin : gen_cheri_ex
-    always_ff @(posedge clk_i or negedge rst_ni) begin : cheri_ff
-      if (!rst_ni) begin
-        cheri_ex_q <= '0;
-      end else begin
-        cheri_ex_q <= cheri_ex_d;
+      if (CVA6Cfg.CheriPresent) begin
+        ldbuf_prev_w_q <= ldbuf_w;
+        if (ldbuf_prev_w_q) begin
+          ldbuf_tlb_info_q[ldbuf_last_id_q] <= ldbuf_tlb_info_wdata;
+        end
       end
     end
   end
@@ -223,16 +226,22 @@ module load_unit
   // this is a read-only interface so set the write enable to 0
   assign req_port_o.data_we = 1'b0;
   assign req_port_o.data_wdata = '0;
+  assign req_port_o.cbo_op = ariane_pkg::CBO_NONE;
   // compose the load buffer write data, control is handled in the FSM
   assign ldbuf_wdata = {
     lsu_ctrl_i.trans_id,
     lsu_ctrl_i.vaddr[CVA6Cfg.CLEN_ALIGN_BYTES-1:0],
     lsu_ctrl_i.operation,
-    lsu_ctrl_i.clr_tag,
-    lsu_ctrl_i.clr_elevate,
-    lsu_ctrl_i.clr_cap_level,
-    lsu_ctrl_i.clr_load_mutable
+    lsu_ctrl_i.allow_tag,
+    lsu_ctrl_i.allow_elevate,
+    lsu_ctrl_i.allow_cap_level,
+    lsu_ctrl_i.allow_load_mutable
   };
+  if (CVA6Cfg.CheriPresent) begin
+    assign ldbuf_tlb_info_wdata = {allow_tag_mmu_i};
+  end else begin
+    assign ldbuf_tlb_info_wdata = '0;
+  end
   // output address
   // we can now output the lower 12 bit as the index to the cache
   assign req_port_o.address_index = lsu_ctrl_i.vaddr[CVA6Cfg.DCACHE_INDEX_WIDTH-1:0];
@@ -244,8 +253,6 @@ module load_unit
   assign req_port_o.data_id = ldbuf_windex;
   // user field not used
   assign req_port_o.data_wuser = '0;
-  // strip tag request
-  assign req_port_o.strip_tag = CVA6Cfg.CheriPresent ? strip_tag_i : 1'b0;
   // directly forward exception fields (valid bit is set below)
   always_comb begin : ex_o_select
     ex_o.cause = ex_i.cause;
@@ -260,15 +267,6 @@ module load_unit
     end
     if (CVA6Cfg.CheriPresent) begin
       ex_o.tval2 = ex_i.tval2;
-      if (ldbuf_rdata.operation == ariane_pkg::LC && result_o[CVA6Cfg.REGLEN-1] && cheri_ex_q[ldbuf_rindex].valid) begin
-        ex_o.cause = cheri_ex_q[ldbuf_rindex].cause;
-        ex_o.tval  = cheri_ex_q[ldbuf_rindex].tval;
-        ex_o.tval2 = cheri_ex_q[ldbuf_rindex].tval2;
-        if (CVA6Cfg.RVH) begin
-          ex_o.tinst = cheri_ex_q[ldbuf_rindex].tinst;
-          ex_o.gva   = cheri_ex_q[ldbuf_rindex].gva;
-        end
-      end
     end
   end
 
@@ -284,9 +282,9 @@ module load_unit
   assign not_commit_time = commit_tran_id_i != lsu_ctrl_i.trans_id;
   assign inflight_stores = (!dcache_wbuffer_not_ni_i || !store_buffer_empty_i);
   assign stall_ni = (inflight_stores || not_commit_time) && (paddr_ni && CVA6Cfg.NonIdemPotenceEn);
-  assign cap_translation_req = (CVA6Cfg.CheriPresent) ? lsu_ctrl_i.operation inside {ariane_pkg::LC} : 1'b0;
+  assign cap_translation_req = (CVA6Cfg.CheriPresent) ? lsu_ctrl_i.operation inside {ariane_pkg::LY} : 1'b0;
 
-  assign translation_req_is_cap_o = cap_translation_req & !ldbuf_rdata.clr_tag;
+  assign translation_req_is_cap_o = cap_translation_req & lsu_ctrl_i.allow_tag;
 
   // ---------------
   // Load Control
@@ -304,44 +302,48 @@ module load_unit
     req_port_o.data_be   = lsu_ctrl_i.be;
     req_port_o.data_size = extract_transfer_size(lsu_ctrl_i.operation);
     pop_ld_o             = 1'b0;
-    if (CVA6Cfg.CheriPresent) cheri_ex_d = cheri_ex_q;
 
     // In IDLE and SEND_TAG states, this unit can accept a new load request
     // when the load buffer is not full or if there is a response and the
     // load buffer is in fall-through mode
-    accept_req = (valid_i && (!ldbuf_full || (LDBUF_FALLTHROUGH && ldbuf_r)));
+    accept_req           = (valid_i && (!ldbuf_full || (LDBUF_FALLTHROUGH && ldbuf_r)));
 
     case (state_q)
       IDLE: begin
         if (accept_req) begin
-          // start the translation process even though we do not know if the addresses match
-          // this should ease timing
-          translation_req_o = 1'b1;
-          // check if the page offset matches with a store, if it does then stall and wait
-          if (!page_offset_matches_i) begin
-            // make a load request to memory
-            req_port_o.data_req = 1'b1;
-            if (CVA6Cfg.CheriPresent) cheri_ex_d[ldbuf_windex] = '0;
-            // we got no data grant so wait for the grant before sending the tag
-            if (!req_port_i.data_gnt) begin
-              state_d = WAIT_GNT;
-            end else begin
-              if (CVA6Cfg.MmuPresent && !dtlb_hit_i) begin
-                state_d = ABORT_TRANSACTION;
+          // start the translation process even though we do not know if the addresses match this should ease timing
+          // don't start the translation for speculative loads that miss on tlb
+          translation_req_o = (!CVA6Cfg.SpeculativeSb || dtlb_hit_i || !lsu_ctrl_i.is_speculative_load);
+          // check if load is speculative and non idempotent, if it is then stall and wait for branch result
+          if (!CVA6Cfg.SpeculativeSb || !lsu_ctrl_i.is_speculative_load || (dtlb_hit_i && !paddr_ni)) begin
+            // check if the page offset matches with a store, if it does then stall and wait
+            if (!page_offset_matches_i) begin
+              // make a load request to memory
+              req_port_o.data_req = 1'b1;
+              // we got no data grant so wait for the grant before sending the tag
+              if (!req_port_i.data_gnt) begin
+                state_d = WAIT_GNT;
               end else begin
-                if (!stall_ni) begin
-                  // we got a grant and a hit on the DTLB so we can send the tag in the next cycle
-                  state_d  = SEND_TAG;
-                  pop_ld_o = 1'b1;
-                  // translation valid but this is to NC and the WB is not yet empty.
-                end else if (CVA6Cfg.NonIdemPotenceEn) begin
-                  state_d = ABORT_TRANSACTION_NI;
+                if (CVA6Cfg.MmuPresent && !dtlb_hit_i) begin
+                  state_d = ABORT_TRANSACTION;
+                end else begin
+                  if (!stall_ni) begin
+                    // we got a grant and a hit on the DTLB so we can send the tag in the next cycle
+                    state_d  = SEND_TAG;
+                    pop_ld_o = 1'b1;
+                    // translation valid but this is to NC and the WB is not yet empty.
+                  end else if (CVA6Cfg.NonIdemPotenceEn) begin
+                    state_d = ABORT_TRANSACTION_NI;
+                  end
                 end
               end
+            end else begin
+              // wait for the store buffer to train and the page offset to not match anymore
+              state_d = WAIT_PAGE_OFFSET;
             end
           end else begin
-            // wait for the store buffer to train and the page offset to not match anymore
-            state_d = WAIT_PAGE_OFFSET;
+            // check branch result on the next cycle
+            state_d = WAIT_SPEC_LOAD;
           end
         end
       end
@@ -354,12 +356,25 @@ module load_unit
         end
       end
 
+      WAIT_SPEC_LOAD: begin
+        // if we have a misspredicted speculative load
+        if (CVA6Cfg.SpeculativeSb && lsu_ctrl_i.is_speculative_load_miss) begin
+          // pop load - but only if we are not getting an rvalid in here - otherwise we will over-write an incoming transaction
+          if (!req_port_i.data_rvalid) begin
+            state_d  = IDLE;
+            pop_ld_o = 1'b1;
+          end
+          // if we have a correct prediction this is now a regular load
+        end else begin
+          state_d = IDLE;
+        end
+      end
+
       WAIT_GNT: begin
         // keep the translation request up
         translation_req_o   = 1'b1;
         // keep the request up
         req_port_o.data_req = 1'b1;
-        if (CVA6Cfg.CheriPresent) cheri_ex_d[ldbuf_windex] = '0;
         // we finally got a data grant
         if (req_port_i.data_gnt) begin
           // so we send the tag in the next cycle
@@ -385,35 +400,40 @@ module load_unit
         state_d = IDLE;
 
         if (accept_req) begin
-          // start the translation process even though we do not know if the addresses match
-          // this should ease timing
-          translation_req_o = 1'b1;
-          // check if the page offset matches with a store, if it does stall and wait
-          if (!page_offset_matches_i) begin
-            // make a load request to memory
-            req_port_o.data_req = 1'b1;
-            if (CVA6Cfg.CheriPresent) cheri_ex_d[ldbuf_windex] = '0;
-            // we got no data grant so wait for the grant before sending the tag
-            if (!req_port_i.data_gnt) begin
-              state_d = WAIT_GNT;
-            end else begin
-              // we got a grant so we can send the tag in the next cycle
-              if (CVA6Cfg.MmuPresent && !dtlb_hit_i) begin
-                state_d = ABORT_TRANSACTION;
+          // start the translation process even though we do not know if the addresses match this should ease timing
+          // don't start the translation for speculative loads that miss on tlb
+          translation_req_o = (!CVA6Cfg.SpeculativeSb || dtlb_hit_i || !lsu_ctrl_i.is_speculative_load);
+          // check if load is speculative and non idempotent, if it is then stall and wait for branch result
+          if (!CVA6Cfg.SpeculativeSb || !lsu_ctrl_i.is_speculative_load || (dtlb_hit_i && !paddr_ni)) begin
+            // check if the page offset matches with a store, if it does stall and wait
+            if (!page_offset_matches_i) begin
+              // make a load request to memory
+              req_port_o.data_req = 1'b1;
+              // we got no data grant so wait for the grant before sending the tag
+              if (!req_port_i.data_gnt) begin
+                state_d = WAIT_GNT;
               end else begin
-                if (!stall_ni) begin
-                  // we got a grant and a hit on the DTLB so we can send the tag in the next cycle
-                  state_d  = SEND_TAG;
-                  pop_ld_o = 1'b1;
-                  // translation valid but this is to NC and the WB is not yet empty.
-                end else if (CVA6Cfg.NonIdemPotenceEn) begin
-                  state_d = ABORT_TRANSACTION_NI;
+                // we got a grant so we can send the tag in the next cycle
+                if (CVA6Cfg.MmuPresent && !dtlb_hit_i) begin
+                  state_d = ABORT_TRANSACTION;
+                end else begin
+                  if (!stall_ni) begin
+                    // we got a grant and a hit on the DTLB so we can send the tag in the next cycle
+                    state_d  = SEND_TAG;
+                    pop_ld_o = 1'b1;
+                    // translation valid but this is to NC and the WB is not yet empty.
+                  end else if (CVA6Cfg.NonIdemPotenceEn) begin
+                    state_d = ABORT_TRANSACTION_NI;
+                  end
                 end
               end
+            end else begin
+              // wait for the store buffer to train and the page offset to not match anymore
+              state_d = WAIT_PAGE_OFFSET;
             end
           end else begin
-            // wait for the store buffer to train and the page offset to not match anymore
-            state_d = WAIT_PAGE_OFFSET;
+            // check branch result on the next cycle
+            state_d = WAIT_SPEC_LOAD;
           end
         end
         // ----------
@@ -484,6 +504,13 @@ module load_unit
   // ---------------
   assign ldbuf_rindex = (CVA6Cfg.NrLoadBufEntries > 1) ? ldbuf_id_t'(req_port_i.data_rid) : 1'b0,
       ldbuf_rdata = ldbuf_q[ldbuf_rindex];
+  if (CVA6Cfg.CheriPresent) begin
+    assign ldbuf_tlb_info_rdata = ldbuf_prev_w_q && (ldbuf_rindex == ldbuf_last_id_q) ?
+                                    ldbuf_tlb_info_wdata
+                                  : ldbuf_tlb_info_q[ldbuf_rindex];
+  end else begin
+    assign ldbuf_tlb_info_rdata = '0;
+  end
 
   // decoupled rvalid process
   always_comb begin : rvalid_output
@@ -498,8 +525,6 @@ module load_unit
       // if the response corresponds to the last request, check that we are not killing it
       if ((ldbuf_last_id_q != ldbuf_rindex) || !req_port_o.kill_req) begin
         valid_o = 1'b1;
-        if (ldbuf_rdata.operation inside {ariane_pkg::LC} && result_o[CVA6Cfg.REGLEN-1] && cheri_ex_q[ldbuf_rindex].valid && CVA6Cfg.CheriPresent)
-          ex_o.valid = 1'b1;
       end
       // the output is also valid if we got an exception. An exception arrives one cycle after
       // dtlb_hit_i is asserted, i.e. when we are in SEND_TAG. Otherwise, the exception
@@ -519,6 +544,13 @@ module load_unit
       valid_o = 1'b1;
       ex_o.valid = 1'b1;
     end
+
+    // raise valid when removing a misspredicted speculative load
+    if (CVA6Cfg.SpeculativeSb && (state_q == WAIT_SPEC_LOAD) && lsu_ctrl_i.is_speculative_load_miss && !req_port_i.data_rvalid && valid_i) begin
+      trans_id_o = lsu_ctrl_i.trans_id;
+      valid_o = 1'b1;
+      ex_o.valid = 1'b0;
+    end
   end
 
 
@@ -526,10 +558,8 @@ module load_unit
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (~rst_ni) begin
       state_q <= IDLE;
-      if (CVA6Cfg.CheriPresent) ldbuf_cap_ex_windex_q <= 1'b0;
     end else begin
       state_q <= state_d;
-      if (CVA6Cfg.CheriPresent) ldbuf_cap_ex_windex_q <= ldbuf_cap_ex_windex_d;
     end
   end
 
@@ -570,7 +600,7 @@ module load_unit
   // prepare these signals for faster selection in the next cycle
   assign rdata_is_signed    =   ldbuf_rdata.operation inside {ariane_pkg::LW,  ariane_pkg::LH,  ariane_pkg::LB, ariane_pkg::HLV_W, ariane_pkg::HLV_H, ariane_pkg::HLV_B};
   assign rdata_is_fp_signed =   ldbuf_rdata.operation inside {ariane_pkg::FLW, ariane_pkg::FLH, ariane_pkg::FLB};
-  assign rdata_offset       =   (ldbuf_rdata.operation inside {ariane_pkg::LD,  ariane_pkg::FLD, ariane_pkg::HLV_D} & CVA6Cfg.IS_XLEN64 & CVA6Cfg.CheriPresent) ? ldbuf_rdata.address_offset + 7 : 
+  assign rdata_offset       =   (ldbuf_rdata.operation inside {ariane_pkg::LD,  ariane_pkg::FLD, ariane_pkg::HLV_D} & CVA6Cfg.IS_XLEN64 & CVA6Cfg.CheriPresent) ? ldbuf_rdata.address_offset + 7 :
  ((ldbuf_rdata.operation inside {ariane_pkg::LW,  ariane_pkg::FLW, ariane_pkg::HLV_W}) & CVA6Cfg.IS_XLEN64) ? ldbuf_rdata.address_offset + 3 :
                                 ( ldbuf_rdata.operation inside {ariane_pkg::LH,  ariane_pkg::FLH, ariane_pkg::HLV_H})                     ? ldbuf_rdata.address_offset + 1 :
                                                                                                                          ldbuf_rdata.address_offset;
@@ -615,26 +645,30 @@ module load_unit
           result_o = x_to_reg(shifted_data);
         end
 
-        if (CVA6Cfg.CheriPresent && ldbuf_rdata.operation == ariane_pkg::LC) begin
+        if (CVA6Cfg.CheriPresent && ldbuf_rdata.operation == ariane_pkg::LY) begin
           // Convert memory capability to register capability
           result_o = cva6_cheri_pkg::cap_mem_to_cap_reg(data);
         end
       end
     endcase
-    strip_tag_o = (CVA6Cfg.CheriPresent && (req_port_i.data_strip_tag || ldbuf_rdata.clr_tag)) ? 1'b1 : 1'b0;
-    if (result_o[CVA6Cfg.REGLEN-1]) begin
-      automatic cva6_cheri_pkg::cap_reg_t result_cap = result_o;
-      if (ldbuf_rdata.clr_elevate && result_cap.otype != cva6_cheri_pkg::UNSEALED_CAP) begin
-        result_cap.hperms.permit_elevate_level = 1'b0;
+    if (CVA6Cfg.CheriPresent) begin
+      if (!ldbuf_rdata.allow_tag || !ldbuf_tlb_info_rdata.allow_tag_mmu) begin
+        result_o[CVA6Cfg.REGLEN-1] = 1'b0;
       end
-      if (ldbuf_rdata.clr_cap_level) begin
-        result_cap.hperms.cap_level = 1'b0;
+      if (result_o[CVA6Cfg.REGLEN-1]) begin
+        automatic cva6_cheri_pkg::cap_reg_t result_cap = result_o;
+        if (!ldbuf_rdata.allow_elevate && result_cap.otype == cva6_cheri_pkg::UNSEALED_CAP) begin
+          result_cap.hperms.permit_elevate_level = 1'b0;
+        end
+        if (!ldbuf_rdata.allow_cap_level) begin
+          result_cap.hperms.cap_level = 1'b0;
+        end
+        if (!ldbuf_rdata.allow_load_mutable && result_cap.otype == cva6_cheri_pkg::UNSEALED_CAP) begin
+          result_cap.hperms.permit_load_mutable = 1'b0;
+          result_cap.hperms.permit_store = 1'b0;
+        end
+        result_o = result_cap;
       end
-      if (ldbuf_rdata.clr_load_mutable && result_cap.otype != cva6_cheri_pkg::UNSEALED_CAP) begin
-        result_cap.hperms.permit_load_mutable = 1'b0;
-        result_cap.hperms.permit_store = 1'b0;
-      end
-      result_o = result_cap;
     end
   end
   // end result mux fast

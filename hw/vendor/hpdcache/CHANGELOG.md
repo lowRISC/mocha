@@ -14,6 +14,61 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+## [6.0.0] 2026-03-13
+
+### Added
+
+- Error correction and detection mechanisms for bit-flips in dir and data SRAMs
+- New parameters: eccEn, eccScrubberEn
+- Vendorized lowRISC OpenTitan subdirectory with ECC primitives and generators
+
+## [5.2.0] 2026-03-13
+
+### Added
+
+- Testbench: add sequence that reads trace file from QEMU execution
+- Testbench: add direct mapped configuration and validate it in the CI
+- Add plugin for QEMU to generate memory access traces
+- Add cache invalidation signal in the memory response interface
+
+### Changed
+
+- Enable concurrent read and write if they target different banks
+- Optimize write byte enable logic for timing towards data SRAMs
+- Improve wake-up logic in the RTAB for requests waiting for a refill
+
+### Fixed
+
+- Prevent invalidations to go into the uncached handler (on OpenPiton platform)
+- Correctly support direct mapped configuration of the cache
+
+## [5.1.0] 2025-07-02
+
+### Added
+
+- New lowLatency parameter: When enabled, load requests have a latency of 1
+  cycle. When disabled, load requests have a latency 2 cycles. This may improve
+  the throughput on some access patterns because it reduces port conflicts
+  between loads and stores.
+- New coalescing buffer for write misses. On write misses, the write data is
+  stored in a dedicated buffer, and coalesced when the refill response arrives
+  before writing it into the cache.
+- Heuristic mechanism to reduce the latency of flush operations. The cache
+  stores both the min and max index of dirty cachelines and perform the flush
+  only on within that boundary.
+
+### Removed
+
+### Changed
+
+- Use RTAB to drain pipeline upon UC/AMO requests. On a UC/AMO request, the
+  cache puts the request into the RTAB, and waits for all transactions into the
+  pipeline to be completed before replaying the UC/AMO request.
+
+### Fixed
+
+- Missing reset of some registers in the uncached requests handler.
+
 ## [5.0.1] 2025-01-30
 
 This releases include some bugfixes and optimizations.
@@ -47,7 +102,7 @@ policies or both in a per-cacheline basis.
 - Support of the WB policy.
 - Configuration parameters to choose between WT or WB, or both, at synthesis time.
 - Validation testbench compatible to Verilator.
-- Add a write-policy hint field in the request to select between WT and WB, dinamically.
+- Add a write-policy hint field in the request to select between WT and WB, dynamically.
 
 ### Removed
 

@@ -19,14 +19,14 @@ package cva6_config_pkg;
 
   localparam CVA6ConfigCvxifEn = 0;
   localparam CVA6ConfigCExtEn = 1;
-  localparam CVA6ConfigZcbExtEn = 0;
+  localparam CVA6ConfigZcbExtEn = 1;
   localparam CVA6ConfigZcmpExtEn = 0;
   localparam CVA6ConfigAExtEn = 1;
   localparam CVA6ConfigHExtEn = 0;
   localparam CVA6ConfigBExtEn = 1;
   localparam CVA6ConfigVExtEn = 0;
   localparam CVA6ConfigRVZiCond = 1;
-  localparam CVA6ConfigRVZcheripurecap = 1;
+  localparam CVA6ConfigRVY = 1;
   localparam CVA6ConfigRVZcherihybrid = 1;
   localparam CVA6ConfigCheriCapTagWidth = 1;
   localparam CVA6ConfigRVFI_DII = 1;
@@ -47,6 +47,7 @@ package cva6_config_pkg;
   localparam CVA6ConfigDcacheLineWidth = 256;
 
   localparam CVA6ConfigDcacheFlushOnFence = 1'b0;
+  localparam CVA6ConfigDcacheFlushOnFenceI = 1'b0;
   localparam CVA6ConfigDcacheInvalidateOnFlush = 1'b0;
 
   localparam CVA6ConfigDcacheIdWidth = 1;
@@ -98,7 +99,7 @@ package cva6_config_pkg;
       XF8: bit'(CVA6ConfigF8En),
       RVA: bit'(CVA6ConfigAExtEn),
       RVB: bit'(CVA6ConfigBExtEn),
-      ZKN: bit'(0),
+      ZKN: bit'(1),
       RVV: bit'(CVA6ConfigVExtEn),
       RVC: bit'(CVA6ConfigCExtEn),
       RVH: bit'(CVA6ConfigHExtEn),
@@ -109,9 +110,10 @@ package cva6_config_pkg;
       CvxifEn: bit'(CVA6ConfigCvxifEn),
       CoproType: config_pkg::COPRO_NONE,
       RVZiCond: bit'(CVA6ConfigRVZiCond),
+      RVZiCbom: bit'(0),
       RVZicntr: bit'(1),
       RVZihpm: bit'(1),
-      RVZcheripurecap: bit'(CVA6ConfigRVZcheripurecap),
+      RVY: bit'(CVA6ConfigRVY),
       RVZcherihybrid: bit'(CVA6ConfigRVZcherihybrid),
       NrScoreboardEntries: unsigned'(CVA6ConfigNrScoreboardEntries),
       PerfCounterEn: bit'(CVA6ConfigPerfCounterEn),
@@ -160,6 +162,7 @@ package cva6_config_pkg;
       DcacheSetAssoc: unsigned'(CVA6ConfigDcacheSetAssoc),
       DcacheLineWidth: unsigned'(CVA6ConfigDcacheLineWidth),
       DcacheFlushOnFence: unsigned'(CVA6ConfigDcacheFlushOnFence),
+      DcacheFlushOnFenceI: unsigned'(CVA6ConfigDcacheFlushOnFenceI),
       DcacheInvalidateOnFlush: unsigned'(CVA6ConfigDcacheInvalidateOnFlush),
       DataUserEn: unsigned'(CVA6ConfigDataUserEn),
       WtDcacheWbufDepth: int'(CVA6ConfigWtDcacheWbufDepth),
@@ -168,6 +171,7 @@ package cva6_config_pkg;
       InstrTlbEntries: int'(16),
       DataTlbEntries: int'(16),
       UseSharedTlb: bit'(0),
+      SvnapotEn: bit'(0),
       SharedTlbDepth: int'(64),
       NrLoadPipeRegs: int'(CVA6ConfigNrLoadPipeRegs),
       NrStorePipeRegs: int'(CVA6ConfigNrStorePipeRegs),

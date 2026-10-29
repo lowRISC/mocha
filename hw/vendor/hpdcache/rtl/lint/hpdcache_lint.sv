@@ -1,21 +1,8 @@
 /*
- *  Copyright 2023 CEA*
- *  *Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+ *  Copyright 2023,2024 Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+ *  Copyright 2025 Univ. Grenoble Alpes, Inria, TIMA Laboratory
  *
  *  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
- *
- *  Licensed under the Solderpad Hardware License v 2.1 (the “License”); you
- *  may not use this file except in compliance with the License, or, at your
- *  option, the Apache License version 2.0. You may obtain a copy of the
- *  License at
- *
- *  https://solderpad.org/licenses/SHL-2.1/
- *
- *  Unless required by applicable law or agreed to in writing, any work
- *  distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
  */
 /*
  *  Authors       : Cesar Fuguet
@@ -66,7 +53,9 @@ module hpdcache_lint
       memDataWidth: 512,
       wtEn: 1'b1,
       wbEn: 1'b1,
-      lowLatency: 1'b1
+      lowLatency: 1'b1,
+      eccEn: 1'b1,
+      eccScrubberEn: 1'b1
   },
 
   localparam hpdcache_pkg::hpdcache_cfg_t HPDcacheCfg = hpdcache_pkg::hpdcacheBuildConfig(
@@ -76,7 +65,7 @@ module hpdcache_lint
   localparam type hpdcache_mem_addr_t = logic [HPDcacheCfg.u.memAddrWidth-1:0],
   localparam type hpdcache_mem_id_t = logic [HPDcacheCfg.u.memIdWidth-1:0],
   localparam type hpdcache_mem_data_t = logic [HPDcacheCfg.u.memDataWidth-1:0],
-  localparam type hpdcache_mem_be_t = logic [HPDcacheCfg.u.memDataWidth/8-1:0],
+  localparam type hpdcache_mem_be_t = logic [(HPDcacheCfg.u.memDataWidth+8-1)/8-1:0],
   localparam type hpdcache_mem_req_t =
       `HPDCACHE_DECL_MEM_REQ_T(hpdcache_mem_addr_t, hpdcache_mem_id_t),
   localparam type hpdcache_mem_resp_r_t =
@@ -88,10 +77,12 @@ module hpdcache_lint
 
   localparam type hpdcache_tag_t = logic [HPDcacheCfg.tagWidth-1:0],
   localparam type hpdcache_data_word_t = logic [HPDcacheCfg.u.wordWidth-1:0],
-  localparam type hpdcache_data_be_t = logic [HPDcacheCfg.u.wordWidth/8-1:0],
+  localparam type hpdcache_data_be_t = logic [(HPDcacheCfg.u.wordWidth+8-1)/8-1:0],
   localparam type hpdcache_req_offset_t = logic [HPDcacheCfg.reqOffsetWidth-1:0],
-  localparam type hpdcache_req_data_t = hpdcache_data_word_t [HPDcacheCfg.u.reqWords-1:0],
-  localparam type hpdcache_req_be_t = hpdcache_data_be_t [HPDcacheCfg.u.reqWords-1:0],
+  localparam type hpdcache_req_data_t =
+      logic [HPDcacheCfg.u.reqWords-1:0][HPDcacheCfg.u.wordWidth-1:0],
+  localparam type hpdcache_req_be_t =
+      logic [HPDcacheCfg.u.reqWords-1:0][HPDcacheCfg.u.wordWidth/8-1:0],
   localparam type hpdcache_req_sid_t = logic [HPDcacheCfg.u.reqSrcIdWidth-1:0],
   localparam type hpdcache_req_tid_t = logic [HPDcacheCfg.u.reqTransIdWidth-1:0],
   localparam type hpdcache_req_t =
@@ -106,7 +97,8 @@ module hpdcache_lint
                            hpdcache_req_sid_t,
                            hpdcache_req_tid_t),
 
-  localparam type hpdcache_wbuf_timecnt_t = logic [HPDcacheCfg.u.wbufTimecntWidth-1:0]
+  localparam type hpdcache_wbuf_timecnt_t = logic [HPDcacheCfg.u.wbufTimecntWidth-1:0],
+  localparam type hpdcache_nline_t    = logic [HPDcacheCfg.nlineWidth-1:0]
 )
 
 (
@@ -132,6 +124,9 @@ module hpdcache_lint
   output logic                        mem_resp_read_ready_o,
   input  logic                        mem_resp_read_valid_i,
   input  hpdcache_mem_resp_r_t        mem_resp_read_i,
+
+  input  logic                        mem_resp_read_inval_i,
+  input  hpdcache_nline_t             mem_resp_read_inval_nline_i,
 
   input  logic                        mem_req_write_ready_i,
   output logic                        mem_req_write_valid_o,
@@ -191,6 +186,9 @@ module hpdcache_lint
       .mem_resp_read_valid_i,
       .mem_resp_read_i,
 
+      .mem_resp_read_inval_i,
+      .mem_resp_read_inval_nline_i,
+
       .mem_req_write_ready_i,
       .mem_req_write_valid_o,
       .mem_req_write_o,
@@ -203,17 +201,22 @@ module hpdcache_lint
       .mem_resp_write_valid_i,
       .mem_resp_write_i,
 
-      .evt_cache_write_miss_o(  /* unused */),
-      .evt_cache_read_miss_o (  /* unused */),
-      .evt_uncached_req_o    (  /* unused */),
-      .evt_cmo_req_o         (  /* unused */),
-      .evt_write_req_o       (  /* unused */),
-      .evt_read_req_o        (  /* unused */),
-      .evt_prefetch_req_o    (  /* unused */),
-      .evt_req_on_hold_o     (  /* unused */),
-      .evt_rtab_rollback_o   (  /* unused */),
-      .evt_stall_refill_o    (  /* unused */),
-      .evt_stall_o           (  /* unused */),
+      .evt_cache_write_miss_o     (/* unused */),
+      .evt_cache_read_miss_o      (/* unused */),
+      .evt_cache_dir_unc_err_o    (/* unused */),
+      .evt_cache_dir_cor_err_o    (/* unused */),
+      .evt_cache_dat_unc_err_o    (/* unused */),
+      .evt_cache_dat_cor_err_o    (/* unused */),
+      .evt_scrub_complete_o       (/* unused */),
+      .evt_uncached_req_o         (/* unused */),
+      .evt_cmo_req_o              (/* unused */),
+      .evt_write_req_o            (/* unused */),
+      .evt_read_req_o             (/* unused */),
+      .evt_prefetch_req_o         (/* unused */),
+      .evt_req_on_hold_o          (/* unused */),
+      .evt_rtab_rollback_o        (/* unused */),
+      .evt_stall_refill_o         (/* unused */),
+      .evt_stall_o                (/* unused */),
 
       .wbuf_empty_o,
 
@@ -225,7 +228,11 @@ module hpdcache_lint
       .cfg_prefetch_updt_plru_i           (1'b1),
       .cfg_error_on_cacheable_amo_i       (1'b0),
       .cfg_rtab_single_entry_i            (1'b0),
-      .cfg_default_wb_i                   (1'b0)
+      .cfg_default_wb_i                   (1'b0),
+      .cfg_scrub_enable_i                 (1'b0),
+      .cfg_scrub_period_i                 (6'd10),
+      .cfg_scrub_restart_i                (1'b1)
   );
 
 endmodule  /* hpdcache_lint */
+// vim: ts=4 : sts=4 : sw=4 : et : tw=100 : spell : spelllang=en : fdm=marker

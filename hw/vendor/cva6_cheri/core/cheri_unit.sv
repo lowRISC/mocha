@@ -46,6 +46,7 @@ module cheri_unit
   cap_meta_data_t op_a_meta_info;
   logic operand_a_hperms_malformed;
   logic operand_a_bounds_malformed;
+  logic operand_a_malformed;
 
   // operand b decode fields
   cap_reg_t operand_b;
@@ -56,6 +57,7 @@ module cheri_unit
   cap_meta_data_t op_b_meta_info;
   logic operand_b_hperms_malformed;
   logic operand_b_bounds_malformed;
+  logic operand_b_malformed;
 
   // Common operations signals
   // Set address operations signals
@@ -99,34 +101,48 @@ module cheri_unit
         clu_result = res_set_addr;
       end
       // CAndPerm
-      ariane_pkg::ACPERM: begin
+      ariane_pkg::YPERMC: begin
         automatic cap_report_perms_t new_perms;
         check_operand_a_violations.seal = 1'b1;
         tmp_cap = operand_a;
         new_perms = hperms_and_uperms_to_report_perms(operand_a.hperms, operand_a.uperms,
-                                                      operand_a_hperms_malformed);
-        new_perms &= cap_report_perms_t'(operand_b_address);
+                                                      operand_a_malformed);
+        new_perms &= ~cap_report_perms_t'(operand_b_address);
         tmp_cap.uperms = new_perms.uperms;
         tmp_cap.hperms = legalize_arch_perms(report_perms_to_hperms(new_perms));
-        if (!tmp_cap.hperms.permit_execute) tmp_cap.flags.int_mode = 1'b0;
+        tmp_cap.hperms.int_mode = operand_a.hperms.int_mode;
+        if (!tmp_cap.hperms.permit_execute) tmp_cap.hperms.int_mode = 1'b0;
         clu_result = tmp_cap;
       end
       // CTestSubset
-      ariane_pkg::CBLD, ariane_pkg::SCSS: begin
+      ariane_pkg::YBLD, ariane_pkg::YSUNSEAL, ariane_pkg::YSS: begin
+        automatic cap_hperms_t hperms_subset_exclude_mask;
         tmp_cap = operand_b;
         tmp_cap.tag = 1'b1;
-        if (fu_data_i.operation == ariane_pkg::SCSS) begin
-          if (operand_a.tag != operand_b.tag) begin
-            tmp_cap.tag = 1'b0;
-          end
-        end else begin  // CBLD
-          if (!operand_a.tag) begin
-            tmp_cap.tag = 1'b0;
-          end
-          if (operand_a_is_sealed) begin
-            tmp_cap.tag = 1'b0;
-          end
+        if (fu_data_i.operation == ariane_pkg::YSUNSEAL) begin
+          tmp_cap.otype = UNSEALED_CAP;
         end
+        unique case (fu_data_i.operation)
+          ariane_pkg::YSS: begin
+            if (operand_a.tag != operand_b.tag) begin
+              tmp_cap.tag = 1'b0;
+            end
+          end
+          ariane_pkg::YSUNSEAL: begin
+            if (!operand_a.tag
+             || !operand_b.tag
+             ||  operand_a_is_sealed
+             || !operand_b_is_sealed
+            ) begin
+              tmp_cap.tag = 1'b0;
+            end
+          end
+          default: begin  // YBLD
+            if (!operand_a.tag || operand_a_is_sealed) begin
+              tmp_cap.tag = 1'b0;
+            end
+          end
+        endcase
         if (operand_b_base < operand_a_base) begin
           tmp_cap.tag = 1'b0;
         end
@@ -136,103 +152,104 @@ module cheri_unit
         if ((operand_a.uperms & operand_b.uperms) != operand_b.uperms) begin
           tmp_cap.tag = 1'b0;
         end
-        if ((operand_a.hperms & operand_b.hperms) != operand_b.hperms) begin
+        hperms_subset_exclude_mask = '0;
+        hperms_subset_exclude_mask.int_mode = 1'b1;
+        if (((hperms_subset_exclude_mask | operand_a.hperms) & operand_b.hperms) != operand_b.hperms) begin
           tmp_cap.tag = 1'b0;
         end
-        if (operand_a_bounds_malformed | operand_b_bounds_malformed) begin
+        if (operand_a_malformed | operand_b_malformed) begin
           tmp_cap.tag = 1'b0;
         end
-        if (operand_a_hperms_malformed | operand_b_hperms_malformed) begin
-          tmp_cap.tag = 1'b0;
-        end
-        if(operand_a.res_lo != 0 | operand_a.res_hi != 0 | operand_b.res_lo != 0 | operand_b.res_hi != 0) begin
-          tmp_cap.tag = 1'b0;
-        end
-        if (fu_data_i.operation == ariane_pkg::CBLD) clu_result = tmp_cap;
-        // fu_data_i.operation == ariane_pkg::SCSS
-        else
-          clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, tmp_cap.tag});
+        if (fu_data_i.operation == ariane_pkg::YBLD || fu_data_i.operation == ariane_pkg::YSUNSEAL)
+          clu_result = tmp_cap;
+        else clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, tmp_cap.tag});
       end
       // CGetBase
-      ariane_pkg::GCBASE: begin
-        clu_result = ariane_pkg::x_to_reg(operand_a_bounds_malformed ? '0 : operand_a_base);
+      ariane_pkg::YBASER: begin
+        clu_result = ariane_pkg::x_to_reg(operand_a_malformed ? '0 : operand_a_base);
       end
       // CGetFlags
-      ariane_pkg::GCMODE: begin
-        clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, get_cap_reg_flags(operand_a)});
+      ariane_pkg::YMODER: begin
+        clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}},
+                                           get_cap_reg_int_mode(operand_a) & !operand_a_malformed});
       end
       // CGetLength
-      ariane_pkg::GCLEN: begin
-        clu_result = ariane_pkg::x_to_reg(operand_a_bounds_malformed ? '0 : operand_a_length);
+      ariane_pkg::YLENR: begin
+        clu_result = ariane_pkg::x_to_reg(operand_a_malformed ? '0 : operand_a_length);
+      end
+      // CGetTop
+      ariane_pkg::YTOPR: begin
+        clu_result =
+            ariane_pkg::x_to_reg(operand_a_malformed ? '0 : operand_a_top[64] ? '1 : operand_a_top);
       end
       // CGetHigh
-      ariane_pkg::GCHI: begin
+      ariane_pkg::YHIR: begin
         cap_mem = cap_reg_to_cap_mem(operand_a);
         clu_result = ariane_pkg::x_to_reg(cap_mem[((CVA6Cfg.XLEN*2)-1):CVA6Cfg.XLEN]);
       end
       // CGetPerm
-      ariane_pkg::GCPERM: begin
+      ariane_pkg::YPERMR: begin
         clu_result = ariane_pkg::x_to_reg(
           {
             {CVA6Cfg.XLEN - $bits(cap_report_perms_t) {1'b0}},
             hperms_and_uperms_to_report_perms(
-              operand_a.hperms, operand_a.uperms, operand_a_hperms_malformed
+              operand_a.hperms, operand_a.uperms, operand_a_malformed
             )
           }
         );
       end
       // CGetTag
-      ariane_pkg::GCTAG: begin
+      ariane_pkg::YTAGR: begin
         clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, operand_a.tag});
       end
       // CGetType
-      ariane_pkg::GCTYPE: begin
+      ariane_pkg::YTYPER: begin
         clu_result = ariane_pkg::x_to_reg({{CVA6Cfg.XLEN - 1{1'b0}}, operand_a.otype});
       end
       // CIncOffset and CIncOffsetImm
       // TODO-cheri(ninolomata): use ALU to calculate address
-      ariane_pkg::CADD: begin
+      ariane_pkg::YADD: begin
         check_operand_a_violations.seal = 1'b1;
         address                         = operand_a_address + operand_b_address;
         clu_result                      = res_set_addr;
       end
-      // CMV
-      ariane_pkg::CMV: begin
+      // YMV
+      ariane_pkg::YMV: begin
         clu_result = operand_a;
       end
       // CSealEntry
-      ariane_pkg::SENTRY: begin
+      ariane_pkg::YSENTRY: begin
         clu_result = operand_a;
         check_operand_a_violations.seal = 1'b1;
         clu_result.otype = SENTRY_CAP;
       end
       // CSetAddr
-      ariane_pkg::SCADDR: begin
+      ariane_pkg::YADDRW: begin
         check_operand_a_violations.seal = 1'b1;
         address                         = operand_b.addr;
         clu_result                      = res_set_addr;
       end
       // CSetBounds, CSetBoundsExact, CSetBoundsImm,
       // CRepresentableAlignmentMask
-      ariane_pkg::SCBNDSR, ariane_pkg::SCBNDS, ariane_pkg::CRAM: begin
+      ariane_pkg::YBNDSRW, ariane_pkg::YBNDSRDW, ariane_pkg::YBNDSW, ariane_pkg::YAMASK: begin
         automatic cap_reg_set_bounds_ret_t res_set_bounds;
         res_set_bounds =
             set_cap_reg_bounds(operand_a, operand_a_address, {1'b0, operand_b_address});
         check_operand_a_violations.tag = 1'b1;
         check_operand_a_violations.seal = 1'b1;
         check_operand_a_violations.bounds = 1'b1;
-        if (fu_data_i.operation == ariane_pkg::CRAM) begin
+        if (fu_data_i.operation == ariane_pkg::YAMASK) begin
           clu_result = ariane_pkg::x_to_reg(res_set_bounds.mask);
         end else begin
           clu_result = res_set_bounds.cap;
         end
         // If the result is inexact, and needed to be
-        if ((!res_set_bounds.exact && fu_data_i.operation == ariane_pkg::SCBNDS)) begin
+        if ((!res_set_bounds.exact && fu_data_i.operation == ariane_pkg::YBNDSW)) begin
           clu_result.tag = 1'b0;
         end
       end
       // CSetEqualExact
-      ariane_pkg::SCEQ: begin
+      ariane_pkg::YEQ: begin
         clu_result = ariane_pkg::x_to_reg(
           {
             {CVA6Cfg.XLEN - 1{1'b0}},
@@ -241,13 +258,13 @@ module cheri_unit
         );
       end
       // CSetFlags
-      ariane_pkg::SCMODE: begin
+      ariane_pkg::YMODEW: begin
         check_operand_a_violations.seal = 1'b1;
-        clu_result = (operand_a_hperms_malformed) ? operand_a :
-            set_cap_reg_flags(operand_a, operand_b.addr[0]);
+        clu_result = (operand_a_malformed | operand_a_is_sealed | !operand_a.hperms.permit_execute) ? operand_a :
+            set_cap_reg_int_mode(operand_a, operand_b.addr[0]);
       end
       // CSetHigh
-      ariane_pkg::SCHI: begin
+      ariane_pkg::YHIW: begin
         cap_mem = cap_reg_to_cap_mem(operand_a);
         cap_mem[((CVA6Cfg.XLEN*2)-1):CVA6Cfg.XLEN] = operand_b[XLEN-1:0];
         clu_result = cap_mem_to_cap_reg(cap_mem);
@@ -274,8 +291,9 @@ module cheri_unit
     operand_a_length = get_cap_reg_length(operand_a, op_a_meta_info);
     operand_a_is_sealed = (operand_a.otype != UNSEALED_CAP);
     operand_a_hperms_malformed = (operand_a.hperms != legalize_arch_perms(operand_a.hperms)) |
-        (!operand_a.hperms.permit_execute & operand_a.flags.int_mode);
+        (!operand_a.hperms.permit_execute & operand_a.hperms.int_mode);
     operand_a_bounds_malformed = !are_cap_reg_bounds_valid(operand_a, op_a_meta_info);
+    operand_a_malformed = operand_a_bounds_malformed | operand_a_hperms_malformed | operand_a.res_lo != 0 | operand_a.res_hi != 0;
     // Decode capability operand b fields
     operand_b_address = operand_b.addr;
     op_b_meta_info = get_cap_reg_meta_data(operand_b);
@@ -284,7 +302,8 @@ module cheri_unit
     operand_b_bounds_malformed = !are_cap_reg_bounds_valid(operand_b, op_b_meta_info);
     operand_b_is_sealed = (operand_b.otype != UNSEALED_CAP);
     operand_b_hperms_malformed = (operand_b.hperms != legalize_arch_perms(operand_b.hperms)) |
-        (!operand_b.hperms.permit_execute & operand_b.flags.int_mode);
+        (!operand_b.hperms.permit_execute & operand_b.hperms.int_mode);
+    operand_b_malformed = operand_b_bounds_malformed | operand_b_hperms_malformed | operand_b.res_lo != 0 | operand_b.res_hi != 0;
   end
 
   // ----------------

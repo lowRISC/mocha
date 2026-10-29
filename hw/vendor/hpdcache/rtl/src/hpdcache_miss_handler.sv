@@ -303,7 +303,8 @@ import hpdcache_pkg::*;
         endcase
     end
 
-    localparam hpdcache_uint REFILL_REQ_SIZE = $clog2(HPDcacheCfg.u.memDataWidth / 8);
+    localparam int atomSz = (HPDcacheCfg.u.wordWidth < 8) ? HPDcacheCfg.u.wordWidth : 8;
+    localparam hpdcache_uint REFILL_REQ_SIZE = $clog2(HPDcacheCfg.u.memDataWidth / atomSz);
     localparam hpdcache_uint REFILL_REQ_LEN = HPDcacheCfg.clWidth / HPDcacheCfg.u.memDataWidth;
 
     assign mem_req_o.mem_req_addr = {mshr_alloc_nline_q, {HPDcacheCfg.clOffsetWidth{1'b0}} };
@@ -326,11 +327,16 @@ import hpdcache_pkg::*;
         assign mem_req_o.mem_req_id = '0;
     end
 
-    always_ff @(posedge clk_i)
+    always_ff @(posedge clk_i or negedge rst_ni)
     begin : miss_req_fsm_internal_ff
-        if (mshr_alloc) begin
-            mshr_alloc_way_q <= mshr_alloc_way_d;
-            mshr_alloc_nline_q <= mshr_alloc_nline_i;
+        if (!rst_ni) begin
+            mshr_alloc_way_q <= '0;
+            mshr_alloc_nline_q <= '0;
+        end else begin
+            if (mshr_alloc) begin
+                mshr_alloc_way_q <= mshr_alloc_way_d;
+                mshr_alloc_nline_q <= mshr_alloc_nline_i;
+            end
         end
     end
 
@@ -633,7 +639,7 @@ import hpdcache_pkg::*;
         if (HPDcacheCfg.u.userEn) begin : gen_refill_core_rsp_ruser_useren
             hpdcache_mux #(
                 .NINPUT      (REFILL_REQ_RATIO),
-                .DATA_WIDTH  (HPDcacheCfg.u.reqWord*HPDcacheCfg.u.wordUserWidth)
+                .DATA_WIDTH  (HPDcacheCfg.u.reqWords*HPDcacheCfg.u.wordUserWidth)
             ) user_read_rsp_mux_i(
                 .data_i      (refill_user_o),
                 .sel_i       (refill_core_rsp_word[0 +: $clog2(REFILL_REQ_RATIO)]),
@@ -721,7 +727,7 @@ import hpdcache_pkg::*;
     //  Multiplexing has a byte granularity
     //  REFILL_REQ_RATIO is always greater or equal to 1
     //  Use `accessBytes` bytes long signals
-    logic [HPDcacheCfg.accessBytes-1:0][7:0] clean_data;
+    logic [HPDcacheCfg.accessBytes-1:0][atomSz-1:0] clean_data;
     hpdcache_refill_user_t clean_user;
     assign clean_data = refill_fifo_resp_data_rdata;
     // And reduce in case we have replicated user bits.
@@ -729,9 +735,9 @@ import hpdcache_pkg::*;
 
     if (HPDcacheCfg.u.wbEn) begin : gen_refill_dirty_data
         logic [HPDcacheCfg.accessBytes-1:0]      dirty_be;
-        logic [HPDcacheCfg.accessBytes-1:0][7:0] dirty_data;
+        logic [HPDcacheCfg.accessBytes-1:0][atomSz-1:0] dirty_data;
         hpdcache_refill_user_t dirty_user;
-        logic [HPDcacheCfg.accessBytes-1:0][7:0] refill_data;
+        logic [HPDcacheCfg.accessBytes-1:0][atomSz-1:0] refill_data;
 
         assign dirty_be   = {REFILL_REQ_RATIO{refill_dirty_be}};
         assign dirty_data = {REFILL_REQ_RATIO{refill_dirty_wdata}};
@@ -804,24 +810,41 @@ import hpdcache_pkg::*;
         end
     end
 
-    always_ff @(posedge clk_i)
+    always_ff @(posedge clk_i or negedge rst_ni)
     begin : miss_resp_fsm_internal_ff
-        if ((refill_fsm_q == REFILL_WRITE) && (refill_cnt_q == 0)) begin
-            refill_set_q <= mshr_ack_cache_set;
-            refill_way_q <= mshr_ack_cache_way;
-            refill_tag_q <= mshr_ack_cache_tag;
-            refill_sid_q <= mshr_ack_src_id;
-            refill_tid_q <= mshr_ack_req_id;
-            refill_need_rsp_q <= mshr_ack_need_rsp;
-            refill_is_prefetch_q <= mshr_ack_is_prefetch;
-            refill_wback_q <= mshr_ack_wback;
-            refill_dirty_q <= mshr_ack_dirty;
-            refill_dirty_wdata_q <= mshr_ack_wdata;
-            refill_dirty_wuser_q <= HPDcacheCfg.u.userEn ? mshr_ack_wuser : 1'b0;
-            refill_dirty_be_q <= mshr_ack_be;
-            refill_core_rsp_word_q <= mshr_ack_word;
+        if (!rst_ni) begin
+            refill_set_q <= '0;
+            refill_way_q <= '0;
+            refill_tag_q <= '0;
+            refill_sid_q <= '0;
+            refill_tid_q <= '0;
+            refill_need_rsp_q <= '0;
+            refill_is_prefetch_q <= '0;
+            refill_wback_q <= '0;
+            refill_dirty_q <= '0;
+            refill_dirty_wdata_q <= '0;
+            refill_dirty_wuser_q <= '0;
+            refill_dirty_be_q <= '0;
+            refill_core_rsp_word_q <= '0;
+            refill_cnt_q <= '0;
+        end else begin
+            if ((refill_fsm_q == REFILL_WRITE) && (refill_cnt_q == 0)) begin
+                refill_set_q <= mshr_ack_cache_set;
+                refill_way_q <= mshr_ack_cache_way;
+                refill_tag_q <= mshr_ack_cache_tag;
+                refill_sid_q <= mshr_ack_src_id;
+                refill_tid_q <= mshr_ack_req_id;
+                refill_need_rsp_q <= mshr_ack_need_rsp;
+                refill_is_prefetch_q <= mshr_ack_is_prefetch;
+                refill_wback_q <= mshr_ack_wback;
+                refill_dirty_q <= mshr_ack_dirty;
+                refill_dirty_wdata_q <= mshr_ack_wdata;
+                refill_dirty_wuser_q <= HPDcacheCfg.u.userEn ? mshr_ack_wuser : 1'b0;
+                refill_dirty_be_q <= mshr_ack_be;
+                refill_core_rsp_word_q <= mshr_ack_word;
+            end
+            refill_cnt_q <= refill_cnt_d;
         end
-        refill_cnt_q <= refill_cnt_d;
     end
     //  }}}
     //  }}}

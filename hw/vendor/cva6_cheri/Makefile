@@ -67,6 +67,9 @@ endif
 # Spike tandem mode: default to environment setting (DISABLED if envariable SPIKE_TANDEM is not set).
 spike-tandem ?= $(SPIKE_TANDEM)
 
+# RVFI_DII mode for TestRIG support (DISABLED if RVFI_DII is not set)
+rvfi-dii ?= $(RVFI_DII)
+
 SPIKE_INSTALL_DIR     ?= $(root-dir)/tools/spike
 
 # setting additional xilinx board parameters for the selected board
@@ -105,6 +108,9 @@ endif
 # cv64a6_imafdc_sv39, cv32a6_imac_sv0, cv32a6_imac_sv32, cv32a6_imafc_sv32, cv32a6_ima_sv32_fpga
 # Changing the default target to cv32a60x for Step1 verification
 target     ?= cv64a6_imafdczcheri_sv39_hpdcache_wb
+ifneq (,$(rvfi-dii))
+	target := $(target)_rvfi_dii
+endif
 ifneq (,$(findstring cv64,$(target)))
 	XLEN ?= 64
 else
@@ -125,10 +131,8 @@ ariane_pkg := \
               corev_apu/tb/axi_intf.sv                               \
               corev_apu/register_interface/src/reg_intf.sv           \
               corev_apu/tb/ariane_soc_pkg.sv                         \
-              vendor/zero-day/axi_tagcontroller/src/common_cells/src/cb_filter_pkg.sv \
-              vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_pkg.sv \
-              vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_reg_pkg.sv \
-              vendor/zero-day/axi_tagcontroller/include/axi_tagctrl_pkg.sv \
+              vendor/capltd/axi_cheri_tagcontroller/src/common_cells/src/cb_filter_pkg.sv \
+              vendor/capltd/axi_cheri_tagcontroller/src/axi_tagctrl_pkg.sv \
               corev_apu/riscv-dbg/src/dm_pkg.sv                      \
               corev_apu/tb/ariane_axi_soc_pkg.sv
 ariane_pkg := $(addprefix $(root-dir), $(ariane_pkg))
@@ -160,6 +164,10 @@ else
 $(warning XCELIUM_HOME not set which is necessary for compiling DPIs when using XCELIUM)
 endif
 
+ifneq (,$(rvfi-dii))
+CFLAGS += -I$(root-dir)/corev_apu/tb/tb_testRig_cheri/src/RVFI-DII-utils
+endif
+
 # this list contains the standalone components
 src :=  $(if $(spike-tandem),verif/tb/core/uvma_core_cntrl_pkg.sv)                   \
         $(if $(spike-tandem),verif/tb/core/uvma_cva6pkg_utils_pkg.sv)                \
@@ -167,6 +175,7 @@ src :=  $(if $(spike-tandem),verif/tb/core/uvma_core_cntrl_pkg.sv)              
         $(if $(spike-tandem),verif/tb/core/uvmc_rvfi_reference_model_pkg.sv)         \
         $(if $(spike-tandem),verif/tb/core/uvmc_rvfi_scoreboard_pkg.sv)              \
         $(if $(spike-tandem),corev_apu/tb/common/spike.sv)                           \
+        $(if $(rvfi-dii),corev_apu/tb/tb_testRig_cheri/hdl/rvfi_dii_generator.sv)    \
         core/cva6_rvfi.sv                                                            \
         corev_apu/src/ariane.sv                                                      \
         $(wildcard corev_apu/bootrom/*.sv)                                           \
@@ -174,7 +183,7 @@ src :=  $(if $(spike-tandem),verif/tb/core/uvma_core_cntrl_pkg.sv)              
         $(wildcard corev_apu/fpga/src/axi2apb/src/*.sv)                              \
         $(wildcard corev_apu/fpga/src/apb_timer/*.sv)                                \
         $(wildcard corev_apu/fpga/src/axi_slice/src/*.sv)                            \
-        $(wildcard corev_apu/src/axi_riscv_atomics/src/*.sv)                         \
+        $(wildcard vendor/pulp-platform/axi_riscv_atomics/src/*.sv)                  \
         $(wildcard corev_apu/axi_mem_if/src/*.sv)                                    \
         $(wildcard corev_apu/riscv-dbg/src/*.sv)                                     \
         corev_apu/rv_plic/rtl/rv_plic_target.sv                                      \
@@ -208,46 +217,31 @@ src :=  $(if $(spike-tandem),verif/tb/core/uvma_core_cntrl_pkg.sv)              
         vendor/pulp-platform/common_cells/src/deprecated/fifo_v2.sv                  \
         vendor/pulp-platform/common_cells/src/stream_delay.sv                        \
         vendor/pulp-platform/common_cells/src/lfsr_16bit.sv                          \
-        vendor/zero-day/axi_tagcontroller/src/common_cells/src/cb_filter.sv          \
-        vendor/zero-day/axi_tagcontroller/src/common_cells/src/sub_per_hash.sv       \
+        vendor/capltd/axi_cheri_tagcontroller/src/common_cells/src/cb_filter.sv      \
+        vendor/capltd/axi_cheri_tagcontroller/src/common_cells/src/sub_per_hash.sv   \
         vendor/pulp-platform/tech_cells_generic/src/deprecated/cluster_clk_cells.sv  \
         vendor/pulp-platform/tech_cells_generic/src/deprecated/pulp_clk_cells.sv     \
         vendor/pulp-platform/tech_cells_generic/src/rtl/tc_clk.sv                    \
         corev_apu/instr_tracing/ITI/include/iti_pkg.sv                               \
         corev_apu/instr_tracing/rv_tracer-main/include/te_pkg.sv                     \
         corev_apu/instr_tracing/rv_encapsulator-main/src/include/encap_pkg.sv        \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_burst_cutter.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_data_way.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_merge_unit.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_read_unit.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_reg_top.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_write_unit.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/eviction_refill/axi_llc_ax_master.sv \
-        vendor/zero-day/axi_tagcontroller/src/eviction_refill/axi_llc_r_master.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/eviction_refill/axi_llc_w_master.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/hit_miss_detect/axi_llc_evict_box.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/hit_miss_detect/axi_llc_lock_box_bloom.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/hit_miss_detect/axi_llc_miss_counters.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/hit_miss_detect/axi_llc_tag_pattern_gen.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_data_way.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_ways.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_chan_splitter.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_evict_unit.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_refill_unit.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_ways.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc_tag_store.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagc_read_unit.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagc_write_unit.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_ax.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_config.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_r.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_w.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_config.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_llc/src/axi_llc_hit_miss.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_top.sv \
-        vendor/zero-day/axi_tagcontroller/src/axi_tagctrl_reg_wrap.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/axi_tagc_read_unit.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/axi_tagc_write_unit.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/axi_tagctrl_ax.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/axi_tagctrl_config.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/axi_tagctrl_r.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/axi_tagctrl_w.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/axi_tagctrl_top.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_hpdcache_configs.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_hpdcache_wrapper.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_hpdcache_read_req_rsp_wrapper.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_hpdcache_write_req_rsp_wrapper.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_root_init.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_table_lookups.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_table_lookups_read.sv \
+        vendor/capltd/axi_cheri_tagcontroller/src/tag_lookup_engine/tag_lookup_engine_table_lookups_write.sv \
         corev_apu/tb/ariane_testharness.sv                                           \
-        corev_apu/tb/cva6_cheri_tag_mem.sv                                           \
         corev_apu/tb/ariane_peripherals.sv                                           \
         corev_apu/tb/rvfi_tracer.sv                                                  \
         corev_apu/tb/common/uart.sv                                                  \
@@ -299,7 +293,7 @@ uart_src_sv:= corev_apu/fpga/src/apb_uart/src/slib_clock_div.sv     \
               corev_apu/fpga/src/apb_uart/src/apb_uart_wrap.sv
 uart_src_sv := $(addprefix $(root-dir), $(uart_src_sv))
 
-fpga_src :=  $(wildcard corev_apu/fpga/src/*.sv) $(wildcard corev_apu/fpga/src/ariane-ethernet/*.sv) common/local/util/tc_sram_fpga_wrapper.sv common/local/util/hpdcache_sram_1rw.sv common/local/util/hpdcache_sram_wbyteenable_1rw.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx32.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRam.sv vendor/pulp-platform/tech_cells_generic/src/fpga/tc_sram_xilinx.sv
+fpga_src :=  $(wildcard corev_apu/fpga/src/*.sv) $(wildcard vendor/ariane-ethernet/*.sv) common/local/util/tc_sram_fpga_wrapper.sv common/local/util/hpdcache_sram_1rw.sv common/local/util/hpdcache_sram_wbyteenable_1rw.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx64.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRamBeNx32.sv vendor/pulp-platform/fpga-support/rtl/SyncSpRam.sv vendor/pulp-platform/tech_cells_generic/src/fpga/tc_sram_xilinx.sv
 
 altera_src := $(shell find $(root-dir)/corev_apu/altera/src -type f \( -name "*.v" -o -name "*.sv" -o -name "*.svh" \) -print | sed 's|//|/|g')
 altera_src += $(src)
@@ -371,8 +365,7 @@ riscv-benchmarks          := $(shell xargs printf '\n%s' < $(riscv-benchmarks-li
 
 # Search here for include files (e.g.: non-standalone components)
 incdir := $(CVA6_REPO_DIR)/vendor/pulp-platform/common_cells/include/ $(CVA6_REPO_DIR)/vendor/pulp-platform/axi/include/ \
-		  $(CVA6_REPO_DIR)/vendor/zero-day/axi_tagcontroller/include/ \
-		  $(CVA6_REPO_DIR)/vendor/zero-day/axi_tagcontroller/src/axi_llc/include/ \
+          $(CVA6_REPO_DIR)/vendor/capltd/axi_cheri_tagcontroller/include/ \
           $(CVA6_REPO_DIR)/corev_apu/register_interface/include/ $(CVA6_REPO_DIR)/corev_apu/tb/common/ \
           $(CVA6_REPO_DIR)/vendor/pulp-platform/axi/include/ \
           $(CVA6_REPO_DIR)/verif/core-v-verif/lib/uvm_agents/uvma_rvfi/ \
@@ -710,6 +703,21 @@ xrun-check-benchmarks:
 
 xrun-ci: xrun-asm-tests xrun-amo-tests xrun-mul-tests xrun-fp-tests xrun-benchmarks
 
+ifeq (,$(rvfi-dii))
+sim-c-files = corev_apu/tb/ariane_tb.cpp \
+              corev_apu/tb/dpi/SimDTM.cc \
+              corev_apu/tb/dpi/SimJTAG.cc \
+              corev_apu/tb/dpi/remote_bitbang.cc \
+              corev_apu/tb/dpi/msim_helper.cc
+ldflags = -LDFLAGS "-L$(RISCV)/lib -L$(SPIKE_INSTALL_DIR)/lib -Wl,-rpath,$(RISCV)/lib -Wl,-rpath,$(SPIKE_INSTALL_DIR)/lib -lfesvr -lriscv -ldisasm -lyaml-cpp $(if $(PROFILE), -g -pg,) -lpthread $(if $(TRACE_COMPACT), -lz,)"
+else
+sim-c-files = corev_apu/tb/tb_testRig_cheri/src/cva6_dii_toplevel.cpp \
+              corev_apu/tb/tb_testRig_cheri/src/RVFI-DII-utils/rvfi_dii_utils.c \
+              corev_apu/tb/tb_testRig_cheri/src/RVFI-DII-utils/SocketPacketUtils/socket_packet_utils.c
+ldflags =
+endif
+
+
 # verilator-specific
 verilate_command := $(verilator) --no-timing verilator_config.vlt                                                \
                     -f core/Flist.cva6                                                                           \
@@ -737,15 +745,15 @@ verilate_command := $(verilator) --no-timing verilator_config.vlt               
                     $(if $(DEBUG), --trace --trace-structs,)                                                     \
                     $(if $(TRACE_COMPACT), --trace-fst $(VL_INC_DIR)/verilated_fst_c.cpp)                        \
                     $(if $(TRACE_FAST), --trace $(VL_INC_DIR)/verilated_vcd_c.cpp)                               \
-                    -LDFLAGS "-L$(RISCV)/lib -L$(SPIKE_INSTALL_DIR)/lib -Wl,-rpath,$(RISCV)/lib -Wl,-rpath,$(SPIKE_INSTALL_DIR)/lib -lfesvr -lriscv -ldisasm -lyaml-cpp $(if $(PROFILE), -g -pg,) -lpthread $(if $(TRACE_COMPACT), -lz,)" \
+                    $(ldflags)                                                                                   \
                     -CFLAGS "$(CFLAGS)$(if $(PROFILE), -g -pg,) -DVL_DEBUG -I$(SPIKE_INSTALL_DIR)"               \
                     $(if $(SPIKE_TANDEM), +define+SPIKE_TANDEM, )                                                \
+                    $(if $(RVFI_DII), --autoflush +define+RVFI_TRACE=1+DII=1)                                    \
                     --cc --vpi                                                                                   \
                     $(list_incdir) --top-module ariane_testharness                                               \
                     --threads-dpi none                                                                           \
                     --Mdir $(ver-library) -O3                                                                    \
-                    --exe corev_apu/tb/ariane_tb.cpp corev_apu/tb/dpi/SimDTM.cc corev_apu/tb/dpi/SimJTAG.cc      \
-                    corev_apu/tb/dpi/remote_bitbang.cc corev_apu/tb/dpi/msim_helper.cc
+                    --exe $(sim-c-files)
 
 # User Verilator, at some point in the future this will be auto-generated
 verilate:
@@ -848,8 +856,11 @@ fpga_filter += $(addprefix $(root-dir), common/local/util/tc_sram_wrapper.sv)
 fpga_filter += $(addprefix $(root-dir), corev_apu/tb/ariane_peripherals.sv)
 fpga_filter += $(addprefix $(root-dir), corev_apu/tb/ariane_testharness.sv)
 fpga_filter += $(addprefix $(root-dir), core/cache_subsystem/hpdcache/rtl/src/common/macros/behav/hpdcache_sram_1rw.sv)
+fpga_filter += $(addprefix $(root-dir), core/cache_subsystem/hpdcache/rtl/src/common/macros/behav/hpdcache_sram_ecc_1rw.sv)
 fpga_filter += $(addprefix $(root-dir), core/cache_subsystem/hpdcache/rtl/src/common/macros/behav/hpdcache_sram_wbyteenable_1rw.sv)
-fpga_filter += $(addprefix $(root-dir), core/cache_subsystem/hpdcache/rtl/src/common/macros/behav/hpdcache_sram_wmask_1rw.sv)
+fpga_filter += $(addprefix $(root-dir), core/cache_subsystem/hpdcache/rtl/src/common/macros/behav/hpdcache_sram_wbyteenable_ecc_1rw.sv)
+#fpga_filter += $(addprefix $(root-dir), core/cache_subsystem/hpdcache/rtl/src/common/macros/behav/hpdcache_sram_wmask_1rw.sv)
+fpga_filter += $(addprefix $(root-dir), core/cache_subsystem/hpdcache/rtl/src/common/macros/behav/hpdcache_sram_wmask_ecc_1rw.sv)
 
 $(addprefix $(root-dir), corev_apu/fpga/src/bootrom/bootrom_$(XLEN).sv):
 	$(MAKE) -C corev_apu/fpga/src/bootrom BOARD=$(BOARD) XLEN=$(XLEN) PLATFORM=$(PLATFORM) bootrom_$(XLEN).sv

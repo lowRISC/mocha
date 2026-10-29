@@ -9,6 +9,6 @@
   upstream:
   {
     url: https://github.com/Capabilities-Limited/cv-hpdcache.git
-    rev: 07f4ebe7bd074e2f82f6b10c2386026bc12455d8
+    rev: c8a4e5ef97b37734542503ee88d9dd9b69a81b8f
   }
 }

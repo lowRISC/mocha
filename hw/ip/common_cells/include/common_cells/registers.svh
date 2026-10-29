@@ -15,7 +15,7 @@
 `define LOWRISC_COMMON_CELLS_REGISTERS_SVH_
 
 // Flip-Flop with asynchronous active-low reset
-`define FF(__q, __d, __reset_value, __clk, __arst_n) \
+`define FF(__q, __d, __reset_value, __clk = clk_i, __arst_n = rst_ni) \
   `PRIM_FLOP_A(__d, __q, __reset_value, __clk, __arst_n)
 
 // Flip-Flop with asynchronous active-high reset
@@ -27,8 +27,14 @@
   `FF(__q, __d, __reset_value, __clk, __arst_n)
 
 // Flip-Flop with load-enable and asynchronous active-low reset
-`define FFL(__q, __d, __load, __reset_value, __clk, __arst_n) \
+`define FFL(__q, __d, __load, __reset_value, __clk = clk_i, __arst_n = rst_ni) \
   `FF(__q, __load ? __d : __q, __reset_value, __clk, __arst_n)
+
+// Flip-Flop with load-enable and no reset
+`define FFLNR(__q, __d, __load, __clk = clk_i) \
+  always_ff @(posedge __clk) begin \
+    if (__load) __q <= __d; \
+  end
 
 // Flip-Flop with load-enable and asynchronous active-high reset
 `define FFLAR(__q, __d, __load, __reset_value, __clk, __arst) \

@@ -1,22 +1,8 @@
 /*
- *  Copyright 2023 CEA*
- *  *Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
- *  Copyright 2025 Inria, Universite Grenoble-Alpes, TIMA
+ *  Copyright 2023 Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+ *  Copyright 2025 Univ. Grenoble Alpes, Inria, TIMA Laboratory
  *
  *  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
- *
- *  Licensed under the Solderpad Hardware License v 2.1 (the “License”); you
- *  may not use this file except in compliance with the License, or, at your
- *  option, the Apache License version 2.0. You may obtain a copy of the
- *  License at
- *
- *  https://solderpad.org/licenses/SHL-2.1/
- *
- *  Unless required by applicable law or agreed to in writing, any work
- *  distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
  */
 /*
  *  Authors       : Cesar Fuguet
@@ -62,15 +48,6 @@ import hpdcache_pkg::*;
     input  logic                  clk_i,
     input  logic                  rst_ni,
 
-    //  Global control signals
-    //  {{{
-    input  logic                  wbuf_empty_i,
-    input  logic                  mshr_empty_i,
-    input  logic                  rtab_empty_i,
-    input  logic                  ctrl_empty_i,
-    input  logic                  flush_empty_i,
-    //  }}}
-
     //  Cache-side request interface
     //  {{{
     input  logic                  req_valid_i,
@@ -85,6 +62,8 @@ import hpdcache_pkg::*;
     input  hpdcache_req_sid_t     req_sid_i,
     input  hpdcache_req_tid_t     req_tid_i,
     input  logic                  req_need_rsp_i,
+    input  hpdcache_way_vector_t  req_hit_way_i,
+    input  hpdcache_req_data_t    req_old_data_i,
     //  }}}
 
     //  Write buffer interface
@@ -94,17 +73,12 @@ import hpdcache_pkg::*;
 
     //  AMO Cache Interface
     //  {{{
-    output logic                  dir_amo_match_o,
-    output hpdcache_set_t         dir_amo_match_set_o,
-    output hpdcache_tag_t         dir_amo_match_tag_o,
-    output logic                  dir_amo_updt_sel_victim_o,
-    input  hpdcache_way_vector_t  dir_amo_hit_way_i,
-
     output logic                  data_amo_write_o,
     output logic                  data_amo_write_enable_o,
     output hpdcache_set_t         data_amo_write_set_o,
     output hpdcache_req_size_t    data_amo_write_size_o,
     output hpdcache_word_t        data_amo_write_word_o,
+    output hpdcache_way_vector_t  data_amo_write_way_o,
     output hpdcache_req_user_t    data_amo_write_user_o,
     output hpdcache_req_data_t    data_amo_write_data_o,
     output hpdcache_req_be_t      data_amo_write_be_o,
@@ -169,7 +143,6 @@ import hpdcache_pkg::*;
 
     typedef enum {
         UC_IDLE,
-        UC_WAIT_PENDING,
         UC_MEM_REQ,
         UC_MEM_W_REQ,
         UC_MEM_WDATA_REQ,
@@ -177,7 +150,6 @@ import hpdcache_pkg::*;
         UC_MEM_WDATA2_REQ,
         UC_MEM_WAIT_RSP,
         UC_CORE_RSP,
-        UC_AMO_READ_DIR,
         UC_AMO_WRITE_DATA
     } hpdcache_uc_fsm_t;
 
@@ -287,30 +259,32 @@ import hpdcache_pkg::*;
 
 //  Internal signals and registers
 //  {{{
-    hpdcache_uc_fsm_t   uc_fsm_q, uc_fsm_d;
-    hpdcache_uc_op_t    req_op_q;
-    hpdcache_req_addr_t req_addr_q;
-    hpdcache_req_size_t req_size_q;
-    hpdcache_req_data_t req_data_q;
-    hpdcache_req_user_t req_user_q;
-    hpdcache_req_be_t   req_be_q;
-    logic               req_uc_q;
-    hpdcache_req_sid_t  req_sid_q;
-    hpdcache_req_tid_t  req_tid_q;
-    logic               req_need_rsp_q;
-    logic               multiflit;
-    logic               req_is_cap;
-    logic               no_pend_trans;
+    hpdcache_uc_fsm_t     uc_fsm_q, uc_fsm_d;
+    hpdcache_uc_op_t      req_op_q;
+    hpdcache_req_addr_t   req_addr_q;
+    hpdcache_req_size_t   req_size_q;
+    hpdcache_req_data_t   req_data_q;
+    hpdcache_req_user_t   req_user_q;
+    hpdcache_req_be_t     req_be_q;
+    logic                 req_uc_q;
+    hpdcache_req_sid_t    req_sid_q;
+    hpdcache_req_tid_t    req_tid_q;
+    logic                 req_need_rsp_q;
+    hpdcache_way_vector_t req_hit_way_q;
+    logic                 req_hit;
+    hpdcache_req_data_t   req_old_data_q;
+    logic                 multiflit;
+    logic                 req_is_cap;
 
-    logic               uc_sc_retcode_q, uc_sc_retcode_d;
+    logic                 uc_sc_retcode_q, uc_sc_retcode_d;
 
-    hpdcache_req_data_t rsp_rdata_q, rsp_rdata_d;
-    hpdcache_req_user_t rsp_ruser_q, rsp_ruser_d;
-    logic               rsp_error_set, rsp_error_rst;
-    logic               rsp_error_q;
-    logic               mem_resp_write_valid_q, mem_resp_write_valid_d;
-    logic               mem_resp_read_valid_q, mem_resp_read_valid_d;
-    logic               mem_resp_read_finishing;
+    hpdcache_req_data_t   rsp_rdata_q, rsp_rdata_d;
+    hpdcache_req_user_t   rsp_ruser_q, rsp_ruser_d;
+    logic                 rsp_error_set, rsp_error_rst;
+    logic                 rsp_error_q;
+    logic                 mem_resp_write_valid_q, mem_resp_write_valid_d;
+    logic                 mem_resp_read_valid_q, mem_resp_read_valid_d;
+    logic                 mem_resp_read_finishing;
 
     hpdcache_req_data_t   mem_req_write_data;
     hpdcache_req_user_t   mem_req_write_user;
@@ -327,6 +301,9 @@ import hpdcache_pkg::*;
     logic                            amo_result_user;
     logic [HPDcacheCfg.amoWidth-1:0] amo_write_data;
     logic                            amo_write_user;
+
+    hpdcache_req_data_t   data_amo_write_data;
+    logic                 data_amo_write_merge;
 //  }}}
 
 //  LR/SC reservation buffer logic
@@ -347,18 +324,19 @@ import hpdcache_pkg::*;
     logic               lrsc_uc_hit;
     logic               lrsc_uc_set, lrsc_uc_reset;
 
-    //  NOTE: Reservation set for LR instruction is always 16-bytes in this
-    //  implementation.
+    localparam hpdcache_uint LR_RES_SHAMT = HPDcacheCfg.u.capAmoEn ? 4 : 3;
+    //  NOTE: Reservation set for LR instruction in this implementation is
+    //  16-bytes if capabilities AMOs are enabled, or 8-bytes otherwise
     assign lrsc_rsrv_nline  = lrsc_rsrv_addr_q[HPDcacheCfg.clOffsetWidth +:
                                                HPDcacheCfg.nlineWidth];
-    assign lrsc_rsrv_word   = lrsc_rsrv_addr_q[0 +: HPDcacheCfg.clOffsetWidth] >> 4;
+    assign lrsc_rsrv_word   = lrsc_rsrv_addr_q[0 +: HPDcacheCfg.clOffsetWidth] >> LR_RES_SHAMT;
 
     //  Check hit on LR/SC reservation for snoop port (normal write accesses)
-    assign lrsc_snoop_words = (lrsc_snoop_size_i < 4) ?
-            1 : hpdcache_offset_t'((8'h1 << lrsc_snoop_size_i) >> 4);
+    assign lrsc_snoop_words = (lrsc_snoop_size_i < LR_RES_SHAMT) ?
+            1 : hpdcache_offset_t'((8'h1 << lrsc_snoop_size_i) >> LR_RES_SHAMT);
     assign lrsc_snoop_nline = lrsc_snoop_addr_i[HPDcacheCfg.clOffsetWidth +:
                                                 HPDcacheCfg.nlineWidth];
-    assign lrsc_snoop_base  = lrsc_snoop_addr_i[0 +: HPDcacheCfg.clOffsetWidth] >> 4;
+    assign lrsc_snoop_base  = lrsc_snoop_addr_i[0 +: HPDcacheCfg.clOffsetWidth] >> LR_RES_SHAMT;
     assign lrsc_snoop_end   = lrsc_snoop_base + lrsc_snoop_words;
 
     assign lrsc_snoop_hit   = lrsc_rsrv_valid_q & (lrsc_rsrv_nline == lrsc_snoop_nline) &
@@ -369,17 +347,13 @@ import hpdcache_pkg::*;
 
     //  Check hit on LR/SC reservation for AMOs and SC
     assign lrsc_uc_nline    = req_addr_i[HPDcacheCfg.clOffsetWidth +: HPDcacheCfg.nlineWidth];
-    assign lrsc_uc_word     = req_addr_i[0 +: HPDcacheCfg.clOffsetWidth] >> 4;
+    assign lrsc_uc_word     = req_addr_i[0 +: HPDcacheCfg.clOffsetWidth] >> LR_RES_SHAMT;
 
     assign lrsc_uc_hit      = lrsc_rsrv_valid_q & (lrsc_rsrv_nline == lrsc_uc_nline) &
                                                   (lrsc_rsrv_word  == lrsc_uc_word);
 //  }}}
 
-    assign no_pend_trans = wbuf_empty_i &&
-                           mshr_empty_i &&
-                           rtab_empty_i &&
-                           ctrl_empty_i &&
-                           flush_empty_i;
+    assign req_hit = |req_hit_way_q;
 
     assign multiflit = HPDcacheCfg.u.capAmoEn && req_size_q == hpdcache_req_size_t'(4);
     assign req_is_cap = HPDcacheCfg.u.capAmoEn && HPDcacheCfg.u.userEn && req_size_q == hpdcache_req_size_t'(4);
@@ -412,11 +386,7 @@ import hpdcache_pkg::*;
                     unique case (1'b1)
                         req_op_i.is_ld,
                         req_op_i.is_st: begin
-                            if (no_pend_trans) begin
-                                uc_fsm_d = UC_MEM_REQ;
-                            end else begin
-                                uc_fsm_d = UC_WAIT_PENDING;
-                            end
+                            uc_fsm_d = UC_MEM_REQ;
                         end
 
                         req_op_i.is_amo_swap,
@@ -436,11 +406,7 @@ import hpdcache_pkg::*;
                                 rsp_error_set = 1'b1;
                                 uc_fsm_d = UC_CORE_RSP;
                             end else begin
-                                if (no_pend_trans) begin
-                                    uc_fsm_d = UC_MEM_REQ;
-                                end else begin
-                                    uc_fsm_d = UC_WAIT_PENDING;
-                                end
+                                uc_fsm_d = UC_MEM_REQ;
                             end
                         end
 
@@ -454,11 +420,7 @@ import hpdcache_pkg::*;
 
                                 //  SC with valid reservation
                                 if (lrsc_uc_hit) begin
-                                    if (no_pend_trans) begin
-                                        uc_fsm_d = UC_MEM_REQ;
-                                    end else begin
-                                        uc_fsm_d = UC_WAIT_PENDING;
-                                    end
+                                    uc_fsm_d = UC_MEM_REQ;
                                 end
                                 //  SC with no valid reservation, thus respond with the failure code
                                 else begin
@@ -475,17 +437,6 @@ import hpdcache_pkg::*;
                             end
                         end
                     endcase
-                end
-            end
-            //  }}}
-
-            //  Wait for all pending transactions to be completed
-            //  {{{
-            UC_WAIT_PENDING: begin
-                if (no_pend_trans) begin
-                    uc_fsm_d = UC_MEM_REQ;
-                end else begin
-                    uc_fsm_d = UC_WAIT_PENDING;
                 end
             end
             //  }}}
@@ -532,9 +483,6 @@ import hpdcache_pkg::*;
             //  Send write address
             //  {{{
             UC_MEM_W_REQ: begin
-                mem_resp_write_valid_d = mem_resp_write_valid_q | mem_resp_write_valid_i;
-                mem_resp_read_valid_d = mem_resp_read_valid_q | mem_resp_read_finishing;
-
                 if (mem_req_write_ready_i) begin
                     uc_fsm_d = UC_MEM_WAIT_RSP;
                 end else begin
@@ -546,7 +494,6 @@ import hpdcache_pkg::*;
             //  Send write address and second write data flit
             //  {{{
             UC_MEM_W_AND_WDATA2_REQ: begin
-                mem_resp_write_valid_d = mem_resp_write_valid_q | mem_resp_write_valid_i;
                 mem_resp_read_valid_d = mem_resp_read_valid_q | mem_resp_read_finishing;
 
                 if (mem_req_write_ready_i && mem_req_write_data_ready_i) begin
@@ -564,7 +511,8 @@ import hpdcache_pkg::*;
             //  Send write data
             //  {{{
             UC_MEM_WDATA_REQ: begin
-                mem_resp_write_valid_d = mem_resp_write_valid_q | mem_resp_write_valid_i;
+                //  In the case of an AMO request, it is possible to receive the read response
+                //  after the write request is sent but before the data is sent
                 mem_resp_read_valid_d = mem_resp_read_valid_q | mem_resp_read_finishing;
 
                 if (mem_req_write_data_ready_i) begin
@@ -577,13 +525,12 @@ import hpdcache_pkg::*;
             //  Send second flit of write data
             //  {{{
             UC_MEM_WDATA2_REQ: begin
-                mem_resp_write_valid_d = mem_resp_write_valid_q | mem_resp_write_valid_i;
                 mem_resp_read_valid_d = mem_resp_read_valid_q | mem_resp_read_finishing;
 
                 if (mem_req_write_data_ready_i) begin
                     uc_fsm_d = UC_MEM_WAIT_RSP;
                 end else begin
-                    uc_fsm_d = UC_MEM_WDATA_REQ;
+                    uc_fsm_d = UC_MEM_WDATA2_REQ;
                 end
             end
             //  }}}
@@ -637,10 +584,10 @@ import hpdcache_pkg::*;
                                 lrsc_uc_reset = 1'b1;
                             end
 
-                            if (req_uc_q || rd_error) begin
+                            if (req_uc_q || rd_error || !req_hit) begin
                                 uc_fsm_d = UC_CORE_RSP;
                             end else begin
-                                uc_fsm_d = UC_AMO_READ_DIR;
+                                uc_fsm_d = UC_AMO_WRITE_DATA;
                             end
                         end
                     end
@@ -651,10 +598,10 @@ import hpdcache_pkg::*;
                             is_atomic = mem_resp_write_i.mem_resp_w_is_atomic && !wr_error;
                             uc_sc_retcode_d = is_atomic ? AMO_SC_SUCCESS : AMO_SC_FAILURE;
 
-                            if (req_uc_q || !is_atomic) begin
+                            if (req_uc_q || !is_atomic || !req_hit) begin
                                 uc_fsm_d = UC_CORE_RSP;
                             end else begin
-                                uc_fsm_d = UC_AMO_READ_DIR;
+                                uc_fsm_d = UC_AMO_WRITE_DATA;
                             end
                         end
                     end
@@ -672,10 +619,12 @@ import hpdcache_pkg::*;
                             (mem_resp_read_finishing && mem_resp_write_valid_q) ||
                             (mem_resp_read_valid_q && mem_resp_write_valid_i))
                         begin
-                            if (req_uc_q || rsp_error_q || rd_error || wr_error) begin
+                            if (req_uc_q || rsp_error_q || rd_error || wr_error ||
+                                !req_hit)
+                            begin
                                 uc_fsm_d = UC_CORE_RSP;
                             end else begin
-                                uc_fsm_d = UC_AMO_READ_DIR;
+                                uc_fsm_d = UC_AMO_WRITE_DATA;
                             end
                         end
                     end
@@ -692,13 +641,6 @@ import hpdcache_pkg::*;
                 end else begin
                     uc_fsm_d = UC_CORE_RSP;
                 end
-            end
-            //  }}}
-
-            //  Check for a cache hit on the AMO target address
-            //  {{{
-            UC_AMO_READ_DIR: begin
-                uc_fsm_d = UC_AMO_WRITE_DATA;
             end
             //  }}}
 
@@ -764,10 +706,15 @@ import hpdcache_pkg::*;
         end else begin : gen_amo_req_st_user_default
             assign amo_req_st_user = '0;
         end
-    end else begin : gen_amo_data_width_leq_amo_width
+    end else if (HPDcacheCfg.reqDataWidth == HPDcacheCfg.amoWidth) begin : gen_amo_data_width_eq_amo_width
         assign amo_req_ld_data = rsp_rdata_q;
         assign amo_req_ld_user = HPDcacheCfg.u.userEn ? rsp_ruser_q : '0;
         assign amo_req_st_data = req_data_q;
+        assign amo_req_st_user = HPDcacheCfg.u.userEn ? req_user_q : '0;
+    end else begin : gen_amo_data_width_lt_amo_width
+        assign amo_req_ld_data = req_addr_q[2] ? {rsp_rdata_q, 32'b0} : {32'b0, rsp_rdata_q};
+        assign amo_req_ld_user = HPDcacheCfg.u.userEn ? rsp_ruser_q : '0;
+        assign amo_req_st_data = req_addr_q[2] ? {req_data_q, 32'b0} : {32'b0, req_data_q};
         assign amo_req_st_user = HPDcacheCfg.u.userEn ? req_user_q : '0;
     end
 
@@ -793,28 +740,40 @@ import hpdcache_pkg::*;
         .user_o      (amo_result_user)
     );
 
-    assign dir_amo_match_o = (uc_fsm_q == UC_AMO_READ_DIR);
-    assign dir_amo_match_set_o = req_addr_q[HPDcacheCfg.clOffsetWidth +: HPDcacheCfg.setWidth];
-    assign dir_amo_match_tag_o = req_addr_q[(HPDcacheCfg.clOffsetWidth + HPDcacheCfg.setWidth) +:
-                                            HPDcacheCfg.tagWidth];
-    assign dir_amo_updt_sel_victim_o = (uc_fsm_q == UC_AMO_WRITE_DATA);
-
     assign data_amo_write_o = (uc_fsm_q == UC_AMO_WRITE_DATA);
-    assign data_amo_write_enable_o = |dir_amo_hit_way_i;
+    assign data_amo_write_enable_o = req_hit;
     assign data_amo_write_set_o = req_addr_q[HPDcacheCfg.clOffsetWidth +: HPDcacheCfg.setWidth];
     assign data_amo_write_size_o = req_size_q;
     assign data_amo_write_word_o = req_addr_q[HPDcacheCfg.wordByteIdxWidth +:
                                               HPDcacheCfg.clWordIdxWidth];
-    assign data_amo_write_be_o = req_be_q;
+    assign data_amo_write_way_o = req_hit_way_q;
 
     assign amo_write_data = prepare_amo_data_result(amo_result_data, req_size_q);
     assign amo_write_user = req_is_cap ? amo_result_user : '0;
     if (HPDcacheCfg.reqDataWidth >= HPDcacheCfg.amoWidth) begin : gen_amo_ram_write_data_ge_amo_width
-        assign data_amo_write_data_o = {HPDcacheCfg.reqDataWidth/HPDcacheCfg.amoWidth{amo_write_data}};
+        assign data_amo_write_data = {HPDcacheCfg.reqDataWidth/HPDcacheCfg.amoWidth{amo_write_data}};
         assign data_amo_write_user_o = {HPDcacheCfg.reqDataWidth/HPDcacheCfg.amoWidth{amo_write_user}};
     end else begin : gen_amo_ram_write_data_lt_amo_width
-        assign data_amo_write_data_o = amo_write_data;
+        assign data_amo_write_data = amo_write_data;
         assign data_amo_write_user_o = amo_write_user;
+    end
+
+    if (HPDcacheCfg.u.eccEn) begin : gen_data_req_write_ecc
+        assign data_amo_write_merge = (hpdcache_uint'(req_size_q) < HPDcacheCfg.wordByteIdxWidth);
+        always_comb
+        begin : data_amo_write_merge_comb
+            for (int i = 0; i < HPDcacheCfg.u.reqWords; i++) begin
+                for (int j = 0; j < HPDcacheCfg.u.wordWidth/8; j++) begin
+                    data_amo_write_be_o[i][j] = req_be_q[i][j] | data_amo_write_merge;
+                    data_amo_write_data_o[i][j*8 +: 8] =
+                        (     req_old_data_q[i][j*8 +: 8] & {8{~req_be_q[i][j]}}) |
+                        (data_amo_write_data[i][j*8 +: 8] & {8{ req_be_q[i][j]}});
+                end
+            end
+        end
+    end else begin : gen_data_req_write_noecc
+        assign data_amo_write_data_o = data_amo_write_data;
+        assign data_amo_write_be_o = req_be_q;
     end
 //  }}}
 
@@ -969,26 +928,28 @@ import hpdcache_pkg::*;
         if (REQ_MEM_RATIO == 2) begin : gen_downsize_mem_req_data
             hpdcache_req_addr_t flit_addr;
             assign flit_addr = req_addr_q + (uc_fsm_q inside {UC_MEM_WDATA2_REQ, UC_MEM_W_AND_WDATA2_REQ} ? 'h8 : 'h0);
-            assign mem_req_write_data_o.mem_req_w_data = mem_req_write_data >> (flit_addr[$clog2(HPDcacheCfg.u.memDataWidth/8) +: REQ_MEM_WORD_INDEX_WIDTH] * HPDcacheCfg.u.memDataWidth);
-            assign mem_req_write_data_o.mem_req_w_be   = req_be_q >> (flit_addr[$clog2(HPDcacheCfg.u.memDataWidth/8) +: REQ_MEM_WORD_INDEX_WIDTH] * (HPDcacheCfg.u.memDataWidth/8));
+            assign mem_req_write_data_o.mem_req_w_data = mem_req_write_data >> (flit_addr[$clog2(HPDcacheCfg.u.memDataWidth/((HPDcacheCfg.u.wordWidth > 8) ? 8 : HPDcacheCfg.u.wordWidth)) +: REQ_MEM_WORD_INDEX_WIDTH] * HPDcacheCfg.u.memDataWidth);
+            assign mem_req_write_data_o.mem_req_w_be   = req_be_q >> (flit_addr[$clog2(HPDcacheCfg.u.memDataWidth/((HPDcacheCfg.u.wordWidth > 8) ? 8 : HPDcacheCfg.u.wordWidth)) +: REQ_MEM_WORD_INDEX_WIDTH] * (HPDcacheCfg.u.memDataWidth/8));
             assign mem_req_write_data_o.mem_req_w_user = mem_req_write_user;
         end
     end else begin : gen_mem_req_write_data_default
         // Currently only support MEM >= REQ
         if (MEM_REQ_RATIO > 1) begin : gen_upsize_mem_req_data
+
+            localparam int unsigned BE_WIDTH = HPDcacheCfg.reqDataWidth / ((HPDcacheCfg.u.wordWidth > 8) ? 8 : HPDcacheCfg.u.wordWidth);
+
             //  replicate data
             assign mem_req_write_data_o.mem_req_w_data = {MEM_REQ_RATIO{mem_req_write_data}};
             assign mem_req_write_data_o.mem_req_w_user = mem_req_write_user;
 
             //  demultiplex the byte-enable
             hpdcache_demux #(
-                .NOUTPUT     (MEM_REQ_RATIO),
-                .DATA_WIDTH  (HPDcacheCfg.reqDataWidth/8)
+                .NOUTPUT    (MEM_REQ_RATIO),
+                .DATA_WIDTH (BE_WIDTH)
             ) mem_write_be_demux_i (
-                .data_i      (req_be_q),
-                .sel_i       (req_addr_q[$clog2(HPDcacheCfg.reqDataWidth/8) +:
-                                         MEM_REQ_WORD_INDEX_WIDTH]),
-                .data_o      (mem_req_write_data_o.mem_req_w_be)
+                .data_i     (req_be_q),
+                .sel_i      (req_addr_q[$clog2(BE_WIDTH) +: MEM_REQ_WORD_INDEX_WIDTH]),
+                .data_o     (mem_req_write_data_o.mem_req_w_be)
             );
         end
         //  memory data width is equal to the width of the core's interface
@@ -1039,7 +1000,7 @@ import hpdcache_pkg::*;
                 .DATA_WIDTH  (HPDcacheCfg.reqDataWidth)
             ) data_read_rsp_mux_i(
                 .data_i      (mem_resp_read_i.mem_resp_r_data),
-                .sel_i       (req_addr_q[$clog2(HPDcacheCfg.reqDataWidth/8) +:
+                .sel_i       (req_addr_q[$clog2((HPDcacheCfg.reqDataWidth+8-1)/8) +:
                                          MEM_REQ_WORD_INDEX_WIDTH]),
                 .data_o      (rsp_rdata_d)
             );
@@ -1050,7 +1011,7 @@ import hpdcache_pkg::*;
                     .DATA_WIDTH  (HPDcacheCfg.reqWords * HPDcacheCfg.reqWordUserWidth)
                 ) user_read_rsp_mux_i(
                     .data_i      (mem_resp_read_i.mem_resp_r_user),
-                    .sel_i       (req_addr_q[$clog2(HPDcacheCfg.reqDataWidth/8) +:
+                    .sel_i       (req_addr_q[$clog2(HPDcacheCfg.reqDataWidth/((HPDcacheCfg.u.wordWidth > 8) ? 8 : HPDcacheCfg.u.wordWidth)) +:
                                              MEM_REQ_WORD_INDEX_WIDTH]),
                     .data_o      (rsp_ruser_d)
                 );
@@ -1072,14 +1033,22 @@ import hpdcache_pkg::*;
 
 //  Set cache request registers
 //  {{{
-    always_ff @(posedge clk_i)
+    always_ff @(posedge clk_i or negedge rst_ni)
     begin : req_data_ff
-        if (req_valid_i && req_ready_o) begin
-            req_data_q <= req_data_i;
-            req_user_q <= req_user_i;
-            req_be_q <= req_be_i;
-            req_sid_q <= req_sid_i;
-            req_tid_q <= req_tid_i;
+        if (!rst_ni) begin
+            req_data_q <= '0;
+            req_user_q <= '0;
+            req_be_q <= '0;
+            req_sid_q <= '0;
+            req_tid_q <= '0;
+        end else begin
+            if (req_valid_i && req_ready_o) begin
+                req_data_q <= req_data_i;
+                req_user_q <= req_user_i;
+                req_be_q <= req_be_i;
+                req_sid_q <= req_sid_i;
+                req_tid_q <= req_tid_i;
+            end
         end
     end
 
@@ -1090,13 +1059,17 @@ import hpdcache_pkg::*;
             req_addr_q <= '0;
             req_size_q <= '0;
             req_uc_q <= 1'b0;
-            req_need_rsp_q <= req_need_rsp_i;
+            req_need_rsp_q <= 1'b0;
+            req_hit_way_q <= '0;
+            req_old_data_q <= '0;
         end else if (req_valid_i && req_ready_o) begin
             req_op_q <= req_op_i;
             req_addr_q <= req_addr_i;
             req_size_q <= req_size_i;
             req_uc_q <= req_uc_i;
             req_need_rsp_q <= req_need_rsp_i;
+            req_hit_way_q <= req_hit_way_i;
+            req_old_data_q <= req_old_data_i;
         end
     end
 //  }}}
@@ -1120,23 +1093,35 @@ import hpdcache_pkg::*;
         end
     end
 
-    always_ff @(posedge clk_i)
+    always_ff @(posedge clk_i or negedge rst_ni)
     begin : uc_amo_ff
-        lrsc_rsrv_addr_q <= lrsc_rsrv_addr_d;
-        uc_sc_retcode_q  <= uc_sc_retcode_d;
+        if (!rst_ni) begin
+            lrsc_rsrv_addr_q <= '0;
+            uc_sc_retcode_q  <= '0;
+        end else begin
+            lrsc_rsrv_addr_q <= lrsc_rsrv_addr_d;
+            uc_sc_retcode_q  <= uc_sc_retcode_d;
+        end
     end
 //  }}}
 
 //  Response registers
 //  {{{
-    always_ff @(posedge clk_i)
+    always_ff @(posedge clk_i or negedge rst_ni)
     begin
-        if (mem_resp_read_valid_i) begin
-            rsp_rdata_q <= rsp_rdata_d;
-            rsp_ruser_q <= rsp_ruser_d;
+        if (!rst_ni) begin
+            rsp_rdata_q <= '0;
+            rsp_ruser_q <= '0;
+            mem_resp_write_valid_q <= '0;
+            mem_resp_read_valid_q  <= '0;
+        end else begin
+            if (mem_resp_read_valid_i) begin
+                rsp_rdata_q <= rsp_rdata_d;
+                rsp_ruser_q <= rsp_ruser_d;
+            end
+            mem_resp_write_valid_q <= mem_resp_write_valid_d;
+            mem_resp_read_valid_q  <= mem_resp_read_valid_d;
         end
-        mem_resp_write_valid_q <= mem_resp_write_valid_d;
-        mem_resp_read_valid_q  <= mem_resp_read_valid_d;
     end
 
     always_ff @(posedge clk_i or negedge rst_ni)
@@ -1153,40 +1138,30 @@ import hpdcache_pkg::*;
 //  Assertions
 //  {{{
 `ifndef HPDCACHE_ASSERT_OFF
+    function automatic bit req_is_amo(input hpdcache_uc_op_t op);
+        return (op.is_amo_swap ||
+                op.is_amo_add  || op.is_amo_and  || op.is_amo_or  || op.is_amo_xor  ||
+                op.is_amo_max  || op.is_amo_maxu || op.is_amo_min || op.is_amo_minu);
+    endfunction
+
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
-            (req_valid_i && req_op_i.is_ld) -> req_uc_i) else
+            (req_valid_i && req_op_i.is_ld) |-> req_uc_i) else
                     $error("uc_handler: unexpected load request on cacheable region");
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
-            (req_valid_i && req_op_i.is_st) -> req_uc_i) else
+            (req_valid_i && req_op_i.is_st) |-> req_uc_i) else
                     $error("uc_handler: unexpected store request on cacheable region");
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
             (req_valid_i && (req_op_i.is_amo_lr   ||
                              req_op_i.is_amo_sc   ||
-                             req_op_i.is_amo_swap ||
-                             req_op_i.is_amo_add  ||
-                             req_op_i.is_amo_and  ||
-                             req_op_i.is_amo_or   ||
-                             req_op_i.is_amo_xor  ||
-                             req_op_i.is_amo_max  ||
-                             req_op_i.is_amo_maxu ||
-                             req_op_i.is_amo_min  ||
-                             req_op_i.is_amo_minu )) -> req_need_rsp_i) else
+                             req_is_amo(req_op_i))) |-> req_need_rsp_i) else
                     $error("uc_handler: amo requests shall need a response");
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1'b1)
             (req_valid_i && (req_op_i.is_amo_lr   ||
                              req_op_i.is_amo_sc   ||
-                             req_op_i.is_amo_swap ||
-                             req_op_i.is_amo_add  ||
-                             req_op_i.is_amo_and  ||
-                             req_op_i.is_amo_or   ||
-                             req_op_i.is_amo_xor  ||
-                             req_op_i.is_amo_max  ||
-                             req_op_i.is_amo_maxu ||
-                             req_op_i.is_amo_min  ||
-                             req_op_i.is_amo_minu )) -> (req_size_i inside {0,1,2,3,4})) else
+                             req_is_amo(req_op_i))) |-> (req_size_i inside {0,1,2,3,4})) else
                     $error("uc_handler: amo requests shall be at most 16 bytes wide");
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1)
@@ -1198,9 +1173,17 @@ import hpdcache_pkg::*;
                     $error("uc_handler: must have exactly one tag bit with 128-bit access width");
 
     assert property (@(posedge clk_i) disable iff (rst_ni !== 1)
-            (mem_resp_write_valid_i || mem_resp_read_valid_i) -> (uc_fsm_q == UC_MEM_WAIT_RSP)) else
-                    $error("uc_handler: unexpected response from memory");
+            mem_resp_write_valid_i |-> (uc_fsm_q == UC_MEM_WAIT_RSP)) else
+                    $error("uc_handler: unexpected write response from memory");
+
+    assert property (@(posedge clk_i) disable iff (rst_ni !== 1)
+            mem_resp_read_valid_i |->
+                    ((uc_fsm_q == UC_MEM_WAIT_RSP) ||
+                    ((uc_fsm_q inside {UC_MEM_WDATA_REQ, UC_MEM_WDATA2_REQ, UC_MEM_W_AND_WDATA2_REQ}) &&
+                     req_is_amo(req_op_q)))) else
+                    $error("uc_handler: unexpected read response from memory");
 `endif
 //  }}}
 
 endmodule
+// vim: ts=4 : sts=4 : sw=4 : et : tw=100 : spell : spelllang=en

@@ -1,0 +1,27 @@
+CAPI=2:
+# Copyright lowRISC contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:cosmic:fpu_div_sqrt_mvp"
+description: "Floating-point divide/square-root unit."
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:common_cells:all
+    files:
+      - fpu_div_sqrt_mvp/hdl/defs_div_sqrt_mvp.sv
+      - fpu_div_sqrt_mvp/hdl/iteration_div_sqrt_mvp.sv
+      - fpu_div_sqrt_mvp/hdl/control_mvp.sv
+      - fpu_div_sqrt_mvp/hdl/norm_div_sqrt_mvp.sv
+      - fpu_div_sqrt_mvp/hdl/preprocess_mvp.sv
+      - fpu_div_sqrt_mvp/hdl/nrbd_nrsc_mvp.sv
+      - fpu_div_sqrt_mvp/hdl/div_sqrt_top_mvp.sv
+      - fpu_div_sqrt_mvp/hdl/div_sqrt_mvp_wrapper.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

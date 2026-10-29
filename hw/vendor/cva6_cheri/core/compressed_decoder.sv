@@ -55,7 +55,7 @@ module compressed_decoder #(
       riscv::OpcodeC0: begin
         unique case (instr_i[15:13])
           riscv::OpcodeC0Addi4spn: begin
-            // c.cincoffsetimm4cspn cd, csp, offset -> cincoffsetimm cd', cs2, imm
+            // c.cincoffsetimm4cspn cd, csp, offset -> yaddi cd', cs2, imm
             if (CVA6Cfg.CheriPresent && !int_mode_i) begin
               instr_o = {
                 2'b0,
@@ -65,10 +65,10 @@ module compressed_decoder #(
                 instr_i[6],
                 2'b00,
                 5'h02,
-                3'b010,
+                3'b100,
                 2'b01,
                 instr_i[4:2],
-                riscv::OpcodeOpImm32
+                riscv::OpcodeRVY
               };
             end else begin
               // c.addi4spn -> addi rd', x2, imm
@@ -99,10 +99,10 @@ module compressed_decoder #(
                 4'b0000,
                 2'b01,
                 instr_i[9:7],
-                3'b100,
+                3'b001,
                 2'b01,
                 instr_i[4:2],
-                riscv::OpcodeMiscMem
+                riscv::OpcodeRVY
               };
             end else if (CVA6Cfg.FpPresent) begin
               // c.fld -> fld rd', imm(rs1')
@@ -286,10 +286,10 @@ module compressed_decoder #(
                 instr_i[4:2],
                 2'b01,
                 instr_i[9:7],
-                3'b100,
+                3'b010,
                 instr_i[11],
                 4'b000,
-                riscv::OpcodeStore
+                riscv::OpcodeRVY
               };
             end else if (CVA6Cfg.FpPresent) begin
               // c.fsd -> fsd rs2', imm(rs1') in integer mode
@@ -391,6 +391,12 @@ module compressed_decoder #(
               instr_i[11:7],
               riscv::OpcodeOpImm
             };
+            if (CVA6Cfg.CheriPresent && !int_mode_i) begin
+              // Hints that would have side effects on CHERI are reserved
+              if (instr_i[11:7] != '0 && {instr_i[12], instr_i[6:2], instr_i[11:7]} == '0) begin
+                illegal_instr_o = 1'b1;
+              end
+            end
           end
 
 
@@ -447,7 +453,7 @@ module compressed_decoder #(
           riscv::OpcodeC1LuiAddi16sp: begin
             // c.lui -> lui rd, imm
             instr_o = {{15{instr_i[12]}}, instr_i[6:2], instr_i[11:7], riscv::OpcodeLui};
-            // c.cincoffsetimm16csp -> cincoffsetimm cs2, cs2, nzimm
+            // c.cincoffsetimm16csp -> yaddi cs2, cs2, nzimm
             if (instr_i[11:7] == 5'h02) begin
               if (CVA6Cfg.CheriPresent && !int_mode_i) begin
                 instr_o = {
@@ -458,9 +464,9 @@ module compressed_decoder #(
                   instr_i[6],
                   4'b0,
                   5'h02,
-                  3'b010,
+                  3'b100,
                   5'h02,
-                  riscv::OpcodeOpImm32
+                  riscv::OpcodeRVY
                 };
               end else begin
                 // c.addi16sp -> addi x2, x2, nzimm
@@ -500,6 +506,12 @@ module compressed_decoder #(
                   instr_i[9:7],
                   riscv::OpcodeOpImm
                 };
+                if (CVA6Cfg.CheriPresent && !int_mode_i) begin
+                  // Hints that would have side effects on CHERI are reserved
+                  if ({instr_i[12], instr_i[6:2]} == '0) begin
+                    illegal_instr_o = 1'b1;
+                  end
+                end
               end
 
               2'b10: begin
@@ -820,6 +832,12 @@ module compressed_decoder #(
               instr_i[11:7],
               riscv::OpcodeOpImm
             };
+            if (CVA6Cfg.CheriPresent && !int_mode_i) begin
+              // Hints that would have side effects on CHERI are reserved
+              if (instr_i[11:7] != '0 && {instr_i[12], instr_i[6:2], instr_i[11:7]} == '0) begin
+                illegal_instr_o = 1'b1;
+              end
+            end
           end
 
           riscv::OpcodeC2Fldsp: begin
@@ -831,9 +849,9 @@ module compressed_decoder #(
                 instr_i[6],
                 4'b0000,
                 5'h02,
-                3'b100,
+                3'b001,
                 instr_i[11:7],
-                riscv::OpcodeMiscMem
+                riscv::OpcodeRVY
               };
               if (instr_i[11:7] == 5'b0) illegal_instr_o = 1'b1;
             end else if (CVA6Cfg.FpPresent) begin
@@ -911,7 +929,7 @@ module compressed_decoder #(
             if (instr_i[12] == 1'b0) begin
               // c.mv -> add rd/rs1, x0, rs2
               if (CVA6Cfg.CheriPresent && !int_mode_i) begin
-                instr_o = {7'b0000110, 5'b0, instr_i[6:2], 3'b0, instr_i[11:7], riscv::OpcodeOp};
+                instr_o = {7'b0000011, 5'b0, instr_i[6:2], 3'b0, instr_i[11:7], riscv::OpcodeRVY};
               end else begin
                 instr_o = {7'b0, instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], riscv::OpcodeOp};
               end
@@ -941,15 +959,15 @@ module compressed_decoder #(
           riscv::OpcodeC2Fsdsp: begin
             if (CVA6Cfg.CheriPresent && !int_mode_i) begin
               instr_o = {
-                3'b0,
+                2'b0,
                 instr_i[10:7],
                 instr_i[12],
                 instr_i[6:2],
                 5'h02,
-                3'b100,
+                3'b010,
                 instr_i[11],
-                4'b000,
-                riscv::OpcodeStore
+                4'b0000,
+                riscv::OpcodeRVY
               };
             end else if (CVA6Cfg.FpPresent) begin
               // c.fsdsp -> fsd rs2, imm(x2)
@@ -1038,4 +1056,3 @@ module compressed_decoder #(
     end
   end
 endmodule
-

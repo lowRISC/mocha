@@ -13,7 +13,7 @@ package cva6_config_pkg;
 
   localparam CVA6ConfigRvfiTrace = 1;
 
-  localparam CVA6ConfigRVZcheripurecap = 0;
+  localparam CVA6ConfigRVY = 0;
   localparam CVA6ConfigRVZcherihybrid = 0;
 
   localparam CVA6ConfigAxiIdWidth = 4;  // axi_pkg.sv
@@ -54,9 +54,10 @@ package cva6_config_pkg;
       CvxifEn: bit'(1),
       CoproType: config_pkg::COPRO_EXAMPLE,
       RVZiCond: bit'(0),
+      RVZiCbom: bit'(0),
       RVZicntr: bit'(0),
       RVZihpm: bit'(0),
-      RVZcheripurecap: bit'(0),
+      RVY: bit'(0),
       RVZcherihybrid: bit'(0),
       NrScoreboardEntries: unsigned'(8),
       PerfCounterEn: bit'(0),
@@ -105,6 +106,7 @@ package cva6_config_pkg;
       DcacheSetAssoc: unsigned'(2),
       DcacheLineWidth: unsigned'(128),
       DcacheFlushOnFence: bit'(0),
+      DcacheFlushOnFenceI: bit'(0),
       DcacheInvalidateOnFlush: bit'(0),
       DataUserEn: unsigned'(1),
       WtDcacheWbufDepth: int'(8),
@@ -113,6 +115,7 @@ package cva6_config_pkg;
       InstrTlbEntries: int'(2),
       DataTlbEntries: int'(2),
       UseSharedTlb: bit'(1),
+      SvnapotEn: bit'(0),
       SharedTlbDepth: int'(64),
       NrLoadPipeRegs: int'(0),
       NrStorePipeRegs: int'(0),

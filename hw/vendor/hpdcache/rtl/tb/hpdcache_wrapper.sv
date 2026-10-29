@@ -1,22 +1,8 @@
 /**
- *  Copyright 2023,2024 CEA*
- *  *Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+ *  Copyright 2023,2024 Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
  *  Copyright 2025 Inria, Universite Grenoble-Alpes, TIMA
  *
  *  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
- *
- *  Licensed under the Solderpad Hardware License v 2.1 (the “License”); you
- *  may not use this file except in compliance with the License, or, at your
- *  option, the Apache License version 2.0. You may obtain a copy of the
- *  License at
- *
- *  https://solderpad.org/licenses/SHL-2.1/
- *
- *  Unless required by applicable law or agreed to in writing, any work
- *  distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
- *  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  License for the specific language governing permissions and limitations
- *  under the License.
  */
 /**
  *  Author(s)  : Cesar Fuguet
@@ -69,7 +55,9 @@ import hpdcache_pkg::*;
         wbEn: `CONF_HPDCACHE_WB_ENABLE,
         userEn: `CONF_HPDCACHE_USER_ENABLE,
         capAmoEn: `CONF_HPDCACHE_CAP_AMO_ENABLE,
-        lowLatency: `CONF_HPDCACHE_LOW_LATENCY
+        lowLatency: `CONF_HPDCACHE_LOW_LATENCY,
+        eccEn: `CONF_HPDCACHE_ECC_ENABLE,
+        eccScrubberEn: `CONF_HPDCACHE_ECC_SCRUBBER_ENABLE
     },
 
     localparam hpdcache_cfg_t Cfg = hpdcacheBuildConfig(UserCfg),
@@ -79,10 +67,10 @@ import hpdcache_pkg::*;
     //      {{{
     localparam type hpdcache_tag_t = logic [Cfg.tagWidth-1:0],
     localparam type hpdcache_data_word_t = logic [Cfg.u.wordWidth-1:0],
-    localparam type hpdcache_data_be_t = logic [Cfg.u.wordWidth/8-1:0],
+    localparam type hpdcache_data_be_t = logic [(Cfg.u.wordWidth+8-1)/8-1:0],
     localparam type hpdcache_req_offset_t = logic [Cfg.reqOffsetWidth-1:0],
-    localparam type hpdcache_req_data_t = hpdcache_data_word_t [Cfg.u.reqWords-1:0],
-    localparam type hpdcache_req_be_t = hpdcache_data_be_t [Cfg.u.reqWords-1:0],
+    localparam type hpdcache_req_data_t = logic [Cfg.u.reqWords-1:0][Cfg.u.wordWidth-1:0],
+    localparam type hpdcache_req_be_t = logic [Cfg.u.reqWords-1:0][Cfg.u.wordWidth/8-1:0],
     localparam type hpdcache_req_sid_t = logic [Cfg.u.reqSrcIdWidth-1:0],
     localparam type hpdcache_req_tid_t = logic [Cfg.u.reqTransIdWidth-1:0],
     localparam type hpdcache_req_t =
@@ -103,7 +91,8 @@ import hpdcache_pkg::*;
     localparam type hpdcache_mem_addr_t = logic [Cfg.u.memAddrWidth-1:0],
     localparam type hpdcache_mem_id_t   = logic [Cfg.u.memIdWidth-1:0],
     localparam type hpdcache_mem_data_t = logic [Cfg.u.memDataWidth-1:0],
-    localparam type hpdcache_mem_be_t   = logic [Cfg.u.memDataWidth/8-1:0]
+    localparam type hpdcache_mem_be_t   = logic [Cfg.u.memDataWidth/((HPDcacheCfg.u.wordWidth > 8) ? 8 : HPDcacheCfg.u.wordWidth)-1:0],
+    localparam type hpdcache_nline_t    = logic [Cfg.nlineWidth-1:0]
 )
     //  }}}
 
@@ -175,6 +164,11 @@ import hpdcache_pkg::*;
     //      Performance events
     output wire  logic                         evt_cache_write_miss_o,
     output wire  logic                         evt_cache_read_miss_o,
+    output wire  logic                         evt_cache_dir_unc_err_o,
+    output wire  logic                         evt_cache_dir_cor_err_o,
+    output wire  logic                         evt_cache_dat_unc_err_o,
+    output wire  logic                         evt_cache_dat_cor_err_o,
+    output wire  logic                         evt_scrub_complete_o,
     output wire  logic                         evt_uncached_req_o,
     output wire  logic                         evt_cmo_req_o,
     output wire  logic                         evt_write_req_o,
@@ -197,7 +191,10 @@ import hpdcache_pkg::*;
     input  wire logic                          cfg_prefetch_updt_plru_i,
     input  wire logic                          cfg_error_on_cacheable_amo_i,
     input  wire logic                          cfg_rtab_single_entry_i,
-    input  wire logic                          cfg_default_wb_i
+    input  wire logic                          cfg_default_wb_i,
+    input  wire logic                          cfg_scrub_enable_i,
+    input  wire logic [5:0]                    cfg_scrub_period_i,
+    input  wire logic                          cfg_scrub_restart_i
 );
     //  }}}
 
@@ -229,6 +226,9 @@ import hpdcache_pkg::*;
     hpdcache_mem_req_t     mem_req_write;
     hpdcache_mem_req_w_t   mem_req_write_data;
     hpdcache_mem_resp_w_t  mem_resp_write;
+
+    logic mem_resp_read_inval;
+    hpdcache_nline_t mem_resp_read_inval_nline;
     //  }}}
 
     //  Write/read to/from memory interfaces
@@ -246,6 +246,9 @@ import hpdcache_pkg::*;
            mem_resp_read.mem_resp_r_data  = mem_resp_read_data_i,
            mem_resp_read.mem_resp_r_last  = mem_resp_read_last_i,
            mem_resp_read.mem_resp_r_user  = '0;
+
+    assign mem_resp_read_inval = '0,
+           mem_resp_read_inval_nline = '0;
 
     assign mem_req_write_addr_o      = mem_req_write.mem_req_addr,
            mem_req_write_len_o       = mem_req_write.mem_req_len,
@@ -334,6 +337,9 @@ import hpdcache_pkg::*;
         .mem_resp_read_valid_i             (mem_resp_read_valid_i),
         .mem_resp_read_i                   (mem_resp_read),
 
+        .mem_resp_read_inval_i             (mem_resp_read_inval),
+        .mem_resp_read_inval_nline_i       (mem_resp_read_inval_nline),
+
         .mem_req_write_ready_i             (mem_req_write_ready_i),
         .mem_req_write_valid_o             (mem_req_write_valid_o),
         .mem_req_write_o                   (mem_req_write),
@@ -348,6 +354,11 @@ import hpdcache_pkg::*;
 
         .evt_cache_write_miss_o,
         .evt_cache_read_miss_o,
+        .evt_cache_dir_unc_err_o,
+        .evt_cache_dir_cor_err_o,
+        .evt_cache_dat_unc_err_o,
+        .evt_cache_dat_cor_err_o,
+        .evt_scrub_complete_o,
         .evt_uncached_req_o,
         .evt_cmo_req_o,
         .evt_write_req_o,
@@ -368,16 +379,45 @@ import hpdcache_pkg::*;
         .cfg_prefetch_updt_plru_i,
         .cfg_error_on_cacheable_amo_i,
         .cfg_rtab_single_entry_i,
-        .cfg_default_wb_i
+        .cfg_default_wb_i,
+        .cfg_scrub_enable_i,
+        .cfg_scrub_period_i,
+        .cfg_scrub_restart_i
     );
 
     //  Assertions/Coverage
     //  {{{
-    //  pragma translate_off
+`ifndef HPDCACHE_ASSERT_OFF
     wbuf_not_ready_cover: cover property (
-        @(posedge clk_i) i_hpdcache.hpdcache_ctrl_i.wbuf_write_o &
-                        ~i_hpdcache.hpdcache_ctrl_i.wbuf_write_ready_i);
-    //  pragma translate_on
+        @(posedge clk_i) disable iff (rst_ni !== 1'b1)
+                i_hpdcache.hpdcache_ctrl_i.wbuf_write_o &
+                ~i_hpdcache.hpdcache_ctrl_i.wbuf_write_ready_i);
+    uncacheable_rtab_pend_trans_cover: cover property (
+        @(posedge clk_i) disable iff (rst_ni !== 1'b1)
+                i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_rtab_pend_trans_o &
+                i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_is_uncacheable_i);
+    amo_rtab_pend_trans_cover: cover property (
+        @(posedge clk_i) disable iff (rst_ni !== 1'b1)
+                i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_rtab_pend_trans_o &
+                i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_is_amo_i);
+    if (Cfg.u.eccEn) begin : gen_cover_ecc
+        partial_store_hit_cover: cover property (
+            @(posedge clk_i) disable iff (rst_ni !== 1'b1)
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_valid_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_is_store_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_is_partial_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.cachedir_hit_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_cachedata_write_enable_o);
+        partial_amo_hit_cover: cover property (
+            @(posedge clk_i) disable iff (rst_ni !== 1'b1)
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_valid_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_is_amo_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.st1_req_is_partial_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.cachedir_hit_i &&
+                    i_hpdcache.hpdcache_ctrl_i.hpdcache_ctrl_pe_i.uc_req_valid_o);
+    end
+`endif
     //  }}}
 
 endmodule
+// vim: ts=4 : sts=4 : sw=4 : et : tw=100 : spell : spelllang=en

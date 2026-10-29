@@ -177,13 +177,18 @@ module cva6
       fu_t                              fu;
       fu_op                             operation;
       logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id;
+      logic                             is_speculative_load;
+      logic                             is_speculative_load_miss;
       logic [REG_ADDR_SIZE-1:0]         rs1;
       logic                             use_ddc;
-      logic                             clr_tag;
-      logic                             clr_elevate;
-      logic                             clr_cap_level;
-      logic                             clr_load_mutable;
+      logic                             allow_tag;
+      logic                             allow_elevate;
+      logic                             allow_cap_level;
+      logic                             allow_load_mutable;
     },
+
+
+    localparam type cbo_t = logic [$bits(fu_op)-1:0],
 
     localparam type fu_data_t = struct packed {
       fu_t                              fu;
@@ -195,6 +200,7 @@ module cva6
       logic [REG_ADDR_SIZE-1:0]         rs2;
       logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id;
       logic                             use_ddc;
+      logic [5:0]                       orig_instr_aes_bits;
     },
 
     localparam type icache_req_t = struct packed {
@@ -229,7 +235,7 @@ module cva6
       logic [CVA6Cfg.DcacheIdWidth-1:0]          data_id;
       logic                                      kill_req;
       logic                                      tag_valid;
-      logic                                      strip_tag;
+      cbo_t                                      cbo_op;
     },
 
     localparam type dcache_req_o_t = struct packed {
@@ -238,7 +244,6 @@ module cva6
       logic [CVA6Cfg.DcacheIdWidth-1:0]     data_rid;
       logic [CVA6Cfg.CLEN-1:0]              data_rdata;
       logic [CVA6Cfg.DCACHE_USER_WIDTH-1:0] data_ruser;
-      logic                                 data_strip_tag;
     },
 
     // Accelerator - CVA6
@@ -386,6 +391,12 @@ module cva6
       VS_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_VS_EXT),
       M_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_M_EXT),
       HS_EXT: (CVA6Cfg.XLEN'(1) << (CVA6Cfg.XLEN - 1)) | CVA6Cfg.XLEN'(riscv::IRQ_HS_EXT)
+  };
+
+  localparam type debug_redirect_t = struct packed {
+    logic valid;
+    logic from_int_mode;
+    logic from_debug_mode;
   };
 
   // ------------------------------------------
@@ -601,7 +612,8 @@ module cva6
   logic [CVA6Cfg.ASID_WIDTH-1:0] vs_asid_csr_ex;
   logic [CVA6Cfg.PPNW-1:0] hgatp_ppn_csr_ex;
   logic [CVA6Cfg.VMID_WIDTH-1:0] vmid_csr_ex;
-  logic cap_ucrg_ex;
+  logic [1:0] cap_yrg_ex;
+  logic cap_yrge_ex;
   logic [11:0] csr_addr_ex_csr;
   fu_op csr_op_commit_csr;
   logic csr_op_is_imm_commit_csr;
@@ -631,6 +643,8 @@ module cva6
   // trigger module
   logic debug_from_trigger;
   logic break_from_trigger;
+  riscv::cbie_t mcbie, scbie, hcbie;
+  logic mcbcfe, scbcfe, hcbcfe;
   // ----------------------------
   // Performance Counters <-> *
   // ----------------------------
@@ -670,9 +684,9 @@ module cva6
   logic halt_csr_ctrl;
   logic dcache_flush_ctrl_cache;
   logic dcache_flush_ack_cache_ctrl;
-  logic set_debug_pc;
   logic flush_commit;
   logic flush_acc;
+  debug_redirect_t set_debug_pc;
 
   icache_areq_t icache_areq_ex_cache;
   icache_arsp_t icache_areq_cache_ex;
@@ -716,13 +730,15 @@ module cva6
       .bp_resolve_t(bp_resolve_t),
       .fetch_entry_t(fetch_entry_t),
       .icache_dreq_t(icache_dreq_t),
-      .icache_drsp_t(icache_drsp_t)
+      .icache_drsp_t(icache_drsp_t),
+      .debug_redirect_t(debug_redirect_t)
   ) i_frontend (
       .clk_i,
       .rst_ni,
       .boot_addr_i(boot_addr_i[CVA6Cfg.VLEN-1:0]),
-      .flush_bp_i(1'b0),
-      .flush_i(flush_ctrl_if),  // not entirely correct
+      .flush_bp_i((CVA6Cfg.RVU || CVA6Cfg.RVS) ? flush_ctrl_bp : 1'b0),
+      // below line is not entirely correct
+      .flush_i(flush_ctrl_if),
       .halt_i(halt_ctrl),
       .halt_frontend_i(halt_frontend),
       .set_pc_commit_i(set_pc_ctrl_pcgen),
@@ -792,6 +808,12 @@ module cva6
       .vtw_i(vtw_csr_id),
       .tsr_i(tsr_csr_id),
       .hu_i(hu),
+      .mcbie_i(mcbie),
+      .scbie_i(scbie),
+      .hcbie_i(hcbie),
+      .mcbcfe_i(mcbcfe),
+      .scbcfe_i(scbcfe),
+      .hcbcfe_i(hcbcfe),
       .hart_id_i(hart_id_i),
       .compressed_ready_i(x_compressed_ready),
       .compressed_resp_i(x_compressed_resp),
@@ -802,9 +824,9 @@ module cva6
       // DCACHE interfaces
       .dcache_req_ports_i(dcache_req_ports_cache_id),
       .dcache_req_ports_o(dcache_req_ports_id_cache),
-      .commit_redirect_i(ex_commit.valid | eret | set_pc_ctrl_pcgen),
+      .commit_redirect_i(ex_commit.valid | eret | set_pc_ctrl_pcgen | set_debug_pc.valid),
       .int_mode_issue_i(int_mode_issue_id),
-      .int_mode_resolved_branch_i(cva6_cheri_pkg::get_cap_reg_flags(
+      .int_mode_resolved_branch_i(cva6_cheri_pkg::get_cap_reg_int_mode(
           resolved_branch.target_address
       )),
       .mispredict_redirect_i(resolved_branch.is_mispredict)
@@ -896,7 +918,8 @@ module cva6
       .x_issue_req_t(x_issue_req_t),
       .x_issue_resp_t(x_issue_resp_t),
       .x_register_t(x_register_t),
-      .x_commit_t(x_commit_t)
+      .x_commit_t(x_commit_t),
+      .debug_redirect_t(debug_redirect_t)
   ) issue_stage_i (
       .clk_i,
       .rst_ni,
@@ -992,6 +1015,8 @@ module cva6
       .pcc_commit_i   (pc_commit),
       .set_pc_commit_i(set_pc_ctrl_pcgen),
 
+      .set_debug_pc_i(set_debug_pc),
+
       // Performance Counters
       .stall_issue_o        (stall_issue),
       //RVFI
@@ -1020,7 +1045,8 @@ module cva6
       .lsu_ctrl_t(lsu_ctrl_t),
       .x_result_t(x_result_t),
       .acc_mmu_req_t(acc_mmu_req_t),
-      .acc_mmu_resp_t(acc_mmu_resp_t)
+      .acc_mmu_resp_t(acc_mmu_resp_t),
+      .cbo_t(cbo_t)
   ) ex_stage_i (
       .clk_i(clk_i),
       .rst_ni(rst_ni),
@@ -1140,7 +1166,8 @@ module cva6
       .vs_asid_i               (vs_asid_csr_ex),                 // from CSR
       .hgatp_ppn_i             (hgatp_ppn_csr_ex),               // from CSR
       .vmid_i                  (vmid_csr_ex),                    // from CSR
-      .cap_ucrg_i              (cap_ucrg_ex),
+      .cap_yrg_i               (cap_yrg_ex),
+      .cap_yrge_i              (cap_yrge_ex),
       .icache_areq_i           (icache_areq_cache_ex),
       .icache_areq_o           (icache_areq_ex_cache),
       // DCACHE interfaces
@@ -1221,6 +1248,7 @@ module cva6
       .exception_t       (exception_t),
       .jvt_t             (jvt_t),
       .irq_ctrl_t        (irq_ctrl_t),
+      .debug_redirect_t  (debug_redirect_t),
       .scoreboard_entry_t(scoreboard_entry_t),
       .rvfi_probes_csr_t (rvfi_probes_csr_t)
   ) csr_regfile_i (
@@ -1279,7 +1307,8 @@ module cva6
       .ipi_i,
       .debug_req_i,
       .set_debug_pc_o          (set_debug_pc),
-      .cap_ucrg_o              (cap_ucrg_ex),
+      .cap_yrg_o               (cap_yrg_ex),
+      .cap_yrge_o              (cap_yrge_ex),
       .tvm_o                   (tvm_csr_id),
       .tw_o                    (tw_csr_id),
       .vtw_o                   (vtw_csr_id),
@@ -1300,6 +1329,12 @@ module cva6
       .pmpcfg_o                (pmpcfg),
       .pmpaddr_o               (pmpaddr),
       .mcountinhibit_o         (mcountinhibit_csr_perf),
+      .mcbie_o                 (mcbie),
+      .scbie_o                 (scbie),
+      .hcbie_o                 (hcbie),
+      .mcbcfe_o                (mcbcfe),
+      .scbcfe_o                (scbcfe),
+      .hcbcfe_o                (hcbcfe),
       .jvt_o                   (jvt),
       //RVFI
       .rvfi_csr_o              (rvfi_csr),
@@ -1364,7 +1399,8 @@ module cva6
   // ------------
   controller #(
       .CVA6Cfg(CVA6Cfg),
-      .bp_resolve_t(bp_resolve_t)
+      .bp_resolve_t(bp_resolve_t),
+      .debug_redirect_t(debug_redirect_t)
   ) controller_i (
       .clk_i,
       .rst_ni,
@@ -1518,14 +1554,12 @@ module cva6
         .axi_b_chan_t (b_chan_t),
         .axi_r_chan_t (r_chan_t),
         .noc_req_t (noc_req_t),
-        .noc_resp_t(noc_resp_t),
-        .cmo_req_t (logic  /*FIXME*/),
-        .cmo_rsp_t (logic  /*FIXME*/)
+        .noc_resp_t(noc_resp_t)
     ) i_cache_subsystem (
         .clk_i (clk_i),
         .rst_ni(rst_ni),
 
-        .icache_en_i   (1'b0),
+        .icache_en_i   (icache_en_csr),
         .icache_flush_i(icache_flush_ctrl_cache),
         .icache_miss_o (icache_miss_cache_perf_real),
         .icache_areq_i (icache_areq_ex_cache),
@@ -1533,16 +1567,13 @@ module cva6
         .icache_dreq_i (icache_dreq_if_cache),
         .icache_dreq_o (icache_dreq_cache_if_real),
 
-        .dcache_enable_i   (1'b0),
+        .dcache_enable_i   (dcache_en_csr_nbdcache),
         .dcache_flush_i    (dcache_flush_ctrl_cache),
         .dcache_flush_ack_o(dcache_flush_ack_cache_ctrl),
         .dcache_miss_o     (dcache_miss_cache_perf),
 
         .dcache_amo_req_i (amo_req),
         .dcache_amo_resp_o(amo_resp),
-
-        .dcache_cmo_req_i ('0  /*FIXME*/),
-        .dcache_cmo_resp_o(  /*FIXME*/),
 
         .dcache_req_ports_i(dcache_req_to_cache),
         .dcache_req_ports_o(dcache_req_from_cache),

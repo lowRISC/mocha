@@ -37,6 +37,7 @@ package riscv;
 
   // type which holds xlen
   typedef enum logic [1:0] {
+    XLEN_NA  = 2'b00,  // Used for mstatus.{S/U}XL when {S/U} not implemented
     XLEN_32  = 2'b01,
     XLEN_64  = 2'b10,
     XLEN_128 = 2'b11
@@ -49,11 +50,20 @@ package riscv;
     Dirty   = 2'b11
   } xs_t;
 
+  typedef enum logic [1:0] {
+    CBIE_ILLEGAL = 2'b00, // execution of CBO.INVAL in lower privilege mode causes illegal instruction / virtual instruction exception
+    CBIE_FLUSH = 2'b01,  // CBO.INVAL causes flush
+    CBIE_RSVD = 2'b10,  // reserved
+    CBIE_INVAL = 2'b11  // CBO.INVAL causes invalidate
+  } cbie_t;
+
   typedef struct packed {
     logic sd;  // signal dirty state - read-only
     logic wpri7;  // writes preserved reads ignored
-    logic ucrg;  // load barrier user mode capability read generation
-    logic [60:34] wpri6;  // writes preserved reads ignored
+    logic uyrg;  // user capability read generation
+    logic syrg;  // supervisor capability read generation
+    logic yrge;  // capability read generation enable
+    logic [58:34] wpri6;  // writes preserved reads ignored
     xlen_e uxl;  // variable user mode xlen - hardwired to zero
     logic [11:0] wpri5;  // writes preserved reads ignored
     logic mxr;  // make executable readable
@@ -94,8 +104,10 @@ package riscv;
   typedef struct packed {
     logic sd;  // signal dirty state - read-only
     logic wpri5;  // writes preserved reads ignored
-    logic ucrg;
-    logic [60:40] wpri4;  // writes preserved reads ignored
+    logic uyrg;  // user capability read generation
+    logic syrg;  // supervisor capability read generation
+    logic yrge;  // capability read generation enable
+    logic [58:40] wpri4;  // writes preserved reads ignored
     logic mpv;  // machine previous virtualization mode
     logic gva;  // variable set when trap writes to stval
     logic mbe;  // endianness memory accesses made from M-mode
@@ -128,8 +140,8 @@ package riscv;
     logic         stce;   // not implemented - requires Sctc extension
     logic         pbmte;  // not implemented - requires Svpbmt extension
     logic [61:28] wpri2;  // writes preserved reads ignored
+    logic [28:9]  wpri1;  // writes preserved reads ignored
     logic         cheri;  // CHERI extension
-    logic [27:8]  wpri1;  // writes preserved reads ignored
     logic         cbze;   // not implemented - requires Zicboz extension
     logic         cbcfe;  // not implemented - requires Zicbom extension
     logic [1:0]   cbie;   // not implemented - requires Zicbom extension
@@ -262,7 +274,7 @@ package riscv;
   localparam OpcodeJal = 7'b11_011_11;
   localparam OpcodeSystem = 7'b11_100_11;
   localparam OpcodeRsrvd3 = 7'b11_101_11;
-  localparam OpcodeCustom3 = 7'b11_110_11;
+  localparam OpcodeRVY = 7'b11_110_11;
 
   // RV64C/RV32C listings:
   // Quadrant 0
@@ -296,83 +308,6 @@ package riscv;
   localparam OpcodeC2Fsdsp = 3'b101;
   localparam OpcodeC2Swsp = 3'b110;
   localparam OpcodeC2Sdsp = 3'b111;
-
-  // ----------------------
-  // Virtual Memory
-  // ----------------------
-  // memory management, pte for sv39
-  typedef struct packed {
-    logic cw;
-    logic cr;
-    logic cd;
-    logic crm;
-    logic crg;
-    logic [9:0] reserved;
-    logic [44-1:0] ppn;  // PPN length for
-    logic [1:0] rsw;
-    logic d;
-    logic a;
-    logic g;
-    logic u;
-    logic x;
-    logic w;
-    logic r;
-    logic v;
-  } pte_t;
-
-  // memory management, pte for sv32
-  typedef struct packed {
-    logic [22-1:0] ppn;  // PPN length for
-    logic [1:0] rsw;
-    logic d;
-    logic a;
-    logic g;
-    logic u;
-    logic x;
-    logic w;
-    logic r;
-    logic v;
-  } pte_sv32_t;
-
-  // memory management, pte for sv39 CHERI
-  // capability store bits behavior table
-  // ----------------------------------------------------------------------
-  // | CW | CD | Behavior                                                 |
-  // |----|----|-----------------------------------------------------------
-  // | 0  | X  | Trap on capability stores (exception code 0x1B)          |
-  // | 1  | 0  | Capability stores atomically raise CD or fault (as above)|
-  // | 1  | 1  | Capability stores permitted                              |
-  // ----------------------------------------------------------------------
-  // capability load bits behavior table
-  // ----------------------------------------------------------------------
-  // | CR | CRM | CRG | Behavior                                          |
-  // |----|-----|----------------------------------------------------------
-  // | 0  | 0   |  0  | Capability loads strip tags on loaded result      |
-  // | 0  | 1   |  0  | Capability loads fault (exception code 0x1A)      |
-  // | 0  | X   |  1  | Reserved for future use                           |
-  // | 1  | 0   |  0  | Capability loads are unaltered                    |
-  // | 1  | 0   |  1  | Reserved for future use                           |
-  // | 1  | 1   |  X  | Reserved for generational load barriers           |
-  // ----------------------------------------------------------------------
-
-  typedef struct packed {
-    logic cw;
-    logic cr;
-    logic cd;
-    logic crm;
-    logic crg;
-    logic [4:0] reserved;
-    logic [44-1:0] ppn;  // PPN length for
-    logic [1:0] rsw;
-    logic d;
-    logic a;
-    logic g;
-    logic u;
-    logic x;
-    logic w;
-    logic r;
-    logic v;
-  } pte_sv39_cheri_t;
 
   // ----------------------
   // Exception Cause Codes
@@ -448,11 +383,11 @@ package riscv;
     CSR_VTYPE            = 12'hC21,
     CSR_VLENB            = 12'hC22,
     // CHERI: CSRs
-    CSR_DDC              = 12'h416,
-    CSR_UTID             = 12'h480,
-    CSR_STID             = 12'h580,
-    CSR_VSTID            = 12'hA80,
-    CSR_MTID             = 12'h780,
+    CSR_DDC              = 12'h03f,
+    CSR_UTID             = 12'h07f,
+    CSR_STID             = 12'h17f,
+    CSR_VSTID            = 12'h27f,
+    CSR_MTID             = 12'h37f,
     // Virtual Supervisor Mode CSRs
     CSR_VSSTATUS         = 12'h200,
     CSR_VSIE             = 12'h204,
@@ -710,7 +645,9 @@ package riscv;
     CSR_DPC              = 12'h7b1,
     CSR_DSCRATCH0        = 12'h7b2,  // optional
     CSR_DSCRATCH1        = 12'h7b3,  // optional
-    CSR_DSCRATCH2        = 12'h7b4,  // optional
+    CSR_DROOTCSEL        = 12'h7bd,
+    CSR_DROOTC           = 12'h7be,
+    CSR_DDDC             = 12'h7bf,
     // Counters and Timers from Zicntr extension (User Mode - R/O Shadows)
     CSR_CYCLE            = 12'hC00,
     CSR_CYCLEH           = 12'hC80,
@@ -779,19 +716,21 @@ package riscv;
     CSR_HPM_COUNTER_31H  = 12'hC9F   // reserved
   } csr_reg_t;
 
-  localparam logic [63:0] SSTATUS_UIE = 'h00000001;
-  localparam logic [63:0] SSTATUS_SIE = 'h00000002;
+  localparam logic [63:0] SSTATUS_UIE  = 'h00000001;
+  localparam logic [63:0] SSTATUS_SIE  = 'h00000002;
   localparam logic [63:0] SSTATUS_SPIE = 'h00000020;
-  localparam logic [63:0] SSTATUS_SPP = 'h00000100;
-  localparam logic [63:0] SSTATUS_FS = 'h00006000;
-  localparam logic [63:0] SSTATUS_XS = 'h00018000;
-  localparam logic [63:0] SSTATUS_SUM = 'h00040000;
-  localparam logic [63:0] SSTATUS_MXR = 'h00080000;
+  localparam logic [63:0] SSTATUS_SPP  = 'h00000100;
+  localparam logic [63:0] SSTATUS_FS   = 'h00006000;
+  localparam logic [63:0] SSTATUS_XS   = 'h00018000;
+  localparam logic [63:0] SSTATUS_SUM  = 'h00040000;
+  localparam logic [63:0] SSTATUS_MXR  = 'h00080000;
   localparam logic [63:0] SSTATUS_UPIE = 'h00000010;
-  localparam logic [63:0] SSTATUS_UXL = 64'h0000000300000000;
+  localparam logic [63:0] SSTATUS_UXL  = 64'h0000000300000000;
   // CSR Bit Implementation Masks
 
-  localparam logic [63:0] SSTATUS_CRG = 64'h2000000000000000;
+  localparam logic [63:0] SSTATUS_UYRG = 64'h2000000000000000;
+  localparam logic [63:0] SSTATUS_SYRG = 64'h1000000000000000;
+  localparam logic [63:0] SSTATUS_YRGE = 64'h0800000000000000;
   function automatic logic [63:0] sstatus_sd(logic IS_XLEN64);
     return {IS_XLEN64, 31'h00000000, ~IS_XLEN64, 31'h00000000};
   endfunction
@@ -826,7 +765,7 @@ package riscv;
   localparam logic [63:0] MSTATUS_TVM = 'h00100000;
   localparam logic [63:0] MSTATUS_TW = 'h00200000;
   localparam logic [63:0] MSTATUS_TSR = 'h00400000;
-  localparam logic [63:0] MSTATUS_CRG = 64'h2000000000000000;
+  localparam logic [63:0] MSTATUS_YRG = 64'h2000000000000000;
   function automatic logic [63:0] mstatus_uxl(logic IS_XLEN64);
     return {30'h0000000, IS_XLEN64, IS_XLEN64, 32'h00000000};
   endfunction
@@ -837,12 +776,12 @@ package riscv;
     return {IS_XLEN64, 31'h00000000, ~IS_XLEN64, 31'h00000000};
   endfunction
 
-  localparam logic [63:0] MENVCFG_FIOM = 'h00000001;
-  localparam logic [63:0] MENVCFG_CBIE = 'h00000030;
-  localparam logic [63:0] MENVCFG_CBFE = 'h00000040;
-  localparam logic [63:0] MENVCFG_CBZE = 'h00000080;
+  localparam logic [63:0] MENVCFG_FIOM  = 'h00000001;
+  localparam logic [63:0] MENVCFG_CBIE  = 'h00000030;
+  localparam logic [63:0] MENVCFG_CBFE  = 'h00000040;
+  localparam logic [63:0] MENVCFG_CBZE  = 'h00000080;
   localparam logic [63:0] MENVCFG_PBMTE = 64'h4000000000000000;
-  localparam logic [63:0] MENVCFG_STCE = 64'h8000000000000000;
+  localparam logic [63:0] MENVCFG_STCE  = 64'h8000000000000000;
 
 
 

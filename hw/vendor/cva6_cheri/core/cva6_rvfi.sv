@@ -47,9 +47,186 @@ module cva6_rvfi
   | (CVA6Cfg.XLEN'(CVA6Cfg.RVU) << 20)  // U - User mode implemented
   | (CVA6Cfg.XLEN'(CVA6Cfg.RVV) << 21)  // V - Vector extension
   | (CVA6Cfg.XLEN'(CVA6Cfg.NSX) << 23)  // X - Non-standard extensions present
+  | (CVA6Cfg.XLEN'(CVA6Cfg.RVY) << 24)  // Y - CapabilitY extension present
   | ((CVA6Cfg.XLEN == 64 ? 2 : 1) << CVA6Cfg.XLEN - 2);  // MXL
 
   localparam logic [CVA6Cfg.XLEN-1:0] hart_id_i = '0;
+
+  // Function to compute AMO write value for RVFI logging
+  // This mirrors the AMO ALU behaviour so the tracer sees the value actually written
+  // back to memory. This is post-alignment data (lower bytes contain the payload) so
+  // the tracer can rotate it using the write mask and address offset.
+  function automatic logic [CVA6Cfg.XLEN-1:0] compute_amo_wdata(
+      input fu_op amo_op, input logic [CVA6Cfg.XLEN-1:0] mem_old_val,
+      input logic [CVA6Cfg.XLEN-1:0] reg_val);
+    ariane_pkg::amo_t amo_kind;
+    logic is_word_op;
+    logic [63:0] operand_a_sext, operand_b_sext;
+    logic [63:0] operand_a_zext, operand_b_zext;
+    logic [63:0] result64;
+    logic [64:0] adder_operand_a, adder_operand_b, adder_sum;
+
+    // Decode functional unit opcode into AMO class and width information
+    amo_kind   = AMO_NONE;
+    is_word_op = 1'b0;
+    unique case (amo_op)
+      AMO_LRW: begin
+        amo_kind   = AMO_LR;
+        is_word_op = 1'b1;
+      end
+      AMO_LRD: begin
+        amo_kind   = AMO_LR;
+        is_word_op = 1'b0;
+      end
+      AMO_SCW: begin
+        amo_kind   = AMO_SC;
+        is_word_op = 1'b1;
+      end
+      AMO_SCD: begin
+        amo_kind   = AMO_SC;
+        is_word_op = 1'b0;
+      end
+      AMO_SWAPW: begin
+        amo_kind   = AMO_SWAP;
+        is_word_op = 1'b1;
+      end
+      AMO_SWAPD: begin
+        amo_kind   = AMO_SWAP;
+        is_word_op = 1'b0;
+      end
+      AMO_ADDW: begin
+        amo_kind   = AMO_ADD;
+        is_word_op = 1'b1;
+      end
+      AMO_ADDD: begin
+        amo_kind   = AMO_ADD;
+        is_word_op = 1'b0;
+      end
+      AMO_ANDW: begin
+        amo_kind   = AMO_AND;
+        is_word_op = 1'b1;
+      end
+      AMO_ANDD: begin
+        amo_kind   = AMO_AND;
+        is_word_op = 1'b0;
+      end
+      AMO_ORW: begin
+        amo_kind   = AMO_OR;
+        is_word_op = 1'b1;
+      end
+      AMO_ORD: begin
+        amo_kind   = AMO_OR;
+        is_word_op = 1'b0;
+      end
+      AMO_XORW: begin
+        amo_kind   = AMO_XOR;
+        is_word_op = 1'b1;
+      end
+      AMO_XORD: begin
+        amo_kind   = AMO_XOR;
+        is_word_op = 1'b0;
+      end
+      AMO_MAXW: begin
+        amo_kind   = AMO_MAX;
+        is_word_op = 1'b1;
+      end
+      AMO_MAXD: begin
+        amo_kind   = AMO_MAX;
+        is_word_op = 1'b0;
+      end
+      AMO_MAXWU: begin
+        amo_kind   = AMO_MAXU;
+        is_word_op = 1'b1;
+      end
+      AMO_MAXDU: begin
+        amo_kind   = AMO_MAXU;
+        is_word_op = 1'b0;
+      end
+      AMO_MINW: begin
+        amo_kind   = AMO_MIN;
+        is_word_op = 1'b1;
+      end
+      AMO_MIND: begin
+        amo_kind   = AMO_MIN;
+        is_word_op = 1'b0;
+      end
+      AMO_MINWU: begin
+        amo_kind   = AMO_MINU;
+        is_word_op = 1'b1;
+      end
+      AMO_MINDU: begin
+        amo_kind   = AMO_MINU;
+        is_word_op = 1'b0;
+      end
+      default: begin
+        amo_kind   = AMO_NONE;
+        is_word_op = 1'b0;
+      end
+    endcase
+
+    // Create signed and unsigned 64-bit views of the operands (word ops use 32-bit payloads)
+    if (is_word_op) begin
+      operand_a_sext = {{32{mem_old_val[31]}}, mem_old_val[31:0]};
+      operand_b_sext = {{32{reg_val[31]}}, reg_val[31:0]};
+      operand_a_zext = {32'b0, mem_old_val[31:0]};
+      operand_b_zext = {32'b0, reg_val[31:0]};
+    end else begin
+      operand_a_sext = $signed(mem_old_val);
+      operand_b_sext = $signed(reg_val);
+      operand_a_zext = $unsigned(mem_old_val);
+      operand_b_zext = $unsigned(reg_val);
+    end
+
+    // Default to returning the register operand (SWAP/SC path)
+    result64        = operand_b_zext;
+    adder_operand_a = {operand_a_sext[63], operand_a_sext};
+    adder_operand_b = {operand_b_sext[63], operand_b_sext};
+    adder_sum       = '0;
+
+    unique case (amo_kind)
+      AMO_SC, AMO_SWAP: begin
+        result64 = operand_b_zext;
+      end
+      AMO_ADD: begin
+        adder_sum = adder_operand_a + adder_operand_b;
+        result64  = adder_sum[63:0];
+      end
+      AMO_AND: result64 = operand_a_zext & operand_b_zext;
+      AMO_OR:  result64 = operand_a_zext | operand_b_zext;
+      AMO_XOR: result64 = operand_a_zext ^ operand_b_zext;
+      AMO_MAX: begin
+        adder_operand_b = -{operand_b_sext[63], operand_b_sext};
+        adder_sum       = adder_operand_a + adder_operand_b;
+        result64        = adder_sum[64] ? operand_b_zext : operand_a_zext;
+      end
+      AMO_MIN: begin
+        adder_operand_b = -{operand_b_sext[63], operand_b_sext};
+        adder_sum       = adder_operand_a + adder_operand_b;
+        result64        = adder_sum[64] ? operand_a_zext : operand_b_zext;
+      end
+      AMO_MAXU: begin
+        adder_operand_a = {1'b0, operand_a_zext};
+        adder_operand_b = -{1'b0, operand_b_zext};
+        adder_sum       = adder_operand_a + adder_operand_b;
+        result64        = adder_sum[64] ? operand_b_zext : operand_a_zext;
+      end
+      AMO_MINU: begin
+        adder_operand_a = {1'b0, operand_a_zext};
+        adder_operand_b = -{1'b0, operand_b_zext};
+        adder_sum       = adder_operand_a + adder_operand_b;
+        result64        = adder_sum[64] ? operand_a_zext : operand_b_zext;
+      end
+      default: begin
+        result64 = operand_b_zext;
+      end
+    endcase
+
+    if (is_word_op) begin
+      return {{CVA6Cfg.XLEN - 32{1'b0}}, result64[31:0]};
+    end else begin
+      return result64[CVA6Cfg.XLEN-1:0];
+    end
+  endfunction
 
   localparam logic [63:0] SMODE_STATUS_READ_MASK = ariane_pkg::smode_status_read_mask(CVA6Cfg);
 
@@ -134,7 +311,9 @@ module cva6_rvfi
   assign fetch_entry_valid = instr.fetch_entry_valid;
   assign instruction = instr.instruction;
   assign is_compressed = instr.is_compressed;
+
   assign issue_pointer = instr.issue_pointer;
+  assign commit_pointer = instr.commit_pointer;
 
   assign flush_unissued_instr = instr.flush_unissued_instr;
   assign decoded_instr_valid = instr.decoded_instr_valid;
@@ -143,21 +322,16 @@ module cva6_rvfi
   assign rs1 = instr.rs1;
   assign rs2 = instr.rs2;
 
-  for (genvar i = 0; i < CVA6Cfg.NrCommitPorts; i++) begin
-    assign commit_pointer[i] = instr.commit_pointer[i];
-    assign commit_instr_pc[i] = instr.commit_instr_pc[i];
-    assign commit_instr_next_pc[i] = instr.commit_instr_next_pc[i];
-    assign commit_instr_op[i] = instr.commit_instr_op[i];
-    assign commit_instr_fu[i] = instr.commit_instr_fu[i];
-    assign commit_instr_rs1[i] = instr.commit_instr_rs1[i];
-    assign commit_instr_rs2[i] = instr.commit_instr_rs2[i];
-    assign commit_instr_rd[i] = instr.commit_instr_rd[i];
-    assign commit_instr_result[i] = instr.commit_instr_result[i];
-    assign commit_instr_valid[i] = instr.commit_instr_valid[i];
-    assign wdata[i] = instr.wdata[i];
-    assign commit_ack[i] = instr.commit_ack[i];
-    assign commit_drop[i] = instr.commit_drop[i];
-  end
+  assign commit_instr_pc = instr.commit_instr_pc;
+  assign commit_instr_next_pc = instr.commit_instr_next_pc;
+  assign commit_instr_op = instr.commit_instr_op;
+  assign commit_instr_fu = instr.commit_instr_fu;
+  assign commit_instr_rs1 = instr.commit_instr_rs1;
+  assign commit_instr_rs2 = instr.commit_instr_rs2;
+  assign commit_instr_rd = instr.commit_instr_rd;
+  assign commit_instr_result = instr.commit_instr_result;
+  assign commit_instr_valid = instr.commit_instr_valid;
+  assign commit_drop = instr.commit_drop;
 
   assign ex_commit_cause = instr.ex_commit_cause;
   assign ex_commit_valid = instr.ex_commit_valid;
@@ -173,8 +347,10 @@ module cva6_rvfi
   assign priv_lvl = instr.priv_lvl;
 
   assign wbdata = instr.wbdata;
+  assign commit_ack = instr.commit_ack;
   assign mem_paddr = instr.mem_paddr;
   assign debug_mode = instr.debug_mode;
+  assign wdata = instr.wdata;
 
   assign lsu_addr = instr.lsu_ctrl_vaddr;
   assign lsu_rmask = (instr.lsu_ctrl_fu == LOAD || (((mem_q[lsu_addr_trans_id].instr & 32'hF800703F) == 32'h1000402F)) && instr.lsu_ctrl_fu == STORE) ? instr.lsu_ctrl_be : '0;
@@ -327,7 +503,13 @@ module cva6_rvfi
         (exception && (ex_commit_cause == riscv::ENV_CALL_MMODE ||
                   ex_commit_cause == riscv::ENV_CALL_SMODE ||
                   ex_commit_cause == riscv::ENV_CALL_UMODE ||
-                  ex_commit_cause == cva6_cheri_pkg::CAP_EXCEPTION));
+                  ex_commit_cause == cva6_cheri_pkg::CAP_INSTR_ACCESS_FAULT ||
+                  ex_commit_cause == cva6_cheri_pkg::CAP_LOAD_ACCESS_FAULT ||
+                  ex_commit_cause == cva6_cheri_pkg::CAP_STORE_AMO_ACCESS_FAULT ||
+                  ex_commit_cause == cva6_cheri_pkg::CAP_LOAD_CAPABILITY_FAULT ||
+                  ex_commit_cause == cva6_cheri_pkg::CAP_STORE_AMO_PAGE_FAULT));
+      automatic logic rd_is_fpr;
+      rd_is_fpr = CVA6Cfg.FpPresent && is_rd_fpr(commit_instr_op[i]);
       rvfi_instr_o[i].valid <= valid;
       rvfi_instr_o[i].insn  <= commit_instr;
       // when synchronous trap, the instruction is not executed
@@ -351,10 +533,10 @@ module cva6_rvfi
           commit_instr_op[i]
       ) && wdata[i] == 1) ? '0 : commit_instr_rs1[i];
       rvfi_instr_o[i].rs2_addr <= rs2_addr;
-      rvfi_instr_o[i].rd_addr <= rd_addr;
-      rvfi_instr_o[i].rd_wdata <= (rd_addr == 0) ? '0 : (CVA6Cfg.FpPresent && is_rd_fpr(
-          commit_instr_op[i]
-      )) ? commit_instr_result[i] : wdata[i];
+      rvfi_instr_o[i].rd_addr <= (CVA6Cfg.RVFI_DII && rd_is_fpr) ? '0 : rd_addr;
+      rvfi_instr_o[i].rd_wdata <= rd_is_fpr ?
+        (CVA6Cfg.RVFI_DII ? '0 : commit_instr_result[i]) :
+        ((rd_addr == 0) ? '0 : wdata[i]);
       rvfi_instr_o[i].pc_rdata <= commit_instr_pc[i];
       if (commit_instr == 32'h30200073 && !exception) begin
         rvfi_instr_o[i].pc_wdata <= csr.mepc_q[63:0];
@@ -372,9 +554,22 @@ module cva6_rvfi
           mem_q[commit_pointer[i]].lsu_wmask >> mem_q[commit_pointer[i]].lsu_addr[$clog2(
           CVA6Cfg.CLEN/8
       )-1:0];
-      rvfi_instr_o[i].mem_wdata <= (is_amo_sc(
-          commit_instr_op[i]
-      ) && wdata[i] == 1) ? '0 : mem_q[commit_pointer[i]].lsu_wdata;
+
+      // For AMO operations, compute the actual write value
+      // Note: AMO operations write a computed value to memory, not the original register value
+      if (is_amo(commit_instr_op[i])) begin
+        rvfi_instr_o[i].mem_wdata <= compute_amo_wdata(
+            commit_instr_op[i],  // AMO operation type
+            wdata[i],  // Old memory value (the value returned to rd)
+            mem_q[commit_pointer[i]].rs2_rdata  // Register operand (rs2)
+        );
+      end else begin
+        rvfi_instr_o[i].mem_wdata <= mem_q[commit_pointer[i]].lsu_wdata;
+        rvfi_instr_o[i].mem_wdata <= (is_amo_sc(
+            commit_instr_op[i]
+        ) && wdata[i] == 1) ? '0 : mem_q[commit_pointer[i]].lsu_wdata;
+      end
+
       rvfi_instr_o[i].mem_rmask <= mem_q[commit_pointer[i]].lsu_rmask >>
           mem_q[commit_pointer[i]].lsu_addr[$clog2(
           CVA6Cfg.CLEN/8

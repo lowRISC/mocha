@@ -8,7 +8,8 @@
 
   upstream: {
     url: "https://github.com/Capabilities-Limited/cv-hpdcache.git",
-    rev: "cva6-zcheri-support",
+    // HPDCache submodule revision selected by the pinned CVA6 RVY core.
+    rev: "c8a4e5ef97b37734542503ee88d9dd9b69a81b8f",
   },
 
   exclude_from_upstream: [

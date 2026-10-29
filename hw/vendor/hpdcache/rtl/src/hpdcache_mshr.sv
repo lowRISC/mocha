@@ -335,9 +335,10 @@ import hpdcache_pkg::*;
             );
         end else begin : gen_mshr_sram
             hpdcache_sram_wbyteenable #(
-                .DATA_SIZE     (HPDcacheCfg.u.mshrWays*HPDCACHE_MSHR_RAM_ENTRY_BITS),
+                .DATA_SIZE     (HPDCACHE_MSHR_RAM_ENTRY_BITS),
                 .ADDR_SIZE     (HPDcacheCfg.mshrSetWidth),
-                .DEPTH         (HPDcacheCfg.u.mshrSets)
+                .DEPTH         (HPDcacheCfg.u.mshrSets),
+                .NDATA         (HPDcacheCfg.u.mshrWays)
             ) mshr_mem(
                 .clk           (clk_i),
                 .rst_n         (rst_ni),
@@ -346,7 +347,11 @@ import hpdcache_pkg::*;
                 .addr          (mshr_addr),
                 .wbyteenable   (mshr_wbyteenable),
                 .wdata         (mshr_wdata),
-                .rdata         (mshr_rdata)
+                .rdata         (mshr_rdata),
+                .err_inj_i     (1'b0),
+                .err_inj_msk_i ('0),
+                .err_cor_o     (/*open*/),
+                .err_unc_o     (/*open*/)
             );
         end
     end else begin : gen_mshr_wmask
@@ -376,9 +381,10 @@ import hpdcache_pkg::*;
             );
         end else begin : gen_mshr_sram
             hpdcache_sram_wmask #(
-                .DATA_SIZE     (HPDcacheCfg.u.mshrWays*HPDCACHE_MSHR_RAM_ENTRY_BITS),
+                .DATA_SIZE     (HPDCACHE_MSHR_RAM_ENTRY_BITS),
                 .ADDR_SIZE     (HPDcacheCfg.mshrSetWidth),
-                .DEPTH         (HPDcacheCfg.u.mshrSets)
+                .DEPTH         (HPDcacheCfg.u.mshrSets),
+                .NDATA         (HPDcacheCfg.u.mshrWays)
             ) mshr_mem(
                 .clk           (clk_i),
                 .rst_n         (rst_ni),
@@ -387,7 +393,11 @@ import hpdcache_pkg::*;
                 .addr          (mshr_addr),
                 .wmask         (mshr_wmask),
                 .wdata         (mshr_wdata),
-                .rdata         (mshr_rdata)
+                .rdata         (mshr_rdata),
+                .err_inj_i     (1'b0),
+                .err_inj_msk_i ('0),
+                .err_cor_o     (/*open*/),
+                .err_unc_o     (/*open*/)
             );
         end
     end
@@ -415,9 +425,10 @@ import hpdcache_pkg::*;
     //  Assertions
     //  {{{
 `ifndef HPDCACHE_ASSERT_OFF
-    one_command_assert: assert property (@(posedge clk_i)
+    one_command_assert: assert property (@(posedge clk_i) disable iff (!rst_ni)
             (ack_i -> !(alloc_i || check_i))) else
             $error("MSHR: ack with concurrent alloc or check");
 `endif
     //  }}}
 endmodule
+// vim: ts=4 : sts=4 : sw=4 : et : tw=100 : spell : spelllang=en

@@ -190,7 +190,7 @@ module wt_dcache_mem
       .idx_o  (vld_sel_d)
   );
 
-  assign rd_acked = rd_req & ~wr_cl_vld_i  /* & ~(|wbuffer_hit_oh) */;
+  assign rd_acked = rd_req & ~wr_cl_vld_i;
 
   always_comb begin : p_bank_req
     vld_we   = wr_cl_vld_i;

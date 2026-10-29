@@ -1,3 +1,23 @@
+# CVA6-CHERI RISCV-CPU
+
+CVA6-CHERI is an implementation of the "RVY" [RISC-V CHERI specification](https://github.com/riscv/riscv-cheri) proposed for ratification.
+It is maintained by Capabilities Limited: see the [website](https://www.capabilitieslimited.co.uk/current-projects/cheri-cva6) for project information and updates.
+It is currently compliant with version 0.9.9 of that specification.
+
+It is a fork of the OpenHW Foundation CVA6 core (see original README below).
+
+The core implements the purecap and hybrid variants of the CHERI specification.
+
+<img src="docs/03_cva6_design/_static/ariane_overview_capltd.drawio.png"/>
+
+Please check the [issue tracker](https://github.com/Capabilities-Limited/cheri-cva6/issues) to see the status of the core and any known issues.
+
+[cheri.md](docs/03_cva6_design/cheri.md) gives information on how the architecture and microarchitecture have been modified to support CHERI.
+
+[cheri-debug.md](docs/05_cva6_apu/cheri_debug.md) gives instructions for connecting a CHERI-aware debugger to the core on FPGA.
+
+Below is the upstream CVA6 README for reference:
+
 # CVA6 RISC-V CPU [![Build Status](https://github.com/openhwgroup/cva6/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/openhwgroup/cva6/actions/workflows/ci.yml) [![CVA6 dashboard](https://riscv-ci.pages.thales-invia.fr/dashboard/badge_master.svg)](https://riscv-ci.pages.thales-invia.fr/dashboard/dashboard_cva6.html) [![Documentation Status](https://readthedocs.com/projects/openhw-group-cva6-user-manual/badge/?version=latest)](https://docs.openhwgroup.org/projects/cva6-user-manual/?badge=latest) [![GitHub release](https://img.shields.io/github/release/openhwgroup/cva6?include_prereleases=&sort=semver&color=blue)](https://github.com/openhwgroup/cva6/releases/)
 
 CVA6 is a 6-stage, single-issue, in-order CPU which implements the 64-bit RISC-V instruction set. It fully implements I, M, A and C extensions as specified in Volume I: User-Level ISA V 2.3 as well as the draft privilege extension 1.10. It implements three privilege levels M, S, U to fully support a Unix-like operating system. Furthermore, it is compliant to the draft external debug spec 0.13.

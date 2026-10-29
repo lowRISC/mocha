@@ -4,7 +4,7 @@ package build_config_pkg;
     bit IS_XLEN32 = (CVA6Cfg.XLEN == 32) ? 1'b1 : 1'b0;
     bit IS_XLEN64 = (CVA6Cfg.XLEN == 32) ? 1'b0 : 1'b1;
     bit FpPresent = CVA6Cfg.RVF | CVA6Cfg.RVD | CVA6Cfg.XF16 | CVA6Cfg.XF16ALT | CVA6Cfg.XF8;
-    bit CheriPresent = CVA6Cfg.RVZcheripurecap;
+    bit CheriPresent = CVA6Cfg.RVY;
     bit NSX = CVA6Cfg.XF16 | CVA6Cfg.XF16ALT | CVA6Cfg.XF8 | CVA6Cfg.XFVec;  // Are non-standard extensions present?
     int unsigned FLen = CVA6Cfg.RVD ? 64 :  // D ext.
     CVA6Cfg.RVF ? 32 :  // F ext.
@@ -72,11 +72,12 @@ package build_config_pkg;
     cfg.XF16ALT = CVA6Cfg.XF16ALT;
     cfg.XF8 = CVA6Cfg.XF8;
     cfg.RVA = CVA6Cfg.RVA;
-    cfg.RVB = CVA6Cfg.RVB;
+    cfg.RVB = CVA6Cfg.RVB || CVA6Cfg.ZKN; // ZKN requires RVB
     cfg.ZKN = CVA6Cfg.ZKN;
     cfg.RVV = CVA6Cfg.RVV;
     cfg.RVC = CVA6Cfg.RVC;
     cfg.RVH = CVA6Cfg.RVH;
+    cfg.RVY = CVA6Cfg.RVY;
     cfg.RVZCB = CVA6Cfg.RVZCB;
     cfg.RVZCMT = CVA6Cfg.RVZCMT;
     cfg.RVZCMP = CVA6Cfg.RVZCMP;
@@ -84,9 +85,10 @@ package build_config_pkg;
     cfg.CvxifEn = CVA6Cfg.CvxifEn;
     cfg.CoproType = CVA6Cfg.CoproType;
     cfg.RVZiCond = CVA6Cfg.RVZiCond;
+    cfg.RVZiCbom = CVA6Cfg.RVZiCbom;
     cfg.RVZicntr = CVA6Cfg.RVZicntr;
     cfg.RVZihpm = CVA6Cfg.RVZihpm;
-    cfg.RVZcheripurecap = CVA6Cfg.RVZcheripurecap;
+    cfg.RVY = CVA6Cfg.RVY;
     cfg.RVZcherihybrid = CVA6Cfg.RVZcherihybrid;
     cfg.NR_SB_ENTRIES = CVA6Cfg.NrScoreboardEntries;
     cfg.TRANS_ID_BITS = $clog2(CVA6Cfg.NrScoreboardEntries);
@@ -111,7 +113,11 @@ package build_config_pkg;
     cfg.SoftwareInterruptEn = CVA6Cfg.SoftwareInterruptEn;
 
     cfg.HaltAddress = CVA6Cfg.HaltAddress;
-    cfg.ExceptionAddress = CVA6Cfg.ExceptionAddress;
+    cfg.ExceptionAddress = cfg.CheriPresent ? 0 : CVA6Cfg.ExceptionAddress;
+    cfg.ExceptionCapModeAddress = cfg.CheriPresent ? CVA6Cfg.ExceptionAddress : 0;
+    cfg.ExceptionIntModeAddress = cfg.CheriPresent ? CVA6Cfg.ExceptionAddress + 4 : 0;
+    cfg.ReenterCapModeAddress = cfg.CheriPresent ? CVA6Cfg.ExceptionAddress + 8 : 0;
+    cfg.ReenterIntModeAddress = cfg.CheriPresent ? CVA6Cfg.ExceptionAddress + 12 : 0;
     cfg.RASDepth = CVA6Cfg.RASDepth;
     cfg.BTBEntries = CVA6Cfg.BTBEntries;
     cfg.BPType = CVA6Cfg.BPType;
@@ -169,6 +175,7 @@ package build_config_pkg;
     cfg.DCACHE_MAX_TX = unsigned'(2 ** CVA6Cfg.MemTidWidth);
 
     cfg.DcacheFlushOnFence = CVA6Cfg.DcacheFlushOnFence;
+    cfg.DcacheFlushOnFenceI = CVA6Cfg.DcacheFlushOnFenceI;
     cfg.DcacheInvalidateOnFlush = CVA6Cfg.DcacheInvalidateOnFlush;
 
     cfg.CheriCapTagWidth = CVA6Cfg.CheriCapTagWidth;
@@ -183,7 +190,7 @@ package build_config_pkg;
 
     cfg.FETCH_WIDTH = unsigned'(CVA6Cfg.SuperscalarEn ? 64 : 32);
     cfg.FETCH_ALIGN_BITS = $clog2(cfg.FETCH_WIDTH / 8);
-    cfg.INSTR_PER_FETCH = cfg.FETCH_WIDTH / ((CVA6Cfg.RVC) ? 16 : 32);
+    cfg.INSTR_PER_FETCH = cfg.FETCH_WIDTH / (CVA6Cfg.RVC ? 16 : 32);
     cfg.LOG2_INSTR_PER_FETCH = cfg.INSTR_PER_FETCH > 1 ? $clog2(cfg.INSTR_PER_FETCH) : 1;
 
     cfg.ModeW = (CVA6Cfg.XLEN == 32) ? 1 : 4;
@@ -197,6 +204,7 @@ package build_config_pkg;
     cfg.InstrTlbEntries = CVA6Cfg.InstrTlbEntries;
     cfg.DataTlbEntries = CVA6Cfg.DataTlbEntries;
     cfg.UseSharedTlb = CVA6Cfg.UseSharedTlb;
+    cfg.SvnapotEn = CVA6Cfg.SvnapotEn;
     cfg.SharedTlbDepth = CVA6Cfg.SharedTlbDepth;
     cfg.VpnLen = VpnLen;
     cfg.PtLevels = PtLevels;

@@ -30,7 +30,7 @@
 package ariane_pkg;
 
   localparam XLEN = cva6_config_pkg::CVA6ConfigXlen;
-  localparam CheriPresent = cva6_config_pkg::CVA6ConfigRVZcheripurecap;
+  localparam CheriPresent = cva6_config_pkg::CVA6ConfigRVY;
   localparam CLEN = CheriPresent ? 2 * XLEN : XLEN;
   localparam REGLEN = CheriPresent ? $bits(cva6_cheri_pkg::cap_reg_t) : XLEN;
   localparam logic [REGLEN-1:0] REG_NULL = CheriPresent ? cva6_cheri_pkg::REG_NULL_CAP : '0;
@@ -129,7 +129,9 @@ package ariane_pkg;
     | riscv::SSTATUS_UPIE
     | riscv::SSTATUS_SPIE
     | riscv::SSTATUS_UXL
-    | (Cfg.CheriPresent ? riscv::SSTATUS_CRG : '0)
+    | (Cfg.CheriPresent ? riscv::SSTATUS_UYRG : '0)
+    | (Cfg.CheriPresent ? riscv::SSTATUS_SYRG : '0)
+    | (Cfg.CheriPresent ? riscv::SSTATUS_YRGE : '0)
     | riscv::sstatus_sd(Cfg.IS_XLEN64);
   endfunction
 
@@ -139,7 +141,9 @@ package ariane_pkg;
     | riscv::SSTATUS_SPP
     | riscv::SSTATUS_FS
     | riscv::SSTATUS_SUM
-    | (Cfg.CheriPresent ? riscv::SSTATUS_CRG : '0)
+    | (Cfg.CheriPresent ? riscv::SSTATUS_UYRG : '0)
+    | (Cfg.CheriPresent ? riscv::SSTATUS_SYRG : '0)
+    | (Cfg.CheriPresent ? riscv::SSTATUS_YRGE : '0)
     | riscv::SSTATUS_MXR;
   endfunction
 
@@ -298,22 +302,22 @@ package ariane_pkg;
     SRLW,
     SLLW,
     SRAW,
-    // 13 comparisons
+    // comparisons
     LTS,
     LTU,
     GES,
     GEU,
     EQ,
     NE,
-    // 19 jumps
+    // jumps
     JALR,
     JAL,
     BRANCH,
     AUIPCC,
-    // 23 set lower than operations
+    // set lower than operations
     SLTS,
     SLTU,
-    // 25 CSR functions
+    // CSR functions
     MRET,
     SRET,
     DRET,
@@ -329,40 +333,41 @@ package ariane_pkg;
     CSR_SET,
     CSR_CLEAR,
     // CLU functions
-    // 39 Capability-Inspection Instructions
-    GCPERM,
-    GCTYPE,
-    GCBASE,
-    GCLEN,
-    GCTAG,
-    GCMODE,
-    GCHI,
-    // 46 Capability-Modification Instructions
-    ACPERM,
-    SCMODE,
-    SCHI,
-    SCADDR,
-    CADD,
-    SCBNDSR,
-    // 52
-    SCBNDS,
-    CBLD,
-    SENTRY,
-    // 55 Pointer-Arithmetic Instructions
-    CMV,
-    // 56 Pointer-Comparison Instructions
-    SCSS,
-    SCEQ,
-    // 58 Control-Flow Instructions
-    MODESW_CAP,
-    MODESW_INT,
+    // Capability-Inspection Instructions
+    YPERMR,
+    YTYPER,
+    YBASER,
+    YLENR,
+    YTOPR,
+    YTAGR,
+    YMODER,
+    YHIR,
+    // Capability-Modification Instructions
+    YPERMC,
+    YMODEW,
+    YHIW,
+    YADDRW,
+    YADD,
+    YBNDSRW,
+    YBNDSRDW,
+    YBNDSW,
+    YBLD,
+    YSUNSEAL,
+    YSENTRY,
+    YMV,
+    // Pointer-Comparison Instructions
+    YSS,
+    YEQ,
+    // Control-Flow Instructions
+    YMODESWY,
+    YMODESWI,
     CJAL,
     CJALR,
-    // 62 Adjusting to Compressed Capability Precision Instructions
-    CRAM,
+    // Adjusting to Compressed Capability Precision Instructions
+    YAMASK,
     // LSU functions
-    LC,
-    SC,
+    LY,
+    SY,
     LD,
     SD,
     LW,
@@ -393,12 +398,12 @@ package ariane_pkg;
     AMO_LRH,
     AMO_LRW,
     AMO_LRD,
-    AMO_LRC,
+    AMO_LRY,
     AMO_SCB,
     AMO_SCH,
     AMO_SCW,
     AMO_SCD,
-    AMO_SCC,
+    AMO_SCY,
     AMO_SWAPW,
     AMO_ADDW,
     AMO_ANDW,
@@ -417,7 +422,12 @@ package ariane_pkg;
     AMO_MAXDU,
     AMO_MIND,
     AMO_MINDU,
-    AMO_SWAPC,
+    AMO_SWAPY,
+    // cache block operations (CBO)
+    CBO_CLEAN,
+    CBO_FLUSH,
+    CBO_INVAL,
+    CBO_NONE,
     // Multiplications
     MUL,
     MULH,
@@ -688,7 +698,7 @@ package ariane_pkg;
 
   function automatic logic is_amo(fu_op op);
     case (op) inside
-      [AMO_LRB : AMO_SWAPC]: begin
+      [AMO_LRB : AMO_SWAPY]: begin
         return 1'b1;
       end
       default: return 1'b0;
@@ -697,13 +707,38 @@ package ariane_pkg;
 
   function automatic logic is_amo_sc(fu_op op);
     case (op) inside
-      [AMO_SCB : AMO_SCC]: begin
+      [AMO_SCB : AMO_SCY]: begin
         return 1'b1;
       end
       default: return 1'b0;
     endcase
   endfunction
 
+  function automatic logic [XLEN-1:0] decode_si_imm(input logic [8:0] imm);
+    // Decode according to the following logic for the YBNDSWI from the Y extension:
+    // If imm[8:0] = 0, result is 4096.
+    // If imm[8] = 0 and imm[7:0] != 0, result is imm[7:0].
+    // If imm[8] = 1 and imm[7:5] = 0, result is 256 | (imm[3:0] << 4) | (imm[4] << 3).
+    // Otherwise, result is imm[7:0] << 4.
+    logic [XLEN-1:0] result;
+
+    if (imm == 9'b0) begin
+      result = XLEN'(4096);
+    end else if (!imm[8]) begin
+      result = XLEN'(imm[7:0]);
+    end else if (imm[7:5] == 3'b000) begin
+      result = XLEN'({
+        1'b1,  // bit 8: 256
+        imm[3:0],  // bits 7:4
+        imm[4],  // bit 3
+        3'b000  // bits 2:0
+      });
+    end else begin
+      result = XLEN'(imm[7:0]) << 4;
+    end
+
+    return result;
+  endfunction
   // -------------------
   // Performance counter
   // -------------------
@@ -729,18 +764,6 @@ package ariane_pkg;
     AMO_CAS2 = 4'b1101   // unused, not part of riscv spec, but provided in OpenPiton
   } amo_t;
 
-  // Bits required for representation of physical address space as 4K pages
-  // (e.g. 27*4K == 39bit address space).
-  localparam PPN4K_WIDTH = 38;
-
-  typedef struct packed {
-    logic             valid;    // valid flag
-    logic             is_4M;    //
-    logic [20-1:0]    vpn;      //VPN (32bits) = 20bits + 12bits offset
-    logic [9-1:0]     asid;     //ASID length = 9 for Sv32 mmu
-    riscv::pte_sv32_t content;
-  } tlb_update_sv32_t;
-
   typedef enum logic [2:0] {
     FE_NONE,
     FE_INSTR_ACCESS_FAULT,
@@ -753,7 +776,6 @@ package ariane_pkg;
   // as request goes high.
   // Furthermore, those signals are kept stable until the response indicates
   // completion by asserting ack.
-  // TODO: fix this
   typedef struct packed {
     logic            req;        // this request is valid
     amo_t            amo_op;     // atomic memory operation to perform
@@ -764,7 +786,6 @@ package ariane_pkg;
   } amo_req_t;
 
   // AMO response coming from cache.
-  // TODO: fix this
   typedef struct packed {
     logic            ack;      // response is valid
     logic [CLEN-1:0] result;   // sign-extended, result
@@ -775,7 +796,7 @@ package ariane_pkg;
 
   function automatic logic is_cap(fu_op op);
     case (op) inside
-      LC, SC, AMO_LRC, AMO_SCC, AMO_SWAPC: begin
+      LY, SY, AMO_LRY, AMO_SCY, AMO_SWAPY: begin
         return 1'b1;
       end
       default: return 1'b0;
@@ -954,7 +975,7 @@ package ariane_pkg;
   // ----------------------
   function automatic logic [2:0] extract_transfer_size(fu_op op);
     case (op)
-      AMO_LRC, AMO_SCC, LC, SC, AMO_SWAPC: begin
+      AMO_LRY, AMO_SCY, LY, SY, AMO_SWAPY: begin
         return 3'b100;
       end
       LD, HLV_D, SD, HSV_D, FLD, FSD,
@@ -978,59 +999,10 @@ package ariane_pkg;
       end
       LH, LHU, HLV_H, HLV_HU, HLVX_HU, SH, HSV_H, FLH, FSH, AMO_LRH, AMO_SCH: return 3'b001;
       LB, LBU, HLV_B, HLV_BU, SB, HSV_B, FLB, FSB, AMO_LRB, AMO_SCB:          return 3'b000;
+      CBO_CLEAN, CBO_FLUSH, CBO_INVAL:                                        return 3'b000;
       default:                                                                return 3'b000;
     endcase
   endfunction
-  // ----------------------
-  // MMU Functions
-  // ----------------------
-
-  // checks if final translation page size is 1G when H-extension is enabled
-  function automatic logic is_trans_1G(input logic s_st_enbl, input logic g_st_enbl,
-                                       input logic is_s_1G, input logic is_g_1G);
-    return (((is_s_1G && s_st_enbl) || !s_st_enbl) && ((is_g_1G && g_st_enbl) || !g_st_enbl));
-  endfunction : is_trans_1G
-
-  // checks if final translation page size is 2M when H-extension is enabled
-  function automatic logic is_trans_2M(input logic s_st_enbl, input logic g_st_enbl,
-                                       input logic is_s_1G, input logic is_s_2M,
-                                       input logic is_g_1G, input logic is_g_2M);
-    return  (s_st_enbl && g_st_enbl) ?
-                ((is_s_2M && (is_g_1G || is_g_2M)) || (is_g_2M && (is_s_1G || is_s_2M))) :
-                ((is_s_2M && s_st_enbl) || (is_g_2M && g_st_enbl));
-  endfunction : is_trans_2M
-
-  // computes the paddr based on the page size, ppn and offset
-  function automatic logic [40:0] make_gpaddr(input logic s_st_enbl, input logic is_1G,
-                                              input logic is_2M, input logic [63:0] vaddr,
-                                              input riscv::pte_t pte);
-    logic [40:0] gpaddr;
-    if (s_st_enbl) begin
-      gpaddr = {pte.ppn[28:0], vaddr[11:0]};
-      // Giga page
-      if (is_1G) gpaddr[29:12] = vaddr[29:12];
-      // Mega page
-      if (is_2M) gpaddr[20:12] = vaddr[20:12];
-    end else begin
-      gpaddr = vaddr[40:0];
-    end
-    return gpaddr;
-  endfunction : make_gpaddr
-
-  // computes the final gppn based on the guest physical address
-  function automatic logic [28:0] make_gppn(input logic s_st_enbl, input logic is_1G,
-                                            input logic is_2M, input logic [28:0] vpn,
-                                            input riscv::pte_t pte);
-    logic [28:0] gppn;
-    if (s_st_enbl) begin
-      gppn = pte.ppn[28:0];
-      if (is_2M) gppn[8:0] = vpn[8:0];
-      if (is_1G) gppn[17:0] = vpn[17:0];
-    end else begin
-      gppn = vpn;
-    end
-    return gppn;
-  endfunction : make_gppn
 
   // ----------------------
   // Helper functions

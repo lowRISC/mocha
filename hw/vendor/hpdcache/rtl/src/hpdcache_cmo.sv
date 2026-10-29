@@ -137,7 +137,7 @@ import hpdcache_pkg::*;
 //  Definition of constants and types
 //  {{{
     typedef enum {
-        CMOH_IDLE,
+        CMOH_IDLE = 0,
         CMOH_FENCE_WAIT_WBUF_RTAB_EMPTY,
         CMOH_WAIT_MSHR_RTAB_EMPTY,
         CMOH_INVAL_CHECK_NLINE,
@@ -269,8 +269,6 @@ import hpdcache_pkg::*;
         core_rsp_send_d = core_rsp_send_q;
 
         req_ready_o = 1'b0;
-
-        cmoh_fsm_d = cmoh_fsm_q;
 
         unique case (cmoh_fsm_q)
             CMOH_IDLE: begin
@@ -556,15 +554,19 @@ import hpdcache_pkg::*;
 
     assign cmoh_way_last = cmoh_way_q[HPDcacheCfg.u.ways - 1];
 
-    always_comb
-    begin : way_incr_comb
-        cmoh_way_d = cmoh_way_q;
-        if (cmoh_way_reset) begin
-            cmoh_way_d = hpdcache_way_vector_t'(1);
-        end else if (cmoh_way_incr) begin
-            cmoh_way_d = cmoh_way_last ?
-                hpdcache_way_vector_t'(1) : {cmoh_way_q[0 +: HPDcacheCfg.u.ways-1], 1'b0};
+    if (HPDcacheCfg.u.ways > 1) begin : gen_cmoh_way_assoc
+        always_comb
+        begin : way_incr_comb
+            cmoh_way_d = cmoh_way_q;
+            if (cmoh_way_reset) begin
+                cmoh_way_d = hpdcache_way_vector_t'(1);
+            end else if (cmoh_way_incr) begin
+                cmoh_way_d = cmoh_way_last ?
+                    hpdcache_way_vector_t'(1) : {cmoh_way_q[0 +: HPDcacheCfg.u.ways-1], 1'b0};
+            end
         end
+    end else begin : gen_cmoh_way_direct
+        assign cmoh_way_d = 1'b1;
     end
 //  }}}
 
@@ -583,15 +585,25 @@ import hpdcache_pkg::*;
         end
     end
 
-    always_ff @(posedge clk_i)
+    always_ff @(posedge clk_i or negedge rst_ni)
     begin
-        cmoh_op_q              <= cmoh_op_d;
-        cmoh_addr_q            <= cmoh_addr_d;
-        cmoh_way_q             <= cmoh_way_d;
-        cmoh_set_q             <= cmoh_set_d;
-        cmoh_flush_req_set_q   <= cmoh_flush_req_set_d;
-        cmoh_flush_req_way_q   <= cmoh_flush_req_way_d;
-        cmoh_flush_req_inval_q <= cmoh_flush_req_inval_d;
+        if (!rst_ni) begin
+            cmoh_op_q              <= '0;
+            cmoh_addr_q            <= '0;
+            cmoh_way_q             <= '0;
+            cmoh_set_q             <= '0;
+            cmoh_flush_req_set_q   <= '0;
+            cmoh_flush_req_way_q   <= '0;
+            cmoh_flush_req_inval_q <= '0;
+        end else begin
+            cmoh_op_q              <= cmoh_op_d;
+            cmoh_addr_q            <= cmoh_addr_d;
+            cmoh_way_q             <= cmoh_way_d;
+            cmoh_set_q             <= cmoh_set_d;
+            cmoh_flush_req_set_q   <= cmoh_flush_req_set_d;
+            cmoh_flush_req_way_q   <= cmoh_flush_req_way_d;
+            cmoh_flush_req_inval_q <= cmoh_flush_req_inval_d;
+        end
     end
 //  }}}
 

@@ -111,7 +111,7 @@ module cva6_rvfi_probes
       instr.commit_instr_rs1[i] = commit_instr_i[i].rs1;
       instr.commit_instr_rs2[i] = commit_instr_i[i].rs2;
       instr.commit_instr_rd[i] = commit_instr_i[i].rd;
-      instr.commit_instr_result[i] = commit_instr_i[i].result;
+      instr.commit_instr_result[i] = reg_to_x(commit_instr_i[i].result);
       instr.commit_instr_valid[i] = commit_instr_i[i].valid;
       instr.commit_ack[i] = commit_ack_i[i];
       instr.commit_drop[i] = commit_drop_i[i];
