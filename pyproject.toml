@@ -39,6 +39,9 @@ dependencies = [
     # Tool schema validation.
     "jsonschema>=4.26.0",
     "types-jsonschema>=4.26.0",
+    # Used for generating utilisation plots
+    "plotly>=6.9.0",
+    "numpy>=2.2.6",
 ]
 
 [tool.setuptools]
