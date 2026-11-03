@@ -238,7 +238,7 @@ class kmac_smoke_vseq extends kmac_base_vseq;
         end else begin
           // Wait until the KMAC engine has completely finished
           `uvm_info(`gfn, "waiting for kmac_app operation to finish", UVM_HIGH)
-          wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.rsp_done == 1);
+          wait (cfg.m_kmac_app_agent_cfg[app_mode].vif.rsp_valid == 1);
           `uvm_info(`gfn, "finished waiting for kmac_app operation", UVM_HIGH)
 
           if (kmac_err_type inside
@@ -344,7 +344,10 @@ class kmac_smoke_vseq extends kmac_base_vseq;
       end else begin
         // If we don't read out the state window again, wait a few clocks before dropping the
         // sideload key (if applicable).
-        cfg.clk_rst_vif.wait_clks(5);
+        // TODO: This delay must be at least the rsp_delay_max from the app agent config. Otherwise
+        // the key can get invalidated before the response arrives which results in an error. We
+        // should change this that we wait until the response actually has arrived.
+        cfg.clk_rst_vif.wait_clks(10);
       end
 
       // Drop the sideloaded key if it was provided to the DUT.

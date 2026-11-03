@@ -1,0 +1,23 @@
+diff --git a/env/sram_scrambler_pkg.sv b/env/sram_scrambler_pkg.sv
+--- a/env/sram_scrambler_pkg.sv
++++ b/env/sram_scrambler_pkg.sv
+@@ -192,7 +192,8 @@
+
+   // Encrypts the target SRAM address using the custom S&P network.
+   function automatic state_t encrypt_sram_addr(logic addr[], int addr_width,
+-                                               logic full_nonce[]);
++                                               int depth,
++                                               logic full_nonce[]);
+
+     logic nonce[] = new[addr_width];
+     logic encrypted_addr[] = new[addr_width];
+@@ -215,7 +216,8 @@
+
+   // Decrypts the target SRAM address using the custom S&P network.
+   function automatic state_t decrypt_sram_addr(logic addr[], int addr_width,
+-                                               logic full_nonce[]);
++                                               int depth,
++                                               logic full_nonce[]);
+
+     logic nonce[] = new[addr_width];
+     logic encrypted_addr[] = new[addr_width];

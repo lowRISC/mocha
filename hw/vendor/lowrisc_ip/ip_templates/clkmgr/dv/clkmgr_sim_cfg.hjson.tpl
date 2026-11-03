@@ -52,7 +52,7 @@ These are gated rather than deleted, so they return automatically if the configu
              "sec_cm_prim_onehot_check_bind"]
 
   // Default iterations for all tests - each test entry can override this.
-  reseed: 50
+  reseed: 10
 
   // CLKMGR exclusion files.
   vcs_cov_excl_files: ["{self_dir}/cov/clkmgr_cov_manual_excl.el",

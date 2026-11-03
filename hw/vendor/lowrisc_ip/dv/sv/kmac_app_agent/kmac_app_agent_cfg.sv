@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-class kmac_app_agent_cfg extends dv_base_agent_cfg;
+class kmac_app_agent_cfg extends dv_reactive_agent_cfg;
 
   // interface handle used by driver, monitor & the sequencer, via cfg handle
   virtual kmac_app_intf vif;
@@ -10,7 +10,7 @@ class kmac_app_agent_cfg extends dv_base_agent_cfg;
   int unsigned req_delay_min = 0;
   int unsigned req_delay_max = 100;
 
-  // delay between last for req data and done for digest data
+  // delay between last message request and first digest response
   int unsigned rsp_delay_min = 0;
   int unsigned rsp_delay_max = 100;
 
