@@ -28,7 +28,8 @@ module issue_stage
     parameter type x_issue_req_t = logic,
     parameter type x_issue_resp_t = logic,
     parameter type x_register_t = logic,
-    parameter type x_commit_t = logic
+    parameter type x_commit_t = logic,
+    parameter type debug_redirect_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -177,6 +178,8 @@ module issue_stage
     input logic [CVA6Cfg.REGLEN-1:0] pcc_commit_i,
     // Set COMMIT PC as next PC requested by FENCE, CSR side-effect and Accelerate port - CONTROLLER
     input logic set_pc_commit_i,
+    // Set PC to debug ROM as entering debug mode - CONTROLLER
+    input debug_redirect_t set_debug_pc_i,
     // Next PC when jumping into exception - CSR_FILE
     input logic [CVA6Cfg.REGLEN-1:0] trap_vector_base_i,
     // Exception PC - CSR_FILE
@@ -284,7 +287,8 @@ module issue_stage
       .x_issue_req_t(x_issue_req_t),
       .x_issue_resp_t(x_issue_resp_t),
       .x_register_t(x_register_t),
-      .x_commit_t(x_commit_t)
+      .x_commit_t(x_commit_t),
+      .debug_redirect_t(debug_redirect_t)
   ) i_issue_read_operands (
       .clk_i,
       .rst_ni,
@@ -349,6 +353,7 @@ module issue_stage
       .we_fpr_i,
       .pcc_commit_i,
       .set_pc_commit_i,
+      .set_debug_pc_i,
       .ex_valid_i,
       .resolved_branch_i,
       .trap_vector_base_i,

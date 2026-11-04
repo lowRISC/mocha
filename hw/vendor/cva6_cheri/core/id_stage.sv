@@ -84,6 +84,18 @@ module id_stage #(
     input logic tsr_i,
     // Hypervisor user mode - CSR_REGFILE
     input logic hu_i,
+    // machine-mode cache block invalidate enable - CSR_REGFILE
+    input riscv::cbie_t mcbie_i,
+    // supervisor-mode cache block invalidate enable - CSR_REGFILE
+    input riscv::cbie_t scbie_i,
+    // hypervisor-mode cache block invalidate enable - CSR_REGFILE
+    input riscv::cbie_t hcbie_i,
+    // machine-mode clean/flush cache block invalidate enable - CSR_REGFILE
+    input logic mcbcfe_i,
+    // supervisor-mode clean/flush cache block invalidate enable - CSR_REGFILE
+    input logic scbcfe_i,
+    // hypervisor-mode clean/flush cache block invalidate enable - CSR_REGFILE
+    input logic hcbcfe_i,
     // CVXIF Compressed interface
     input logic [CVA6Cfg.XLEN-1:0] hart_id_i,
     input logic compressed_ready_i,
@@ -309,14 +321,16 @@ module id_stage #(
     is_illegal_deco    = is_illegal_rvc;
     instruction_deco   = instruction_rvc;
     is_compressed_deco = is_compressed_rvc;
-    if (CVA6Cfg.CvxifEn) begin
-      is_illegal_deco[0]    = is_illegal_cvxif_o;
-      instruction_deco[0]   = instruction_cvxif_o;
-      is_compressed_deco[0] = is_compressed_cvxif_o;
-    end else if (!CVA6Cfg.CvxifEn && (CVA6Cfg.RVZCMP || CVA6Cfg.RVZCMT)) begin
-      is_illegal_deco[0]    = is_illegal_cvxif_i;
-      instruction_deco[0]   = instruction_cvxif_i;
-      is_compressed_deco[0] = is_compressed_cvxif_i;
+    if (CVA6Cfg.RVC) begin
+      if (CVA6Cfg.CvxifEn) begin
+        is_illegal_deco[0]    = is_illegal_cvxif_o;
+        instruction_deco[0]   = instruction_cvxif_o;
+        is_compressed_deco[0] = is_compressed_cvxif_o;
+      end else if (CVA6Cfg.RVZCMP || CVA6Cfg.RVZCMT) begin
+        is_illegal_deco[0]    = is_illegal_cvxif_i;
+        instruction_deco[0]   = instruction_cvxif_i;
+        is_compressed_deco[0] = is_compressed_cvxif_i;
+      end
     end
   end
 
@@ -361,6 +375,12 @@ module id_stage #(
         .vtw_i,
         .tsr_i,
         .hu_i,
+        .mcbie_i,
+        .scbie_i,
+        .hcbie_i,
+        .mcbcfe_i,
+        .scbcfe_i,
+        .hcbcfe_i,
         .instruction_o             (decoded_instruction[i]),
         .orig_instr_o              (orig_instr[i]),
         .is_control_flow_instr_o   (is_control_flow_instr[i]),

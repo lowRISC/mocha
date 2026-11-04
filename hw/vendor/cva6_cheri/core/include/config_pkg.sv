@@ -76,6 +76,8 @@ package config_pkg;
     bit                          RVC;
     // Hypervisor RISC-V extension
     bit                          RVH;
+    // CapabilitY RISC-V extension
+    bit                          RVY;
     // Zcb RISC-V extension
     bit                          RVZCB;
     // Zcmp RISC-V extension
@@ -84,12 +86,12 @@ package config_pkg;
     bit                          RVZCMT;
     // Zicond RISC-V extension
     bit                          RVZiCond;
+    // Zicbom RISC-V extension (cache management / CBO)
+    bit                          RVZiCbom;
     // Zicntr RISC-V extension
     bit                          RVZicntr;
     // Zihpm RISC-V extension
     bit                          RVZihpm;
-    // Zcheripurecap RISC-V extension
-    bit                          RVZcheripurecap;
     // Zcherihybrid RISC-V extension
     bit                          RVZcherihybrid;
     // Floating Point
@@ -194,62 +196,81 @@ package config_pkg;
     int unsigned                 DcacheSetAssoc;
     // Data cache line width
     int unsigned                 DcacheLineWidth;
-    // Data cache flush on fence
-    bit                          DcacheFlushOnFence;
-    // Data cache invalidate on flush
-    bit                          DcacheInvalidateOnFlush;
+    // three configurations for cache coherency after flush:
+    // DcacheFlushOnFence causes dcache flush for every fence instruction
+    // DcacheFlushOnFenceI causes dcache flush for every fence.I instruction
+    // DcacheInvalidateOnFlush causes dcache to also be invalidated when flushed
+    // tradeoff between coherence and efficiency, depending on remaining configuration:
+
+    // DcacheFlushOnFenceI is required for write-back caches - otherwise,
+    // no way to reliably write instruction memory with store instructions,
+    // as data and instruction cache are currently not coherent
+    // DcacheFlushOnFence is required for write-back caches to ensure coherency
+    // with other harts or DMA devices --> a fence forces all stores to commit to memory
+    // DcacheInvalidateOnFlush causes all dcache entries to become invalid, forcing the CPU
+    // to fetch data from memory after each fence --> make writes from other harts or DMAs
+    // visible to the CPU
+    // thus, DcacheFlushOnFence and DcacheInvalidateOnFlush can ensure DMA coherency at high performance cost
+    // using RVZiCbom can achieve the same effect at significantly lower performance cost
+    // hence, on uniprocessor or not cache-coherent multiprocessor SoCs, one might want to disable both and use
+    // explicit CBO operations for better overall performance
+    bit          DcacheFlushOnFence;
+    bit          DcacheFlushOnFenceI;
+    bit          DcacheInvalidateOnFlush;
     // User field on data bus enable
-    int unsigned                 DataUserEn;
+    int unsigned DataUserEn;
     // Write-through data cache write buffer depth
-    int unsigned                 WtDcacheWbufDepth;
+    int unsigned WtDcacheWbufDepth;
     // User field on fetch bus enable
-    int unsigned                 FetchUserEn;
+    int unsigned FetchUserEn;
     // Width of fetch user field
-    int unsigned                 FetchUserWidth;
+    int unsigned FetchUserWidth;
     // Is FPGA optimization of CV32A6 for Xilinx and Altera
-    bit                          FpgaEn;
+    bit          FpgaEn;
     // Is FPGA optimization for Altera FPGA
-    bit                          FpgaAlteraEn;
+    bit          FpgaAlteraEn;
     // Is Techno Cut instantiated
-    bit                          TechnoCut;
+    bit          TechnoCut;
     // Enable superscalar* with 2 issue ports and 2 commit ports.
-    bit                          SuperscalarEn;
+    bit          SuperscalarEn;
     // Enable ALU-ALU bypass (superscalar mode only)
-    bit                          ALUBypass;
+    bit          ALUBypass;
     // Number of commit ports. Forced to 2 if SuperscalarEn.
-    int unsigned                 NrCommitPorts;
+    int unsigned NrCommitPorts;
     // Load cycle latency number
-    int unsigned                 NrLoadPipeRegs;
+    int unsigned NrLoadPipeRegs;
     // Store cycle latency number
-    int unsigned                 NrStorePipeRegs;
+    int unsigned NrStorePipeRegs;
     // Scoreboard length
-    int unsigned                 NrScoreboardEntries;
+    int unsigned NrScoreboardEntries;
     // Load buffer entry buffer
-    int unsigned                 NrLoadBufEntries;
+    int unsigned NrLoadBufEntries;
     // Maximum number of outstanding stores
-    int unsigned                 MaxOutstandingStores;
+    int unsigned MaxOutstandingStores;
     // Return address stack depth
-    int unsigned                 RASDepth;
+    int unsigned RASDepth;
     // Branch target buffer entries
-    int unsigned                 BTBEntries;
+    int unsigned BTBEntries;
     // Branch predictor type
-    bp_type_t                    BPType;
+    bp_type_t    BPType;
     // Branch history entries
-    int unsigned                 BHTEntries;
+    int unsigned BHTEntries;
     // Branch history bits
-    int unsigned                 BHTHist;
+    int unsigned BHTHist;
     // MMU instruction TLB entries
-    int unsigned                 InstrTlbEntries;
+    int unsigned InstrTlbEntries;
     // MMU data TLB entries
-    int unsigned                 DataTlbEntries;
+    int unsigned DataTlbEntries;
     // MMU option to use shared TLB
-    bit unsigned                 UseSharedTlb;
+    bit unsigned UseSharedTlb;
     // MMU depth of shared TLB
-    int unsigned                 SharedTlbDepth;
+    int unsigned SharedTlbDepth;
+    // Option to enable Svnapot extension
+    bit          SvnapotEn;
     // Cheri capability tag width
-    int unsigned                 CheriCapTagWidth;
+    int unsigned CheriCapTagWidth;
     // Enable RVDI_DII interface
-    int unsigned                 RVFI_DII;
+    int unsigned RVFI_DII;
   } cva6_user_cfg_t;
 
   typedef struct packed {
@@ -299,6 +320,7 @@ package config_pkg;
     bit          RVV;
     bit          RVC;
     bit          RVH;
+    bit          RVY;
     bit          RVZCB;
     bit          RVZCMP;
     bit          RVZCMT;
@@ -306,9 +328,9 @@ package config_pkg;
     bit          CvxifEn;
     copro_type_t CoproType;
     bit          RVZiCond;
+    bit          RVZiCbom;
     bit          RVZicntr;
     bit          RVZihpm;
-    bit          RVZcheripurecap;
     bit          RVZcherihybrid;
 
     int unsigned NR_SB_ENTRIES;
@@ -332,7 +354,15 @@ package config_pkg;
     bit          SoftwareInterruptEn;
 
     logic [63:0] HaltAddress;
+    // CHERI: Address to jump to when halt request from debug capmode
+    logic [63:0] ReenterCapModeAddress;
+    // CHERI: Address to jump to when halt request from debug intmode
+    logic [63:0] ReenterIntModeAddress;
     logic [63:0] ExceptionAddress;
+    // CHERI: Address to jump to when exception from debug capmode
+    logic [63:0] ExceptionCapModeAddress;
+    // CHERI: Address to jump to when exception from debug intmode
+    logic [63:0] ExceptionIntModeAddress;
     int unsigned RASDepth;
     int unsigned BTBEntries;
     bp_type_t    BPType;
@@ -341,6 +371,7 @@ package config_pkg;
     int unsigned InstrTlbEntries;
     int unsigned DataTlbEntries;
     bit unsigned UseSharedTlb;
+    bit SvnapotEn;
     int unsigned SharedTlbDepth;
     int unsigned VpnLen;
     int unsigned PtLevels;
@@ -395,6 +426,7 @@ package config_pkg;
     int unsigned DCACHE_MAX_TX;
 
     bit DcacheFlushOnFence;
+    bit DcacheFlushOnFenceI;
     bit DcacheInvalidateOnFlush;
 
     int unsigned DATA_USER_EN;
@@ -456,7 +488,7 @@ package config_pkg;
     assert (!(Cfg.RVH && !Cfg.SoftwareInterruptEn));
     assert (!(Cfg.RVZCMT && ~Cfg.MmuPresent));
     // Can only have CHERI hybrid support if CHERI purecap is supported
-    assert (!(!Cfg.RVZcheripurecap && Cfg.RVZcherihybrid));
+    assert (!(!Cfg.RVY && Cfg.RVZcherihybrid));
     // pragma translate_on
   endfunction
 
