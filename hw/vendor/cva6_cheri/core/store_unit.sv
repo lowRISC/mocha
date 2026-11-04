@@ -21,7 +21,8 @@ module store_unit
     parameter type dcache_req_i_t = logic,
     parameter type dcache_req_o_t = logic,
     parameter type exception_t = logic,
-    parameter type lsu_ctrl_t = logic
+    parameter type lsu_ctrl_t = logic,
+    parameter type cbo_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -170,13 +171,14 @@ module store_unit
   assign instr_is_amo = is_amo(lsu_ctrl_i.operation);
   assign instr_is_cap = (CVA6Cfg.CheriPresent) ? is_cap(lsu_ctrl_i.operation) : 1'b0;
   // check if we are storing a valid cap
-  assign cap_translation_req = (lsu_ctrl_i.operation inside {SC, AMO_SCC, AMO_LRC, AMO_SWAPC} && lsu_ctrl_i.data[CVA6Cfg.REGLEN-1] && CVA6Cfg.CheriPresent) ? 1'b1 : 1'b0;
+  assign cap_translation_req = (lsu_ctrl_i.operation inside {SY, AMO_SCY, AMO_LRY, AMO_SWAPY} && lsu_ctrl_i.data[CVA6Cfg.REGLEN-1] && CVA6Cfg.CheriPresent) ? 1'b1 : 1'b0;
   // keep the data and the byte enable for the second cycle (after address translation)
   logic [CVA6Cfg.CLEN-1:0] st_data_n, st_data_q;
   logic [CVA6Cfg.CheriCapTagWidth-1:0] st_cap_tag_n, st_cap_tag_q;
   logic [(CVA6Cfg.CLEN/8)-1:0] st_be_n, st_be_q;
   logic [CVA6Cfg.DCACHE_DATA_SIZE_WIDTH-1:0] st_data_size_n, st_data_size_q;
   amo_t amo_op_d, amo_op_q;
+  cbo_t cbo_op_d, cbo_op_q;
 
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] trans_id_n, trans_id_q;
 
@@ -197,9 +199,6 @@ module store_unit
     pop_st_o                         = 1'b0;
     ex_o                             = ex_i;
     cap_translation_req_d            = cap_translation_req_q;
-    if (CVA6Cfg.RVFI_DII && amo_op_q == AMO_SC && ex_i.cause == riscv::ST_ACCESS_FAULT) begin
-      ex_o.valid = 1'b0;
-    end
     if (amo_op_q == AMO_LR) begin
       st_is_actually_lr_o = 1'b1;
       translation_req_is_actually_lr_o = 1'b1;
@@ -288,7 +287,7 @@ module store_unit
     // Access Exception
     // -----------------
     // we got an address translation exception (access rights, misaligned or page fault)
-    if (ex_i.valid && (state_q != IDLE && state_q != VALID_STORE) && !(amo_op_q == AMO_SC && ex_i.cause == riscv::ST_ACCESS_FAULT)) begin
+    if (ex_i.valid && (state_q != IDLE && state_q != VALID_STORE)) begin
       // the only difference is that we do not want to store this request
       pop_st_o = 1'b1;
       st_valid = 1'b0;
@@ -330,9 +329,9 @@ module store_unit
     // save AMO op for next cycle
     if (CVA6Cfg.RVA) begin
       case (lsu_ctrl_i.operation)
-        AMO_LRB, AMO_LRH, AMO_LRW, AMO_LRD, AMO_LRC: amo_op_d = AMO_LR;
-        AMO_SCB, AMO_SCH, AMO_SCW, AMO_SCD, AMO_SCC: amo_op_d = AMO_SC;
-        AMO_SWAPW, AMO_SWAPD, AMO_SWAPC:             amo_op_d = AMO_SWAP;
+        AMO_LRB, AMO_LRH, AMO_LRW, AMO_LRD, AMO_LRY: amo_op_d = AMO_LR;
+        AMO_SCB, AMO_SCH, AMO_SCW, AMO_SCD, AMO_SCY: amo_op_d = AMO_SC;
+        AMO_SWAPW, AMO_SWAPD, AMO_SWAPY:             amo_op_d = AMO_SWAP;
         AMO_ADDW, AMO_ADDD:                          amo_op_d = AMO_ADD;
         AMO_ANDW, AMO_ANDD:                          amo_op_d = AMO_AND;
         AMO_ORW, AMO_ORD:                            amo_op_d = AMO_OR;
@@ -345,6 +344,17 @@ module store_unit
       endcase
     end else begin
       amo_op_d = AMO_NONE;
+    end
+
+    if (CVA6Cfg.RVZiCbom) begin
+      case (lsu_ctrl_i.operation)
+        ariane_pkg::CBO_INVAL: cbo_op_d = ariane_pkg::CBO_INVAL;
+        ariane_pkg::CBO_CLEAN: cbo_op_d = ariane_pkg::CBO_CLEAN;
+        ariane_pkg::CBO_FLUSH: cbo_op_d = ariane_pkg::CBO_FLUSH;
+        default:               cbo_op_d = ariane_pkg::CBO_NONE;
+      endcase
+    end else begin
+      cbo_op_d = ariane_pkg::CBO_NONE;
     end
   end
 
@@ -361,9 +371,10 @@ module store_unit
   // Store Queue
   // ---------------
   store_buffer #(
-      .CVA6Cfg(CVA6Cfg),
+      .CVA6Cfg       (CVA6Cfg),
       .dcache_req_i_t(dcache_req_i_t),
-      .dcache_req_o_t(dcache_req_o_t)
+      .dcache_req_o_t(dcache_req_o_t),
+      .cbo_t         (cbo_t)
   ) store_buffer_i (
       .clk_i,
       .rst_ni,
@@ -387,6 +398,7 @@ module store_unit
       .rvfi_mem_paddr_o     (rvfi_mem_paddr_o),
       .data_i               (st_data_q),
       .cap_tag_i            (st_cap_tag_q),
+      .cbo_op_i             (cbo_op_q),
       .be_i                 (st_be_q),
       .data_size_i          (st_data_size_q),
       .req_port_i           (req_port_i),
@@ -428,6 +440,7 @@ module store_unit
       st_data_size_q <= '0;
       trans_id_q     <= '0;
       amo_op_q       <= AMO_NONE;
+      cbo_op_q       <= ariane_pkg::CBO_NONE;
       if (CVA6Cfg.CheriPresent) begin
         st_cap_tag_q <= '0;
         cap_translation_req_q <= '0;
@@ -439,6 +452,7 @@ module store_unit
       trans_id_q     <= trans_id_n;
       st_data_size_q <= st_data_size_n;
       amo_op_q       <= amo_op_d;
+      cbo_op_q       <= cbo_op_d;
       if (CVA6Cfg.CheriPresent) begin
         st_cap_tag_q <= st_cap_tag_n;
         cap_translation_req_q <= cap_translation_req_d;

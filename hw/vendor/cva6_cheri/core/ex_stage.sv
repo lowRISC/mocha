@@ -33,7 +33,8 @@ module ex_stage
     parameter type lsu_ctrl_t = logic,
     parameter type x_result_t = logic,
     parameter type acc_mmu_req_t = logic,
-    parameter type acc_mmu_resp_t = logic
+    parameter type acc_mmu_resp_t = logic,
+    parameter type cbo_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -222,8 +223,10 @@ module ex_stage
     input logic [CVA6Cfg.PPNW-1:0] hgatp_ppn_i,
     // TO_BE_COMPLETED - CSR_REGFILE
     input logic [CVA6Cfg.VMID_WIDTH-1:0] vmid_i,
-    // Capability load barrier generation - CSR_REGFILE
-    input logic cap_ucrg_i,
+    // Capability load barrier generations - CSR_REGFILE
+    input logic [1:0] cap_yrg_i,
+    // Capability revocation generation enable - CSR_REGFILE
+    input logic cap_yrge_i,
     // icache translation response - CACHE
     input icache_arsp_t icache_areq_i,
     // icache translation request - CACHE
@@ -293,6 +296,7 @@ module ex_stage
   logic [CVA6Cfg.XLEN-1:0] mult_result, aes_result;
   logic [CVA6Cfg.REGLEN-1:0] clu_result, csr_result;
   logic [CVA6Cfg.REGLEN-1:0] branch_result;
+  bp_resolve_t resolved_branch;
   logic lsu_ready, csr_ready, mult_ready;
   logic [CVA6Cfg.TRANS_ID_BITS-1:0] mult_trans_id;
   logic mult_valid;
@@ -370,10 +374,11 @@ module ex_stage
       .branch_comp_res_i (alu_branch_res),
       .branch_result_o   (branch_result),
       .branch_predict_i,
-      .resolved_branch_o,
+      .resolved_branch_o (resolved_branch),
       .resolve_branch_o,
       .branch_exception_o(branch_exception)
   );
+  assign resolved_branch_o = resolved_branch;
 
   // 3. CSR (sequential)
   csr_buffer #(
@@ -412,15 +417,10 @@ module ex_stage
     end else if (|csr_valid_i) begin
       flu_result_o = csr_result;
     end else if (mult_valid) begin
-      if (CVA6Cfg.CheriPresent) begin
-        result = cva6_cheri_pkg::set_cap_reg_addr(result, mult_result);
-        flu_result_o = result;
-      end else begin
-        flu_result_o = {{(CVA6Cfg.REGLEN - CVA6Cfg.XLEN) {1'b0}}, mult_result};
-      end
+      flu_result_o   = x_to_reg(mult_result);
       flu_trans_id_o = mult_trans_id;
     end else if (|aes_valid_i) begin
-      flu_result_o = aes_result;
+      flu_result_o = x_to_reg(aes_result);
     end else if (|clu_valid_i) begin
       flu_result_o = clu_result;
     end
@@ -540,14 +540,19 @@ module ex_stage
   // ----------------
   fu_data_t lsu_data;
   logic [31:0] lsu_tinst;
+  logic speculative_load;
   always_comb begin
-    lsu_data  = lsu_valid_i[0] ? fu_data_i[0] : '0;
+    lsu_data = lsu_valid_i[0] ? fu_data_i[0] : '0;
     lsu_tinst = tinst_i[0];
+    speculative_load = 1'b0;
 
     if (CVA6Cfg.SuperscalarEn) begin
       if (lsu_valid_i[CVA6Cfg.SuperscalarEn]) begin
         lsu_data  = fu_data_i[CVA6Cfg.SuperscalarEn];
         lsu_tinst = tinst_i[CVA6Cfg.SuperscalarEn];
+        if (CVA6Cfg.SpeculativeSb) begin
+          speculative_load = branch_valid_i[0];
+        end
       end
     end
   end
@@ -563,8 +568,10 @@ module ex_stage
       .icache_dreq_t(icache_dreq_t),
       .icache_drsp_t(icache_drsp_t),
       .lsu_ctrl_t(lsu_ctrl_t),
+      .cbo_t(cbo_t),
       .acc_mmu_req_t(acc_mmu_req_t),
-      .acc_mmu_resp_t(acc_mmu_resp_t)
+      .acc_mmu_resp_t(acc_mmu_resp_t),
+      .bp_resolve_t(bp_resolve_t)
   ) lsu_i (
       .clk_i,
       .rst_ni,
@@ -576,6 +583,7 @@ module ex_stage
       .ddc_i,
       .lsu_ready_o           (lsu_ready),
       .lsu_valid_i           (|lsu_valid_i),
+      .speculative_load_i    (speculative_load),
       .load_trans_id_o,
       .load_result_o,
       .load_valid_o,
@@ -587,6 +595,7 @@ module ex_stage
       .commit_i              (lsu_commit_i),
       .commit_ready_o        (lsu_commit_ready_o),
       .commit_tran_id_i,
+      .resolved_branch_i     (resolved_branch),
       .enable_translation_i,
       .enable_g_translation_i,
       .en_ld_st_translation_i,
@@ -614,7 +623,8 @@ module ex_stage
       .vmid_to_be_flushed_i  (vmid_to_be_flushed),
       .vaddr_to_be_flushed_i (vaddr_to_be_flushed),
       .gpaddr_to_be_flushed_i(gpaddr_to_be_flushed),
-      .cap_ucrg_i,
+      .cap_yrg_i,
+      .cap_yrge_i,
       .flush_tlb_i,
       .flush_tlb_vvma_i,
       .flush_tlb_gvma_i,
@@ -745,7 +755,7 @@ module ex_stage
           // if the current instruction in EX_STAGE is a sfence.vma, in the next cycle no writes will happen
         end else if ((~(current_instruction_is_sfence_vma || current_instruction_is_hfence_vvma || current_instruction_is_hfence_gvma)) && (~((fu_data_i[0].operation == SFENCE_VMA || fu_data_i[0].operation == HFENCE_VVMA || fu_data_i[0].operation == HFENCE_GVMA ) && |csr_valid_i))) begin
           vaddr_to_be_flushed  <= rs1_forwarding[CVA6Cfg.VLEN-1:0];
-          gpaddr_to_be_flushed <= {2'b00, rs1_forwarding[CVA6Cfg.GPLEN-1:2]};
+          gpaddr_to_be_flushed <= {rs1_forwarding[CVA6Cfg.GPLEN-3:0], 2'b00};
           asid_to_be_flushed   <= rs2_forwarding[CVA6Cfg.ASID_WIDTH-1:0];
           vmid_to_be_flushed   <= rs2_forwarding[CVA6Cfg.VMID_WIDTH-1:0];
         end
@@ -786,9 +796,8 @@ module ex_stage
       ) aes_i (
           .clk_i,
           .rst_ni,
-          .fu_data_i     (one_cycle_data),
-          .result_o      (aes_result),
-          .orig_instr_aes(orig_instr_aes_i)
+          .fu_data_i(one_cycle_data),
+          .result_o (aes_result)
       );
     end else begin : no_aes_gen
       assign aes_result = '0;

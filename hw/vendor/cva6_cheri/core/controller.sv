@@ -17,7 +17,8 @@ module controller
   import ariane_pkg::*;
 #(
     parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
-    parameter type bp_resolve_t = logic
+    parameter type bp_resolve_t = logic,
+    parameter type debug_redirect_t = logic
 ) (
     // Subsystem Clock - SUBSYSTEM
     input logic clk_i,
@@ -62,7 +63,7 @@ module controller
     // We got an exception, flush the pipeline - FRONTEND
     input logic ex_valid_i,
     // set the debug pc from CSR - FRONTEND
-    input logic set_debug_pc_i,
+    input debug_redirect_t set_debug_pc_i,
     // We got a resolved branch, check if we need to flush the front-end - EX_STAGE
     input bp_resolve_t resolved_branch_i,
     // We got an instruction which altered the CSR, flush the pipeline - CSR_REGFILE
@@ -129,6 +130,7 @@ module controller
       flush_ex_o             = 1'b1;
       // this is not needed in the case since we
       // have a write-through cache in this case
+      // or we are expecting explicit flush/inval via RVZiCbom
       if (CVA6Cfg.DcacheFlushOnFence) begin
         flush_dcache   = 1'b1;
         fence_active_d = 1'b1;
@@ -148,7 +150,7 @@ module controller
       // this is not needed in the case since we
       // have a write-through cache in this case
       // When handling fence.i, flush both caches and activate fence_i state
-      if (CVA6Cfg.DcacheFlushOnFence) begin
+      if (CVA6Cfg.DcacheFlushOnFenceI) begin
         flush_dcache = 1'b1;
         fence_active_d = 1'b1;
         fence_i_active_d = 1'b1;
@@ -157,7 +159,7 @@ module controller
 
     // this is not needed in the case since we
     // have a write-through cache in this case
-    if (CVA6Cfg.DcacheFlushOnFence) begin
+    if (CVA6Cfg.DcacheFlushOnFence || CVA6Cfg.DcacheFlushOnFenceI) begin
       // Wait for the acknowledge here
       // Deassert fence_i state only after DCache flush completes
       if (flush_dcache_ack_i && fence_i_active_q) begin
@@ -232,7 +234,7 @@ module controller
     // 1. Exception
     // 2. Return from exception
     // ---------------------------------
-    if (ex_valid_i || eret_i || (CVA6Cfg.DebugEn && set_debug_pc_i)) begin
+    if (ex_valid_i || eret_i || (CVA6Cfg.DebugEn && set_debug_pc_i.valid)) begin
       // don't flush pcgen as we want to take the exception: Flush PCGen is not a flush signal
       // for the PC Gen stage but instead tells it to take the PC we gave it
       set_pc_commit_o        = 1'b0;
@@ -253,7 +255,7 @@ module controller
   // ----------------------
   always_comb begin
     // halt the core if the fence is active
-    halt_o = halt_csr_i || halt_acc_i || (CVA6Cfg.DcacheFlushOnFence && fence_active_q);
+    halt_o = halt_csr_i || halt_acc_i || ((CVA6Cfg.DcacheFlushOnFence || CVA6Cfg.DcacheFlushOnFenceI) && fence_active_q);
     // Halt frontend during fence.i to synchronize ICache/DCache flushes
     halt_frontend_o = fence_i_active_q;
   end

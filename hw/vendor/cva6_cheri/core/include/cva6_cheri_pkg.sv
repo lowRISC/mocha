@@ -38,21 +38,16 @@ package cva6_cheri_pkg;
   localparam CAP_RESET_TOP = {2'b01, {CAP_M_WIDTH - 2{1'b0}}};
 
   /* Capabilities RISC-V Exception Trap Encoding Extension */
-
-  localparam logic [XLEN-1:0] CAP_EXCEPTION = 28;
-  localparam logic [XLEN-1:0] CAP_GUEST_EXCEPTION = 31;
-
   /* Capabilities Exception Codes */
 
-  localparam logic [3:0] CAP_INSTR_FETCH_FAULT = 0;
-  localparam logic [3:0] CAP_DATA_ACCESS_FAULT = 1;
-  localparam logic [3:0] CAP_JUMP_BRANCH_FAULT = 2;
+  localparam logic [XLEN-1:0] CAP_INSTR_ACCESS_FAULT = 32;
+  localparam logic [XLEN-1:0] CAP_LOAD_ACCESS_FAULT = 33;
+  localparam logic [XLEN-1:0] CAP_STORE_AMO_ACCESS_FAULT = 34;
+  localparam logic [XLEN-1:0] CAP_LOAD_CAPABILITY_FAULT = 35;
+  localparam logic [XLEN-1:0] CAP_STORE_AMO_PAGE_FAULT = 36;
 
-  localparam logic [3:0] CAP_TAG_VIOLATION = 0;
-  localparam logic [3:0] CAP_SEAL_VIOLATION = 1;
-  localparam logic [3:0] CAP_PERM_VIOLATION = 2;
-  localparam logic [3:0] CAP_INVALID_ADDRESS_VIOLATION = 3;
-  localparam logic [3:0] CAP_BOUNDS_VIOLATION = 4;
+  localparam int unsigned CAP_YRG_USER_BIT = 0;
+  localparam int unsigned CAP_YRG_SUPERVISOR_BIT = 1;
 
   /* Capabilities OType Encoding */
 
@@ -80,16 +75,6 @@ package cva6_cheri_pkg;
   typedef logic [((CAP_M_WIDTH -(CAP_E_HALF_WIDTH+2))-1):0] hcmw_t;
   typedef logic [CAP_E_WIDTH-1:0] ew_t;
   typedef logic [CAP_E_HALF_WIDTH-1:0] hew_t;
-
-  /**
-      * CHERI exception tval layout fields
-      */
-  typedef struct packed {
-    logic [3:0]  fault_type;   /* Type of check being performed */
-    logic [11:0] wpri;
-    logic [3:0]  fault_cause;  /* Reason for failed check */
-    logic [1:0]  ignored;      /* Bottom two bits are sliced off */
-  } cap_tval2_t;
 
   /**
       * Capability encoded architectural permission bits
@@ -121,29 +106,6 @@ package cva6_cheri_pkg;
     bool_t permit_store;
     /// Permit capability memory operations (respecting permit_load/store)
     bool_t permit_cap;
-    // Allow this capability to be loaded without permit_store_level
-    bool_t cap_level;
-  } cap_hperms_t;
-  /**
-      * Capability reported architectural permission bits
-      */
-  typedef struct packed {
-    logic [3:0]                     reserved_hi;
-    bool_t                          permit_load;
-    bool_t                          permit_execute;
-    bool_t                          access_sys_regs;
-    logic [10-CAP_UPERMS_WIDTH-1:0] reserved_lo;
-    upermsw_t                       uperms;
-    bool_t                          permit_cap;
-    bool_t                          cap_level;
-    bool_t                          permit_store_level;
-    bool_t                          permit_elevate_level;
-    bool_t                          permit_load_mutable;
-    bool_t                          permit_store;
-  } cap_report_perms_t;
-
-  /* Capability flags definition */
-  typedef struct packed {
     /**
           * RISC-V Encoding mode for PCC
           * 0 - Conventional RISC-V execution mode, in which address operands
@@ -152,7 +114,27 @@ package cva6_cheri_pkg;
           *     to existing RISC-V load and store opcodes contain capabilities.
           */
     bool_t int_mode;
-  } cap_flags_t;
+    // Allow this capability to be loaded without permit_store_level
+    bool_t cap_level;
+  } cap_hperms_t;
+  /**
+      * Capability reported architectural permission bits
+      */
+  typedef struct packed {
+    logic [15:0]                    reserved_0;
+    logic [4:0]                     reserved_1_hi;
+    bool_t                          permit_load;
+    bool_t                          permit_execute;
+    bool_t                          access_sys_regs;
+    logic [10-CAP_UPERMS_WIDTH-1:0] reserved_1_lo;
+    upermsw_t                       uperms;
+    bool_t                          permit_cap;
+    bool_t                          cap_level;
+    bool_t                          permit_store_level;
+    bool_t                          permit_elevate_level;
+    bool_t                          permit_load_mutable;
+    bool_t                          permit_store;
+  } cap_report_perms_t;
 
   /* Capability bounds definition */
   typedef struct packed {
@@ -205,9 +187,8 @@ package cva6_cheri_pkg;
   /* Capability definition in memory */
   typedef struct packed {
     bool_t        tag;
-    resw_hi_t     res_hi;
     upermsw_t     uperms;
-    cap_flags_t   flags;
+    resw_hi_t     res_hi;
     cap_hperms_t  hperms;
     resw_lo_t     res_lo;
     otypew_t      otype;
@@ -219,9 +200,8 @@ package cva6_cheri_pkg;
   /* Capability definition in register */
   typedef struct packed {
     bool_t       tag;
-    resw_hi_t    res_hi;
     upermsw_t    uperms;
-    cap_flags_t  flags;
+    resw_hi_t    res_hi;
     cap_hperms_t hperms;
     resw_lo_t    res_lo;
     otypew_t     otype;
@@ -250,7 +230,6 @@ package cva6_cheri_pkg;
       addr            : '{default: 0},
       uperms          : '{default: '1},
       hperms          : '{default: '1},
-      flags           : 1'b1,
       res_hi          : '0,
       res_lo          : '0,
       otype           : UNSEALED_CAP,
@@ -263,7 +242,6 @@ package cva6_cheri_pkg;
       addr            : '{default: 0},
       uperms          : '{default: 0},
       hperms          : '{default: 0},
-      flags           : 1'b0,
       res_hi          : '0,
       res_lo          : '0,
       otype           : UNSEALED_CAP,
@@ -275,7 +253,6 @@ package cva6_cheri_pkg;
       tag             : 1'b0,
       res_hi          : '0,
       uperms          : '{default: 0},
-      flags           : 1'b0,
       hperms          : '{default: 0},
       res_lo          : '0,
       otype           : UNSEALED_CAP,
@@ -297,14 +274,14 @@ package cva6_cheri_pkg;
     return ret;
   endfunction
 
-  function automatic cap_flags_t get_cap_mem_flags(capw_t cap);
+  function automatic bool_t get_cap_mem_int_mode(capw_t cap);
     cap_mem_t ret = cap;
-    return ret.flags;
+    return ret.hperms.int_mode;
   endfunction
 
-  function automatic capw_t set_cap_mem_flags(capw_t cap, cap_flags_t flags);
+  function automatic capw_t set_cap_mem_int_mode(capw_t cap, bool_t int_mode);
     cap_mem_t ret = cap;
-    ret.flags = flags;
+    ret.hperms.int_mode = int_mode;
     return ret;
   endfunction
 
@@ -419,10 +396,16 @@ package cva6_cheri_pkg;
   function automatic top_base_t get_cap_reg_top_base(cap_reg_t cap, cap_meta_data_t cap_meta_data);
     ew_t exp = cap.bounds.exp;
     addrw_t addr_bits = CAP_ADDR_WIDTH'({2'b0, cap.addr} & ~(~66'b0 >> exp)); // mask in relevant addr bits
+    // precompute correction factors for both values of addr_hi to improve timing.
+    logic [1:0] cb0 = cap_meta_data.base_hi_r ? 2'b01 : 2'b00;
+    logic [1:0] cb1 = cap_meta_data.base_hi_r ? 2'b00 : 2'b11;
+    logic [1:0] ct0 = cap_meta_data.top_hi_r ? 2'b01 : 2'b00;
+    logic [1:0] ct1 = cap_meta_data.top_hi_r ? 2'b00 : 2'b11;
     // base
-    addrw_t base_corr_bits = CAP_ADDR_WIDTH'($signed({cap_meta_data.cb, 66'b0}) >>> exp);
     addrw_t base_bits = CAP_ADDR_WIDTH'({cap.bounds.base_bits, 52'b0} >> exp);
-    addrw_t base = (addr_bits + base_corr_bits) | base_bits;
+    addrw_t base0 = (addr_bits + CAP_ADDR_WIDTH'($signed({cb0, 66'b0}) >>> exp)) | base_bits;
+    addrw_t base1 = (addr_bits + CAP_ADDR_WIDTH'($signed({cb1, 66'b0}) >>> exp)) | base_bits;
+    addrw_t base = cap_meta_data.addr_hi_r ? base1 : base0;
     // are the bounds a valid set of bounds (not malformed)
     bool_t malformed_msb =    ((exp == 0) && (cap.bounds.base_bits != 0))
                                || ((exp == 1) && (cap.bounds.base_bits[CAP_M_WIDTH-1] != 0));
@@ -430,8 +413,9 @@ package cva6_cheri_pkg;
     bool_t bounds_valid = (cap.EF == IMPLIED_EXP) || (!malformed_msb && !malformed_lsb);
     // top
     addrwe_t top_bits = (CAP_ADDR_WIDTH + 1)'({cap.bounds.top_bits, 52'b0} >> exp);
-    addrwe_t top_corr_bits = (CAP_ADDR_WIDTH + 1)'($signed({cap_meta_data.ct, 66'b0}) >>> exp);
-    addrwe_t top = (addr_bits + top_corr_bits) | top_bits;
+    addrwe_t top0 = (addr_bits + (CAP_ADDR_WIDTH + 1)'($signed({ct0, 66'b0}) >>> exp)) | top_bits;
+    addrwe_t top1 = (addr_bits + (CAP_ADDR_WIDTH + 1)'($signed({ct1, 66'b0}) >>> exp)) | top_bits;
+    addrwe_t top = cap_meta_data.addr_hi_r ? top1 : top0;
     logic [1:0] diff = top[CAP_ADDR_WIDTH:CAP_ADDR_WIDTH-1] - {1'b0, base[CAP_ADDR_WIDTH-1]};
     if ((exp > 1) && (diff > 1)) top[CAP_ADDR_WIDTH] = ~top[CAP_ADDR_WIDTH];
     // return
@@ -447,15 +431,15 @@ package cva6_cheri_pkg;
     return (are_cap_reg_bounds_valid(cap, cap_meta_data) && cap.bounds.exp == CAP_RESET_EXP);
   endfunction
 
-  function automatic cap_flags_t get_cap_reg_flags(cap_reg_t cap);
+  function automatic bool_t get_cap_reg_int_mode(cap_reg_t cap);
     cap_hperms_t perms = legalize_arch_perms(cap.hperms);
-    return (perms == cap.hperms && perms.permit_execute) ? cap.flags : 1'b0;
+    return (perms == cap.hperms && perms.permit_execute) ? cap.hperms.int_mode : 1'b0;
   endfunction
 
-  function automatic cap_reg_t set_cap_reg_flags(cap_reg_t cap, cap_flags_t flags);
+  function automatic cap_reg_t set_cap_reg_int_mode(cap_reg_t cap, bool_t int_mode);
     cap_reg_t ret = cap;
     cap_hperms_t perms = legalize_arch_perms(cap.hperms);
-    ret.flags = (perms.permit_execute) ? flags : 1'b0;
+    ret.hperms.int_mode = (perms.permit_execute) ? int_mode : 1'b0;
     return ret;
   endfunction
 
@@ -701,7 +685,6 @@ package cva6_cheri_pkg;
         hperms: cap.hperms,
         res_hi: cap.res_hi,
         res_lo: cap.res_lo,
-        flags: cap.flags,
         otype: cap.otype,
         EF: cap.EF,
         bounds: encode_bounds(cap.bounds, cap.EF),
@@ -724,7 +707,6 @@ package cva6_cheri_pkg;
         tag: cap.tag,
         uperms: cap.uperms,
         hperms: cap.hperms,
-        flags: cap.flags,
         res_hi: cap.res_hi,
         res_lo: cap.res_lo,
         otype: cap.otype,
@@ -745,11 +727,12 @@ package cva6_cheri_pkg;
       cap_hperms_t hp_raw, upermsw_t up, logic perms_are_malformed);
     cap_hperms_t hp = perms_are_malformed ? '0 : hp_raw;
     cap_report_perms_t rp = '{
-        reserved_hi          : 0,  //Newer spec:'1,
+        reserved_0           : 0,
+        reserved_1_hi        : '1,
         permit_load          : hp.permit_load,
         permit_execute       : hp.permit_execute,
         access_sys_regs      : hp.access_sys_regs,
-        reserved_lo          : 0,  //Newer spec:'1,
+        reserved_1_lo        : '1,
         uperms               : up,
         permit_cap           : hp.permit_cap,
         cap_level            : hp_raw.cap_level,  // Not a permission, so not legalised
@@ -763,7 +746,7 @@ package cva6_cheri_pkg;
 
   /**
       * @brief Function to convert from reported permissions format for andperms to encoded hardware permissions.
-      * @param permissions in the report format for ACPERM.
+      * @param permissions in the report format for YPERMC.
       * @returns hardware permissions in encoded format. Note that legalisation must be performed outside.
       */
   function automatic cap_hperms_t report_perms_to_hperms(cap_report_perms_t rp);
@@ -776,6 +759,7 @@ package cva6_cheri_pkg;
         permit_load          : rp.permit_load,
         permit_store         : rp.permit_store,
         permit_cap           : rp.permit_cap,
+        int_mode             : 1'bx,
         cap_level            : rp.cap_level
     };
     return hp;
