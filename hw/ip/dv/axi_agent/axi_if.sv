@@ -6,7 +6,7 @@
 // set_* functions, which update all affected channels. Call set_user_width before set_data_width:
 // DATA_WIDTH must be at least twice USER_DATA_WIDTH.
 
-interface axi_if (input logic clk_i, input logic rst_ni);
+interface axi_if (input wire clk_i, input wire rst_ni);
   import axi_agent_pkg::axi_if_mode_e;
   import axi_agent_pkg::Manager;
   import axi_agent_pkg::Subordinate;
