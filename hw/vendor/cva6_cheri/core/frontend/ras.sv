@@ -65,7 +65,9 @@ module ras #(
     end
 
     if (flush_bp_i) begin
-      stack_d = '0;
+      for (int i = 0; i < DEPTH; i += 1) begin
+        stack_d[i] = 'b1;
+      end
     end
   end
 

@@ -223,7 +223,7 @@ module scoreboard #(
           mem_n[trans_id_i[i]].sbe.bp.predict_address =
               ariane_pkg::reg_to_x(resolved_branch_i.target_address);
         end
-        if (mem_n[trans_id_i[i]].sbe.fu == ariane_pkg::CVXIF) begin
+        if (CVA6Cfg.CvxifEn && mem_n[trans_id_i[i]].sbe.fu == ariane_pkg::CVXIF) begin
           if (x_we_i) mem_n[trans_id_i[i]].sbe.rd = x_rd_i;
           else mem_n[trans_id_i[i]].sbe.rd = 5'b0;
         end

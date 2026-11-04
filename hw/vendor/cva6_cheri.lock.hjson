@@ -9,6 +9,6 @@
   upstream:
   {
     url: https://github.com/lowRISC/cva6-cheri.git
-    rev: 0c7b3adf3458012210a0612efba72058c1dbd84b
+    rev: c1eda9b54e7684c2c39926118405f5b1b93e4f17
   }
 }
