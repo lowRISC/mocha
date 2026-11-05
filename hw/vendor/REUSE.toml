@@ -3,6 +3,28 @@
 version = 1
 
 [[annotations]]
+path = ["cvfpu/**"]
+SPDX-License-Identifier = "SHL-0.51"
+SPDX-FileCopyrightText = ["2019 ETH Zurich and University of Bologna."]
+
+[[annotations]]
+path = ["cvfpu/vendor/openc910/**"]
+precedence = "override"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = ["2019-2021 T-Head Semiconductor Co., Ltd."]
+
+[[annotations]]
+path = ["cvfpu/vendor/opene906/**"]
+precedence = "override"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = ["2020-2021 T-Head Semiconductor Co., Ltd."]
+
+[[annotations]]
+path = ["fpu_div_sqrt_mvp/**"]
+SPDX-License-Identifier = "SHL-0.51"
+SPDX-FileCopyrightText = ["2018 ETH Zurich and University of Bologna."]
+
+[[annotations]]
 path = ["ethernet/**"]
 SPDX-License-Identifier = "MIT"
 SPDX-FileCopyrightText = ["2015-2018 Alex Forencich."]
