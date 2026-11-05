@@ -1,22 +1,8 @@
 ##
-#  Copyright 2023,2024 CEA*
-#  *Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
-#  Copyright 2025 Inria, Universite Grenoble-Alpes, TIMA
+#  Copyright 2023,2024 Commissariat a l'Energie Atomique et aux Energies Alternatives (CEA)
+#  Copyright 2025 Univ. Grenoble Alpes, Inria, TIMA Laboratory
 #
 #  SPDX-License-Identifier: Apache-2.0 WITH SHL-2.1
-#
-#  Licensed under the Solderpad Hardware License v 2.1 (the “License”); you
-#  may not use this file except in compliance with the License, or, at your
-#  option, the Apache License version 2.0. You may obtain a copy of the
-#  License at
-#
-#  https://solderpad.org/licenses/SHL-2.1/
-#
-#  Unless required by applicable law or agreed to in writing, any work
-#  distributed under the License is distributed on an “AS IS” BASIS, WITHOUT
-#  WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-#  License for the specific language governing permissions and limitations
-#  under the License.
 ##
 ##
 #  Author     : Cesar Fuguet
@@ -62,3 +48,5 @@ CONF_HPDCACHE_WB_ENABLE=1
 CONF_HPDCACHE_USER_ENABLE=0
 CONF_HPDCACHE_CAP_AMO_ENABLE=0
 CONF_HPDCACHE_LOW_LATENCY=1
+CONF_HPDCACHE_ECC_ENABLE=1
+CONF_HPDCACHE_ECC_SCRUBBER_ENABLE=1
