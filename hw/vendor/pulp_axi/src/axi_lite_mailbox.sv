@@ -304,6 +304,7 @@ module axi_lite_mailbox_slave #(
   logic [2:0] irqp_q;             // interrupt request pending register (read only)
   logic [1:0] ctrl_q;             // mailbox control register
   logic       update_regs;        // register enable signal
+  logic       out_of_rst_q;       // low in the first cycle after reset
 
   // register instantiation
   `FFLARN(error_q, error_d, update_regs, '0, clk_i, rst_ni)
@@ -311,6 +312,7 @@ module axi_lite_mailbox_slave #(
   `FFLARN(rirqt_q, rirqt_d, update_regs, '0, clk_i, rst_ni)
   `FFLARN(irqs_q, irqs_d, update_regs, '0, clk_i, rst_ni)
   `FFLARN(irqen_q, irqen_d, update_regs, '0, clk_i, rst_ni)
+  `FFARN(out_of_rst_q, 1'b1, 1'b0, clk_i, rst_ni)
 
   // Mailbox FIFO data assignments
   for (genvar i = 0; i < (AxiDataWidth/8); i++) begin : gen_w_mbox_data
@@ -353,14 +355,15 @@ module axi_lite_mailbox_slave #(
     // -------------------------------------------
     // Set the read and write interrupt FF (irqs), when the threshold triggers
     // -------------------------------------------
+    // The FIFOs report full in the first cycle after reset, so the triggers skip that cycle.
     // strict threshold interrupt these fields get cleared by acknowledge on write onto the register
     // read trigger, see status_q above
-    if (!irqs_q[1] && status_q[3]) begin
+    if (!irqs_q[1] && status_q[3] && out_of_rst_q) begin
       irqs_d[1]   = 1'b1;
       update_regs = 1'b1;
     end
     // write trigger, see status_q above
-    if (!irqs_q[0] && status_q[2]) begin
+    if (!irqs_q[0] && status_q[2] && out_of_rst_q) begin
       irqs_d[0]   = 1'b1;
       update_regs = 1'b1;
     end
