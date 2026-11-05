@@ -88,6 +88,15 @@ openocd -f util/verilator-openocd-cfg.tcl
 gdb --eval-command="target extended-remote localhost:3333" build/sw/device/examples/infinite_loop
 ```
 
+Mocha uses the CHERI-aware debug module and ROM selected by CVA6-CHERI.
+The ROM preserves capability registers across debug entry and tracks the
+integer/capability execution mode when running the program buffer. To inspect
+capability registers such as `pcc` and `ca0`, use RVY-aware OpenOCD and GDB builds
+compatible with the core's ISA revision; standard tools provide integer register
+and memory access. See the [CVA6 CHERI debugging guide](../../hw/vendor/cva6_cheri/docs/05_cva6_apu/cheri_debug.md)
+for tool repositories and example capability-register commands. Use Mocha's
+OpenOCD configuration above for the simulator and its JTAG IDCODE.
+
 To run the Verilator tests, first build the software, then run:
 ```sh
 ctest --test-dir build/sw -R sim_verilator -LE slow
