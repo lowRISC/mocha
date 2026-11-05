@@ -7,8 +7,9 @@
   patch_dir: "patches/pulp_riscv_dbg",
 
   upstream: {
-    url: "https://github.com/pulp-platform/riscv-dbg",
-    rev: "358f901",
+    url: "https://github.com/Capabilities-Limited/riscv-dbg.git",
+    // CHERI-aware debug ROM and abstract commands used by CVA6-CHERI.
+    rev: "RVY-cva6",
   },
 
   exclude_from_upstream: [
