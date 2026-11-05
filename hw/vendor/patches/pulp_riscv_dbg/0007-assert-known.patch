@@ -1,5 +1,5 @@
 diff --git a/src/dm_top.sv b/src/dm_top.sv
-index c21e58d..89a5814 100644
+index 2af28ba..b3d9fea 100644
 --- a/src/dm_top.sv
 +++ b/src/dm_top.sv
 @@ -17,6 +17,8 @@
@@ -11,7 +11,7 @@ index c21e58d..89a5814 100644
  module dm_top #(
    parameter int unsigned        NrHarts          = 1,
    parameter int unsigned        BusWidth         = 32,
-@@ -69,6 +71,23 @@ module dm_top #(
+@@ -76,6 +78,23 @@ module dm_top #(
    output dm::dmi_resp_t         dmi_resp_o
  );
  

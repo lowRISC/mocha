@@ -1,13 +1,12 @@
 diff --git a/src/dm_mem.sv b/src/dm_mem.sv
-index 9ff3c86..2b4497e 100755
+index d0c453e..88d0575 100755
 --- a/src/dm_mem.sv
 +++ b/src/dm_mem.sv
-@@ -82,7 +82,11 @@ module dm_mem #(
-   localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h110;
-   localparam logic [DbgAddressBits-1:0] ExceptionAddr = 'h118;
+@@ -84,7 +84,10 @@ module dm_mem #(
+   localparam logic [DbgAddressBits-1:0] IntModeAddr   = 'h120;
+   localparam logic [DbgAddressBits-1:0] CapModeAddr   = 'h128;
  
 -  logic [dm::ProgBufSize/2-1:0][63:0]   progbuf;
-+  // Prog buff size after repacking the 32bit array into a 64bit array.
 +  localparam int unsigned ProgBuf64Size = dm::ProgBufSize / 2;
 +  localparam int unsigned ProgBuf64AddrSize = $clog2(ProgBuf64Size);
 +
@@ -15,7 +14,7 @@ index 9ff3c86..2b4497e 100755
    logic [7:0][63:0]   abstract_cmd;
    logic [NrHarts-1:0] halted_d, halted_q;
    logic [NrHarts-1:0] resuming_d, resuming_q;
-@@ -265,12 +269,13 @@ module dm_mem #(
+@@ -279,12 +282,13 @@ module dm_mem #(
            // core can write data registers
            [DataBaseAddr:DataEndAddr]: begin
              data_valid_o = 1'b1;
@@ -32,7 +31,7 @@ index 9ff3c86..2b4497e 100755
                          data_bits[dc+1][(i-4)*8+:8] = wdata_i[i*8+:8];
                        end
                      end else begin // for lower 32bit data write
-@@ -310,14 +315,17 @@ module dm_mem #(
+@@ -324,14 +328,17 @@ module dm_mem #(
  
            [DataBaseAddr:DataEndAddr]: begin
              rdata_d = {
@@ -54,24 +53,3 @@ index 9ff3c86..2b4497e 100755
            end
  
            // two slots for abstract command
-diff --git a/src/dmi_jtag.sv b/src/dmi_jtag.sv
-index 577c3fd..24edad0 100644
---- a/src/dmi_jtag.sv
-+++ b/src/dmi_jtag.sv
-@@ -58,6 +58,7 @@ module dmi_jtag #(
-   logic tdi;
- 
-   logic dtmcs_select;
-+  dm::dtmcs_t dtmcs_d, dtmcs_q;
- 
-   assign dmi_clear = jtag_dmi_clear || (dtmcs_select && update && dtmcs_q.dmihardreset);
- 
-@@ -65,8 +66,6 @@ module dmi_jtag #(
-   // Debug Module Control and Status
-   // -------------------------------
- 
--  dm::dtmcs_t dtmcs_d, dtmcs_q;
--
-   always_comb begin
-     dtmcs_d = dtmcs_q;
-     if (capture) begin
