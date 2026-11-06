@@ -143,6 +143,18 @@
       tests: []
     }
     {
+      name: mailbox_request_response
+      desc: '''A request and its answer exchanged on interrupts.
+
+            Both ports enable the read threshold interrupt, with RIRQT below the request length.
+            One port writes a request of several words, the other collects it once its interrupt
+            rises and writes an answer, and the first collects the answer on its own interrupt.
+            Data, order and both interrupt outputs match the scoreboard.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
       name: mailbox_flush
       desc: '''FIFO flush from either port.
 
