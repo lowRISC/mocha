@@ -1,0 +1,45 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:mailbox_env:0.1"
+description: "Mailbox block-level UVM environment"
+
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:dv:ralgen
+      - lowrisc:dv:dv_utils
+      - lowrisc:dv:dv_base_reg
+      - lowrisc:dv:common_ifs
+      - lowrisc:mocha_dv:axi_agent:0.1
+      - lowrisc:mocha_constants:top_pkg
+    files:
+      - mailbox_env_pkg.sv
+      - mailbox_env_cfg.sv: {is_include_file: true}
+      - mailbox_reg_predictor.sv: {is_include_file: true}
+      - mailbox_access.sv: {is_include_file: true}
+      - mailbox_state.sv: {is_include_file: true}
+      - mailbox_scoreboard.sv: {is_include_file: true}
+      - mailbox_virtual_sequencer.sv: {is_include_file: true}
+      - mailbox_env.sv: {is_include_file: true}
+      - seq_lib/mailbox_vseq_list.sv: {is_include_file: true}
+      - seq_lib/mailbox_base_vseq.sv: {is_include_file: true}
+      - seq_lib/mailbox_smoke_vseq.sv: {is_include_file: true}
+    file_type: systemVerilogSource
+
+generate:
+  ral:
+    generator: ralgen
+    parameters:
+      name: mailbox
+      ip_hjson: ../../data/mailbox.hjson
+    position: prepend
+
+targets:
+  default:
+    filesets:
+      - files_dv
+    generate:
+      - ral

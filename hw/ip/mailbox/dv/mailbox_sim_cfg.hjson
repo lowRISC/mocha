@@ -1,0 +1,52 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: mailbox
+
+  dut: axi_lite_mailbox
+
+  tb: tb
+
+  tool: xcelium
+
+  fusesoc_core: lowrisc:mocha_dv:mailbox_sim:0.1
+
+  testplan: "{self_dir}/../data/mailbox_testplan.hjson"
+
+  import_cfgs: [
+    "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"
+  ]
+
+  // The mailbox registers are 64 bits wide
+  overrides: [
+    {
+      name: tl_dw
+      value: 64
+    }
+    {
+      name: tl_dbw
+      value: 8
+    }
+  ]
+
+  reseed: 1
+
+  uvm_test: mailbox_base_test
+  uvm_test_seq: mailbox_base_vseq
+
+  tests: [
+    {
+      name: mailbox_smoke
+      uvm_test_seq: mailbox_smoke_vseq
+      reseed: 5
+    }
+  ]
+
+  regressions: [
+    {
+      name: smoke
+      tests: ["mailbox_smoke"]
+    }
+  ]
+}

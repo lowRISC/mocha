@@ -1,0 +1,21 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:mailbox_test:0.1"
+description: "Mailbox block-level UVM tests"
+
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:mocha_dv:mailbox_env:0.1
+    files:
+      - mailbox_test_pkg.sv
+      - mailbox_base_test.sv: {is_include_file: true}
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv
