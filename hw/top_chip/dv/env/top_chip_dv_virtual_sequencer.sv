@@ -16,6 +16,10 @@ class top_chip_dv_virtual_sequencer extends uvm_sequencer;
   uart_sequencer uart_sqr;
   i2c_sequencer  i2c_sqr;
 
+  // Sequencer of the active manager driving the CVA6 host port. Null unless
+  // axi_driver_to_cva6_bridge replaces CVA6.
+  axi_mgr_sequencer cva6_axi_sqr;
+
   // FIFOs for monitor output. Used by some virtual sequences to check
   // TX (from-chip) items.
   uvm_tlm_analysis_fifo #(uart_item) uart_tx_fifo;
