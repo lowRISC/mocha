@@ -72,6 +72,5 @@
 
   exclude_from_upstream: [
     "*/BUILD",
-    "hw/dv/tools/vcs",
   ],
 }
