@@ -16,6 +16,8 @@
 // Naming
 // ------
 // Every testpoint and test is `mailbox_<what>`. The list is sorted by stage, then by dependency.
+// A testpoint lists its tests once they exist in mailbox_sim_cfg.hjson; until then `tests` is
+// empty and dvsim reports the testpoint as not run.
 //
 // Descriptions
 // ------------
@@ -97,7 +99,7 @@
             the other port reads a word.
             '''
       stage: V2
-      tests: ["mailbox_fifo_full"]
+      tests: []
     }
     {
       name: mailbox_fifo_empty
@@ -107,7 +109,7 @@
             IRQS.EIRQ are set, and a later word is still delivered.
             '''
       stage: V2
-      tests: ["mailbox_fifo_empty"]
+      tests: []
     }
     {
       name: mailbox_error_clear_on_read
@@ -117,7 +119,7 @@
             since the last read and reads back zero after that.
             '''
       stage: V2
-      tests: ["mailbox_error_clear_on_read"]
+      tests: []
     }
     {
       name: mailbox_threshold_irq
@@ -128,7 +130,7 @@
             and IRQS.WTIRQ and IRQS.RTIRQ set on the crossing and clear only on a write of 1.
             '''
       stage: V2
-      tests: ["mailbox_threshold_irq"]
+      tests: []
     }
     {
       name: mailbox_irq
@@ -138,7 +140,7 @@
             AND IRQEN, and the port's interrupt output is high exactly while IRQP is non-zero.
             '''
       stage: V2
-      tests: ["mailbox_irq"]
+      tests: []
     }
     {
       name: mailbox_flush
@@ -148,7 +150,7 @@
             whichever port asked, and the status flags of both ports follow.
             '''
       stage: V2
-      tests: ["mailbox_flush"]
+      tests: []
     }
     {
       name: mailbox_access_errors
@@ -159,7 +161,7 @@
             still an open question.
             '''
       stage: V2
-      tests: ["mailbox_access_errors"]
+      tests: []
     }
     {
       name: mailbox_unmapped_access
@@ -169,7 +171,7 @@
             response is an open question in the vPlan.
             '''
       stage: V2
-      tests: ["mailbox_unmapped_access"]
+      tests: []
     }
     {
       name: mailbox_partial_writes
@@ -179,7 +181,7 @@
             question in the vPlan.
             '''
       stage: V2
-      tests: ["mailbox_partial_writes"]
+      tests: []
     }
     {
       name: mailbox_stress
@@ -190,7 +192,7 @@
             scoreboard checks data, responses, flags and interrupt outputs throughout.
             '''
       stage: V2
-      tests: ["mailbox_stress", "mailbox_stress_zero_delays"]
+      tests: []
     }
     {
       name: mailbox_stress_with_rand_reset
@@ -200,7 +202,7 @@
             reset value and the next transfer is delivered intact.
             '''
       stage: V2
-      tests: ["mailbox_stress_with_rand_reset"]
+      tests: []
     }
   ]
 }
