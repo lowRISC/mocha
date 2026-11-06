@@ -6,6 +6,7 @@ package mailbox_env_pkg;
   import uvm_pkg::*;
   import dv_utils_pkg::*;
   import axi_agent_pkg::*;
+  import dv_base_reg_pkg::*;
   import mailbox_ral_pkg::*;
 
   `include "uvm_macros.svh"
