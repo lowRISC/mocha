@@ -31,6 +31,8 @@
       hwaccess: "hro",
       hwext: "true",
       hwqe: "true",
+      // Writes push words. TODO (#755): reads answer OKAY in the RTL and SLVERR in the spec.
+      tags: ["excl:CsrAllTests:CsrExclAll"],
       fields: [
         { bits: "63:0", name: "data", desc: "Data pushed into the write FIFO." }
       ]
@@ -41,6 +43,8 @@
       hwaccess: "hwo",
       hwext: "true",
       hwre: "true",
+      // Reads pop a word, or answer SLVERR and set ERROR when the FIFO is empty
+      tags: ["excl:CsrAllTests:CsrExclAll"],
       fields: [
         { bits: "63:0", name: "data", desc: "Data popped from the read FIFO." }
       ]
@@ -137,6 +141,8 @@
       hwaccess: "hro",
       hwext: "true",
       hwqe: "true",
+      // Writes flush the FIFOs, covered by V2 mailbox_flush
+      tags: ["excl:CsrAllTests:CsrExclAll"],
       fields: [
         // TODO(lowrisc/mocha#755): the doc names these bits WTIRQ and RTIRQ, like the IRQ bits
         { bits: "0", name: "flush_wfifo", desc: "Flush the write FIFO for this port." }

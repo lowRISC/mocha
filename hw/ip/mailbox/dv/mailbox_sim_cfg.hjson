@@ -41,6 +41,22 @@
       uvm_test_seq: mailbox_smoke_vseq
       reseed: 5
     }
+    {
+      name: mailbox_csr_hw_reset
+      uvm_test_seq: mailbox_csr_hw_reset_vseq
+    }
+    {
+      name: mailbox_csr_rw
+      uvm_test_seq: mailbox_csr_rw_vseq
+    }
+    {
+      name: mailbox_csr_bit_bash
+      uvm_test_seq: mailbox_csr_bit_bash_vseq
+    }
+    {
+      name: mailbox_csr_aliasing
+      uvm_test_seq: mailbox_csr_aliasing_vseq
+    }
   ]
 
   regressions: [
