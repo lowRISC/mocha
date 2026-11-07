@@ -2,9 +2,9 @@
 
 debug_rom = debug_rom.sv debug_rom_one_scratch.sv
 
-GCC?=riscv64-unknown-elf-gcc
-OBJCOPY?=riscv64-unknown-elf-objcopy
-OBJDUMP?=riscv64-unknown-elf-objdump
+GCC?=clang -target riscv64 -march=rv64y_zyhybrid
+OBJCOPY?=llvm-objcopy
+OBJDUMP?=llvm-objdump
 PYTHON?=python3
 
 all: $(debug_rom)
@@ -13,7 +13,7 @@ all: $(debug_rom)
 	$(PYTHON) gen_rom.py $<
 
 %.img: %.bin
-	dd if=$< of=$@ bs=256 count=1
+	dd if=$< of=$@ bs=256
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $< $@

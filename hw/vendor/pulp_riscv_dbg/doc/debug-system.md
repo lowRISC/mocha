@@ -442,15 +442,20 @@ Address         | Description
 0x108           | Going. Write to this address to acknowledge that the core is executing.
 0x110           | Resuming. Write to this address to acknowledge that the core is resuming non-debug operation.
 0x118           | Exception. An exception was triggered while the core was in debug mode.
+0x120           | Intmode. An ebreak ran in debug mode from CHERI integer mode.
+0x128           | Capmode. An ebreak ran in debug mode from CHERI capability mode.
 0x300           | WhereTo
 0x338 to 0x35f  | AbstractCmd
 0x360 to 0x37f  | Program Buffer (8 words)
 0x380 to 0x388  | DataAddr
 0x400 to 0x7ff  | Flags
 0x800 to 0x1000 | Debug ROM
-0x800           | HaltAddress. Entry point into the Debug Module. The core must jump to this address when it was requested to halt.
+0x800           | HaltAddress. Entry point into the Debug Module. The core must jump to this address when it was requested to halt from outside debug mode.
 0x808           | ResumeAddress. Entry point into the Debug Module. Jumping to this address instructs the debug module to bring the core out of debug mode and back into normal operation mode.
-0x810           | ExceptionAddress. Entry point into the Debug Module. The core must jump to this address when it receives an exception while being in debug mode.
+0x810           | ExceptionCapmodeAddress. Entry point into the Debug Module. The core must jump to this address when it receives an exception while being in debug mode in CHERI capability mode.
+0x818           | ExceptionIntmodeAddress. Entry point into the Debug Module. The core must jump to this address when it receives an exception while being in debug mode in CHERI integer mode.
+0x820           | ReentryCapmodeAddress. Entry point into the Debug Module. The core must jump to this address when it was requested to halt from within debug mode while in CHERI capability mode.
+0x828           | ReentryIntmodeAddress. Entry point into the Debug Module. The core must jump to this address when it was requested to halt from within debug mode while in CHERI integer mode.
 
 (Note: The debug memory addressing scheme is adopted from the Rocket Chip Generator.)
 
