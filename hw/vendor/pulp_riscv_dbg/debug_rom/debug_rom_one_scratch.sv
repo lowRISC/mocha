@@ -22,24 +22,42 @@ module debug_rom_one_scratch (
   output logic [63:0]  rdata_o
 );
 
-  localparam int unsigned RomSize = 14;
+  localparam int unsigned RomSize = 32;
 
   logic [RomSize-1:0][63:0] mem;
   assign mem = {
-    64'h7b200073_7b202473,
+    64'h00000000_7b200073,
+    64'h7b202473_5600007b,
     64'h10802823_f1402473,
-    64'haa5ff06f_7b202473,
-    64'h10002423_00100073,
-    64'h7b202473_10002c23,
-    64'hfddff06f_fc0414e3,
-    64'h00247413_40044403,
-    64'hf1402473_02041263,
-    64'h00147413_40044403,
-    64'h10802023_f1402473,
+    64'h5610007b_a21ff06f,
+    64'h7b202473_a29ff06f,
+    64'h5610007b_7b202473,
+    64'h00040863_5600007b,
+    64'h00447413_40044403,
+    64'hf1402473_10002423,
+    64'h00100073_5610007b,
+    64'h7b202473_5600007b,
+    64'h10002c23_5610007b,
+    64'h00100073_7b202473,
+    64'h5600007b_10002c23,
+    64'h5610007b_fddff06f,
+    64'hf80412e3_00247413,
+    64'h40044403_f1402473,
+    64'h04041263_00147413,
+    64'h40044403_10802023,
+    64'hf1402473_5610007b,
     64'h7b241073_0ff0000f,
-    64'h00000013_0380006f,
-    64'h00000013_0580006f,
-    64'h00000013_0180006f
+    64'h0100006f_12802023,
+    64'h5610007b_7b241073,
+    64'h0ff0000f_0240006f,
+    64'h12802423_5610007b,
+    64'h7b241073_0ff0000f,
+    64'h00000013_01c0006f,
+    64'h00000013_0100006f,
+    64'h00000013_0880006f,
+    64'h00000013_07c0006f,
+    64'h00000013_0dc0006f,
+    64'h00000013_0580006f
   };
 
   logic [$clog2(RomSize)-1:0] addr_d, addr_q;
@@ -58,7 +76,7 @@ module debug_rom_one_scratch (
   // the speculative fetch stage of the core
   always_comb begin : p_outmux
     rdata_o = '0;
-    if (addr_q < $clog2(RomSize)'(RomSize)) begin
+    if (addr_q < $clog2(RomSize+1)'(RomSize)) begin
       rdata_o = mem[addr_q];
     end
   end
