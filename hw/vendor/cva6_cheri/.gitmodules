@@ -16,15 +16,9 @@
 [submodule "corev_apu/fpga/src/axi_slice"]
 	path = corev_apu/fpga/src/axi_slice
 	url = https://github.com/pulp-platform/axi_slice.git
-[submodule "corev_apu/fpga/src/ariane-ethernet"]
-	path = corev_apu/fpga/src/ariane-ethernet
-	url = https://github.com/lowRISC/ariane-ethernet.git
-[submodule "corev_apu/src/axi_riscv_atomics"]
-	path = corev_apu/src/axi_riscv_atomics
-	url = https://github.com/ninolomata/axi_riscv_atomics.git
 [submodule "corev_apu/riscv-dbg"]
 	path = corev_apu/riscv-dbg
-	url = https://github.com/pulp-platform/riscv-dbg.git
+	url = https://github.com/Capabilities-Limited/riscv-dbg.git
 [submodule "corev_apu/rv_plic"]
 	path = corev_apu/rv_plic
 	url = https://github.com/pulp-platform/rv_plic.git
@@ -55,8 +49,8 @@
 [submodule "corev_apu/fpga/src/gpio"]
 	path = corev_apu/fpga/src/gpio
 	url = https://github.com/pulp-platform/gpio.git
-[submodule "vendor/zero-day/axi_tagcontroller"]
-	path = vendor/zero-day/axi_tagcontroller
+[submodule "vendor/capltd/axi_tagcontroller"]
+	path = vendor/capltd/axi_cheri_tagcontroller
 	url = https://github.com/Capabilities-Limited/axi_cheri_tagcontroller.git
 [submodule "corev_apu/tb/tb_testRig_cheri/src/RVFI-DII-utils"]
 	path = corev_apu/tb/tb_testRig_cheri/src/RVFI-DII-utils

@@ -66,16 +66,14 @@ We use Verilator to simulate our hardware design and use FuseSoC as a build syst
 To build and run a Verilator simulation of Mocha, run:
 ```sh
 # Build simulator.
-fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="--threads 2 --trace-threads 2" --make_options="-j 4"
+fusesoc --cores-root=. run --target=sim --tool=verilator --setup --build lowrisc:mocha:top_chip_verilator --verilator_options="--threads 2" --make_options="-j 4"
 # Run simulator.
 build/lowrisc_mocha_top_chip_verilator_0/sim-verilator/Vtop_chip_verilator -r build/sw/device/bootrom/bootrom_scrambled.vmem -E build/sw/device/examples/hello_world
 # Check the UART output.
 cat uart0.log
 ```
 
-Note that the `-j 4` argument speeds up simulator building, while the `--threads 2 --trace-threads 2` arguments speed up simulator running.
-For maximum tracing performance, omit `--threads 2`.
-For maximum non-tracing performance, or when using Verilator v5.048 onwards, omit `--trace-threads 2`.
+The `-j 4` argument enables parallel C++ compilation, while `--threads 2` enables two simulation threads.
 
 One specific feature of our simulator is that you can exit the simulation by using the following magic string:
 `Safe to exit simulator.\xd8\xaf\xfb\xa0\xc7\xe1\xa9\xd7`
@@ -89,6 +87,15 @@ openocd -f util/verilator-openocd-cfg.tcl
 # In yet another terminal run GDB.
 gdb --eval-command="target extended-remote localhost:3333" build/sw/device/examples/infinite_loop
 ```
+
+Mocha uses the CHERI-aware debug module and ROM selected by CVA6-CHERI.
+The ROM preserves capability registers across debug entry and tracks the
+integer/capability execution mode when running the program buffer. To inspect
+capability registers such as `pcc` and `ca0`, use RVY-aware OpenOCD and GDB builds
+compatible with the core's ISA revision; standard tools provide integer register
+and memory access. See the [CVA6 CHERI debugging guide](../../hw/vendor/cva6_cheri/docs/05_cva6_apu/cheri_debug.md)
+for tool repositories and example capability-register commands. Use Mocha's
+OpenOCD configuration above for the simulator and its JTAG IDCODE.
 
 To run the Verilator tests, first build the software, then run:
 ```sh

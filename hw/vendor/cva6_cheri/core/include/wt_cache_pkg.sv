@@ -41,7 +41,7 @@ package wt_cache_pkg;
 `endif
 
   // FIFO depths of L15 adapter
-  localparam ADAPTER_REQ_FIFO_DEPTH = 2;
+  localparam ADAPTER_REQ_FIFO_DEPTH  = 2;
   localparam ADAPTER_RTRN_FIFO_DEPTH = 2;
 
 

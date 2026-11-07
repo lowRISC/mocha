@@ -81,8 +81,9 @@ module dm_mem #(
   localparam logic [DbgAddressBits-1:0] GoingAddr     = 'h108;
   localparam logic [DbgAddressBits-1:0] ResumingAddr  = 'h110;
   localparam logic [DbgAddressBits-1:0] ExceptionAddr = 'h118;
+  localparam logic [DbgAddressBits-1:0] IntModeAddr   = 'h120;
+  localparam logic [DbgAddressBits-1:0] CapModeAddr   = 'h128;
 
-  // Prog buff size after repacking the 32bit array into a 64bit array.
   localparam int unsigned ProgBuf64Size = dm::ProgBufSize / 2;
   localparam int unsigned ProgBuf64AddrSize = $clog2(ProgBuf64Size);
 
@@ -90,7 +91,8 @@ module dm_mem #(
   logic [7:0][63:0]   abstract_cmd;
   logic [NrHarts-1:0] halted_d, halted_q;
   logic [NrHarts-1:0] resuming_d, resuming_q;
-  logic               resume, go, going;
+  logic [NrHarts-1:0] int_mode_d, int_mode_q;
+  logic               resume, go, going, int_mode;
 
   logic exception;
   logic unsupported_command;
@@ -109,7 +111,8 @@ module dm_mem #(
   logic [NrHartsAligned-1:0] resumereq_aligned, haltreq_aligned,
                              halted_d_aligned, halted_q_aligned,
                              halted_aligned, resumereq_wdata_aligned,
-                             resuming_d_aligned, resuming_q_aligned;
+                             resuming_d_aligned, resuming_q_aligned,
+                             int_mode_d_aligned, int_mode_q_aligned;
 
   assign resumereq_aligned       = NrHartsAligned'(resumereq_i);
   assign haltreq_aligned         = NrHartsAligned'(haltreq_i);
@@ -119,6 +122,8 @@ module dm_mem #(
   assign halted_d                = NrHarts'(halted_d_aligned);
   assign resuming_q_aligned      = NrHartsAligned'(resuming_q);
   assign resuming_d              = NrHarts'(resuming_d_aligned);
+  assign int_mode_q_aligned      = NrHartsAligned'(int_mode_q);
+  assign int_mode_d              = NrHarts'(int_mode_d_aligned);
 
   // distinguish whether we need to forward data from the ROM or the FSM
   // latch the address for this
@@ -145,6 +150,7 @@ module dm_mem #(
     go               = 1'b0;
     resume           = 1'b0;
     cmdbusy_o        = 1'b1;
+    int_mode         = int_mode_q_aligned[hartsel];
 
     unique case (state_q)
       Idle: begin
@@ -232,6 +238,7 @@ module dm_mem #(
 
     halted_d_aligned   = NrHartsAligned'(halted_q);
     resuming_d_aligned = NrHartsAligned'(resuming_q);
+    int_mode_d_aligned = NrHartsAligned'(int_mode_q);
     rdata_d        = rdata_q;
     data_bits      = data_i;
     rdata          = '0;
@@ -239,7 +246,7 @@ module dm_mem #(
     // write data in csr register
     data_valid_o   = 1'b0;
     exception      = 1'b0;
-    halted_aligned     = '0;
+    halted_aligned = '0;
     going          = 1'b0;
 
     // The resume ack signal is lowered when the resume request is deasserted
@@ -263,6 +270,12 @@ module dm_mem #(
             halted_d_aligned[wdata_hartsel] = 1'b0;
             // set the resuming flag which needs to be cleared by the debugger
             resuming_d_aligned[wdata_hartsel] = 1'b1;
+          end
+          IntModeAddr: begin
+            int_mode_d_aligned[wdata_hartsel] = 1'b1;
+          end
+          CapModeAddr: begin
+            int_mode_d_aligned[wdata_hartsel] = 1'b0;
           end
           // an exception occurred during execution
           ExceptionAddr: exception = 1'b1;
@@ -339,7 +352,7 @@ module dm_mem #(
             // release the corresponding hart
             if (({addr_i[DbgAddressBits-1:3], 3'b0} - FlagsBaseAddr[DbgAddressBits-1:0]) ==
               (DbgAddressBits'(hartsel) & {{(DbgAddressBits-3){1'b1}}, 3'b0})) begin
-              rdata[DbgAddressBits'(hartsel) & DbgAddressBits'(3'b111)] = {6'b0, resume, go};
+              rdata[DbgAddressBits'(hartsel) & DbgAddressBits'(3'b111)] = {5'b0, int_mode, resume, go};
             end
             rdata_d = rdata;
           end
@@ -545,9 +558,11 @@ module dm_mem #(
     if (!rst_ni) begin
       halted_q   <= 1'b0;
       resuming_q <= 1'b0;
+      int_mode_q <= '1;
     end else begin
       halted_q   <= SelectableHarts & halted_d;
       resuming_q <= SelectableHarts & resuming_d;
+      int_mode_q <= SelectableHarts & int_mode_d;
     end
   end
 

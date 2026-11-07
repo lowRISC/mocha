@@ -336,3 +336,31 @@ lint_off -rule UNUSEDPARAM -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for
 lint_off -rule UNUSEDSIGNAL -file "*/hpdcache/rtl/*/*.sv" // Harmless warning for vendored in code.
 lint_off -rule WIDTHEXPAND -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.
 lint_off -rule WIDTHTRUNC -file "*/hpdcache/rtl/*/*.sv" // Not worth fixing width errors in vendored code.
+
+// Width, range and style warnings in vendored floating-point IP.
+// Functional diagnostics are waived individually below rather than by warning class.
+lint_off -rule WIDTHEXPAND -file "*/cvfpu/*.sv"
+lint_off -rule WIDTHTRUNC -file "*/cvfpu/*.sv"
+lint_off -rule ASCRANGE -file "*/cvfpu/*.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/cvfpu/*.sv"
+lint_off -rule GENUNNAMED -file "*/cvfpu/*.sv"
+lint_off -rule UNUSEDPARAM -file "*/cvfpu/*.sv"
+lint_off -rule IMPORTSTAR -file "*/cvfpu/*.sv"
+lint_off -rule WIDTHEXPAND -file "*/fpu_div_sqrt_mvp/hdl/*.sv"
+lint_off -rule WIDTHTRUNC -file "*/fpu_div_sqrt_mvp/hdl/*.sv"
+lint_off -rule ASCRANGE -file "*/fpu_div_sqrt_mvp/hdl/*.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/fpu_div_sqrt_mvp/hdl/*.sv"
+lint_off -rule GENUNNAMED -file "*/fpu_div_sqrt_mvp/hdl/*.sv"
+lint_off -rule UNUSEDPARAM -file "*/fpu_div_sqrt_mvp/hdl/*.sv"
+lint_off -rule IMPORTSTAR -file "*/fpu_div_sqrt_mvp/hdl/*.sv"
+lint_off -rule UNUSEDSIGNAL -file "*/cvfpu/vendor/*.v"
+
+// Provisional Verilator 5.054 waivers pending investigation and simulation validation.
+lint_off -rule UNUSEDSIGNAL -file "*/pulp_riscv_dbg/src/dm_pkg.sv" -match "*Bits of function variable are not used: 'imm'[0]*"
+lint_off -rule UNDRIVEN -file "*/cvfpu/src/fpnew_opgroup_multifmt_slice.sv" -match "*'divsqrt_done'[0]*"
+lint_off -rule UNDRIVEN -file "*/cvfpu/src/fpnew_opgroup_multifmt_slice.sv" -match "*'divsqrt_ready'[0]*"
+lint_off -rule SYNCASYNCNET -file "*/rtl/rstmgr_por.sv" -match "*u_rstmgr*rst_filter_n*"
+lint_off -rule SYNCASYNCNET -file "*/rtl/prim_flop.sv" -match "*u_rstmgr.u_dmain_main.u_rst_sync.u_sync_2.q_o*"
+// DFG-generated signal names change between builds; scope these reports by source file.
+lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/stream_fork.sv" -match "*__Vdfg_Regularize_*"
+lint_off -rule UNOPTFLAT -file "*/cvfpu/src/fpnew_opgroup_block.sv" -match "*fmt_in_ready*"

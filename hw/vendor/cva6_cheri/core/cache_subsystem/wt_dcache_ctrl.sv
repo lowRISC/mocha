@@ -74,7 +74,6 @@ module wt_dcache_ctrl
   logic [DCACHE_CL_IDX_WIDTH-1:0] address_idx_d, address_idx_q;
   logic [CVA6Cfg.DCACHE_OFFSET_WIDTH-1:0] address_off_d, address_off_q;
   logic [CVA6Cfg.DcacheIdWidth-1:0] id_d, id_q;
-  logic strip_tag_d, strip_tag_q;
   logic [CVA6Cfg.DCACHE_SET_ASSOC-1:0] vld_data_d, vld_data_q;
   logic save_tag, rd_req_d, rd_req_q, rd_ack_d, rd_ack_q;
   logic [CVA6Cfg.DCACHE_DATA_SIZE_WIDTH-1:0] data_size_d, data_size_q;
@@ -89,7 +88,6 @@ module wt_dcache_ctrl
   assign address_idx_d = (req_port_o.data_gnt) ? req_port_i.address_index[CVA6Cfg.DCACHE_INDEX_WIDTH-1:CVA6Cfg.DCACHE_OFFSET_WIDTH] : address_idx_q;
   assign address_off_d = (req_port_o.data_gnt) ? req_port_i.address_index[CVA6Cfg.DCACHE_OFFSET_WIDTH-1:0]                  : address_off_q;
   assign id_d = (req_port_o.data_gnt) ? req_port_i.data_id : id_q;
-  assign strip_tag_d = (CVA6Cfg.CheriPresent) ? ((save_tag) ? req_port_i.strip_tag : strip_tag_q) : '0;
   assign data_size_d = (req_port_o.data_gnt) ? req_port_i.data_size : data_size_q;
   assign rd_tag_o = address_tag_d;
   assign rd_idx_o = address_idx_d;
@@ -102,7 +100,7 @@ module wt_dcache_ctrl
   // to miss unit
   assign miss_vld_bits_o = vld_data_q;
   assign miss_paddr_o = {address_tag_q, address_idx_q, address_off_q};
-  assign miss_size_o = (miss_nc_o) ? data_size_q : 3'b0111;
+  assign miss_size_o = (miss_nc_o) ? data_size_q : 4'b0111;
 
   // noncacheable if request goes to I/O space, or if cache is disabled
   assign miss_nc_o = (~cache_en_i) | (~config_pkg::is_inside_cacheable_regions(
@@ -125,13 +123,12 @@ module wt_dcache_ctrl
 
   always_comb begin : p_fsm
     // default assignment
-    state_d                   = state_q;
-    save_tag                  = 1'b0;
-    rd_req_o                  = 1'b0;
-    miss_req_o                = 1'b0;
-    req_port_o.data_rvalid    = 1'b0;
-    req_port_o.data_gnt       = 1'b0;
-    req_port_o.data_strip_tag = CVA6Cfg.CheriPresent ? strip_tag_q : '0;
+    state_d                = state_q;
+    save_tag               = 1'b0;
+    rd_req_o               = 1'b0;
+    miss_req_o             = 1'b0;
+    req_port_o.data_rvalid = 1'b0;
+    req_port_o.data_gnt    = 1'b0;
 
     // interfaces
     unique case (state_q)
@@ -169,10 +166,6 @@ module wt_dcache_ctrl
           end else if ((|rd_hit_oh_i) && cache_en_i) begin
             state_d = IDLE;
             req_port_o.data_rvalid = 1'b1;
-            // In case there is a hit while reading the tag
-            // we should get the strip tag from the request input
-            if (state_q != REPLAY_READ)
-              req_port_o.data_strip_tag = CVA6Cfg.CheriPresent ? req_port_i.strip_tag : '0;
             // we can handle another request
             if (rd_ack_i && req_port_i.data_req) begin
               state_d = READ;
@@ -267,22 +260,20 @@ module wt_dcache_ctrl
       address_idx_q <= '0;
       address_off_q <= '0;
       id_q          <= '0;
-      if (CVA6Cfg.CheriPresent) strip_tag_q <= '0;
-      vld_data_q  <= '0;
-      data_size_q <= '0;
-      rd_req_q    <= '0;
-      rd_ack_q    <= '0;
+      vld_data_q    <= '0;
+      data_size_q   <= '0;
+      rd_req_q      <= '0;
+      rd_ack_q      <= '0;
     end else begin
       state_q       <= state_d;
       address_tag_q <= address_tag_d;
       address_idx_q <= address_idx_d;
       address_off_q <= address_off_d;
       id_q          <= id_d;
-      if (CVA6Cfg.CheriPresent) strip_tag_q <= strip_tag_d;
-      vld_data_q  <= vld_data_d;
-      data_size_q <= data_size_d;
-      rd_req_q    <= rd_req_d;
-      rd_ack_q    <= rd_ack_d;
+      vld_data_q    <= vld_data_d;
+      data_size_q   <= data_size_d;
+      rd_req_q      <= rd_req_d;
+      rd_ack_q      <= rd_ack_d;
     end
   end
 

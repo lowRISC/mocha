@@ -30,6 +30,17 @@
     end                                               \
   end
 
+// Register without reset. The generate scope allows multiple macro invocations
+// in the same module, including registers addressed by array indices.
+`define PRIM_FLOP_NR(__d, __q, __clk = `PRIM_FLOP_CLK) \
+  if (1) begin \
+    prim_flop_no_rst #(.Width($bits(__q))) u_flop_no_rst ( \
+      .clk_i(__clk), \
+      .d_i(__d), \
+      .q_o(__q) \
+    ); \
+  end
+
 ///////////////////////////
 // Macro for Sparse FSMs //
 ///////////////////////////
