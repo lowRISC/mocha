@@ -3,10 +3,7 @@ OUTPUT_ARCH( "riscv" )
 ENTRY( entry )
 SECTIONS
 {
-    .whereto 0x300 :
-    {
-        *(.whereto)
-    }   
+    whereto = 0x300;
     . = 0x800;
     .text :
     {
