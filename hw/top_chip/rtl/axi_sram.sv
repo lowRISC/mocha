@@ -5,8 +5,9 @@
 `include "prim_assert.sv"
 
 module axi_sram #(
-  parameter int AddrWidth   = 14,
-  parameter     MemInitFile = ""
+  parameter int              AddrWidth   = 14,
+  parameter longint unsigned SramMask    = 64'h0001_FFFF,
+  parameter                  MemInitFile = ""
 ) (
   // Clock and reset.
   input  logic clk_i,
@@ -85,7 +86,7 @@ module axi_sram #(
   );
 
   // Tag bit address calculation
-  assign sram_tag_bit_addr     = TagBitAddrWidth'((sram_addr & top_pkg::SRAMMask) >>
+  assign sram_tag_bit_addr     = TagBitAddrWidth'((sram_addr & SramMask) >>
                                  $clog2(top_pkg::CapSizeBits / 8));
   assign sram_tag_word_addr    = TagAddrWidth'(sram_tag_bit_addr >>
                                  $clog2(top_pkg::AxiDataWidth));
@@ -118,7 +119,7 @@ module axi_sram #(
   );
 
   // Remove base offset and convert byte address to 64-bit word address
-  assign sram_word_addr = AddrWidth'((sram_addr & top_pkg::SRAMMask) >> $clog2(top_pkg::AxiDataWidth / 8));
+  assign sram_word_addr = AddrWidth'((sram_addr & SramMask) >> $clog2(top_pkg::AxiDataWidth / 8));
   always_comb begin
     for (int i = 0; i < (top_pkg::AxiDataWidth / 8); ++i) begin
       sram_wmask[i*8 +: 8] = {8{sram_be[i]}};
@@ -165,10 +166,10 @@ module axi_sram #(
                (2 ** AddrWidth) * top_pkg::AxiDataWidth)
 
   // The data memory must be exactly the size the address map reserves for it. The addresses are
-  // masked with SRAMMask, so a parameter that disagrees with the map would silently wrap.
+  // masked with SramMask, so a parameter that disagrees with the map would silently wrap.
   `ASSERT_INIT(SramSizeMatchesMap_A,
                2 ** AddrWidth ==
-               (top_pkg::SRAMMask + 1) / (top_pkg::AxiDataWidth / 8))
+               (SramMask + 1) / (top_pkg::AxiDataWidth / 8))
 
   // The read data and tag are deliberately omitted, since access to uninitialized memory reads X
   `ASSERT_KNOWN(AwReadyKnownO_A, axi_resp_o.aw_ready)

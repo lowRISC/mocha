@@ -536,6 +536,7 @@ module top_chip_system #(
   // AXI SRAM
   axi_sram #(
     .AddrWidth   ( SramAddrWidth         ),
+    .SramMask    ( top_pkg::SRAMMask     ),
     .MemInitFile ( SramInitFile          )
   ) u_axi_sram (
     .clk_i  (clkmgr_clocks.clk_main_infra),
