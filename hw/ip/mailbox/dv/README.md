@@ -262,7 +262,7 @@ A model value that differs between those states is not sampled.
 
 | Covergroup | What it samples | vPlan features |
 | :---- | :---- | :---- |
-| `fifo_cg`, per FIFO | Each MBOXW and MBOXR access: the FIFO level before it, crossed with the access kind and the response | `data_transfer`, `fifo_depth`, `write_full`, `read_empty` |
+| `fifo_cg`, per FIFO | Each MBOXW and MBOXR access: the FIFO level before it, for each access kind and response | `data_transfer`, `fifo_depth`, `write_full`, `read_empty` |
 | `status_cg`, per port | Each STATUS read: every flag at 0 and 1, WFIFOL crossed with WIRQT and the write FIFO level, and RFIFOL crossed with RIRQT and the read FIFO level | `status_empty_full`, `status_threshold_flags` |
 | `threshold_cg`, per port and register | Each WIRQT and RIRQT write: each value below `MailboxDepth`, `MailboxDepth` and above within the field, and a value with reserved bits set | `threshold_registers` |
 | `irqs_cg`, per port | Each IRQS bit setting: its source and whether IRQEN enables it, and each IRQS write: which bits it acknowledges and whether they were set | `threshold_irq_status`, `error_irq_status`, `irq_status_without_enable` |
@@ -271,7 +271,7 @@ A model value that differs between those states is not sampled.
 | `error_cg`, per port | Each ERROR read: none, read error, write error or both, and whether an error access overlapped it | `error_clear_on_read` |
 | `flush_cg`, per port | Each CTRL write: the bits written, crossed with the level of each FIFO and with whether accesses were in flight | `flush`, `flush_during_traffic` |
 | `access_cg`, per port | Every access: the register or no register, the direction, full or partial strobes, and the response | `access_type_errors`, `unmapped_access`, `partial_writes` |
-| `concurrency_cg` | Each access: the kind of access in flight on the other port while it was, if any | `concurrent_bidirectional` |
+| `concurrency_cg` | Each OKAY MBOXW and MBOXR access: whether any access was in flight on the other port while it was, and each OKAY MBOXW or MBOXR there that overlapped it and answered first | `concurrent_bidirectional` |
 | `reset_cg` | Each reset: whether accesses were in flight and whether either FIFO held words | `reset_during_traffic` |
 
 The protocol checkers carry cover properties on each port: AW before W, W before AW and both in one cycle, each valid held while its ready is low, and back-to-back transfers on each channel.

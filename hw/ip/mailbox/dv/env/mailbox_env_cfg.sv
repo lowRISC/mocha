@@ -16,6 +16,9 @@ class mailbox_env_cfg extends uvm_object;
   // Tests set the minimum number of checked MBOXR words to prevent a pass without data checks
   int unsigned min_checked_words;
 
+  // Build the coverage model when +en_cov is set
+  bit en_cov;
+
   // Standard SV/UVM methods
   extern function new(string name = "");
 

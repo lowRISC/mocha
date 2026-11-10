@@ -37,6 +37,7 @@ function void mailbox_base_test::build_phase(uvm_phase phase);
   if (!uvm_config_db#(virtual pins_if #(NumPorts))::get(this, "", "intr_vif", cfg.intr_vif)) begin
     `uvm_fatal(`gfn, "failed to get intr_vif from uvm_config_db")
   end
+  void'($value$plusargs("en_cov=%0b", cfg.en_cov));
   cfg.initialize();
 
   env = mailbox_env::type_id::create("env", this);

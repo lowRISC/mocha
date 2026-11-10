@@ -4,8 +4,8 @@
 
 // Mailbox block-level verification plan (vPlan), for DVPlan.
 //
-// Status: skeleton. Section structure, metric names and requirement references are in place; the
-// evidence is not.
+// Status: partly filled. Section structure, metric names and requirement references are in place.
+// Only the features that the first covergroups answer carry their evidence.
 //
 // What this file is
 // -----------------
@@ -45,9 +45,9 @@
 //
 // What is deliberately absent
 // ---------------------------
-// Items, Metric_Type, Owner and Weight come once the environment exists and it is known which
-// covergroup, assertion, test or inspection answers for each feature. Goal is set only where
-// stages.md names a figure.
+// A feature gets its Items once the covergroup, assertion, test or inspection that answers for it
+// exists, and a feature with a TODO gets none until its question is decided. Owner and Weight are
+// not set. Goal is set only where stages.md names a figure.
 //
 // Milestone is set on metric leaves, because a milestone on a section applies to everything below
 // it. Priority 0 marks an open specification question that has to be settled before the tests
@@ -177,6 +177,11 @@
                     Node_Type: metric
                     Milestone: V1
                     Priority: 1
+                    Items:
+                    [
+                        functional:mailbox_env_pkg::fifo_cg.write_okay_cp
+                        functional:mailbox_env_pkg::fifo_cg.read_okay_cp
+                    ]
                 }
                 fifo_depth:
                 {
@@ -189,6 +194,11 @@
                     Node_Type: metric
                     Milestone: V2
                     Priority: 1
+                    Items:
+                    [
+                        functional:mailbox_env_pkg::fifo_cg.write_okay_cp
+                        functional:mailbox_env_pkg::fifo_cg.write_slverr_cp
+                    ]
                 }
                 status_empty_full:
                 {
@@ -197,6 +207,11 @@
                     Node_Type: metric
                     Milestone: V2
                     Priority: 1
+                    Items:
+                    [
+                        functional:mailbox_env_pkg::status_cg.empty_cp
+                        functional:mailbox_env_pkg::status_cg.full_cp
+                    ]
                 }
                 status_threshold_flags:
                 {
@@ -227,6 +242,10 @@
                     Node_Type: metric
                     Milestone: V2
                     Priority: 1
+                    Items:
+                    [
+                        functional:mailbox_env_pkg::threshold_cg.value_cp
+                    ]
                 }
                 threshold_irq_status:
                 {
@@ -291,6 +310,10 @@
                     Node_Type: metric
                     Milestone: V2
                     Priority: 1
+                    Items:
+                    [
+                        functional:mailbox_env_pkg::fifo_cg.write_slverr_cp
+                    ]
                 }
                 read_empty:
                 {
@@ -303,6 +326,10 @@
                     Node_Type: metric
                     Milestone: V2
                     Priority: 1
+                    Items:
+                    [
+                        functional:mailbox_env_pkg::fifo_cg.read_slverr_cp
+                    ]
                 }
                 error_clear_on_read:
                 {
@@ -393,6 +420,10 @@
                 Node_Type: metric
                 Milestone: V2
                 Priority: 1
+                Items:
+                [
+                    functional:mailbox_env_pkg::concurrency_cg.kind_other_cross
+                ]
             }
             flush_during_traffic:
             {
@@ -409,6 +440,10 @@
                 Node_Type: metric
                 Milestone: V2
                 Priority: 1
+                Items:
+                [
+                    functional:mailbox_env_pkg::reset_cg.in_flight_held_words_cross
+                ]
             }
         }
     }

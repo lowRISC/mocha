@@ -12,6 +12,7 @@ class mailbox_env extends uvm_env;
   mailbox_reg_predictor     m_predictor[NumPorts];
   mailbox_scoreboard        m_scoreboard;
   mailbox_virtual_sequencer m_vsqr;
+  mailbox_env_cov           m_cov;
 
   // Standard SV/UVM methods
   extern function new(string name, uvm_component parent);
@@ -35,8 +36,13 @@ function void mailbox_env::build_phase(uvm_phase phase);
     m_predictor[i] = mailbox_reg_predictor::type_id::create({"m_predictor_", PortName[i]}, this);
   end
 
+  if (cfg.en_cov) begin
+    m_cov = mailbox_env_cov::type_id::create("m_cov", this);
+  end
+
   m_scoreboard = mailbox_scoreboard::type_id::create("m_scoreboard", this);
   m_scoreboard.cfg = cfg;
+  m_scoreboard.cov = m_cov;
 
   m_vsqr = mailbox_virtual_sequencer::type_id::create("m_vsqr", this);
   m_vsqr.cfg = cfg;

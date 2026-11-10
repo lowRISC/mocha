@@ -24,6 +24,22 @@ class mailbox_access;
   bit            ok;
   uvm_reg_data_t data;
 
+  // Set on a write with any byte strobe low
+  bit partial_strb;
+
+  // Set if an access on the other port was in flight between this request and response
+  bit overlapped;
+
+  // Kinds of OKAY access on the other port that overlapped this one and answered first
+  bit other_ok_kinds[mailbox_access_kind_e];
+
+  // Model values the access saw when it took effect. The scoreboard sets each known bit when every
+  // state it keeps agrees on that value.
+  mailbox_seen_t seen;
+  bit            level_known[NumPorts];
+  bit            wirqt_known[NumPorts];
+  bit            rirqt_known[NumPorts];
+
   // Class specific methods
   extern function new(mailbox_port_e port, bit is_write, uvm_reg rg, realtime req_time);
   extern function string convert2string();
