@@ -11,6 +11,7 @@ filesets:
       - lowrisc:dv:dv_utils
       - lowrisc:dv:mem_bkdr_util
       - lowrisc:dv:uart_agent
+      - lowrisc:dv:spi_agent
       - lowrisc:mocha_dv:axi_agent:0.1
       - lowrisc:dv:common_ifs
       - lowrisc:mocha_dv:gpio_env
