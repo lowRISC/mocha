@@ -35,6 +35,13 @@ module tb;
   logic [3:0] spi_host_sd;
   logic [3:0] spi_host_sd_en;
 
+  // SPI device connections. The chip selects come from the SPI host agent: bit 0 selects the flash
+  // interface and bit 1 the TPM interface.
+  wire  [3:0] spi_device_sio;   // A wire connected to bidirectional data lines in spi_if
+  logic [3:0] spi_device_sd;
+  logic [3:0] spi_device_sd_en;
+  wire  [1:0] spi_device_csb;
+
   // Noise source connections
   logic                                      rng_enable;
   logic                                      rng_valid;
@@ -57,6 +64,8 @@ module tb;
                  .scl_io(scl   ),
                  .sda_io(sda   )
                 );
+  spi_if spi_host_if (.rst_n(dut.rstmgr_resets.rst_spi_device_n[rstmgr_pkg::DomainMainSel]),
+                      .sio  (spi_device_sio));
 
   // Passive AXI monitors on each AXI itf of the crossbar
   wire axi_mon_rst_n = dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel];
@@ -161,13 +170,12 @@ module tb;
     .axi_mailbox_resp_o   (                 ),
     .mailbox_ext_irq_o    (                 ),
     // SPI device receive and transmit.
-    // TODO SPI device signals are currently tied off, need to be connected to a SPI agent
-    .spi_device_sck_i     (1'b0             ),
-    .spi_device_csb_i     (1'b1             ),
-    .spi_device_sd_o      (                 ),
-    .spi_device_sd_en_o   (                 ),
-    .spi_device_sd_i      (4'hF             ),
-    .spi_device_tpm_csb_i (1'b0             ),
+    .spi_device_sck_i     (spi_host_if.sck  ),
+    .spi_device_csb_i     (spi_device_csb[0]),
+    .spi_device_sd_o      (spi_device_sd    ),
+    .spi_device_sd_en_o   (spi_device_sd_en ),
+    .spi_device_sd_i      (spi_device_sio   ),
+    .spi_device_tpm_csb_i (spi_device_csb[1]),
     // SPI host.
     .spi_host_sck_o       (                 ),
     .spi_host_sck_en_o    (                 ),
@@ -208,6 +216,12 @@ module tb;
   for (genvar i = 0; i < NUM_GPIOS; i++) begin : gen_gpio_pads
     assign gpio_pads[i] = dut_gpio_en_o[i] ? dut_gpio_o[i] : 1'bz;
   end
+
+  // The DUT drives each SPI device data line while it enables it, and the SPI host agent otherwise
+  for (genvar i = 0; i < 4; i++) begin : gen_spi_device_sio
+    assign spi_device_sio[i] = spi_device_sd_en[i] ? spi_device_sd[i] : 1'bz;
+  end
+  assign spi_device_csb = spi_host_if.csb;
 
   // Modelling the open-drain circuit
   assign (strong0, weak1) scl = (scl_en_o) ? scl_o : 1'b1;
@@ -336,6 +350,7 @@ module tb;
     uvm_config_db#(virtual uart_if)::set(null, "*.env.m_uart_agent*", "vif", uart_if);
     uvm_config_db#(virtual pins_if #(NUM_GPIOS))::set(null, "*.env", "gpio_vif", gpio_pins_if);
     uvm_config_db#(virtual i2c_if)::set(null, "*.env.m_i2c_agent", "vif", i2c_if);
+    uvm_config_db#(virtual spi_if)::set(null, "*.env.m_spi_host_agent*", "vif", spi_host_if);
 
     // SW logger and test status interfaces.
     uvm_config_db#(virtual sw_test_status_if)::set(
