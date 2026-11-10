@@ -1,0 +1,34 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+  // concurrent_data_tag -- a plain-data transaction and a capability transaction issued together
+  // must both complete and read back correctly.
+  //
+  // The two writes go out sequentially: AXI4 forbids write-data interleaving, so two write
+  // sequences sharing the W channel would have to be coordinated to keep W in AW order, which the
+  // VIP does not do. The reads are issued together on distinct IDs, but they do not overlap on the
+  // bus either: axi_to_detailed_mem accepts one read burst at a time.
+  class axi_sram_concurrent_data_tag_vseq extends axi_sram_base_vseq;
+    `uvm_object_utils(axi_sram_concurrent_data_tag_vseq)
+
+    function new(string name = "axi_sram_concurrent_data_tag_vseq");
+      super.new(name);
+    endfunction
+
+    task body();
+      bit [63:0] data_addr = 64'h0000_0020;
+      bit [63:0] cap_addr  = 64'h0000_0030;
+      await_reset();
+
+      // Writes (sequential -> compliant W ordering).
+      write_word(32'd1, data_addr, 64'hC0FFEE00_DEADC0DE);
+      write_cap (32'd2, cap_addr, 64'hFEED_FACE_CAFE_BABE, 64'h0123_4567_89AB_CDEF, 1'b1);
+
+      // Reads in flight together (different IDs, routed by RID).
+      fork
+        read_word(32'd1, data_addr);
+        read_cap (32'd2, cap_addr);
+      join
+    endtask
+  endclass

@@ -56,6 +56,20 @@ run phase. Two failures come out of this and are worth recognising:
 Leftovers at the end of the run are reported as `SCB_DRAIN_DROP` (a manager request that no
 subordinate ever answered) or `SCB_DRAIN_ERROR` (a subordinate response with no manager request).
 
+## Replacing CVA6 with an AXI driver
+
+The `axi_driver_to_cva6_bridge` build mode drives the crossbar's CVA6 host port directly from a UVM AXI Driver instead of from software.
+With `+define+SWAP_CVA6_WITH_AXI_DRIVER`, the `tb_cfg` SV config replaces the CVA6 instance with [`axi_driver_to_cva6_bridge`](./common/axi_driver_to_cva6_bridge/axi_driver_to_cva6_bridge.sv), which has the same ports and drives them from an `axi_mgr_agent` on a Manager-mode `axi_vip_if`.
+The environment builds that agent only in this build mode; it is null otherwise.
+Vseqs drive it through `p_sequencer.cva6_axi_sqr` and clear `do_wait_for_sw_test_done` in `new()`, since no software runs and the test ends when the sequence does.
+
+The tests built on it so far pin down the SRAM aperture in the address map: `axi_sram_sram_boundary` and `axi_sram_out_of_range_error` check that the words inside it round-trip and that everything outside it is answered with DECERR.
+Block-level SRAM verification lives in [`axi_sram`](./axi_sram/README.md).
+
+```bash
+dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i axi_driver_smoke -t xcelium
+```
+
 ## Simulation Flow
 
 The simulation is orchestrated by `dvsim`, which manages the build and run flow.
