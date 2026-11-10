@@ -147,14 +147,14 @@
     }
     {
       name: spi_device_smoke
-      uvm_test_seq: top_chip_dv_base_vseq
+      uvm_test_seq: top_chip_dv_spi_device_smoke_vseq
       sw_images: ["spi_device_smoketest_vanilla:5" "bootrom:5"]
       run_opts: ["+ChipMemDRAM_image_file={run_dir}/spi_device_smoketest_vanilla.vmem",
                  "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: spi_device_smoke_cheri
-      uvm_test_seq: top_chip_dv_base_vseq
+      uvm_test_seq: top_chip_dv_spi_device_smoke_vseq
       sw_images: ["spi_device_smoketest_cheri:5" "bootrom:5"]
       run_opts: ["+ChipMemDRAM_image_file={run_dir}/spi_device_smoketest_cheri.vmem",
                  "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
