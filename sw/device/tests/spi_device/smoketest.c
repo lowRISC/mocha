@@ -6,12 +6,25 @@
 #include "hal/mocha.h"
 #include "hal/plic.h"
 #include "hal/spi_device.h"
+#include "test_framework/dv_log.h"
 #include <stdbool.h>
 #include <stdint.h>
 
 enum {
     mip_read_retry_count = 20u,
 };
+
+// JEDEC ID programmed into the SPI device, Mocha's own by default.
+// top_chip_dv_spi_device_smoke_vseq overwrites these with random values, then checks that Read JEDEC
+// ID on the SPI pins returns them.
+volatile const uint8_t jedec_cc = MOCHA_SPI_DEVICE_JEDEC_CC;
+volatile const uint8_t jedec_num_cc = MOCHA_SPI_DEVICE_JEDEC_CC_COUNT;
+volatile const uint8_t jedec_mf = MOCHA_SPI_DEVICE_MANUFACTURER_ID;
+volatile const uint16_t jedec_device_id =
+    (MOCHA_SPI_DEVICE_ROM_BOOTSTRAP << SPI_DEVICE_ROM_BOOTSTRAP) |
+    (MOCHA_SPI_DEVICE_CHIP_REV << SPI_DEVICE_CHIP_REV) |
+    (MOCHA_SPI_DEVICE_CHIP_GEN << SPI_DEVICE_CHIP_GEN) |
+    (MOCHA_SPI_DEVICE_DENSITY_BYTES_LOG2 << SPI_DEVICE_DENSITY);
 
 bool cmd_filter_readback_test(spi_device_t spi_device, uint32_t offset)
 {
@@ -184,6 +197,28 @@ bool supervisor_irq_test(spi_device_t spi_device, plic_t plic)
     return true;
 }
 
+bool jedec_test(spi_device_t spi_device)
+{
+    uint32_t jedec_id = ((uint32_t)jedec_mf << SPI_DEVICE_MANUFACTURER_ID) | jedec_device_id;
+    uint16_t jedec_cc_reg = (uint16_t)((jedec_num_cc << SPI_DEVICE_JEDEC_NUM_CC) | jedec_cc);
+
+    // reg_test leaves test patterns in the CMD_INFO and JEDEC registers, so start again from init
+    spi_device_init(spi_device);
+    spi_device_jedec_cc_set(spi_device, jedec_cc, jedec_num_cc);
+    spi_device_jedec_id_set_raw(spi_device, jedec_id);
+
+    // Reading back also ensures the writes have landed before the log below releases the testbench
+    if (spi_device_jedec_cc_get(spi_device) != jedec_cc_reg ||
+        (spi_device_jedec_id_get(spi_device) & 0xFFFFFF) != jedec_id) {
+        return false;
+    }
+
+    // top_chip_dv_spi_device_smoke_vseq waits for this message before sending Read JEDEC ID
+    DV_LOG_INFO("SPI device JEDEC ID configured");
+
+    return true;
+}
+
 bool test_main()
 {
     spi_device_t spi_device = mocha_system_spi_device();
@@ -192,5 +227,5 @@ bool test_main()
     spi_device_init(spi_device);
 
     return reg_test(spi_device) && machine_irq_test(spi_device, plic) &&
-           supervisor_irq_test(spi_device, plic);
+           supervisor_irq_test(spi_device, plic) && jedec_test(spi_device);
 }
