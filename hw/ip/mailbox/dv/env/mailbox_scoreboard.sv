@@ -19,6 +19,7 @@ class mailbox_scoreboard extends uvm_scoreboard;
   `uvm_component_utils(mailbox_scoreboard)
 
   mailbox_env_cfg cfg;
+  mailbox_env_cov cov;
 
   uvm_analysis_imp_main_req #(axi_mon_item, mailbox_scoreboard)   main_req_imp;
   uvm_analysis_imp_ext_req  #(axi_mon_item, mailbox_scoreboard)   ext_req_imp;
@@ -42,6 +43,10 @@ class mailbox_scoreboard extends uvm_scoreboard;
   local mailbox_access m_parked[NumPorts][$];
 
   local int unsigned m_num_accesses;
+
+  // Time of the last response on each port, and of the last OKAY response to each kind of access
+  local realtime m_last_rsp_time[NumPorts];
+  local realtime m_last_ok_rsp_time[NumPorts][mailbox_access_kind_e];
 
   // Checked words per FIFO, checked STATUS reads per port, and peak state count
   local int unsigned m_num_words[NumPorts];
@@ -77,7 +82,7 @@ class mailbox_scoreboard extends uvm_scoreboard;
   extern function void check_status(mailbox_access acc);
 
   // Keep states matching the observed result. If none match, report under id and apply the observed
-  // effect to every state.
+  // effect to every state. Mark each value acc saw as known if the kept states agree on it.
   extern function void resolve(mailbox_access acc, mailbox_result_t observed, string id);
 
   // Try every order of open accesses in state until acc takes effect.
@@ -93,6 +98,15 @@ class mailbox_scoreboard extends uvm_scoreboard;
 
   // Match MBOXR words to FIFO writes in order, parking reads until the write response arrives
   extern function void match_words(int unsigned fifo);
+
+  // Return the register rg is on the port, or RegNone if rg is null
+  extern local function mailbox_reg_e reg_id(mailbox_port_e port, uvm_reg rg);
+
+  // Sample access_cg and concurrency_cg for a checked access
+  extern local function void sample_access(mailbox_access acc);
+
+  // Sample reset_cg from the accesses and states that a reset is about to clear
+  extern local function void sample_reset();
 
   // Clear accesses and restore the reset state
   extern function void clear();
@@ -172,6 +186,9 @@ endfunction : write_ext_txn
 
 function void mailbox_scoreboard::write_reset(axi_reset_item item);
   if (item.m_in_reset) begin
+    if (cfg.en_cov) begin
+      sample_reset();
+    end
     clear();
   end
 endfunction : write_reset
@@ -190,12 +207,12 @@ function void mailbox_scoreboard::record_request(mailbox_port_e port, axi_mon_it
                           "(lowRISC/mocha#755 item 9)"}, acc.convert2string(), item.get_addr()))
   end else if (is_write) begin
     if (rg == ral.mboxw) begin
-      acc.kind = AccessMboxw;
+      acc.kind = AccessMboxW;
       m_unread[port].push_back(acc);
     end else if (rg == ral.wirqt) begin
-      acc.kind = AccessWirqt;
+      acc.kind = AccessWIrqT;
     end else if (rg == ral.rirqt) begin
-      acc.kind = AccessRirqt;
+      acc.kind = AccessRIrqT;
     end else if (rg == ral.ctrl) begin
       `uvm_error("UNMODELLED", {acc.convert2string(), ": FIFO flushes are not modelled in V1"})
     end else if (rg != ral.irqs && rg != ral.irqen) begin
@@ -204,7 +221,7 @@ function void mailbox_scoreboard::record_request(mailbox_port_e port, axi_mon_it
     end
   end else begin
     if (rg == ral.mboxr) begin
-      acc.kind = AccessMboxr;
+      acc.kind = AccessMboxR;
     end else if (rg == ral.status) begin
       acc.kind = AccessStatus;
     end else if (rg == ral.mboxw || rg == ral.ctrl) begin
@@ -234,10 +251,11 @@ function void mailbox_scoreboard::record_response(mailbox_port_e port, axi_mon_i
                                          PortName[port]))
       return;
     end
-    acc      = m_wr_pending[port].pop_front();
-    acc.resp = wr_item.m_bresp;
-    acc.data = uvm_reg_data_t'(wr_item.m_wdata[0]);
-    if (wr_item.m_wstrb[0] !== 'hff) begin
+    acc              = m_wr_pending[port].pop_front();
+    acc.resp         = wr_item.m_bresp;
+    acc.data         = uvm_reg_data_t'(wr_item.m_wdata[0]);
+    acc.partial_strb = (wr_item.m_wstrb[0] !== 'hff);
+    if (acc.partial_strb) begin
       `uvm_error("UNMODELLED",
                  $sformatf({"%0s with strobes 0x%0h: the effect of a partial write is open ",
                             "(lowRISC/mocha#755 item 10)"}, acc.convert2string(),
@@ -257,6 +275,27 @@ function void mailbox_scoreboard::record_response(mailbox_port_e port, axi_mon_i
   acc.done     = 1'b1;
   acc.ok       = (acc.resp === RespOkay);
   acc.rsp_time = $realtime;
+
+  // An access on the other port overlapped this one if it was requested before this response and is
+  // still pending, or answered after this request. The strict bounds make a request in the same
+  // cycle as a response no overlap for either access, whichever callback runs first. Of two
+  // overlapping OKAY accesses, the one answered last records the kind of the other.
+  foreach (m_wr_pending[1 - port][i]) begin
+    acc.overlapped |= (m_wr_pending[1 - port][i].req_time < acc.rsp_time);
+  end
+  foreach (m_rd_pending[1 - port][i]) begin
+    acc.overlapped |= (m_rd_pending[1 - port][i].req_time < acc.rsp_time);
+  end
+  acc.overlapped |= (m_last_rsp_time[1 - port] > acc.req_time);
+  foreach (m_last_ok_rsp_time[1 - port][kind]) begin
+    if (m_last_ok_rsp_time[1 - port][kind] > acc.req_time) begin
+      acc.other_ok_kinds[kind] = 1'b1;
+    end
+  end
+  m_last_rsp_time[port] = acc.rsp_time;
+  if (acc.ok) begin
+    m_last_ok_rsp_time[port][acc.kind] = acc.rsp_time;
+  end
   m_to_check.push_back(acc);
 endfunction : record_response
 
@@ -265,27 +304,40 @@ function void mailbox_scoreboard::check_responses(bit flush = 1'b0);
     mailbox_access acc = m_to_check.pop_front();
 
     unique case (acc.kind)
-      AccessMboxw: begin
+      AccessMboxW: begin
         check_mboxw(acc);
       end
-      AccessMboxr: begin
+      AccessMboxR: begin
         check_mboxr(acc);
       end
       AccessStatus: begin
         check_status(acc);
       end
-      AccessWirqt, AccessRirqt: begin
+      AccessWIrqT, AccessRIrqT: begin
         resolve(acc, '{resp: acc.resp, data: acc.ok ? mailbox_clamp_threshold(acc.data) : '0},
                 "THRESHOLD");
+        if (cfg.en_cov && acc.ok) begin
+          if (acc.kind == AccessWIrqT) begin
+            cov.m_wirqt_cg[acc.port].sample(acc.data);
+          end else begin
+            cov.m_rirqt_cg[acc.port].sample(acc.data);
+          end
+        end
       end
       default: begin
       end
     endcase
+    if (cfg.en_cov) begin
+      sample_access(acc);
+    end
   end
 endfunction : check_responses
 
 function void mailbox_scoreboard::check_mboxw(mailbox_access acc);
   resolve(acc, '{resp: acc.resp, data: '0}, "MBOXW_RESP");
+  if (cfg.en_cov && acc.level_known[acc.port]) begin
+    cov.m_fifo_cg[acc.port].sample(acc.seen.level[acc.port], acc.kind, acc.resp);
+  end
   match_words(acc.port);
 endfunction : check_mboxw
 
@@ -293,6 +345,9 @@ function void mailbox_scoreboard::check_mboxr(mailbox_access acc);
   int unsigned fifo = 1 - acc.port;
 
   resolve(acc, '{resp: acc.resp, data: '0}, "MBOXR_RESP");
+  if (cfg.en_cov && acc.level_known[fifo]) begin
+    cov.m_fifo_cg[fifo].sample(acc.seen.level[fifo], acc.kind, acc.resp);
+  end
   if (acc.ok) begin
     m_parked[fifo].push_back(acc);
     match_words(fifo);
@@ -306,12 +361,22 @@ function void mailbox_scoreboard::check_status(mailbox_access acc);
                                    acc.convert2string(), acc.data))
   end
   resolve(acc, '{resp: acc.resp, data: acc.ok ? acc.data[3:0] : '0}, "STATUS");
+  if (cfg.en_cov && acc.ok) begin
+    cov.m_status_cg[acc.port].sample(
+        acc.data[0], acc.data[1], acc.data[2], acc.data[3],
+        acc.wirqt_known[acc.port] && acc.level_known[acc.port], acc.seen.wirqt[acc.port],
+        acc.seen.level[acc.port],
+        acc.rirqt_known[acc.port] && acc.level_known[1 - acc.port], acc.seen.rirqt[acc.port],
+        acc.seen.level[1 - acc.port]);
+  end
 endfunction : check_status
 
 function void mailbox_scoreboard::resolve(mailbox_access acc, mailbox_result_t observed,
                                           string id);
   mailbox_state found[string];
+  mailbox_state kept[string];
   bit           allowed[string];
+  bit           any_seen = 1'b0;
   int           open_idx[$] = m_open.find_first_index(open) with (open == acc);
 
   foreach (m_states[i]) begin
@@ -334,10 +399,35 @@ function void mailbox_scoreboard::resolve(mailbox_access acc, mailbox_result_t o
     end
   end
 
+  // A value acc saw is known if every matching state agrees on it. States that differ only in what
+  // acc saw merge once that is dropped.
+  foreach (found[key]) begin
+    mailbox_state state = found[key];
+
+    if (state.seen.exists(acc.id)) begin
+      mailbox_seen_t seen = state.seen[acc.id];
+
+      if (!any_seen) begin
+        acc.seen        = seen;
+        acc.level_known = '{default: 1'b1};
+        acc.wirqt_known = '{default: 1'b1};
+        acc.rirqt_known = '{default: 1'b1};
+        any_seen        = 1'b1;
+      end
+      foreach (seen.level[i]) begin
+        acc.level_known[i] &= (seen.level[i] == acc.seen.level[i]);
+        acc.wirqt_known[i] &= (seen.wirqt[i] == acc.seen.wirqt[i]);
+        acc.rirqt_known[i] &= (seen.rirqt[i] == acc.seen.rirqt[i]);
+      end
+      state.seen.delete(acc.id);
+    end
+    kept[state.key()] = state;
+  end
+
   m_open.delete(open_idx[0]);
   m_states.delete();
-  foreach (found[key]) begin
-    m_states.push_back(found[key]);
+  foreach (kept[key]) begin
+    m_states.push_back(kept[key]);
   end
   if (m_states.size() > m_max_states) begin
     m_max_states = m_states.size();
@@ -395,7 +485,7 @@ function string mailbox_scoreboard::result2string(mailbox_access acc, mailbox_re
     return $sformatf("response 0x%0h", result.resp);
   end else if (acc.kind == AccessStatus) begin
     return $sformatf("OKAY with flags 0x%0h", result.data);
-  end else if (acc.kind == AccessWirqt || acc.kind == AccessRirqt) begin
+  end else if (acc.kind == AccessWIrqT || acc.kind == AccessRIrqT) begin
     return $sformatf("OKAY holding %0d", result.data);
   end
   return "OKAY";
@@ -425,6 +515,59 @@ function void mailbox_scoreboard::match_words(int unsigned fifo);
   end
 endfunction : match_words
 
+function mailbox_reg_e mailbox_scoreboard::reg_id(mailbox_port_e port, uvm_reg rg);
+  mailbox_reg_block ral = cfg.ral[port];
+  // In mailbox_reg_e order
+  uvm_reg regs[] = '{ral.mboxw, ral.mboxr, ral.status, ral.error, ral.wirqt, ral.rirqt, ral.irqs,
+                     ral.irqen, ral.irqp, ral.ctrl};
+
+  foreach (regs[i]) begin
+    if (rg == regs[i]) begin
+      return mailbox_reg_e'(i);
+    end
+  end
+  return RegNone;
+endfunction : reg_id
+
+function void mailbox_scoreboard::sample_access(mailbox_access acc);
+  cov.m_access_cg[acc.port].sample(reg_id(acc.port, acc.rg), acc.is_write, acc.partial_strb,
+                                   acc.resp);
+  if (!acc.ok || !(acc.kind inside {AccessMboxW, AccessMboxR})) begin
+    return;
+  end
+  // Without an overlapping OKAY access the other kind is not sampled
+  if (acc.other_ok_kinds.size() == 0) begin
+    cov.m_concurrency_cg.sample(acc.kind, acc.overlapped, 1'b0, acc.kind);
+  end
+  foreach (acc.other_ok_kinds[kind]) begin
+    cov.m_concurrency_cg.sample(acc.kind, acc.overlapped, 1'b1, kind);
+  end
+endfunction : sample_access
+
+function void mailbox_scoreboard::sample_reset();
+  bit in_flight   = 1'b0;
+  bit words_known = 1'b1;
+  bit held_words  = 1'b0;
+
+  foreach (m_wr_pending[port]) begin
+    in_flight |= (m_wr_pending[port].size() > 0 || m_rd_pending[port].size() > 0);
+  end
+  // A FIFO surely holds words if it does in every state and no unchecked MBOXR can have emptied it.
+  // It is surely empty if it is in every state and no unchecked MBOXW can have filled it.
+  for (int unsigned fifo = 0; fifo < NumPorts; fifo++) begin
+    mailbox_access writes[$] = m_open.find(acc) with (acc.kind == AccessMboxW && acc.port == fifo);
+    mailbox_access reads[$]  = m_open.find(acc) with (acc.kind == AccessMboxR && acc.port != fifo);
+    mailbox_state  empty[$]  = m_states.find(state) with (state.level[fifo] == 0);
+
+    if (empty.size() == 0 && reads.size() == 0) begin
+      held_words = 1'b1;
+    end else if (empty.size() != m_states.size() || writes.size() > 0) begin
+      words_known = 1'b0;
+    end
+  end
+  cov.m_reset_cg.sample(in_flight, words_known || held_words, held_words);
+endfunction : sample_reset
+
 function void mailbox_scoreboard::clear();
   mailbox_state reset_state = new();
 
@@ -438,5 +581,7 @@ function void mailbox_scoreboard::clear();
     m_rd_pending[i].delete();
     m_unread[i].delete();
     m_parked[i].delete();
+    m_last_rsp_time[i] = 0;
+    m_last_ok_rsp_time[i].delete();
   end
 endfunction : clear

@@ -15,6 +15,9 @@ package mailbox_env_pkg;
   // Mocha FIFO depth from doc/proj/mailbox.md, shared with the testbench
   parameter int unsigned MailboxDepth = 3;
 
+  // Largest value the WIRQT and RIRQT fields hold
+  parameter uvm_reg_data_t ThresholdMax = (1 << $clog2(MailboxDepth)) - 1;
+
   parameter int unsigned NumPorts = 2;
 
   // Port 0 connects to the main crossbar; port 1 is external
@@ -33,11 +36,11 @@ package mailbox_env_pkg;
 
   // Accesses modelled by the scoreboard
   typedef enum int unsigned {
-    AccessMboxw,
-    AccessMboxr,
+    AccessMboxW,
+    AccessMboxR,
     AccessStatus,
-    AccessWirqt,
-    AccessRirqt,
+    AccessWIrqT,
+    AccessRIrqT,
     AccessOther
   } mailbox_access_kind_e;
 
@@ -47,10 +50,33 @@ package mailbox_env_pkg;
     uvm_reg_data_t data;
   } mailbox_result_t;
 
+  // Model values an access saw when it took effect
+  typedef struct {
+    int unsigned   level[NumPorts];
+    uvm_reg_data_t wirqt[NumPorts];
+    uvm_reg_data_t rirqt[NumPorts];
+  } mailbox_seen_t;
+
+  // The registers, in address order, and RegNone for an address that maps to no register
+  typedef enum int unsigned {
+    RegMboxW,
+    RegMboxR,
+    RegStatus,
+    RegError,
+    RegWIrqT,
+    RegRIrqT,
+    RegIrqS,
+    RegIrqEn,
+    RegIrqP,
+    RegCtrl,
+    RegNone
+  } mailbox_reg_e;
+
   `include "mailbox_env_cfg.sv"
   `include "mailbox_reg_predictor.sv"
   `include "mailbox_access.sv"
   `include "mailbox_state.sv"
+  `include "mailbox_env_cov.sv"
   `include "mailbox_scoreboard.sv"
   `include "mailbox_virtual_sequencer.sv"
   `include "mailbox_env.sv"

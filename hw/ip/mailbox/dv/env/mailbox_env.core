@@ -21,6 +21,7 @@ filesets:
       - mailbox_reg_predictor.sv: {is_include_file: true}
       - mailbox_access.sv: {is_include_file: true}
       - mailbox_state.sv: {is_include_file: true}
+      - mailbox_env_cov.sv: {is_include_file: true}
       - mailbox_scoreboard.sv: {is_include_file: true}
       - mailbox_virtual_sequencer.sv: {is_include_file: true}
       - mailbox_env.sv: {is_include_file: true}
