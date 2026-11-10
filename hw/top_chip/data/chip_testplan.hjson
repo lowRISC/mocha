@@ -281,7 +281,7 @@
       desc: '''Verify end-to-end interrupt routing from every PLIC-connected IP to the CPU
             (TOP_INTERRUPT_ROUTING).
             '''
-      stage: V2
+      stage: V1
       tests: ["rv_plic_all_irqs_test",
               "rv_plic_all_irqs_test_cheri"]
     }
@@ -318,7 +318,7 @@
             handler clears the timer by scheduling infinitely far ahead and sets the flag.
             A failure in any of the 10 iterations fails the test.
             '''
-      stage: V2
+      stage: V1
       tests: ["rv_timer_irq",
               "rv_timer_irq_cheri"]
     }
