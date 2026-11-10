@@ -7,6 +7,9 @@ class mailbox_env_cfg extends uvm_object;
 
   virtual clk_rst_if clk_rst_vif;
 
+  // irq_o of the DUT, one bit per port
+  virtual pins_if #(NumPorts) intr_vif;
+
   // Per-port register models at the Mocha base addresses
   mailbox_reg_block ral[NumPorts];
 

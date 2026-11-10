@@ -10,13 +10,15 @@ module tb;
 
   `include "uvm_macros.svh"
 
-  wire clk;
-  wire rst_n;
+  wire                clk;
+  wire                rst_n;
+  wire [NumPorts-1:0] irq;
 
   top_pkg::axi_lite_req_t  [NumPorts-1:0] dut_reqs;
   top_pkg::axi_lite_resp_t [NumPorts-1:0] dut_resps;
 
   clk_rst_if clk_rst_if (.clk(clk), .rst_n(rst_n));
+  pins_if #(NumPorts) intr_if (.pins(irq));
 
   axi_lite_mailbox #(
     .MailboxDepth (MailboxDepth            ),
@@ -31,7 +33,7 @@ module tb;
     .test_i      (1'b0                                               ),
     .slv_reqs_i  (dut_reqs                                           ),
     .slv_resps_o (dut_resps                                          ),
-    .irq_o       (                                                   ),
+    .irq_o       (irq                                                ),
     .base_addr_i ({top_pkg::MailboxExtBaseAddr, top_pkg::MailboxBase})
   );
 
@@ -83,6 +85,7 @@ module tb;
   initial begin
     clk_rst_if.set_active();
     uvm_config_db#(virtual clk_rst_if)::set(null, "*", "clk_rst_vif", clk_rst_if);
+    uvm_config_db#(virtual pins_if #(NumPorts))::set(null, "*", "intr_vif", intr_if);
     run_test();
   end
 endmodule : tb
