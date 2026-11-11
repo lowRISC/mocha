@@ -7,11 +7,17 @@ class mailbox_env_cfg extends uvm_object;
 
   virtual clk_rst_if clk_rst_vif;
 
+  // irq_o of the DUT, one bit per port
+  virtual pins_if #(NumPorts) intr_vif;
+
   // Per-port register models at the Mocha base addresses
   mailbox_reg_block ral[NumPorts];
 
   // Tests set the minimum number of checked MBOXR words to prevent a pass without data checks
   int unsigned min_checked_words;
+
+  // Build the coverage model when +en_cov is set
+  bit en_cov;
 
   // Standard SV/UVM methods
   extern function new(string name = "");
