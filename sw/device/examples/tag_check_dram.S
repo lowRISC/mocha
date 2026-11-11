@@ -3,17 +3,17 @@
 # SPDX-License-Identifier: Apache-2.0
 
 .macro expect_tag_set tmp creg
-    gctag \tmp, \creg
+    ytagr \tmp, \creg
     beqz \tmp, failure
 .endm
 
 .macro expect_cap_equal tmp creg1 creg2
-    sceq \tmp, \creg1, \creg2
+    yeq \tmp, \creg1, \creg2
     beqz \tmp, failure
 .endm
 
 .macro expect_tag_unset tmp creg
-    gctag \tmp, \creg
+    ytagr \tmp, \creg
     bnez \tmp, failure
 .endm
 
@@ -22,137 +22,136 @@
 // Test for capability tags.
 .global _start
 _start:
-    csrsi mseccfg, (1 << 3)
-    modesw.cap
+    ymodeswy
 
-    // Get capability to dram in ct0.
+    // Get capability to dram in t0.
     li t1, 0x80000000
-    auipc ct0, 0
-    scaddr ct0, ct0, t1
-    expect_tag_set t2, ct0
+    auipc t0, 0
+    yaddrw t0, t0, t1
+    expect_tag_set t2, t0
 
     // Write words to invalidate tags.
-    sw zero, 0(ct0)
-    sw zero, 16(ct0)
-    sw zero, 32(ct0)
+    sw zero, 0(t0)
+    sw zero, 16(t0)
+    sw zero, 32(t0)
     fence
 
     // Check that tags are unset.
-    clc ct1, 0(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_unset t2, ct1
+    ly t1, 0(t0)
+    expect_tag_unset t2, t1
+    ly t1, 16(t0)
+    expect_tag_unset t2, t1
+    ly t1, 32(t0)
+    expect_tag_unset t2, t1
 
     // Store valid capabilities.
-    csc ct0, 0(ct0)
-    csc ct0, 16(ct0)
-    csc ct0, 32(ct0)
+    sy t0, 0(t0)
+    sy t0, 16(t0)
+    sy t0, 32(t0)
     fence
 
     // Check that capability read is same as written.
-    clc ct1, 0(ct0)
-    expect_cap_equal t2, ct0, ct1
-    clc ct1, 16(ct0)
-    expect_cap_equal t2, ct0, ct1
-    clc ct1, 32(ct0)
-    expect_cap_equal t2, ct0, ct1
+    ly t1, 0(t0)
+    expect_cap_equal t2, t0, t1
+    ly t1, 16(t0)
+    expect_cap_equal t2, t0, t1
+    ly t1, 32(t0)
+    expect_cap_equal t2, t0, t1
 
     // Invalidate the second capability with write to least significant word.
-    csw zero,16(ct0)
+    sw zero,16(t0)
     fence
 
     // Check that only second capability tag bit is unset.
-    clc ct1, 0(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_set t2, ct1
+    ly t1, 0(t0)
+    expect_tag_set t2, t1
+    ly t1, 16(t0)
+    expect_tag_unset t2, t1
+    ly t1, 32(t0)
+    expect_tag_set t2, t1
 
     // Write back valid capability.
-    csc ct0, 16(ct0)
+    sy t0, 16(t0)
     // Invalidate the second capability with write to a middle byte.
-    csb zero, 23(ct0)
+    sb zero, 23(t0)
     fence
 
     // Check that only second capability tag bit is unset.
-    clc ct1, 0(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_set t2, ct1
+    ly t1, 0(t0)
+    expect_tag_set t2, t1
+    ly t1, 16(t0)
+    expect_tag_unset t2, t1
+    ly t1, 32(t0)
+    expect_tag_set t2, t1
 
     // Invalidate the other two capabilities.
-    csh zero, 4(ct0)
-    csd zero, 32(ct0)
+    sh zero, 4(t0)
+    sd zero, 32(t0)
     fence
 
     // Check that tags are all unset.
-    clc ct1, 0(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_unset t2, ct1
+    ly t1, 0(t0)
+    expect_tag_unset t2, t1
+    ly t1, 16(t0)
+    expect_tag_unset t2, t1
+    ly t1, 32(t0)
+    expect_tag_unset t2, t1
 
     // Store valid capabilities.
-    csc ct0, 0(ct0)
-    csc ct0, 16(ct0)
-    csc ct0, 32(ct0)
+    sy t0, 0(t0)
+    sy t0, 16(t0)
+    sy t0, 32(t0)
     fence
 
     // Check that tags are all set.
-    clc ct1, 0(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_set t2, ct1
+    ly t1, 0(t0)
+    expect_tag_set t2, t1
+    ly t1, 16(t0)
+    expect_tag_set t2, t1
+    ly t1, 32(t0)
+    expect_tag_set t2, t1
 
     // Store a null cap to the second capability.
-    csc cnull ,16(ct0)
+    sy zero ,16(t0)
     // Invalidate the third capability by writing to most significant word.
-    csw zero, 44(ct0)
+    sw zero, 44(t0)
     fence
 
     // Check that only the first capability tag bit is set.
-    clc ct1, 0(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_unset t2, ct1
+    ly t1, 0(t0)
+    expect_tag_set t2, t1
+    ly t1, 16(t0)
+    expect_tag_unset t2, t1
+    ly t1, 32(t0)
+    expect_tag_unset t2, t1
 
     // Store valid capabilities.
-    csc ct0, 0(ct0)
-    csc ct0, 16(ct0)
-    csc ct0, 32(ct0)
+    sy t0, 0(t0)
+    sy t0, 16(t0)
+    sy t0, 32(t0)
     fence
 
     // Check that all tags are set.
-    clc ct1,  0(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_set t2, ct1
+    ly t1,  0(t0)
+    expect_tag_set t2, t1
+    ly t1, 16(t0)
+    expect_tag_set t2, t1
+    ly t1, 32(t0)
+    expect_tag_set t2, t1
 
     // Invalidate the first capability by writing to most significant half word.
-    csh zero,14(ct0)
+    sh zero,14(t0)
     // Invalidate the third capability by writing to most significant byte.
-    csb zero,47(ct0)
+    sb zero,47(t0)
     fence
 
     // Check that only the second capability tag bit is set.
-    clc ct1, 0(ct0)
-    expect_tag_unset t2, ct1
-    clc ct1, 16(ct0)
-    expect_tag_set t2, ct1
-    clc ct1, 32(ct0)
-    expect_tag_unset t2, ct1
+    ly t1, 0(t0)
+    expect_tag_unset t2, t1
+    ly t1, 16(t0)
+    expect_tag_set t2, t1
+    ly t1, 32(t0)
+    expect_tag_unset t2, t1
 
     // Success!
     j success
