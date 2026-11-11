@@ -89,7 +89,6 @@ lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -matc
 lint_off -rule UNUSEDSIGNAL -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
 lint_off -rule UNUSEDPARAM -file "*/lowrisc_common_cells_all*/rtl/counter.sv" -match "*STICKY_OVERFLOW*"
 lint_off -rule UNUSEDPARAM -file "*/lowrisc_common_cells_all*/rtl/delta_counter.sv" -match "*STICKY_OVERFLOW*"
-lint_off -rule WIDTHEXPAND -file "*/lowrisc_common_cells_all*/rtl/fifo_v3.sv" -match "*depth_o*"
 lint_off -rule WIDTHEXPAND -file "*/lowrisc_common_cells_all*/rtl/popcount.sv" -match "*popcount_o*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*sel_nodes*"
 lint_off -rule UNOPTFLAT -file "*/lowrisc_common_cells_all*/rtl/lzc.sv" -match "*index_nodes*"
