@@ -23,7 +23,7 @@ RUNNER: str = Path(__file__).stem
 
 
 def error(what: str, why: str) -> None:
-    print(f"[{RUNNER}]: {what}: {why}", file=sys.stderr)
+    print(f"[{RUNNER}]: {what}: {why}", file=sys.stderr, flush=True)
 
 
 def ftditool_command(cmd: str) -> list[str]:
@@ -114,9 +114,11 @@ async def poll_uart_checking_for(uart: serial.Serial, pattern: re.Pattern) -> st
     while True:
         line = await asyncio.to_thread(uart.readline)
         line = line.decode("utf-8", errors="ignore")
-        print(line, end="")
         if not line:
             continue
+        # Enabling flush to see the UART output even when the process is killed
+        # (for example when there is a time out).
+        print(line, end="", flush=True)
         if match := pattern.search(line):
             return match.group()
 
@@ -135,10 +137,10 @@ async def do_fpga_load(args) -> None:
     bootstrap mode.
     """
     for binary, address in args.bins:
-        print(f"loading binary '{binary}' at address 0x{address:x}...")
+        print(f"loading binary '{binary}' at address 0x{address:x}...", flush=True)
         await load_binary(binary, address)
     for elf in args.elfs:
-        print(f"loading ELF '{elf}'...")
+        print(f"loading ELF '{elf}'...", flush=True)
         await load_elf(elf)
     await exit_bootstrap()
 
@@ -150,7 +152,7 @@ async def do_fpga_test(args) -> None:
     """
     if uart_tty := find_uart():
         with serial.Serial(uart_tty, BAUD_RATE, timeout=0) as uart:
-            print("bootstrapping...")
+            print("bootstrapping...", flush=True)
             await bootstrap(uart)
             await do_fpga_load(args)
             result = await poll_uart_checking_for(uart, TEST_PATTERN)
@@ -168,7 +170,7 @@ async def do_fpga_run(args) -> None:
     Just load the binaries/ELFs onto the FPGA without opening the UART,
     so that it can remain open in a separate application (e.g screen, picocom).
     """
-    print("bootstrapping...")
+    print("bootstrapping...", flush=True)
     await bootstrap(None)
     await do_fpga_load(args)
     sys.exit(0)
