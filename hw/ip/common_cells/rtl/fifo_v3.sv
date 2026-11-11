@@ -9,7 +9,7 @@ module fifo_v3 #(
   parameter int unsigned DEPTH = 8,
   parameter type dtype = logic [DATA_WIDTH-1:0],
   // DO NOT OVERWRITE THIS PARAMETER
-  parameter int unsigned ADDR_DEPTH   = (DEPTH > 1) ? $clog2(DEPTH) : 1
+  parameter int unsigned ADDR_DEPTH = (DEPTH > 1) ? $clog2(DEPTH) : 1
 ) (
   input  logic clk_i,
   input  logic rst_ni,
@@ -27,7 +27,8 @@ module fifo_v3 #(
   logic wready;
   logic unused_rvalid;
   logic full;
-  logic [ADDR_DEPTH-1:0] usage;
+  // Usage must be able to express DEPTH to indicate full.
+  logic [prim_util_pkg::vbits(DEPTH+1)-1:0] usage;
   logic err;
 
   prim_fifo_sync #(
@@ -55,7 +56,9 @@ module fifo_v3 #(
 
   assign full_o  = full | err | ~wready;
   assign empty_o = ((usage == '0) & ~full) | err;
-  assign usage_o = usage;
+  // When DEPTH is a power of two usage_o is zero when full.
+  // Otherwise usage_o is equal to DEPTH when full.
+  assign usage_o = ADDR_DEPTH'(usage);
 
   assign unused_testmode = testmode_i;
 endmodule
