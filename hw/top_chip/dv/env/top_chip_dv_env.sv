@@ -19,6 +19,7 @@ class top_chip_dv_env extends uvm_env;
   i2c_agent  m_i2c_agent;
   uart_agent m_uart_agent;
   spi_agent  m_spi_host_agent;
+  spi_agent  m_spi_device_agent;
   // Passive AXI monitors on the xbar host (CVA6) + device ports; each self-gets its
   // bus from its axi_vip_if's config_db entry and is passive in Monitor mode
   axi_agent m_mgr_axi[];
@@ -96,6 +97,11 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
   m_spi_host_agent = spi_agent::type_id::create("m_spi_host_agent", this);
   uvm_config_db#(spi_agent_cfg)::set(this, "m_spi_host_agent*", "cfg", cfg.m_spi_host_agent_cfg);
 
+  // Instantiate the SPI agent answering the SPI host as an SPI device
+  m_spi_device_agent = spi_agent::type_id::create("m_spi_device_agent", this);
+  uvm_config_db#(spi_agent_cfg)::set(this, "m_spi_device_agent*", "cfg",
+                                     cfg.m_spi_device_agent_cfg);
+
   m_mgr_axi = new[top_pkg::AxiXbarHosts];
   m_mgr_axi[top_pkg::CVA6]    = axi_agent::type_id::create("m_mgr_axi_CVA6", this);
   m_mgr_axi[top_pkg::DM_HOST] = axi_agent::type_id::create("m_mgr_axi_DM_HOST", this);
@@ -122,9 +128,10 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   super.connect_phase(phase);
   // Track specific agent sequencers in the virtual sequencer.
   // Allows virtual sequences to use the agents to drive RX items.
-  top_vsqr.uart_sqr     = m_uart_agent.sequencer;
-  top_vsqr.i2c_sqr      = m_i2c_agent.sequencer;
-  top_vsqr.spi_host_sqr = m_spi_host_agent.sequencer;
+  top_vsqr.uart_sqr       = m_uart_agent.sequencer;
+  top_vsqr.i2c_sqr        = m_i2c_agent.sequencer;
+  top_vsqr.spi_host_sqr   = m_spi_host_agent.sequencer;
+  top_vsqr.spi_device_sqr = m_spi_device_agent.sequencer;
 
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.

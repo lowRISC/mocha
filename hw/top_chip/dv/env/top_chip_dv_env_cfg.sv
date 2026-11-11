@@ -20,6 +20,7 @@ class top_chip_dv_env_cfg extends uvm_object;
   rand uart_agent_cfg    m_uart_agent_cfg;
   rand i2c_agent_cfg     m_i2c_agent_cfg;
   rand spi_agent_cfg     m_spi_host_agent_cfg;
+  rand spi_agent_cfg     m_spi_device_agent_cfg;
 
   `uvm_object_utils_begin(top_chip_dv_env_cfg)
   `uvm_object_utils_end
@@ -58,6 +59,11 @@ function void top_chip_dv_env_cfg::initialize();
   m_spi_host_agent_cfg         = spi_agent_cfg::type_id::create("m_spi_host_agent_cfg");
   m_spi_host_agent_cfg.if_mode = dv_utils_pkg::Host;
   m_spi_host_agent_cfg.en_cov  = 0;
+
+  // Create the config object of the SPI agent answering the SPI host as an SPI device
+  m_spi_device_agent_cfg         = spi_agent_cfg::type_id::create("m_spi_device_agent_cfg");
+  m_spi_device_agent_cfg.if_mode = dv_utils_pkg::Device;
+  m_spi_device_agent_cfg.en_cov  = 0;
 endfunction : initialize
 
 function void top_chip_dv_env_cfg::get_mem_image_files_from_plusargs();
