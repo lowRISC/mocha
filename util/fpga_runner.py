@@ -74,6 +74,7 @@ async def bootstrap(uart: serial.Serial | None) -> None:
     if uart is not None:
         await poll_uart_checking_for(uart, MOCHA_BOOTSTAP_PATTERN)
     else:
+        print("Warning: No UART is available to check bootstrap is successful.", flush=True)
         await asyncio.sleep(0.5)
     await set_pin(0, True)
 
