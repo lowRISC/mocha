@@ -79,10 +79,15 @@ int boot_main(void)
 
 void boot(uintptr_t addr)
 {
-    /* next boot stages (OpenSBI, Linux, etc..) expect:
+    /* Next boot stages (OpenSBI, Linux, etc..) expect:
      * - hart's hartid stored in the a0 register.
      * - pointer to devicetree blob in the a1 register. */
     unsigned long hartid = hart_hartid_get();
+    /* The instructions received over SPI were written through regular stores.
+     * Flush this data from the cache before fetching them. */
+    __asm__ volatile("fence rw, rw\n\t"
+                     "fence.i" ::
+                         : "memory");
     void (*next_stage)(unsigned long hartid, char *dtb) = (void *)addr;
     next_stage(hartid, dt_blob_start);
 }

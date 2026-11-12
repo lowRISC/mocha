@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 set(CHERI_FLAGS -march=rv64ymac_zyhybrid -mabi=l64pc128 -mcmodel=medany)
-set(VANILLA_FLAGS -march=rv64imac -mabi=lp64 -mcmodel=medany)
+set(VANILLA_FLAGS -march=rv64imac_zifencei -mabi=lp64 -mcmodel=medany)
 
 set(CMAKE_SYSTEM_NAME Generic)
 # Bare-metal targets provide their own startup code and linker scripts.
