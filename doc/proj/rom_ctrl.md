@@ -41,7 +41,26 @@ This sign-off is based on commit [`b597321`][d1-commit].
 
 ### V1
 
-*Not yet started - see [stages.md][verification stages].*
+All checklist items refer to the [V1 verification sign-off checklist][V1 checklist].
+This sign-off is based on commit [`d428cd9`][v1-commit].
+
+| Type          | Item                               | Status | Note/Collaterals |
+|---------------|------------------------------------|--------|------------------|
+| Documentation | DV_DOC_DRAFT_COMPLETED             | Done   | [ROM control DV document][] describes the goals, testbench architecture, stimulus, coverage, and checking strategy |
+| Documentation | TESTPLAN_COMPLETED                 | Done   | [ROM control testplan][] defines the V1 smoke test and post-V1 throughput, KMAC error, fatal error and stress testpoints |
+| Testbench     | TB_TOP_CREATED                     | Done   | [tb.sv][] instantiates clock and reset, the register and ROM TileLink interfaces, the KMAC application interface, the memory backdoor utility and alert interfaces along with the ROM control DUT |
+| Testbench     | PRELIMINARY_ASSERTION_CHECKS_ADDED | Done   | [rom_ctrl_bind.sv][] binds the TLUL protocol assertions on both TileLink interfaces and the CSR assertions; [tb.sv][] checks the KMAC and power manager handshakes; the ROM control RTL checks that outputs are known after reset |
+| Integration   | PRE_VERIFIED_SUB_MODULES_V1        | Waived | The submodules are shared OpenTitan primitives and TileLink adapters (`prim_prince`, `prim_rom_adv`, `prim_count`, `tlul_adapter_sram`, `tlul_adapter_reg`, etc.), unmodified in Mocha. They are covered through the IPs that instantiate them, so none carries an independent V1 sign-off; the [OpenTitan ROM control checklist][] records this item as N/A |
+| Review        | DESIGN_SPEC_REVIEWED               | Done   | The specification was reviewed through the OpenTitan sign-off process, where the block reached V2S, and the [theory of operation][theory] was reviewed against the Mocha instantiation for this sign-off. It describes the scrambled ROM, the checker FSM and the KMAC and power manager handshakes correctly, but it is written for the OpenTitan configuration: Mocha has no key manager or alert handler, so `keymgr_data_o` is [left unused][keymgr tie-off] and `alert_tx_o` is left open at the [instantiation][instantiation] |
+| Review        | TESTPLAN_REVIEWED                  | Done   | The [OpenTitan ROM control checklist][] records the testplan review as complete upstream. The V1 testpoints of the [ROM control testplan][], `smoke` plus the imported CSR and memory testpoints, apply as written. The smoke checks on the digest sent to the key manager have no Mocha counterpart but remain valid at block level |
+| Review        | STD_TEST_CATEGORIES_PLANNED        | Done   | Error scenarios, performance and stress tests are covered in the [ROM control testplan][]; security countermeasures are captured in the sec_cm testplan, but V2S is not used in Mocha; power and debug are N/A |
+| Simulation    | SIM_TB_ENV_CREATED                 | Done   | CIP-based UVM environment with TL and KMAC application agents and scoreboard |
+| Tests         | SIM_SMOKE_TEST_PASSING             | Done   | All V1 testpoints (`rom_ctrl_smoke`, the five CSR tests, `rom_ctrl_mem_walk` and `rom_ctrl_mem_partial_access`): 40/40 passed, 5 seeds each, with Xcelium on November 12, 2026 at commit `d428cd9` |
+| Regression    | SIM_SMOKE_REGRESSION_SETUP         | Done   | `smoke` regression in `rom_ctrl_base_sim_cfg.hjson` selects `rom_ctrl_smoke`; the aggregate Mocha config imports the 32 KiB ROM control simulation config, matching the Mocha ROM size |
+| Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Done   | ROM control is included in `mocha_sim_cfgs.hjson`; results are published on the [COSMIC reports dashboard][] |
+| Coverage      | SIM_COVERAGE_MODEL_ADDED           | Done   | Block-level coverage is in `rom_ctrl_cov_if.sv`, bound into the DUT by `rom_ctrl_cov_bind.sv` |
+| Tests         | FPV_MAIN_ASSERTIONS_PROVEN         | N/A    | This V1 sign-off uses simulation; TLUL and CSR assertions are enabled in the simulation testbench |
+| Regression    | FPV_REGRESSION_SETUP               | N/A    | No ROM control FPV regression is configured in Mocha |
 
 ### V2
 
@@ -64,3 +83,13 @@ This sign-off is based on commit [`b597321`][d1-commit].
 [lint waivers]: https://github.com/lowRISC/mocha/blob/b5973217f704923917e7761f73df7dfcb8d0c345/hw/top_chip/lint/top_chip_system.vlt#L317-L324
 [OpenTitan ROM control checklist]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/doc/checklist.md
 [patch]: ../../hw/vendor/patches/lowrisc_ip/rom_ctrl
+[V1 checklist]: stages.md#v1-verification-sign-off-checklist
+[v1-commit]: https://github.com/lowRISC/mocha/commit/d428cd9580070a09722130daf1e37db0dd68b975
+[theory]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/doc/theory_of_operation.md
+[instantiation]: https://github.com/lowRISC/mocha/blob/d428cd9580070a09722130daf1e37db0dd68b975/hw/top_chip/rtl/top_chip_system.sv#L1423-L1451
+[keymgr tie-off]: https://github.com/lowRISC/mocha/blob/d428cd9580070a09722130daf1e37db0dd68b975/hw/top_chip/rtl/top_chip_system.sv#L367
+[ROM control DV document]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/README.md
+[ROM control testplan]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/data/rom_ctrl_testplan.hjson
+[tb.sv]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/tb/tb.sv
+[rom_ctrl_bind.sv]: ../../hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/sva/rom_ctrl_bind.sv
+[COSMIC reports dashboard]: https://dashboard.reports.lowrisc.org/cosmic/mocha/dashboard.html
