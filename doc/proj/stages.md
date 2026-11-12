@@ -30,7 +30,7 @@ This table shows the current design and verification stage for each block in Moc
 | [SRAM][]              | D1               | V0                     |
 | [Tag controller][]    | D1               | V0                     |
 | [TileLink crossbar][] | D1               | V1                     |
-| [Timer][]             | D1               | V0                     |
+| [Timer][]             | D1               | V1                     |
 | [UART][]              | D1               | V1                     |
 |                       |                  |                        |
 | Top chip              | N/A*             | V0                     |
