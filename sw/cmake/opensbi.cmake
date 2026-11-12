@@ -6,7 +6,8 @@
 function(mocha_opensbi OPENSBI_NAME)
   # OpenSBI repository and tag to use.
   set(OPENSBI_REPOSITORY https://github.com/lowRISC/opensbi)
-  set(OPENSBI_TAG mocha-mvp2)
+  #TODO tag mocha-rc1 instead of using a development branch.
+  set(OPENSBI_TAG mocha-devel-0.9.10)
 
   # build command - run make with build options.
   set(BUILD_COMMAND
@@ -15,7 +16,7 @@ function(mocha_opensbi OPENSBI_NAME)
       LLVM=1
       # ISA options.
       PLATFORM_RISCV_XLEN=64
-      PLATFORM_RISCV_ISA=rv64imac_zcherihybrid
+      PLATFORM_RISCV_ISA=rv64ymac_zyhybrid
       PLATFORM_RISCV_ABI=l64pc128
       # Build for the 'generic' platform, which uses devicetree data.
       PLATFORM=generic
