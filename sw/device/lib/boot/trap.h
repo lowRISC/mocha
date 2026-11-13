@@ -30,8 +30,6 @@ struct [[gnu::aligned(16)]] trap_context {
     /* always integer registers */
     unsigned long cause;
     unsigned long tval;
-    /* Reserved for hypervisor trap information; zero on Mocha (RVH disabled). */
-    unsigned long tval2;
 };
 
 #endif /* !defined(__ASSEMBLER__) */
@@ -40,13 +38,11 @@ struct [[gnu::aligned(16)]] trap_context {
 #define TRAP_CONTEXT_EPC_OFFSET   0
 #define TRAP_CONTEXT_CAUSE_OFFSET 16
 #define TRAP_CONTEXT_TVAL_OFFSET  24
-#define TRAP_CONTEXT_TVAL2_OFFSET 32
-#define TRAP_CONTEXT_SIZE         48
+#define TRAP_CONTEXT_SIZE         32
 #else /* !defined(__CHERI_PURE_CAPABILITY__) */
 #define TRAP_CONTEXT_EPC_OFFSET   0
 #define TRAP_CONTEXT_CAUSE_OFFSET 8
 #define TRAP_CONTEXT_TVAL_OFFSET  16
-#define TRAP_CONTEXT_TVAL2_OFFSET 24
 #define TRAP_CONTEXT_SIZE         32
 #endif /* !defined(__CHERI_PURE_CAPABILITY__) */
 
@@ -63,8 +59,6 @@ _Static_assert(__builtin_offsetof(struct trap_context, cause) == TRAP_CONTEXT_CA
                "incorrect struct trap_context cause offset");
 _Static_assert(__builtin_offsetof(struct trap_context, tval) == TRAP_CONTEXT_TVAL_OFFSET,
                "incorrect struct trap_context tval offset");
-_Static_assert(__builtin_offsetof(struct trap_context, tval2) == TRAP_CONTEXT_TVAL2_OFFSET,
-               "incorrect struct trap_context tval2 offset");
 _Static_assert(sizeof(struct trap_context) == TRAP_CONTEXT_SIZE,
                "incorrect struct trap_context size");
 

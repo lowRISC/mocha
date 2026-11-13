@@ -239,7 +239,6 @@ static void _exception_handler(struct trap_registers *registers, struct trap_con
     uprintf(console, "\tepc:   %lx\n", (unsigned long)context->epc);
     uprintf(console, "\tcause: %lx\n", context->cause);
     uprintf(console, "\ttval:  %lx\n", context->tval);
-    uprintf(console, "\ttval2: %lx\n", context->tval2);
 
     uint32_t pattern = 0x55;
 

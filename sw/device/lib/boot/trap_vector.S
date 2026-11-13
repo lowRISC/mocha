@@ -155,9 +155,6 @@ _trap_vector:
     sd t0, TRAP_CONTEXT_CAUSE_OFFSET(sp)
     csrr t0, mtval
     sd t0, TRAP_CONTEXT_TVAL_OFFSET(sp)
-    /* Mocha has no H extension, so mtval2 is unavailable. */
-    li t0, 0
-    sd t0, TRAP_CONTEXT_TVAL2_OFFSET(sp)
     /* set capability in second argument register */
     li a1, TRAP_CONTEXT_SIZE
     ybndsw a1, sp, a1
@@ -170,9 +167,6 @@ _trap_vector:
     sd t0, TRAP_CONTEXT_CAUSE_OFFSET(sp)
     csrr t0, mtval
     sd t0, TRAP_CONTEXT_TVAL_OFFSET(sp)
-    /* Mocha has no H extension, so mtval2 is unavailable. */
-    li t0, 0
-    sd t0, TRAP_CONTEXT_TVAL2_OFFSET(sp)
     /* set pointer in second argument register */
     mv a1, sp
 #endif /* defined(__CHERI_PURE_CAPABILITY__) */
