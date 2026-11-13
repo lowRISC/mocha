@@ -121,7 +121,6 @@ void print_register_trace(struct trap_registers *registers, struct trap_context 
 #endif /* defined(__CHERI_PURE_CAPABILITY__) */
     uprintf(console, "cause: %lx\n", context->cause);
     uprintf(console, "tval:  %lx\n", context->tval);
-    uprintf(console, "tval2: %lx\n", context->tval2);
     for (size_t i = 0; i < 32; i++) {
         size_t reg_name_len = strlen(register_abi_name[i]);
         uprintf(console, "%s: ", register_abi_name[i]);
