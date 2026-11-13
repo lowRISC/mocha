@@ -4,6 +4,7 @@
 {
   name: "cvfpu",
   target_dir: "cvfpu",
+  patch_dir: "patches/cvfpu",
   upstream: {
     url: "https://github.com/openhwgroup/cvfpu.git",
     rev: "develop",
