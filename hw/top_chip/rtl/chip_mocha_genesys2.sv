@@ -331,7 +331,10 @@ module chip_mocha_genesys2 #(
     .dm_jtag_tms    (jtag_tms),
     .dm_jtag_tdi    (jtag_tdi),
     .dm_jtag_tdo    (jtag_tdo),
-    .dm_jtag_trst_n (jtag_trst_n & rst_n_sync_assert_50m)
+    .dm_jtag_trst_n (jtag_trst_n & rst_n_sync_assert_50m),
+
+    // Testing control
+    .debug_en_i (1'b1)
   );
 
   // GPIO tri-state output drivers
