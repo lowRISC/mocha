@@ -123,7 +123,9 @@ module top_chip_verilator (
     .dm_jtag_tms    (jtag_tms),
     .dm_jtag_tdi    (jtag_tdi),
     .dm_jtag_tdo    (jtag_tdo),
-    .dm_jtag_trst_n (jtag_trst_n)
+    .dm_jtag_trst_n (jtag_trst_n),
+
+    .debug_en_i (1'b1)
   );
 
   // No support for dual or quad SPI in loopback mode right now.

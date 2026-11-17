@@ -6,9 +6,11 @@ module riscv_debug_module #(
   parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
   parameter int unsigned XLen = 64
 ) (
-  // Clock and reset.
+  // Clock, reset and enable.
   input  logic clk_i,
   input  logic rst_ni,
+  input  logic debug_en_i,
+  output logic debug_en_o,
 
   // Debug module JTAG signals.
   input  logic tck_i,
@@ -31,6 +33,22 @@ module riscv_debug_module #(
   // Request to processor core.
   output logic debug_req_o
 );
+  // Masked inputs
+  logic                  tms_masked;
+  logic                  tdi_masked;
+  logic                  trst_masked_n;
+  top_pkg::axi_resp_t    axi_host_resp_masked;
+  top_pkg::axi_dev_req_t axi_device_req_masked;
+  logic                  ndmreset_ack_masked;
+
+  // Intermediate output values.
+  logic                   td_out;
+  logic                   td_out_en;
+  top_pkg::axi_req_t      axi_host_req;
+  top_pkg::axi_dev_resp_t axi_device_resp;
+  logic                   ndmreset_req;
+  logic                   proc_debug_req;
+
   // JTAG to DMI signals
   logic          debug_req_valid;
   logic          debug_req_ready;
@@ -58,6 +76,30 @@ module riscv_debug_module #(
   logic              dm_device_rvalid;
   logic [XLen-1:0]   dm_device_rdata;
 
+  // Capture debug enable input on first clock cycle only.
+  logic debug_en_q;
+  logic debug_en_capture_q;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      debug_en_capture_q <= 1'b1;
+      debug_en_q <= 1'b0;
+    end else begin
+      debug_en_capture_q <= 1'b0;
+      debug_en_q <= debug_en_capture_q ? debug_en_i : debug_en_q;
+    end
+  end
+
+  assign debug_en_o = debug_en_q;
+
+  // Hold all inputs when debug module is disabled
+  assign tms_masked = debug_en_q ? tms_i : 1'b0;
+  assign tdi_masked = debug_en_q ? td_i : 1'b0;
+  assign trst_masked_n = debug_en_q ? trst_ni : 1'b0;
+  assign axi_host_resp_masked = debug_en_q ? axi_host_resp_i : '0;
+  assign axi_device_req_masked = debug_en_q ? axi_device_req_i : '0;
+  assign ndmreset_ack_masked = debug_en_q ? ndmreset_ack_i : 1'b0;
+
   // JTAG to DMI bridge
   dmi_jtag  #(
     .IdcodeValue(jtag_id_pkg::RV_DM_JTAG_IDCODE)
@@ -74,11 +116,11 @@ module riscv_debug_module #(
     .dmi_resp_ready_o (debug_resp_ready),
     .dmi_resp_i       (debug_resp),
     .tck_i            (tck_i),
-    .tms_i            (tms_i),
-    .trst_ni          (trst_ni),
-    .td_i             (td_i),
-    .td_o             (td_o),
-    .tdo_oe_o         (td_en_o)
+    .tms_i            (tms_masked),
+    .trst_ni          (trst_masked_n),
+    .td_i             (tdi_masked),
+    .td_o             (td_out),
+    .tdo_oe_o         (td_out_en)
   );
 
   // Debug module AXI host adapter
@@ -105,8 +147,8 @@ module riscv_debug_module #(
     .id_o                  ( ),
     .critical_word_o       ( ),
     .critical_word_valid_o ( ),
-    .axi_req_o             (axi_host_req_o),
-    .axi_resp_i            (axi_host_resp_i)
+    .axi_req_o             (axi_host_req),
+    .axi_resp_i            (axi_host_resp_masked)
   );
 
   // Debug module AXI device adapter
@@ -123,8 +165,8 @@ module riscv_debug_module #(
 
     // AXI interface.
     .busy_o     ( ),
-    .axi_req_i  (axi_device_req_i),
-    .axi_resp_o (axi_device_resp_o),
+    .axi_req_i  (axi_device_req_masked),
+    .axi_resp_o (axi_device_resp),
 
     // Memory interface.
     .mem_req_o    (dm_device_req),
@@ -158,10 +200,10 @@ module riscv_debug_module #(
     .rst_ni               (rst_ni),
     .next_dm_addr_i       ('0), // Single debug module; end of the DMI chain.
     .testmode_i           (1'b0),
-    .ndmreset_o           (ndmreset_req_o),
-    .ndmreset_ack_i       (ndmreset_ack_i),
+    .ndmreset_o           (ndmreset_req),
+    .ndmreset_ack_i       (ndmreset_ack_masked),
     .dmactive_o           ( ), // active debug session
-    .debug_req_o          (debug_req_o),
+    .debug_req_o          (proc_debug_req),
     .unavailable_i        (1'b0),
     .hartinfo_i           ({ariane_pkg::DebugHartInfo}),
     .slave_req_i          (dm_device_req),
@@ -188,4 +230,54 @@ module riscv_debug_module #(
     .dmi_resp_ready_i     (debug_resp_ready),
     .dmi_resp_o           (debug_resp)
   );
+
+  ///////////////////////////////
+  // Blanking out the outputs. //
+  ///////////////////////////////
+
+  prim_blanker u_td_o_blanker (
+    .in_i  (td_out),
+    .en_i  (debug_en_q),
+    .out_o (td_o)
+  );
+
+  prim_blanker u_tdo_en_blanker (
+    .in_i  (td_out_en),
+    .en_i  (debug_en_q),
+    .out_o (td_en_o)
+  );
+
+  assign axi_host_req_o = '{
+    aw:       axi_host_req.aw,
+    aw_valid: debug_en_q ? axi_host_req.aw_valid : 1'b0,
+    w:        axi_host_req.w,
+    w_valid:  debug_en_q ? axi_host_req.w_valid  : 1'b0,
+    b_ready:  debug_en_q ? axi_host_req.b_ready  : 1'b0,
+    ar:       axi_host_req.ar,
+    ar_valid: debug_en_q ? axi_host_req.ar_valid : 1'b0,
+    r_ready:  debug_en_q ? axi_host_req.r_ready  : 1'b0
+  };
+
+  assign axi_device_resp_o = '{
+    aw_ready: debug_en_q ? axi_device_resp.aw_ready : 1'b0,
+    ar_ready: debug_en_q ? axi_device_resp.ar_ready : 1'b0,
+    w_ready:  debug_en_q ? axi_device_resp.w_ready  : 1'b0,
+    b_valid:  debug_en_q ? axi_device_resp.b_valid  : 1'b0,
+    b:        axi_device_resp.b,
+    r_valid:  debug_en_q ? axi_device_resp.r_valid  : 1'b0,
+    r:        axi_device_resp.r
+  };
+
+  prim_blanker u_ndmreset_blanker (
+    .in_i  (ndmreset_req),
+    .en_i  (debug_en_q),
+    .out_o (ndmreset_req_o)
+  );
+
+  prim_blanker u_debug_req_blanker (
+    .in_i  (proc_debug_req),
+    .en_i  (debug_en_q),
+    .out_o (debug_req_o)
+  );
+
 endmodule

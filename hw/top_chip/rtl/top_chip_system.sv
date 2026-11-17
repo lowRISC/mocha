@@ -81,7 +81,10 @@ module top_chip_system #(
   input  logic dm_jtag_tms,
   input  logic dm_jtag_tdi,
   output logic dm_jtag_tdo,
-  input  logic dm_jtag_trst_n
+  input  logic dm_jtag_trst_n,
+
+  // Testing controls
+  input  logic debug_en_i
 );
 
   // Local parameters.
@@ -375,12 +378,16 @@ module top_chip_system #(
   );
 
   // RISC-V debug module
+  logic debug_en;
+
   riscv_debug_module #(
     .CVA6Cfg ( CVA6Cfg      ),
     .XLen    ( CVA6Cfg.XLEN )
   ) u_riscv_debug_module (
     .clk_i             (clkmgr_clocks.clk_main_infra),
     .rst_ni            (rstmgr_resets.rst_debug_n[rstmgr_pkg::DomainMainSel]),
+    .debug_en_i        (debug_en_i),
+    .debug_en_o        (debug_en),
     .tck_i             (dm_jtag_tck),
     .tms_i             (dm_jtag_tms),
     .td_i              (dm_jtag_tdi),
@@ -1002,7 +1009,7 @@ module top_chip_system #(
     .low_power_o      ( ), // Low power not yet supported.
     .rom_ctrl_i       (rom_ctrl_pwrmgr_data),
     .lc_dft_en_i      (lc_ctrl_pkg::Off),
-    .lc_hw_debug_en_i (lc_ctrl_pkg::On),
+    .lc_hw_debug_en_i (debug_en ? lc_ctrl_pkg::On : lc_ctrl_pkg::Off),
     .sw_rst_req_i     (rstmgr_sw_rst_req),
     .tl_i             (tl_pwrmgr_h2d),
     .tl_o             (tl_pwrmgr_d2h),
