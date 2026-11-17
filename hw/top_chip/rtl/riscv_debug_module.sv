@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+`include "prim_assert.sv"
+
 module riscv_debug_module #(
   parameter config_pkg::cva6_cfg_t CVA6Cfg = config_pkg::cva6_cfg_empty,
   parameter int unsigned XLen = 64
@@ -280,4 +282,70 @@ module riscv_debug_module #(
     .out_o (debug_req_o)
   );
 
+  ////////////////
+  // Assertions //
+  ////////////////
+
+`ifdef INC_ASSERT
+
+  // Assertions to know whether the input masking is working.
+  `ASSERT(TdoInternalDisable_A, !debug_en_q |-> ($stable(td_out) && td_out == 1'b0))
+  `ASSERT(TdenoInternalDisable_A, !debug_en_q |-> ($stable(td_out_en) && td_out_en == 1'b0))
+  `ASSERT(AxiHostInternalDisable_A, !debug_en_q |-> (
+    $stable(axi_host_req) &&
+    axi_host_req.aw_valid == 1'b0 &&
+    axi_host_req.w_valid == 1'b0 &&
+    axi_host_req.ar_valid == 1'b0 &&
+    axi_host_req.b_ready == 1'b0 &&
+    axi_host_req.r_ready == 1'b0
+  ))
+  `ASSERT(AxiDeviceInternalDisable_A, !debug_en_q |-> (
+    $stable(axi_device_resp.aw_ready) &&
+    $stable(axi_device_resp.w_ready) &&
+    $stable(axi_device_resp.ar_ready) &&
+    $stable(axi_device_resp.b_valid) &&
+    $stable(axi_device_resp.r_valid) &&
+    axi_device_resp.aw_ready == 1'b0 &&
+    axi_device_resp.w_ready == 1'b0 &&
+    axi_device_resp.ar_ready == 1'b0 &&
+    axi_device_resp.b_valid == 1'b0 &&
+    axi_device_resp.r_valid == 1'b0
+  ))
+  `ASSERT(NdmResetInternalDisable_A, !debug_en_q |-> (
+    $stable(ndmreset_req) && ndmreset_req == 1'b0
+  ))
+  `ASSERT(DebugReqInternalDisable_A, !debug_en_q |-> (
+    $stable(proc_debug_req) && proc_debug_req == 1'b0
+  ))
+
+  // Assertions to know whether the output blanking is working.
+  `ASSERT(TdoDisable_A, !debug_en_q |-> ($stable(td_o) && td_o == 1'b0))
+  `ASSERT(TdenoDisable_A, !debug_en_q |-> ($stable(td_en_o) && td_en_o == 1'b0))
+  `ASSERT(AxiHostDisable_A, !debug_en_q |-> (
+    $stable(axi_host_req_o) &&
+    axi_host_req_o.aw_valid == 1'b0 &&
+    axi_host_req_o.w_valid == 1'b0 &&
+    axi_host_req_o.ar_valid == 1'b0 &&
+    axi_host_req_o.b_ready == 1'b0 &&
+    axi_host_req_o.r_ready == 1'b0
+  ))
+  `ASSERT(AxiDeviceDisable_A, !debug_en_q |-> (
+    $stable(axi_device_resp_o.aw_ready) &&
+    $stable(axi_device_resp_o.w_ready) &&
+    $stable(axi_device_resp_o.ar_ready) &&
+    $stable(axi_device_resp_o.b_valid) &&
+    $stable(axi_device_resp_o.r_valid) &&
+    axi_device_resp_o.aw_ready == 1'b0 &&
+    axi_device_resp_o.w_ready == 1'b0 &&
+    axi_device_resp_o.ar_ready == 1'b0 &&
+    axi_device_resp_o.b_valid == 1'b0 &&
+    axi_device_resp_o.r_valid == 1'b0
+  ))
+  `ASSERT(NdmResetDisable_A, !debug_en_q |-> (
+    $stable(ndmreset_req_o) && ndmreset_req_o == 1'b0
+  ))
+  `ASSERT(DebugReqDisable_A, !debug_en_q |-> (
+    $stable(debug_req_o) && debug_req_o == 1'b0
+  ))
+`endif
 endmodule
