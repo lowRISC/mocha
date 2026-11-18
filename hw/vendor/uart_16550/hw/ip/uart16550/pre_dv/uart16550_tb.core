@@ -1,0 +1,46 @@
+CAPI=2:
+# Copyright lowRISC contributors (OpenTitan project).
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+#
+name: "lowrisc:dv:uart16550_tb:0.1"
+description: "uart16550 pre_dv sim target"
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:ip:uart16550
+
+  files_dv:
+    files:
+      - uart16550_tb.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+      - files_dv
+
+  sim:
+    <<: *default_target
+    default_tool: verilator
+    toplevel: uart16550_tb
+    tools:
+      verilator:
+        mode: binary
+        verilator_options:
+          # Disabling tracing reduces compile times but doesn't have a
+          # huge influence on runtime performance.
+          - '--trace'
+          - '--trace-fst' # this requires -DVM_TRACE_FMT_FST in CFLAGS below!
+          - '--trace-structs'
+          - '--trace-params'
+          - '--trace-max-array 1024'
+          - '--assert'
+          # Enable all warnings
+          - '-Wall'
+          # Enable timing support
+          - '--timing'
+          # Default timescale
+          - '--timescale 1ns/1ps'

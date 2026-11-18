@@ -1,0 +1,50 @@
+addrmap uart16550_wo {
+    addrmap {
+        reg {
+            field {
+                sw = w;
+                hw = r;
+                swmod = true;
+            } THR[7:0];
+        } external THR @ 0x0;
+        reg {
+            field {
+                sw = w;
+                hw = rw;
+                swmod = true;
+                desc = "FIFO enable.";
+            } FIFO_EN[0:0] = 0x0;
+            field {
+                sw = w;
+                hw = rw;
+                swmod = true;
+                desc = "Receiver FIFO reset.
+                Writing 1 to this field resets the receiver FIFO, the write is self-clearing.";
+            } RCVR_FIFO_RESET[1:1] = 0x0;
+            field {
+                sw = w;
+                hw = rw;
+                swmod = true;
+                desc = "Transmitter FIFO reset.
+                Writing 1 to this field resets the transmitter FIFO, the write is self-clearing.";
+            } XMIT_FIFO_RESET[2:2] = 0x0;
+            field {
+                sw = w;
+                hw = rw;
+                swmod = true;
+                desc = "DMA mode select. This field has no effect.";
+            } DMA_MODE_SEL[3:3] = 0x0;
+            field {
+                sw = w;
+                hw = rw;
+                swmod = true;
+                desc = "Trigger level for the RCVR FIFO interrupt.
+                Encoding:
+                0b00: 1 byte
+                0b01: 4 bytes
+                0b10: 8 bytes
+                0b11: 16 bytes";
+            } RCVR_TRIGGER[7:6] = 0x0;
+        } FCR @ 0x8;
+    } none @ 0x0;
+};
