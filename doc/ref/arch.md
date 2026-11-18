@@ -97,7 +97,8 @@ The Mocha top will need a few top-level inputs.<!-- i7mqt7_x -->
 Some of these are listed here:<!-- 1cwb13_x -->
 - Clock outputs from PLLs.<!-- p4bt5a_x -->
 - Rollback counter backed by OTP.<!-- 7215fb_x -->
-- Debug and design for test enable pins.<!-- 5fh61t_x -->
+- Debug enable pin which should only be changed when holding Mocha in reset. <!-- 5fh61t_x -->
+- Design for test pin.
 - True random noise source to drive the entropy source.<!-- 8u3w8m_x -->
 - AXI subordinate port to connect to the mailbox.<!-- fna4to_x -->
 
