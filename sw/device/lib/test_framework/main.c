@@ -74,13 +74,13 @@ test_exception_handler(struct trap_registers *registers, struct trap_context *co
 
     uart_init(console);
     // Flush the uart
-    uart_wait_for(console, uart_status_txidle);
+    uart_wait_for(console, uart_lsr_temt);
 
     DEV_WRITE(&dv_window->test_status, dv_test_status_in_test);
 
     bool result = test_main(console);
     // Flush the uart
-    uart_wait_for(console, uart_status_txidle);
+    uart_wait_for(console, uart_lsr_temt);
 
     test_exit(result);
 }
