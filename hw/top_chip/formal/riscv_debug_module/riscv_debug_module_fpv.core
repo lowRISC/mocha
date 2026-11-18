@@ -1,0 +1,29 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha:riscv_debug_module_fpv:0.1"
+description: "Formal flow for the RISC-V debug module tie-off"
+
+filesets:
+  files_formal:
+    depend:
+      - lowrisc:prim:all
+      - lowrisc:mocha:riscv_debug_module
+    files:
+      - tb/riscv_debug_module_tb.sv
+    file_type: systemVerilogSource
+
+targets:
+  default: &default_target
+    default_tool: icarus
+    filesets:
+      - files_formal
+    toplevel: riscv_debug_module_tb
+
+  formal:
+    <<: *default_target
+
+  lint:
+    <<: *default_target
