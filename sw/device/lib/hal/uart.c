@@ -9,97 +9,102 @@
 
 void uart_init(uart_t uart)
 {
-    uart_ctrl ctrl = VOLATILE_READ(uart->ctrl);
-    ctrl.tx = true;
-    ctrl.rx = true;
-    ctrl.nco = (((uint64_t)BAUD_RATE << 20) / system_clock_frequency);
-    VOLATILE_WRITE(uart->ctrl, ctrl);
+    // Enable divisor latch access
+    uart_lcr lcr = VOLATILE_READ(uart->lcr);
+    lcr.dlab = 1;
+    VOLATILE_WRITE(uart->lcr, lcr);
+
+    // Write divisor latch
+    uart_dl_t uart_dl = (uart_dl_t)uart;
+    uint16_t dl = system_clock_frequency / ((uint64_t)BAUD_RATE << 4);
+    uart_dll dll = {
+        .dll = dl & 0xFF,
+    };
+    VOLATILE_WRITE(uart_dl->dll, dll);
+    uart_dlm dlm = {
+        .dlm = dl >> 8,
+    };
+    VOLATILE_WRITE(uart_dl->dlm, dlm);
+
+    // Disable divisor latch access
+    lcr.dlab = 0;
+    VOLATILE_WRITE(uart->lcr, lcr);
 }
 
-uart_intr uart_interrupt_enable_read(uart_t uart)
+uart_ier uart_interrupt_enable_read(uart_t uart)
 {
-    return VOLATILE_READ(uart->intr_enable);
+    return VOLATILE_READ(uart->ier);
 }
 
-void uart_interrupt_enable_write(uart_t uart, uart_intr intrs)
+void uart_interrupt_enable_write(uart_t uart, uart_ier intrs)
 {
-    VOLATILE_WRITE(uart->intr_enable, intrs);
+    VOLATILE_WRITE(uart->ier, intrs);
 }
 
-void uart_interrupt_enable_set(uart_t uart, uart_intr intrs)
+void uart_interrupt_enable_set(uart_t uart, uart_ier intrs)
 {
-    uart_intr intr_enable = VOLATILE_READ(uart->intr_enable);
-    intr_enable |= intrs;
-    VOLATILE_WRITE(uart->intr_enable, intr_enable);
+    uart_ier ier = VOLATILE_READ(uart->ier);
+    ier |= intrs;
+    VOLATILE_WRITE(uart->ier, ier);
 }
 
-void uart_interrupt_enable_clear(uart_t uart, uart_intr intrs)
+void uart_interrupt_enable_clear(uart_t uart, uart_ier intrs)
 {
-    uart_intr intr_enable = VOLATILE_READ(uart->intr_enable);
-    intr_enable &= ~intrs;
-    VOLATILE_WRITE(uart->intr_enable, intr_enable);
+    uart_ier ier = VOLATILE_READ(uart->ier);
+    ier &= ~intrs;
+    VOLATILE_WRITE(uart->ier, ier);
 }
 
-void uart_interrupt_force(uart_t uart, uart_intr intrs)
+bool uart_interrupt_is_pending(uart_t uart)
 {
-    VOLATILE_WRITE(uart->intr_test, intrs);
+    uart_iir iir = VOLATILE_READ(uart->iir);
+    return !iir.intr_pending;
 }
 
-void uart_interrupt_clear(uart_t uart, uart_intr intrs)
+uart_intr_id uart_pending_interrupt_read(uart_t uart)
 {
-    VOLATILE_WRITE(uart->intr_state, intrs);
+    uart_iir iir = VOLATILE_READ(uart->iir);
+    return (uart_intr_id)iir.intr_id;
 }
 
-bool uart_interrupt_all_pending(uart_t uart, uart_intr intrs)
+bool uart_line_status_any(uart_t uart, uart_lsr lsr)
 {
-    return (VOLATILE_READ(uart->intr_state) & intrs) == intrs;
+    // This will clear any receive error in the LSR as a side effect
+    return (VOLATILE_READ(uart->lsr) & lsr) != 0u;
 }
 
-bool uart_interrupt_any_pending(uart_t uart, uart_intr intrs)
+bool uart_line_status_all(uart_t uart, uart_lsr lsr)
 {
-    return (VOLATILE_READ(uart->intr_state) & intrs) != 0u;
+    // This will clear any receive error in the LSR as a side effect
+    return (VOLATILE_READ(uart->lsr) & lsr) == lsr;
 }
 
-bool uart_status_any(uart_t uart, uart_status status)
+void uart_loopback_set(uart_t uart, bool system_enable)
 {
-    return (VOLATILE_READ(uart->status) & status) != 0u;
-}
-
-bool uart_status_all(uart_t uart, uart_status status)
-{
-    return (VOLATILE_READ(uart->status) & status) == status;
-}
-
-void uart_loopback_set(uart_t uart, bool system_enable, bool line_enable)
-{
-    uart_ctrl ctrl = VOLATILE_READ(uart->ctrl);
-    ctrl.slpbk = system_enable;
-    ctrl.llpbk = line_enable;
-    VOLATILE_WRITE(uart->ctrl, ctrl);
+    uart_mcr mcr = VOLATILE_READ(uart->mcr);
+    mcr.loop = system_enable;
+    VOLATILE_WRITE(uart->mcr, mcr);
 }
 
 char uart_in(uart_t uart)
 {
-    uart_status status;
-    do {
-        status = VOLATILE_READ(uart->status);
-    } while (status & uart_status_rxempty);
+    // Wait until there is received data
+    uart_wait_for(uart, uart_lsr_dr);
 
-    uart_rdata rdata = VOLATILE_READ(uart->rdata);
-    return (char)(rdata.rdata);
+    // Read from Rx FIFO
+    uart_rbr rbr = VOLATILE_READ(uart->rbr);
+    return (char)(rbr.rbr);
 }
 
 void uart_out(uart_t uart, char ch)
 {
-    uart_status status;
-    do {
-        status = VOLATILE_READ(uart->status);
-    } while (status & uart_status_txfull);
+    // Wait until THR is empty
+    uart_wait_for(uart, uart_lsr_thre);
 
-    uart_wdata wdata = {
-        .wdata = ch,
-    };
-    VOLATILE_WRITE(uart->wdata, wdata);
+    // Push to Tx FIFO
+    uart_wo_t uart_wo = (uart_wo_t)uart;
+    uart_thr thr = { .thr = ch };
+    VOLATILE_WRITE(uart_wo->thr, thr);
 }
 
 void uart_putchar(uart_t uart, char ch)
