@@ -676,8 +676,8 @@ module top_chip_system #(
     .intr_gpio_o (gpio_interrupts)
   );
 
-  // Instantiate our UART block.
-  uart u_uart (
+  // Instantiate UART 16550 block.
+  uart16550 u_uart (
     .clk_i  (clkmgr_clocks.clk_io_infra),
     .rst_ni (rstmgr_resets.rst_io_n[rstmgr_pkg::DomainMainSel]),
 
