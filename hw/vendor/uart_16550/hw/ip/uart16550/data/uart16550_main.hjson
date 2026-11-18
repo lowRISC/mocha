@@ -1,0 +1,299 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "uart16550_main"
+  human_name: "UART 16550 main address map"
+  // TODO: placeholder, reggen requires an id but no top in Mocha reads it
+  cip_id:             "99"
+  design_spec:        "../doc"
+  version:            "0.0.1"
+  life_stage:         "L1"
+  design_stage:       "D0"
+  verification_stage: "V0"
+
+  clocking: [
+    { clock: "clk_i", reset: "rst_ni", primary: true }
+  ]
+
+  bus_interfaces: [
+    { protocol: "tlul", direction: "device", racl_support: false }
+  ]
+
+  regwidth: "32",
+  registers: [
+    { name:     "RBR",
+      desc:     "Receive buffer register.",
+      swaccess: "ro",
+      hwaccess: "hrw",
+      hwext:    "true",
+      hwre:     "true",
+      fields: [
+        { bits:   "7:0",
+          resval: "0x00"
+        }
+      ]
+    }
+    { name:     "IER",
+      desc:     "Interrupt enable register.",
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits:   "0",
+          name:   "ERBFI",
+          desc:   "Enable received data available interrupt.",
+          resval: "0"
+        }
+        { bits:   "1",
+          name:   "ETBEI",
+          desc:   "Enable transmitter holding register empty interrupt.",
+          resval: "0",
+          tags:   [// Do not write to ETBEI, this causes THRE interrupt to be indicated
+                   // with an empty transmitter and affects the value in IIR.
+                   "excl:CsrNonInitTests:CsrExclWrite"]
+        }
+        { bits:   "2",
+          name:   "ELSI",
+          desc:   "Enable receiver line status interrupt.",
+          resval: "0"
+        }
+        { bits:   "3",
+          name:   "EDSSI",
+          desc:   "Enable MODEM status interrupt.",
+          resval: "0"
+        }
+      ]
+    }
+    { name:     "IIR",
+      desc:     "Interrupt identification register.",
+      swaccess: "ro",
+      hwaccess: "hrw",
+      fields: [
+        { bits:   "0",
+          name:   "INTR_PENDING",
+          desc:   "Interrupt pending, active low.",
+          resval: "1"
+        }
+        { bits:   "3:1",
+          name:   "INTR_ID",
+          desc:   '''Interrupt ID for the highest priority pending interrupt.
+                  Encoding:
+                  0b011: Receiver line status interrupt
+                  0b010: Received data available interrupt
+                  0b110: Character timeout indication
+                  0b001: Transmitter holding register empty
+                  0b000: MODEM status interrupt or no pending interrupt
+                  ''',
+          resval: "0x0"
+        }
+        { bits:   "7:6",
+          name:   "FIFO_EN",
+          desc:   "FIFO enable, replicated across the width of this field.",
+          resval: "0x0"
+        }
+      ]
+    }
+    { name:     "LCR",
+      desc:     "Line control register.",
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits:     "1:0",
+          name:     "WLS",
+          desc:     "Word length select, tied to 0x3 to indicate 8-bit word length.",
+          swaccess: "ro",
+          resval:   "0x3"
+        }
+        { bits:     "2",
+          name:     "STB",
+          desc:     "Number of stop bits, tied to 0 to indicate 1 stop bit.",
+          swaccess: "ro",
+          resval:   "0"
+        }
+        { bits:   "3",
+          name:   "PEN",
+          desc:   "Parity enable.",
+          resval: "0"
+        }
+        { bits:   "4",
+          name:   "EPS",
+          desc:   "Even parity select.",
+          resval: "1"
+        }
+        { bits:     "5",
+          name:     "STICK_PARITY",
+          desc:     "Stick parity, tied to 0 to indicate that it is always disabled.",
+          swaccess: "ro",
+          resval:   "0"
+        }
+        { bits:   "6",
+          name:   "BREAK_CTRL",
+          desc:   '''Break control bit.
+                  When set to 1, the UART serial output is forced to spacing (logic 0) state.
+                  This has no effect on the transmitter logic.
+                  ''',
+          resval: "0",
+          tags:   [// Do not write to BREAK_CTRL, writing 1 forces the Tx output to 0 and causes
+                   // UART protocol violation.
+                   "excl:CsrAllTests:CsrExclWrite"]
+        }
+        { bits:   "7",
+          name:   "DLAB",
+          desc:   '''Divisor latch access bit.
+                  This bit must be set high to access the DLL and DLM registers.
+                  This bit must be set low to access the RBR, THR and IER registers.
+                  ''',
+          resval: "0",
+          tags:   [// Do not write to DLAB, this affects which registers are accessible
+                   // at address offsets 0x0 and 0x4.
+                   "excl:CsrNonInitTests:CsrExclWrite"]
+        }
+      ]
+    }
+    { name:     "MCR",
+      desc:     "MODEM control register.",
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits:   "0",
+          name:   "DTR",
+          desc:   "Data terminal ready. This field has no effect on external pins.",
+          resval: "0"
+        }
+        { bits:   "1",
+          name:   "RTS",
+          desc:   "Request to send. This field has no effect on external pins.",
+          resval: "0"
+        }
+        { bits:   "3:2",
+          name:   "OUT",
+          desc:   "User-designated output. This field has no effect on external pins.",
+          resval: "0"
+        }
+        { bits:   "4",
+          name:   "LOOP",
+          desc:   '''System loopback enable.
+                  When set to 1:
+                  1. The serial output is set to the marking (logic 1) state.
+                  2. The serial input is disconnected.
+                  3. The transmitter shift register output is looped back to the
+                     receiver shift register input.
+                  4. The MODEM control outouts (DTR, RTS, OUT1, OUT2) are internally
+                     connected to the MODEM control inputs.
+                  ''',
+          resval: "0",
+          tags:   [// Do not write to LOOP, this affects the value in MSR.
+                   "excl:CsrNonInitTests:CsrExclWrite"]
+        }
+      ]
+    }
+    { name:     "LSR",
+      desc:     "Line status register.",
+      swaccess: "ro",
+      hwaccess: "hrw",
+      fields: [
+        { bits:   "0",
+          name:   "DR",
+          desc:   "Data ready.",
+          resval: "0"
+        }
+        { bits:     "1",
+          name:     "OE",
+          desc:     "Overrun error. Indicated on reception.",
+          swaccess: "rc",
+          resval:   "0"
+        }
+        { bits:     "2",
+          name:     "PE",
+          desc:     "Parity error. Indicated on reception.",
+          swaccess: "rc",
+          resval:   "0"
+        }
+        { bits:     "3",
+          name:     "FE",
+          desc:     "Framing error. Indicated on reception.",
+          swaccess: "rc",
+          resval:   "0"
+        }
+        { bits:     "4",
+          name:     "BI",
+          desc:     "Break interrupt. Indicated on reception.",
+          swaccess: "rc",
+          resval:   "0"
+        }
+        { bits:   "5",
+          name:   "THRE",
+          desc:   "Transmitter holding register empty.",
+          resval: "1"
+        }
+        { bits:   "6",
+          name:   "TEMT",
+          desc:   "Transmitter empty.",
+          resval: "1"
+        }
+        { bits:   "7",
+          name:   "RCVR_FIFO_ERROR",
+          desc:   "Error in receiver FIFO. Equivalent to the or reduction of PE, FE and BI.",
+          resval: "0"
+        }
+      ]
+    }
+    { name:     "MSR",
+      desc:     "MODEM status register.",
+      swaccess: "ro",
+      hwaccess: "hwo",
+      fields: [
+        { bits:   "0",
+          name:   "DCTS",
+          desc:   "Delta clear to send. Tied to 0.",
+          resval: "0"
+        }
+        { bits:   "1",
+          name:   "DDSR",
+          desc:   "Delta data set ready. Tied to 0.",
+          resval: "0"
+        }
+        { bits:   "2",
+          name:   "TERI",
+          desc:   "Trailing edge ring indicator. Tied to 0.",
+          resval: "0"
+        }
+        { bits:   "3",
+          name:   "DDCD",
+          desc:   "Delta data carrier detect. Tied to 0.",
+          resval: "0"
+        }
+        { bits:   "4",
+          name:   "CTS",
+          desc:   "Clear to send. Tied to 0 when loopback is disabled.",
+          resval: "0"
+        }
+        { bits:   "5",
+          name:   "DSR",
+          desc:   "Data set ready. Tied to 0 when loopback is disabled.",
+          resval: "0"
+        }
+        { bits:   "6",
+          name:   "RI",
+          desc:   "Ring indicator. Tied to 0 when loopback is disabled.",
+          resval: "0"
+        }
+        { bits:   "7",
+          name:   "DCD",
+          desc:   "Data carrier detect. Tied to 0 when loopback is disabled.",
+          resval: "0"
+        }
+      ]
+    }
+    { name:     "SCR",
+      desc:     "Scratch register.",
+      swaccess: "rw",
+      hwaccess: "none",
+      fields: [
+        { bits:   "7:0",
+          resval: "0x00"
+        }
+      ]
+    }
+  ]
+}
