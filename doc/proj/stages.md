@@ -20,7 +20,7 @@ This table shows the current design and verification stage for each block in Moc
 | [GPIO][]              | D1               | V1                     |
 | [KMAC][]              | D1               | V0                     |
 | [I2C][]               | D1               | V1                     |
-| [Mailbox][]           | D1               | V0                     |
+| [Mailbox][]           | D1               | V1                     |
 | [PLIC][]              | D1               | V0                     |
 | [Power manager][]     | D1               | V1                     |
 | [Reset manager][]     | D1               | V1                     |

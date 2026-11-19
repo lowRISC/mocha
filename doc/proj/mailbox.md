@@ -45,7 +45,26 @@ This sign-off is based on commit [`b6edc2a`][d1-commit].
 
 ### V1
 
-*Not yet started - see [stages.md][verification stages].*
+All checklist items refer to the [V1 verification sign-off checklist][V1 checklist].
+This sign-off is based on commit [`443dba6`][v1-commit].
+
+| Type          | Item                               | Status | Note/Collaterals |
+|---------------|------------------------------------|--------|------------------|
+| Documentation | DV_DOC_DRAFT_COMPLETED             | Done   | [Mailbox DV document][] describes the goals, testbench architecture, stimulus, coverage, and checking strategy |
+| Documentation | TESTPLAN_COMPLETED                 | Done   | [Mailbox testplan][] defines the V1 smoke and CSR testpoints and post-V1 FIFO full and empty, error, threshold, interrupt, request and response, flush, access error, unmapped access, partial write and stress testpoints |
+| Testbench     | TB_TOP_CREATED                     | Done   | [tb.sv][] instantiates the clock and reset, one AXI4-Lite interface per port and the interrupt interface along with the Mailbox DUT, with the parameters of the Mocha instance |
+| Testbench     | PRELIMINARY_ASSERTION_CHECKS_ADDED | Done   | The AXI agent binds the manager and subordinate protocol assertions into the interface of each port; the Mailbox RTL checks that outputs are known after reset |
+| Integration   | PRE_VERIFIED_SUB_MODULES_V1        | Waived | The submodules `fifo_v3`, `spill_register` and `addr_decode` resolve to the lowRISC wrappers in `hw/ip/common_cells`. They are covered through the Mailbox ports, so none carries an independent V1 sign-off |
+| Review        | DESIGN_SPEC_REVIEWED               | Done   | The [Mailbox specification][block doc] was reviewed against the Mocha instantiation for this sign-off. It describes the FIFOs, registers, thresholds and interrupts the V1 tests rely on; the contradictions and gaps it leaves for access type errors, partial writes and unmapped addresses are tracked in [issue #755][spec issue] and are out of V1 scope |
+| Review        | TESTPLAN_REVIEWED                  | Done   | The [Mailbox testplan][] was reviewed for this sign-off. Its V1 testpoints, `mailbox_smoke` and the four CSR testpoints, apply to both ports of the Mocha instance; the post-V1 testpoints have no tests yet |
+| Review        | STD_TEST_CATEGORIES_PLANNED        | Done   | Error scenarios and stress tests are covered in the [Mailbox testplan][]; the Mailbox has no security countermeasures; debug, power and performance are N/A |
+| Simulation    | SIM_TB_ENV_CREATED                 | Done   | UVM environment with an AXI manager agent and register predictor per port and a scoreboard |
+| Tests         | SIM_SMOKE_TEST_PASSING             | Done   | All V1 testpoints (`mailbox_smoke` and the four CSR tests): 25/25 passed, 5 seeds each, with Xcelium on November 25, 2026 at commit `443dba6` |
+| Regression    | SIM_SMOKE_REGRESSION_SETUP         | Done   | `smoke` regression in `mailbox_sim_cfg.hjson` selects `mailbox_smoke`; the aggregate Mocha config imports the Mailbox simulation config |
+| Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Done   | The Mailbox is included in `mocha_sim_cfgs.hjson`; results are published on the [COSMIC reports dashboard][] |
+| Coverage      | SIM_COVERAGE_MODEL_ADDED           | Done   | Functional coverage is in [`mailbox_env_cov.sv`][cov model] |
+| Tests         | FPV_MAIN_ASSERTIONS_PROVEN         | N/A    | This V1 sign-off uses simulation |
+| Regression    | FPV_REGRESSION_SETUP               | N/A    | No Mailbox FPV regression is configured in Mocha |
 
 ### V2
 
@@ -70,3 +89,11 @@ This sign-off is based on commit [`b6edc2a`][d1-commit].
 [output asserts]: https://github.com/lowRISC/mocha/blob/b6edc2ae5cdee9f1d4d1baa815921bb658c82613/hw/vendor/pulp_axi/src/axi_lite_mailbox.sv#L191-L202
 [lint waivers]: ../../hw/top_chip/lint/top_chip_system.vlt#L60-L69
 [waivers issue]: https://github.com/lowRISC/mocha/issues/739
+[V1 checklist]: stages.md#v1-verification-sign-off-checklist
+[v1-commit]: https://github.com/lowRISC/mocha/commit/443dba606fc38dc9c3361f8c4fa18846bac41ed5
+[spec issue]: https://github.com/lowRISC/mocha/issues/755
+[Mailbox DV document]: ../../hw/ip/mailbox/dv/README.md
+[Mailbox testplan]: ../../hw/ip/mailbox/data/mailbox_testplan.hjson
+[tb.sv]: ../../hw/ip/mailbox/dv/tb/tb.sv
+[cov model]: ../../hw/ip/mailbox/dv/env/mailbox_env_cov.sv
+[COSMIC reports dashboard]: https://dashboard.reports.lowrisc.org/cosmic/mocha/dashboard.html
