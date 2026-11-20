@@ -14,7 +14,7 @@ module axi_tagctrl_r #(
     /// [`axi_tagctrl_top`](module.axi_tagctrl_top).
     parameter axi_tagctrl_pkg::tagctrl_cfg_t Cfg = axi_tagctrl_pkg::tagctrl_cfg_t'{default: '0},
     /// Tag Controller descriptor type definition.
-    parameter type tagctrl_desc_t = logic,
+    parameter type desc_t = logic,
     /// Tag Cache R payload type definition.
     parameter type tagc_inp_t = logic,
     /// AXI slave port R channel struct definition.
@@ -25,7 +25,7 @@ module axi_tagctrl_r #(
     /// Asynchronous reset, active low.
     input logic rst_ni,
     /// Input descriptor payload.
-    input tagctrl_desc_t tagctrl_desc_i,
+    input desc_t tagctrl_desc_i,
     /// Input descriptor is valid.
     input logic tagctrl_desc_valid_i,
     /// Unit is ready to accept a new descriptor.
@@ -50,7 +50,7 @@ module axi_tagctrl_r #(
     input logic r_chan_slv_ready_i
 );
   // Registers
-  tagctrl_desc_t tagctrl_desc_d, tagctrl_desc_q;
+  desc_t tagctrl_desc_d, tagctrl_desc_q;
   logic load_desc;
   enum logic [1:0] {
     IDLE,
@@ -59,6 +59,7 @@ module axi_tagctrl_r #(
       state_d, state_q;
   // AXI tag cache channel signals
   tagc_inp_t tagc_inp_r_d, tagc_inp_r_q;
+  localparam int unsigned TagFlitBits = $bits(tagc_inp_r_q.data);
   logic tagc_inp_r_valid_d, tagc_inp_r_valid_q;
   logic load_tags, load_tags_valid;
   // MEM FIFO control signals
@@ -70,13 +71,13 @@ module axi_tagctrl_r #(
   r_chan_t mem_fifo_indata;
   // auxiliary signals
   // Tag index bit (indicates if we are reading from a valid capability or not)
-  logic [$clog2(Cfg.AxiDataWidth)-1:0] tag_bit_ind;
+  logic [$clog2(TagFlitBits)-1:0] tag_bit_ind;
 
   // AXI Slave R port channel assignments
   // AXI Master R port channel assignments
   assign r_chan_ready_o = !mem_fifo_full;
   // Decode tag bit index based on the address
-  assign tag_bit_ind = tagctrl_desc_q.a_x_addr[$clog2(Cfg.CapSize/8)+:$clog2(Cfg.AxiDataWidth)];
+  assign tag_bit_ind = tagctrl_desc_q.a_x_addr[$clog2(Cfg.CapSize/8)+:$clog2(TagFlitBits)];
 
   always_comb begin : r_chan_ctrl
     // registers default values
@@ -97,13 +98,21 @@ module axi_tagctrl_r #(
 
     case (state_q)
       IDLE: begin
-        load_new_desc();
-        get_tags();
+        load_new_desc_and_tags();
       end
       SEND_R_CHANNEL: begin
-        if (tagc_inp_r_valid_q && !mem_fifo_empty) begin
+        // To track number of response flits, decrement the a_x_len field.
+        // Should align with the mem fifo data last field, but needed for the
+        // illegal_req case.
+        automatic logic last = tagctrl_desc_q.a_x_len == 0;
+        automatic logic data_err = 1'b0;
+        automatic logic tag_err = 1'b0;
+        if (tagc_inp_r_valid_q && (!mem_fifo_empty || tagctrl_desc_q.illegal_req)) begin
           r_chan_slv_valid_o = 1'b1;
-          mem_fifo_pop = r_chan_slv_ready_i;
+          if (r_chan_slv_ready_i) begin
+            mem_fifo_pop = !tagctrl_desc_q.illegal_req;
+            tagctrl_desc_d.a_x_len = tagctrl_desc_q.a_x_len - 1;
+          end
           // update the address
           tagctrl_desc_d.a_x_addr = axi_pkg::aligned_addr(
             tagctrl_desc_q.a_x_addr + axi_pkg::num_bytes(
@@ -112,20 +121,29 @@ module axi_tagctrl_r #(
             tagctrl_desc_q.a_x_size
           );
           load_desc = r_chan_slv_ready_i;
-          r_chan_slv_o = mem_fifo_data;
+          r_chan_slv_o = tagctrl_desc_q.illegal_req ? '0 : mem_fifo_data;
+          data_err = r_chan_slv_o.resp == axi_pkg::RESP_DECERR || r_chan_slv_o.resp == axi_pkg::RESP_SLVERR;
+          tag_err = tagc_inp_r_q.resp == axi_pkg::RESP_DECERR || tagc_inp_r_q.resp == axi_pkg::RESP_SLVERR;
           // set id filled with the one from the descriptor
           r_chan_slv_o.id = tagctrl_desc_q.a_x_id;
           // set user field with the tag bit
           r_chan_slv_o.user = (tagc_inp_r_q.data >> tag_bit_ind) & 1;
+          // set last field as appropriate
+          r_chan_slv_o.last = last;
+          // override resp field if required
+          if (tagctrl_desc_q.x_resp != axi_pkg::RESP_OKAY) r_chan_slv_o.resp = tagctrl_desc_q.x_resp;
+          if (tag_err) begin
+            if (!data_err) r_chan_slv_o.resp = tagc_inp_r_q.resp;
+            r_chan_slv_o.user = '0;
+          end
           // load more tags if needed
-          if ((tag_bit_ind == (Cfg.AxiDataWidth - 1) && tagctrl_desc_d.a_x_addr[0+:$clog2(
+          if ((tag_bit_ind == (TagFlitBits - 1) && tagctrl_desc_d.a_x_addr[0+:$clog2(
                   Cfg.CapSize/8
-              )] == 0) && !mem_fifo_data.last && r_chan_slv_ready_i) begin
+              )] == 0) && !last && r_chan_slv_ready_i && !tagctrl_desc_q.illegal_req) begin
             get_tags();
           end
-          if (mem_fifo_data.last && r_chan_slv_ready_i) begin
-            load_new_desc();
-            get_tags();
+          if (last && r_chan_slv_ready_i) begin
+            load_new_desc_and_tags();
           end
         end
         if (!tagc_inp_r_valid_q) begin
@@ -151,8 +169,8 @@ module axi_tagctrl_r #(
       mem_fifo_indata = r_chan_mst_i;
     end
   end
-  // this function loads a new descriptor from the `axi_tagctrl_ax.sv` unit
-  function void load_new_desc();
+  // load request descriptor and associated tag bits if needed
+  function automatic void load_new_desc_and_tags();
     tagctrl_desc_ready_o = 1'b1;
     state_d = IDLE;
     // new descriptor at the input
@@ -160,27 +178,35 @@ module axi_tagctrl_r #(
       tagctrl_desc_d = tagctrl_desc_i;
       load_desc = 1'b1;
       state_d = SEND_R_CHANNEL;
+      get_tags();
+    end else begin
+      tagc_inp_r_valid_d = 1'b0;
+      load_tags_valid = 1'b1;
     end
-  endfunction : load_new_desc
+  endfunction : load_new_desc_and_tags
 
-  // this function loads a new descriptor from the `axi_tagctrl_ax.sv` unit
-  function void get_tags();
-    tagc_inp_r_ready_o = 1'b1;
+  // load tags for current request descriptor if it is a tagged request
+  function automatic void get_tags();
     tagc_inp_r_valid_d = 1'b0;
     load_tags_valid = 1'b1;
-    // new descriptor at the input
-    if (tagc_inp_r_valid_i) begin
-      tagc_inp_r_d = tagc_inp_r_i;
+    if (!tagctrl_desc_d.tagged_req) begin
+      tagc_inp_r_d = '0;
       load_tags = 1'b1;
       tagc_inp_r_valid_d = 1'b1;
-      load_tags_valid = 1'b1;
+    end else begin
+      tagc_inp_r_ready_o = 1'b1;
+      if (tagc_inp_r_valid_i) begin
+        tagc_inp_r_d = tagc_inp_r_i;
+        load_tags = 1'b1;
+        tagc_inp_r_valid_d = 1'b1;
+      end
     end
   endfunction : get_tags
 
   // FIFO holds R beats from mem
   fifo_v3 #(
       .FALL_THROUGH(1'b0),               // FIFO is in fall-through mode
-      .DEPTH       (Cfg.TagRFifoDepth),  // can store up to 8 transactions
+      .DEPTH       (Cfg.TagRFifoDepth),  // R beats buffered from memory
       .dtype       (r_chan_t)
   ) i_r_data_fifo (
       .clk_i     (clk_i),             // Clock

@@ -1,0 +1,875 @@
+:toc: macro
+:toclevels: 4
+:toc-title:
+:toc-placement!:
+:source-highlighter:
+
+[discrete]
+= AXI Tag Controller
+
+toc::[]
+
+:sectnums:
+//:leveloffset: 6
+:sectnumsoffset: -1
+:imagesdir: ./resources
+
+// interface macros
+:cfg_sub: pass:q[*configuration subordinate*]
+:tag_sub: pass:q[*tagged subordinate*]
+:utag_mgr: pass:q[*untagged manager*]
+// fsm macros
+:Unconfigured: pass:q[*Unconfigured*]
+:Serving: pass:q[*Serving*]
+:Zeroing: pass:q[*Zeroing*]
+:Flushing: pass:q[*Flushing*]
+// cmd macros
+:start: pass:q[*start*]
+:stop: pass:q[*stop*]
+:resume: pass:q[*resume*]
+:lock: pass:q[*lock*]
+// param macros
+:init_start: pass:q[*init_start*]
+:init_locked: pass:q[*init_locked*]
+:allow_resume: pass:q[*allow_resume*]
+:allow_flush_when_locked: pass:q[*allow_flush_when_locked*]
+
+ifdef::env-github[]
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+endif::[]
+
+== Document Control & Metadata
+
+=== Status (Aug 2026)
+
+This section will be updated as this interface is implemented with the
+currently supported and unsupported features. We currently support this
+interface.
+
+[NOTE]
+====
+Areas highlighted are not yet supported in the current version.
+====
+
+The configuration interface has not been extensively tested, only the flow of
+booting CheriBSD following {init_start} with a default parameterisation.
+Performance and RTL optimisations are still planned. Most notably:
+
+* As a leaf table entry transitions to all zeros, this does not yet get
+  reflected in the root, meaning the root table will become polluted with
+  spurious ones over time
+* Currently, lookups are issued into the root and leaf in parallel, causing
+pollution of the leaf cache even if the line is known to contain no tags
+* Support for multiple outstanding requests is not yet mature
+
+In addition, please note the following limitation:
+
+* Accesses to the backing tag store are not currently restricted in any way
+(this is of course not suitable for proper CHERI guarantees)
+
+== High-Level Overview
+The tag controller acts as the boundary between a tagged and untagged AXI
+domain. The module’s {tag_sub} port accepts and responds to AXI transactions
+with capability tags carried in the user fields of beats on the data channels.
+The module’s {utag_mgr} port relays all requests (except those aliasing with the
+tag table itself), but splits off the user bits, caching them and making
+separate requests to manage a backing tag table. The module’s {cfg_sub} handles
+configuration requests.
+
+== Theory of Operation
+The AXI Tag Controller can be parameterized to get to a {Serving} state
+following reset and zeroing, or to put itself in an {Unconfigured} state
+directly on reset.
+
+From its {Unconfigured} state, the tag controller can receive configuration
+requests (setting up address ranges) on its {cfg_sub} and ignores tags for
+requests received on its {tag_sub} interface (ignores tag value on writes and
+reads 0 tag values). It can be put back into a {Serving} state via either a
+{start} command (which will first put the tag controller in a {Zeroing} state
+to zero the root tag table) or a {resume} command (which will use the existing
+state of the tag store).
+
+From its {Serving} state, the tag controller can serve tagged requests received
+on its {tag_sub}. It can be put back into an {Unconfigured} state via a {stop}
+command (which will first put the tag controller in a {Flushing} state to
+commit tag table state to backing memory).
+
+.Tag Controller State Machine
+image::tag_ctrl_cfg_fsm.svg[Tag Controller state machine]
+
+=== Behaviour
+The behaviour of the tag controller depends on its state, as follows.
+
+==== Unconfigured
+All accesses on the {tag_sub} port are allowed, and forwarded to the {utag_mgr}
+port, but with tag bits zeroed (reads) or ignored (writes).
+
+==== Zeroing
+All ready signals for address requests to the {tag_sub} port are deasserted
+while the state machine of the tag controller issues zeroes to the root level
+of the tag table via its {utag_mgr} port. This guarantees that all tags will be
+zero until initialised following a hardware reset or reconfiguration.
+
+==== Serving
+Note that AXI has an alignment requirement of 4KiB on all accesses. As covered
+memory has a stronger alignment requirement than this, all accesses will either
+fall entirely inside or entirely outside the covered region.
+
+All requests on the {tag_sub} port where any byte falls within the tag table
+range will result in an AXI bus error, preventing direct access to the tag
+table. This overrides any of the following behaviours for alternative regions
+that may overlap.
+
+All requests on the {tag_sub} port that entirely fall outside of the covered
+region will be forwarded to the {utag_mgr} port with tag bits zeroed (reads) or
+ignored (writes). In the special case where zero covered memory is requested
+(Covered top = Covered base), all accesses will fall into this category.
+
+All requests on the {tag_sub} port that entirely fall inside of the covered
+region will be forwarded to the {utag_mgr} port with tags tracked.
+
+[NOTE, subs="normal"]
+====
+==== Flushing
+
+All ready signals for address requests to the {tag_sub} port are deasserted
+while the state machine of the tag controller commits the tag table state to
+backing memory via its {utag_mgr} port.
+====
+
+=== Guarantees and assumptions
+The key guarantee the tag controller aims to provide is that, if a read on the
+{tag_sub} port returns a tagged capability, then the read must be from a
+covered region, with that exact capability, with tag, being previously written
+to that address since the last reconfiguration, with no intervening overlapping
+writes of any size. This is required to preserve the system-wide monotonicity
+guarantee. Note that this implies that the tags must be handled atomically with
+the data.
+
+This requires the assumption that no other writes can be performed to the
+memory backing the {utag_mgr} port, or more specifically to either the tag
+table (this would allow forging capabilities as writing a 1 to the tag table
+would cause the corresponding data bits to be interpreted as a capability), or
+the covered memory (which would allow changing the capability encoding
+“underneath” a set tag).
+
+With the {allow_resume} parameter set, the guarantee is weakened to also allow
+returning tagged capabilities if the corresponding bits were set on the memory
+backing the tag table when the tag controller was given a {resume} command.
+
+The tag controller will write the wuser field received on the {tag_sub} to the
+tag store entry backing the referenced tagged chunk. In particular, a write to
+any subset of a tagged chunk causes its tag to be updated. In the context of
+CHERI capabilities, this implies that a write request to a strict subset of a
+capability with a wuser set is an illegal operation as it can forge a
+capability. Capability-aware bus managers are trusted to write capability tags
+appropriately associated with genuine capability data.
+
+The tag controller also aims to guarantee that it will obey AXI semantics (not
+deadlock, etc) provided the ports all follow the AXI standard, and that the
+data returned on the {tag_sub} port matches that fetched by the corresponding
+request on the {utag_mgr} port, provided that the request is not to the tag
+table.
+
+== Hardware Interface Definitions
+.`axi_tagctrl_top` module ports
+[cols="~m,~,~,~,~a", options="header"]
+|===
+
+| Interface Name | Role | Data Width | Address Width | Description
+
+| config_sub_{req_i, resp_o}
+| AXI subordinate
+| 64-bit
+| 64-bit
+| {cfg_sub}
+
+Access to the register map and to status information. If dynamic configuration
+of the tag controller is not required, the user of the tag controller can tie
+all valid bits on the incoming AXI low, and configure the tag table via static
+module parameters, with the {init_locked} value set high.
+
+| tagged_sub_{req_i, resp_o}
+| AXI subordinate
+| 64-bit
+| 64-bit
+| {tag_sub}
+
+Incoming accesses from the tagged domain. Typically connected to the manager
+port of the data cache of the CPU. Capability tags are tracked in the user
+fields of the data channels.
+
+| untagged_mgr_{req_o, resp_i}
+| AXI manager
+| 64-bit
+| 64-bit
+| {utag_mgr}
+
+Incoming accesses from the {tag_sub} port are forwarded to this port without
+user fields but otherwise unchanged. The tag controller will also use this port
+to issue its own requests to the backing tag table as required.
+
+| clk_i
+| Clock input
+| 1-bit
+| -
+| -
+
+| rst_ni
+| Reset input
+| 1-bit
+| -
+| Active low reset
+
+|===
+
+== Programmer’s Model & Software Interface
+This section describes the configuration interface offered by the {cfg_sub}
+port. 4KiB of space is reserved for the register map. The following registers
+are defined:
+
+.Memory-mapped configuration registers
+[cols="~m,~m,~a,~,~", options="header"]
+|===
+
+| Offset | Name | Comment | Access (unlocked) | Access (locked)
+
+| 0x0000
+| status
+| Status reporting
+| Read-only
+| Read-only
+
+| 0x0008
+| control
+| Control
+| Write-only
+| Write-only
+
+| 0x0010
+| covered_base
+| Start of covered region
+| Read/Write
+| Read-only
+
+| 0x0018
+| covered_top
+| End of covered region
+| Read/Write
+| Read-only
+
+| 0x0020
+| tag_table_base
+| Start of backing tag table
+| Read/Write
+| Read-only
+
+| 0x0028
+| tag_table_top
+| End of backing tag table
+| Read-only
+| Read-only
+
+| 0x0030 - 0x0ed0
+| reserved
+| Reserved for future use
+| Read-only zero
+| Read-only zero
+
+| 0x0eb0
+| perf_inhibit
+| Performance counter inhibit
+| Read/Write
+| Read/Write
+
+| 0x0ec0 - 0xf00
+| perf_select
+| Performance counter event selectors
+| Read/Write
+| Read/Write
+
+| 0x0f00 - 0x1000
+| perf_counters
+| Performance counters
+| Read/Write
+| Read/Write
+
+|===
+
+Note that writes to read-only registers take no effect, and return AXI okay.
+Reads to write-only registers return 0 data.
+
+=== status (0x0000)
+
+This register reports the status of the tag controller.
+
+.Status register
+[cols="~,~,~,~,~,~,~,~,~", options="header"]
+|===
+
+| Bits | 63-24 | 23-16 | 15-5 | 4 | 3 | 2 | 1 | 0
+
+| -
+| Reserved 0
+| Error
+| Reserved 0
+| Locked
+| {Unconfigured}
+| {Flushing}
+| {Zeroing}
+| {Serving}
+
+|===
+
+==== Serving (bit 0)
+This indicates that the tag controller is in the {Serving} state and able to
+service tag requests.
+
+==== Zeroing (bit 1)
+This indicates that the tag controller is in the {Zeroing} state, zeroing its
+root table following a reset or reconfiguration. This requires writing to the
+tag table via the {utag_mgr} port, but due to the hierarchical tag table, only
+a small fraction of the table must be written. During this time, the tag
+controller will deassert ready on request channels into the {tag_sub} port.
+
+[NOTE, subs="normal"]
+====
+==== Flushing (bit 2)
+
+This indicates that the tag controller is in the Flushing state following a
+stop command. This requires writing to the tag table via the untagged data
+manager port. During this time, the tag controller will deassert ready on
+request channels into the tagged data subordinate port.
+====
+
+==== Unconfigured (bit 3)
+This indicates that the tag controller is in the {Unconfigured} state, either
+after reset and prior to start (if {init_start} is not set), or after one of
+the configuration registers was written and prior to start. When set, the tag
+controller will ignore tags on {tag_sub} writes, return zero tags on {tag_sub}
+reads, and stop issuing requests to a backing tag table.
+
+==== Locked (bit 4)
+This indicates that the tag controller configuration is locked. This makes many
+of the configuration registers read-only.
+
+[NOTE]
+====
+==== Error (bits 23-16)
+
+This indicates a fatal error (if any). Encountering any error causes the tag
+controller to return to the {Unconfigured} state. The following lists the
+possible error values:
+
+.Possible errors
+[cols="~,~,~", options="header"]
+|===
+
+| Error | Value | Description
+
+| None | 0 | No error - normal operation
+
+| Covered top below covered base
+| 1
+| Attempt to configure with `covered_top < covered_base`
+
+| Tag table top below Tag table base
+| 2
+| Attempt to configure with `tag_table_top < tag_table_base`
+
+| Covered base misaligned
+| 3
+| `covered_base` does not meet alignment requirements
+
+| Covered top misaligned
+| 4
+| `covered_top` does not meet alignment requirements
+
+| Tag table base misaligned
+| 5
+| `tag_table_base` does not meet alignment requirements
+
+| Error on tag access
+| 6
+| A bus or slave AXI error was returned on an access to the backing tag table
+
+|===
+
+====
+
+=== Control (0x0008)
+
+This register allows control of the tag controller.
+[WARNING]
+====
+This interface may be changed to separate the fields more clearly. The current
+idea is to ensure commands are a byte apart to allow them to be protected by
+separate capabilities.
+====
+
+.Status register
+[cols="~,~,~,~,~,~,~,~,~", options="header"]
+|===
+| Bits | 63-25 | 24 | 23-17 | 16 | 15-9 | 8 | 7-1 | 0
+
+| -
+| Reserved 0
+| {lock}
+| Reserved 0
+| {stop}
+| Reserved 0
+| {resume}
+| Reserved 0
+| {start}
+|===
+
+Writes to reserved bits are ignored. Writes must be one-hot: other writes will
+be ignored.
+
+==== Start (bit 0)
+Setting this bit to 1 causes the tag controller to deassert ready on its
+{tag_sub} interface AW and AR channels (leaving W ready high if required for
+still pending data beat drainage), resolve all outstanding requests, then
+accept pending configuration changes if any  (at this point deasserting
+{Unconfigured} except if an error is encountered), and enter the {Zeroing}
+state. This has no effect when the tag controller is locked.
+
+[NOTE]
+====
+==== Resume (bit 8)
+
+Setting this bit to 1 causes the tag controller to accept pending configuration
+changes if any  (at this point deasserting {Unconfigured} except if an error is
+encountered), and enter the {Serving} state. This is only supported if
+{allow_resume} is configured high, otherwise the command is ignored. This has
+no effect when the tag controller is locked.
+====
+
+==== Stop (bit 16)
+Setting this bit to 1 causes the tag controller to deassert ready on its
+{tag_sub} interface AW and AR channels (leaving W ready high if required for
+still pending data beat drainage), resolve all outstanding requests, then enter
+the {Flushing} state. The tag controller will write all of its cache out to the
+backing tag table via the {utag_mgr} port, then return to the {Serving} state.
+This can be set when the tag controller is unlocked or when
+{allow_flush_when_locked} is set. Otherwise, this has no effect when the tag
+controller is locked.
+
+==== Lock (bit 24)
+Setting this bit to 1 causes the tag controller configuration port to {lock},
+making many fields read-only (writes will be ignored, see register map table).
+This cannot be undone except through reset.
+
+=== covered_base (0x0010)
+This is the lowest address for which the tag controller will manage tags.
+Writing this field (while unlocked) causes the tag controller to enter the
+{Unconfigured} state. The base is a 64-bit value with an 8KiB alignment
+requirement. Attempting to set this to an unaligned value will trigger an error
+reported in the `status` register. Reading this field reports the last
+(unlocked) write to the field.
+
+=== covered_top (0x0018)
+This is the highest address (exclusive) for which the tag controller will
+manage tags. Writing this field (while unlocked) causes the tag controller to
+enter the {Unconfigured} state. The top is a 64-bit value with an 8KiB
+alignment requirement. Attempting to set this to an unaligned value will
+trigger an error reported in the `status` register. Reading this field reports
+the last (unlocked) write to the field.
+
+=== tag_table_base (0x0020)
+This is the lowest address to be used for storing the tag table. Writing this
+field (while unlocked) causes the tag controller to enter the {Unconfigured}
+state. The tag table base is a 64-bit value with a 64B alignment requirement.
+Attempting to set this to an unaligned value will trigger an error in the
+`status` register. Reading this field reports the last (unlocked) write to the
+field.
+
+=== tag_table_top (0x0028)
+This is the highest address to be used for storing the tag table. This field is
+read-only, and calculated based on the `covered_base`, `covered_top`, and
+`tag_table_base` fields as they are written. In the event of an error, this
+field reads zero. This register allows software to query how much space is
+required for the tag table for the requested parameters. It is guaranteed that
+the required space (`tag_table_top - tag_table_base`) will be at most 1/127 of
+the requested covered range (`covered_top - covered_base`), or 128 bytes,
+whichever is greater. As a special case, if no covered memory is requested
+(`covered_top = covered_base`), then the `tag_table_top` will equal the
+`tag_table_base`, and no tags will be managed.
+
+=== perf_inhibit (0x0ed0)
+This is a bitvector with one bit per enabled performance counter.
+The least significant bit controls the first performance counter, etc.
+If the bit is zero, the corresponding counter is paused and will not count up.
+It can still be read/written to by the configuration interface.
+Bits past the number of enabled counters are read-only zero: writes to them are ignored.
+
+=== perf_select (0x0ee0-0x0f00)
+This configures which events each performance counter is listening for.
+There is one byte per enabled performance counter: 0x0ee0 corresponds to the counter mapped at 0xf00, etc.
+See link:perf_events.adoc[`perf_events.md`] for a list of the supported events.
+Bytes past the number of enabled counters are read-only zero: writes to them are ignored.
+
+=== perf_counters (0x0f00-0x1000)
+Performance counter registers: 64-bits per enabled performance counter.
+The performance counters increment whenever their event (configured via the `perf_select` register) occurs, and if they are not inhibited (via the `perf_inhibit` register).
+Addresses past the number of enabled counters are read-only zero: writes to them are ignored.
+
+== Sub-Module Design Specification
+This section describes the microarchitectural design of the tag controller.
+These details should not be assumed by any software, which should never have
+direct access to the memory backing the tag table.
+
+.Tag Controller module hierarchy
+image::tag_ctrl_cfg_modules.svg[Tag Controller module hierarchy]
+
+The AXI tag controller implementation is split across multiple sub-modules. In
+the src/ folder, the axi_tagctrl_top module serves as the tag controller’s
+toplevel module. The axi_tagctrl_config module implements the {cfg_sub}
+interface and orchestrates the overall state machine of the tag controller. The
+other modules under the src/ folder handle the main requests received on the
+{tag_sub}, both forwarding them on the {utag_mgr} and producing tag lookup
+requests to the tag lookup engine. The tag lookup engine itself is split in
+multiple sub-modules under the tag_lookup_engine/ folder. It implements the
+hierarchical tag lookup and instantiates a cache for the root table and for the
+leaf table. Cache misses from the tag lookup engine are merged back into the
+{utag_mgr} traffic.
+
+=== Hierarchical tag table
+The tag table is stored as two bitmaps: the leaf table, and the root table.
+Each is backed by a contiguous region of DRAM accessed through the {utag_mgr}
+port. Tags in the root table are 0 when no tags are valid for the region they
+cover (defined by the grouping factor, 256 in our configuration). A root tag
+being set indicates that there may be tags set in the corresponding region.
+When a root tag is set, tags in the corresponding region in the leaf table
+indicate the validity of corresponding capabilities. The tag as reported on the
+{tag_sub} port is therefore the bitwise AND of the corresponding root table
+entry and leaf table entry. For performance, the parameters are chosen such
+that leaf tags are cached with one cacheline covering for 4KiB (one page) of
+data memory. This means each leaf cacheline stores 4KiB / 128 = 32B, or 256
+bits. Each root table bit covers a single leaf cacheline. The leaf table
+storage in DRAM starts at `tag_table_base`, with the root table following
+immediately after (start aligned to 64B): `root_table_base = tag_table_base +
+alignUp64B((covered_top - covered_base)/256)`. The calculation of the backing
+DRAM addresses of the leaf and root bits for the capability at address
+`covered_base + a_cap` is as follows:
+
+* `a_leaf = tag_table_base + (a_cap / 128)`
+* `a_root = root_table_base + ((a_cap / 128)) / 256)`
+
+_The benefits of the hierarchical table include:_
+
+* _Efficient initialization: only the root table need be zeroed on reset,
+  accelerating the initialization state machine by a factor of 256._
+* _Better tag cache utilization: any 4KiB pages containing no tagged
+  capabilities are represented by a single bit in the root table, rather than
+  requiring an all-zero line to be cached in the leaf table cache._
+
+=== Tag lookup engine
+This section gives details of the microarchitectural module responsible for
+managing the tag table.
+
+The tag lookup engine was developed to augment the Tag Controller with
+support for the two-level hierarchical tag table described above. It receives
+tag lookup requests and resolves them by accessing the two backing tag stores
+for root and leaf level tags.
+
+The root and leaf tables are separately cached within the tag lookup engine. We
+use two instances of the HPDcache, augmented with sub-byte access support. Upon
+cache miss, the caches emit memory requests which are merged using an AXI mux.
+
+==== Tag lookup engine structure
+The tag lookup engine consists of several modules responsible for different
+tasks. At the time of writing, it is broken down as follows:
+
+* tag_lookup_engine.sv
+* tag_lookup_engine_hpdcache_configs.sv
+* tag_lookup_engine_hpdcache_read_req_rsp_wrapper.sv
+* tag_lookup_engine_hpdcache_wrapper.sv
+* tag_lookup_engine_hpdcache_write_req_rsp_wrapper.sv
+* tag_lookup_engine_root_init.sv
+* tag_lookup_engine_table_lookups.sv
+* tag_lookup_engine_table_lookups_read.sv
+* tag_lookup_engine_table_lookups_write.sv
+
+
+The tag_lookup_engine module has both a read request/response interface and a
+write request/response interface (with separate channels for request and data
+for the write interface), as well as a memory request/response interface. It
+also has a few additional inputs to inform on main memory locations to back the
+tags.
+
+The tag_lookup_engine module acts as a toplevel and instantiates the config
+module, the root_init module, the table_lookups modules as well as the caches,
+connects them, and merges the memory interfaces from the caches.
+
+The overall functioning of the engine is as follows: tag requests are gated
+until the root_init module is done initialising the root table (setting it all
+to 0). When active, the requests are routed to either the read or the write
+table_lookup module, as appropriate. These modules implement the actual
+two-level lookup and produce the response which is then forwarded back to the
+requester. Any required secondary requests to service these lookups will be
+sent to the root or leaf cache, which in turn may require further memory
+requests which are then merged through the AXI mux between the root and leaf
+requests, and issued through the lookup engine memory interface.
+
+==== Tag lookup engine root init module
+
+The root init module has a write interface to the root store (into the root
+cache). It also receives as input a root table size and a start signal to
+trigger the initialisation, and produces as output a ready signal when no
+longer busy initialising the root store. Note, the start signal is currently
+only asserted on reset from the parent module.
+
+When started, the module enters an INIT state where it both sends write
+requests of 0 data to the root store, and listens for responses. It counts
+requests up to the required number based on the root table size and also keeps
+track of the number of received responses. Once all requests have been sent, it
+enters a INIT_WAIT_WRITE_RSP state to drain remaining responses, and it finally
+enters a READY state when all responses have been seen.
+
+The ready output signal is only set in the READY state, so the parent module
+knows that initialisation has completed (and can use the ready output signal as
+a gate).
+
+==== Tag lookup engine table lookup read module
+
+The read table lookup module has a tag request/response interface, a read
+request/response interface to the root store (into the root cache) and a read
+interface to the leaf store (into the leaf cache).
+
+It uses a scoreboard where entries track whether a root request has been sent,
+a leaf request has been sent, a root response has been received, a leaf
+response has been received, what the root response was, what the leaf response
+was, what request to send to the root, what request to send to the leaf, and
+what the ID of the original request was.
+
+When a new request is received, it is allocated an entry in the scoreboard if
+there is one available, otherwise, the module backpressures. Both a root read
+and a leaf read are issued in parallel for each request. This is tracked in the
+scoreboard entry and allows for these secondary requests to proceed as the root
+and leaf store interfaces become available, independently from each other and
+from other requests as well. These secondary requests use the scoreboard entry
+index as their ID and can therefore reach the correct entry upon response. The
+original ID of the initial request is remembered in the scoreboard entry.
+
+The entries are retired in order, when all responses have been received.
+
+Future optimisation: use the HPDCache interface’s abort signal to cancel leaf
+lookup on root 0 response. This will require augmenting the current interface
+to the leaf store to drive the HPDCache-specific signal.
+
+==== Tag lookup engine table lookup write module
+
+The write table lookup module has a tag request/response interface, a read
+request/response interface to the root store (into the root cache), a write
+request/response interface to the root store (into the root cache) and a write
+request/response interface to the leaf store (into the leaf cache).
+
+It uses a scoreboard where entries track whether a root read request has been
+sent, a root write request has been sent, a leaf write request has been sent, a
+root read response has been received, a root write response has been received,
+and a leaf write response has been received. It tracks whether the write is
+non-zero, and if the write needs to synthesize a new line of zeros (with added
+ones in the appropriate location) when writing non-zero tags upon transitioning
+from a 0 root, together with the nec·essary counters of flits sent and
+responses received. It also holds on to the relevant information from the
+original request in order to synthesise the appropriate final response (in
+particular the original ID of the request).
+
+When a new request is received, it is allocated an entry in the scoreboard if
+there is one available, otherwise, the module backpressures. The module sends a
+root read to establish the current state of the relevant line. Upon response,
+if the root is 0 and the write request’s data is non-zero, we require a write
+of the entire leaf line with zeros as well as the request’s write data in the
+appropriate location within the line. If the root is 0 and the write request’s
+data is also zero, no further write is required. If the root is 1, the write
+data is written to the leaf store.
+
+All secondary requests sent to the various tag store interfaces use the
+scoreboard entry index as their ID and can therefore reach the correct entry
+upon response.
+
+The entries are retired in order, when all responses have been received.
+
+Future optimisation: upon eviction of a leaf line filled with 0, fold back a 0
+into the root store. This will require augmenting the leaf store interface with
+a probe of the eviction traffic. In particular, the data evicted and the
+address targeted will need to be checked.
+
+== RTL Parameterization
+
+.`axi_tagctrl_top` module parameters
+[cols="~m,~m,~a", options="header"]
+|===
+
+| Parameter Name | Default | Description
+
+| init_covered_base
+| 64'd0
+| Indicate initial base address for covered data region.
+
+| init_covered_top
+| 64’d0
+| Indicate initial top address for covered data region.
+
+| init_tag_table_base
+| 64’d0
+| Indicate initial base address for tag store region.
+
+| init_start
+| 1’b0
+| Indicate the tag controller should start on reset with the default
+configuration addresses. In this case the tag controller will immediately enter
+the {Zeroing} state on reset. Otherwise, the tag controller will enter the
+{Unconfigured} state.
+
+| init_locked
+| 1’b0
+| NOTE: Indicate the tag controller should be locked on reset, preventing all dynamic
+configuration.
+
+| allow_resume
+| 1’b0
+| NOTE: Indicate the tag controller is able to resume, picking up backing tags from
+DRAM without zeroing them.
+
+| allow_flush_when_locked
+| 1’b0
+| NOTE: Indicate the tag controller can be flushed while the configuration interface
+is locked.
+
+| grouping_factor
+| 256
+| Indicate the number of leaf-level tag bits covered by a single root-level tag
+bit.
+
+| root_cache_ways
+| 4
+| Indicate the associativity of the root cache.
+
+| root_cache_byte_size
+| 2048
+| Indicate the size of the root cache in bytes.
+
+| leaf_cache_ways
+| 4
+| Indicate the associativity of the leaf cache.
+
+| leaf_cache_byte_size
+| 16384
+| Indicate the size of the leaf cache in bytes. For 16-bytes tagged chunks, a 16384-bytes leaf cache covers 16*16384 = 2MB worth of data memory.
+This corresponds to a 64x factor with respect to a 32KB data cache.
+We recommend a factor of at least 8x.
+However, for small caches, we further increase the size to avoid aliasing effects.
+
+| tagged_chunk_size
+| 16
+| Indicate the granularity of tagged memory chunks in bytes.
+
+| cap_size
+| 128
+| Indicate capability size in bits.
+
+| covered_align
+| 4096
+| Indicate the required byte alignment for covered region base and top addresses.
+
+| tag_store_align
+| 64
+| Indicate the required byte alignment for tag store region base and top addresses.
+
+| max_trans
+| 10
+| Indicate the maximum number of concurrent transactions.
+
+| perf_counters
+| 0
+| Indicate the number of performance counting registers to enable. Maximum 32.
+  A value of 0 disables performance counters.
+
+| axi_id_width
+| 32’d6
+| Indicate the AXI ID bit width.
+
+| axi_addr_width
+| 32’d64
+| Indicate the AXI address bit width.
+
+| axi_data_width
+| 32’d64
+| Indicate the AXI data bit width.
+  Currently only 64 is supported.
+
+| axi_user_width
+| 32’d1
+| Indicate the AXI user bit width.
+
+| slv_req_t
+| logic
+| Indicate {tag_sub} and {cfg_sub} request type. Should be defined using
+`AXI_TYPEDEF_REQ_T
+
+| slv_resp_t
+| logic
+| Indicate {tag_sub} and {cfg_sub} response type. Should be defined using
+`AXI_TYPEDEF_REQ_T
+
+| mst_req_t
+| logic
+| Indicate {utag_mgr} request type. Should be defined using `AXI_TYPEDEF_REQ_T.
+
+| mst_resp_t
+| logic
+| Indicate {utag_mgr} response type. Should be defined using
+`AXI_TYPEDEF_RESP_T.
+
+|===
+
+== Integration Guidelines
+
+The following are some examples of expected instantiations and usage patterns
+of the tag controller. Note that the tag controller is expected to be
+interacted with by low-level system firmware, rather than dynamically by an
+operating system driver. It is not expected that the tag controller will be
+moved or grown, just that it will be decided at boot what the memory mapping
+should be.
+
+=== Static parameterisation
+In this case, no dynamic configuration of tag table addresses is required. The
+`init_covered_base`, `init_covered_top`, and `init_tag_table_base` values are
+set to their known static values, with `init_start = 1`, `init_locked = 1`. The
+user can safely tie the valid signals on the {cfg_sub} port to zero. After
+reset, the tag controller will start in the {Zeroing} state, which software can
+detect and wait for via the `status` register, or simply start working with
+memory accesses automatically delayed until zeroing is complete. Afterwards,
+normal operation can continue, with no possibility to reconfigure the tag
+controller.
+
+=== Configuration by external core
+In this case, the {cfg_sub} port is not accessible by the core, but only to
+some external management core. The tag controller module can be instantiated
+with `init_start = 0`, `init_locked = 0`. The external management core can then
+set the regions using the {cfg_sub} port, then write to the `control` register
+setting `start = 1`, and optionally `lock = 1` if it is known that no further
+reconfiguration will be performed until the subsequent hardware reset. Note
+that the backing memory should be set up before starting via the `control`
+register, so that the initial zeroing can be performed correctly.
+
+=== Configuration by own core
+In this case, the {cfg_sub} port is mapped into uncached peripheral space of
+the memory map of the core to have its tags managed. Initial firmware could
+manage its capabilities entirely in the register file until the tag controller
+is configured, or the tag controller could be configured with defaults via the
+`init_covered_base`, `init_covered_top`, and `init_tag_table_base` static
+parameters, with `init_start = 1`, `init_locked = 0`, allowing the core to
+immediately have access to tagged memory, perhaps in some small initial SRAM.
+Initial firmware running just from this memory can then configure the dynamic
+DRAM to be used using the {cfg_sub} port. Note that any tagged capabilities
+will have to be restored from the register file after this reconfiguration, as
+any tags in memory will be cleared. Access to the {cfg_sub} port could then be
+protected either by a PMP, the capability mechanism itself, or by setting `lock
+= 1` in the `control` register.

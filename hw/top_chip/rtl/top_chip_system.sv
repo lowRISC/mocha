@@ -2,9 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
-// Include macros for tag controller
-`include "register_interface/assign.svh"
-`include "register_interface/typedef.svh"
+`include "prim_assert.sv"
 
 module top_chip_system #(
   parameter int unsigned SPIHostNumCS = 1,
@@ -1274,42 +1272,49 @@ module top_chip_system #(
     else if (tag_controller_isolated)                         tag_controller_isolate_reg <= 1'b0;
   end
 
-  // Define types for tag controller
-  `REG_BUS_TYPEDEF_ALL(conf, logic [31:0], logic [31:0], logic [3:0])
-
-  // Instantiate CHERI tag controller for DRAM
-  axi_tagctrl_reg_wrap #(
-    .DRAMMemBase      ( 32'(top_pkg::DRAMBase)            ),
-    .DRAMMemLength    ( 32'(top_pkg::DRAMPhysicalLength)  ),
-    .CapSize          ( top_pkg::CapSizeBits              ),
-    .TagCacheMemBase  ( 32'(top_pkg::TagCacheMemBase)     ),
-    .SetAssociativity ( top_pkg::TagCacheSetAssociativity ),
-    .NumLines         ( top_pkg::TagCacheNumLines         ),
-    .NumBlocks        ( top_pkg::TagCacheNumBlocks        ),
-    .AxiIdWidth       ( top_pkg::AxiDevIdWidth            ), // ID width of the device interface
-    .AxiAddrWidth     ( top_pkg::AxiAddrWidth             ),
-    .AxiDataWidth     ( top_pkg::AxiDataWidth             ),
-    .AxiUserWidth     ( top_pkg::AxiUserWidth             ),
-    .slv_req_t        ( top_pkg::axi_dev_req_t            ),
-    .slv_resp_t       ( top_pkg::axi_dev_resp_t           ),
-    .mst_req_t        ( top_pkg::axi_dram_req_t           ),
-    .mst_resp_t       ( top_pkg::axi_dram_resp_t          ),
-    .reg_req_t        ( conf_req_t                        ),
-    .reg_resp_t       ( conf_rsp_t                        ),
-    .rule_full_t      ( axi_pkg::xbar_rule_64_t           )
+  // Instantiate CHERI tag controller for DRAM.
+  // The configuration is fixed by parameters: tags cover usable DRAM, the tag
+  // table sits in the carve-out at the top of DRAM, the root table is zeroed
+  // out of reset and the configuration port is locked and tied off.
+  axi_tagctrl_top #(
+    .cap_size            ( top_pkg::CapSizeBits             ),
+    .tagged_chunk_size   ( top_pkg::CapSizeBits / 8         ),
+    .init_covered_base   ( 32'(top_pkg::DRAMBase)           ),
+    .init_covered_top    ( 32'(top_pkg::TagCacheMemBase)    ),
+    .init_tag_table_base ( 32'(top_pkg::TagCacheMemBase)    ),
+    .init_start          ( 1'b1                             ),
+    .init_locked         ( 1'b1                             ),
+    .axi_id_width        ( top_pkg::AxiDevIdWidth           ), // ID width of the device interface
+    .axi_addr_width      ( top_pkg::AxiAddrWidth            ),
+    .axi_data_width      ( top_pkg::AxiDataWidth            ),
+    .axi_user_width      ( top_pkg::AxiUserWidth            ),
+    .slv_req_t           ( top_pkg::axi_dev_req_t           ),
+    .slv_resp_t          ( top_pkg::axi_dev_resp_t          ),
+    .mst_req_t           ( top_pkg::axi_dram_req_t          ),
+    .mst_resp_t          ( top_pkg::axi_dram_resp_t         )
   ) u_tag_controller (
     .clk_i               (clkmgr_clocks.clk_main_infra),
     .rst_ni              (rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel]),
-    .test_i              ('0),
-    .slv_req_i           (tag_controller_isolated_req),
-    .slv_resp_o          (tag_controller_isolated_resp),
-    .mst_req_o           (dram_req_o),
-    .mst_resp_i          (dram_resp_i),
-    .conf_req_i          ('0),
-    .conf_resp_o         ( ),
-    .cached_start_addr_i (top_pkg::DRAMBase),
-    .cached_end_addr_i   (top_pkg::TagCacheMemBase)
+    .test_i              (1'b0),
+    .config_sub_req_i    ('0),
+    .config_sub_resp_o   ( ),
+    .tagged_sub_req_i    (tag_controller_isolated_req),
+    .tagged_sub_resp_o   (tag_controller_isolated_resp),
+    .untagged_mgr_req_o  (dram_req_o),
+    .untagged_mgr_resp_i (dram_resp_i)
   );
+
+  // The tag table must fit in the carve-out between TagCacheMemBase and the
+  // end of DRAM. It holds a leaf table with one bit per capability-sized chunk
+  // of covered memory, then a root table with one bit per 256 leaf
+  // bits (the default grouping factor); see axi_tagctrl_config.
+  localparam longint unsigned TagCoveredLength = top_pkg::TagCacheMemBase - top_pkg::DRAMBase;
+  localparam longint unsigned TagLeafBits      = TagCoveredLength / 64'(top_pkg::CapSizeBits / 8);
+  localparam longint unsigned TagLeafLength    = (TagLeafBits + 7) / 8;
+  localparam longint unsigned TagRootLength    = ((TagLeafBits + 256 * 8 - 1) / (256 * 8));
+  localparam longint unsigned TagTableLength   = ((((TagLeafLength + 63) & ~64'd63)
+                                                  + TagRootLength) + 63) & ~64'd63;
+  `ASSERT_INIT(TagTableFitsCarveOut_A, TagTableLength <= top_pkg::TagCacheMemLength)
 
   // TL ROM
   // AXI isolator

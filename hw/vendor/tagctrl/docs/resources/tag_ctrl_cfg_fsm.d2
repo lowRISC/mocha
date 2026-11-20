@@ -1,0 +1,43 @@
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-id: 200
+    pad: 0
+    center: true
+    # sketch: true
+    layout-engine: tala
+  }
+}
+
+classes: {
+  state: {
+    shape: oval
+  }
+  padding: {
+    label: ""
+    style.opacity: 0
+  }
+}
+
+style.fill: transparent
+
+grid-rows: 3
+grid-columns: 3
+
+direction: up
+
+b0.class: padding
+Serving.class: state
+b1.class: padding
+Zeroing.class: state
+b2.class: padding
+Flushing.class: state
+b3.class: padding
+Unconfigured.class: state
+b4.class: padding
+
+Serving -> Flushing: stop
+Flushing -> Unconfigured
+Unconfigured -> Zeroing: start
+Zeroing -> Serving
+Unconfigured -> Serving: resume

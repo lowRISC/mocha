@@ -3,7 +3,8 @@
 CTagCtrlDriver::CTagCtrlDriver(Vtag_ctrl_testharness *dut)
 {
     this->m_dut = dut;
-    srand(time(0));
+    //srand(time(0));
+    srand(0);
 }
 
 void CTagCtrlDriver::reset_slave()

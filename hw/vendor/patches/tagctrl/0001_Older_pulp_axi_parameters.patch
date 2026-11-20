@@ -1,0 +1,32 @@
+diff --git a/src/axi_tagctrl_top.sv b/src/axi_tagctrl_top.sv
+index 0f86cf0..e781aa9 100644
+--- a/src/axi_tagctrl_top.sv
++++ b/src/axi_tagctrl_top.sv
+@@ -530,8 +530,8 @@ module axi_tagctrl_top #(
+       .b_chan_t  (slv_b_chan_t),
+       .ar_chan_t (slv_ar_chan_t),
+       .r_chan_t  (slv_r_chan_t),
+-      .req_t     (slv_req_t),
+-      .resp_t    (slv_resp_t)
++      .axi_req_t (slv_req_t),
++      .axi_resp_t(slv_resp_t)
+   ) i_axi_cut (
+       .clk_i,
+       .rst_ni,
+@@ -542,9 +542,13 @@ module axi_tagctrl_top #(
+   );
+ 
+   axi_isolate #(
+-      .NumPending (max_trans),
+-      .req_t      (slv_req_t),
+-      .resp_t     (slv_resp_t)
++      .NumPending   (max_trans),
++      .AxiAddrWidth (axi_addr_width),
++      .AxiDataWidth (axi_data_width),
++      .AxiIdWidth   (axi_id_width),
++      .AxiUserWidth (axi_user_width),
++      .axi_req_t    (slv_req_t),
++      .axi_resp_t   (slv_resp_t)
+   ) i_axi_isolate_flush (
+       .clk_i,
+       .rst_ni,
