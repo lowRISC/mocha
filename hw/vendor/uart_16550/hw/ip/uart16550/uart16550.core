@@ -1,0 +1,40 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:ip:uart16550:0.1"
+description: "UART IP wrapper with 16550 registrer map"
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:virtual_constants:top_pkg
+      - lowrisc:virtual_constants:top_racl_pkg
+      - lowrisc:prim:sparse_fsm
+      - lowrisc:tlul:trans_intg
+      - lowrisc:ip:uart
+    files:
+      - rtl/uart16550_translate.sv
+      - rtl/uart16550.sv
+    file_type: systemVerilogSource
+
+parameters:
+  SYNTHESIS:
+    datatype: bool
+    paramtype: vlogdefine
+
+targets:
+  default: &default_target
+    filesets:
+      - files_rtl
+    toplevel: uart16550
+
+  lint:
+    <<: *default_target
+    default_tool: verilator
+    parameters:
+      - SYNTHESIS=true
+    tools:
+      verilator:
+        mode: lint-only
+        verilator_options:
+          - "-Wall"

@@ -1,0 +1,17 @@
+// Copyright lowRISC contributors.
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "uart_16550",
+  target_dir: "uart_16550",
+
+  upstream: {
+    url: "https://github.com/lowRISC/uart-16550"
+    rev: "mocha-fixes"
+  }
+
+  mapping: [
+    // UART 16550 wrapper.
+    {from: "hw/ip/uart16550", to: "hw/ip/uart16550"},
+  ],
+}

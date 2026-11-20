@@ -8,177 +8,131 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum [[clang::flag_enum]] uart_intr : uint32_t {
-    uart_intr_none = 0,
-    uart_intr_tx_watermark = (1u << 0),
-    uart_intr_rx_watermark = (1u << 1),
-    uart_intr_tx_done = (1u << 2),
-    uart_intr_rx_overflow = (1u << 3),
-    uart_intr_rx_frame_err = (1u << 4),
-    uart_intr_rx_break_err = (1u << 5),
-    uart_intr_rx_timeout = (1u << 6),
-    uart_intr_rx_parity_err = (1u << 7),
-    uart_intr_tx_empty = (1u << 8),
-} uart_intr;
-
 typedef struct [[gnu::aligned(4)]] {
-    uint32_t fatal_fault : 1;
-    uint32_t : 31;
-} uart_alert_test;
-
-typedef struct [[gnu::aligned(4)]] {
-    uint32_t tx : 1;
-    uint32_t rx : 1;
-    uint32_t nf : 1;
-    uint32_t : 1;
-    uint32_t slpbk : 1;
-    uint32_t llpbk : 1;
-    uint32_t parity_en : 1;
-    uint32_t parity_odd : 1;
-    uint32_t rxblvl : 2;
-    uint32_t : 6;
-    uint32_t nco : 16;
-} uart_ctrl;
-
-typedef enum [[clang::flag_enum]] uart_status : uint32_t {
-    uart_status_none = 0,
-    uart_status_txfull = (1u << 0),
-    uart_status_rxfull = (1u << 1),
-    uart_status_txempty = (1u << 2),
-    uart_status_txidle = (1u << 3),
-    uart_status_rxidle = (1u << 4),
-    uart_status_rxempty = (1u << 5),
-} uart_status;
-
-typedef struct [[gnu::aligned(4)]] {
-    uint32_t rdata : 8;
+    uint32_t rbr : 8;
     uint32_t : 24;
-} uart_rdata;
+} uart_rbr;
+
+typedef enum [[clang::flag_enum]] uart_ier : uint32_t {
+    uart_ier_none = 0,
+    uart_ier_erbfi = (1u << 0),
+    uart_ier_etbei = (1u << 1),
+    uart_ier_elsi = (1u << 2),
+    uart_ier_edssi = (1u << 3),
+} uart_ier;
 
 typedef struct [[gnu::aligned(4)]] {
-    uint32_t wdata : 8;
+    uint32_t intr_pending : 1;
+    uint32_t intr_id : 3;
+    uint32_t : 2;
+    uint32_t fifo_en : 2;
     uint32_t : 24;
-} uart_wdata;
+} uart_iir;
 
 typedef struct [[gnu::aligned(4)]] {
-    uint32_t rxrst : 1;
-    uint32_t txrst : 1;
-    uint32_t rxilvl : 3;
-    uint32_t txilvl : 3;
+    uint32_t wls : 2;
+    uint32_t stb : 1;
+    uint32_t pen : 1;
+    uint32_t eps : 1;
+    uint32_t stick_parity : 1;
+    uint32_t break_ctrl : 1;
+    uint32_t dlab : 1;
     uint32_t : 24;
-} uart_fifo_ctrl;
+} uart_lcr;
 
 typedef struct [[gnu::aligned(4)]] {
-    uint32_t txlvl : 8;
-    uint32_t : 8;
-    uint32_t rxlvl : 8;
-    uint32_t : 8;
-} uart_fifo_status;
+    uint32_t dtr : 1;
+    uint32_t rts : 1;
+    uint32_t out : 2;
+    uint32_t loop : 1;
+    uint32_t : 27;
+} uart_mcr;
 
-typedef enum [[clang::flag_enum]] uart_ovrd : uint32_t {
-    uart_ovrd_none = 0,
-    uart_ovrd_txen = (1u << 0),
-    uart_ovrd_txval = (1u << 1),
-} uart_ovrd;
+typedef enum [[clang::flag_enum]] uart_lsr : uint32_t {
+    uart_lsr_none = 0,
+    uart_lsr_dr = (1u << 0),
+    uart_lsr_oe = (1u << 1),
+    uart_lsr_pe = (1u << 2),
+    uart_lsr_fe = (1u << 3),
+    uart_lsr_bi = (1u << 4),
+    uart_lsr_thre = (1u << 5),
+    uart_lsr_temt = (1u << 6),
+    uart_lsr_rcvr_fifo_error = (1u << 7),
+} uart_lsr;
+
+typedef enum [[clang::flag_enum]] uart_msr : uint32_t {
+    uart_msr_none = 0,
+    uart_msr_dcts = (1u << 0),
+    uart_msr_ddsr = (1u << 1),
+    uart_msr_teri = (1u << 2),
+    uart_msr_ddcd = (1u << 3),
+    uart_msr_cts = (1u << 4),
+    uart_msr_dsr = (1u << 5),
+    uart_msr_ri = (1u << 6),
+    uart_msr_dcd = (1u << 7),
+} uart_msr;
 
 typedef struct [[gnu::aligned(4)]] {
-    uint32_t rx : 16;
-    uint32_t : 16;
-} uart_val;
-
-typedef struct [[gnu::aligned(4)]] {
-    uint32_t val : 24;
-    uint32_t : 7;
-    uint32_t en : 1;
-} uart_timeout_ctrl;
+    uint32_t scr : 8;
+    uint32_t : 24;
+} uart_scr;
 
 typedef volatile struct [[gnu::aligned(4)]] uart_memory_layout {
-    /* uart.intr_state (0x0) */
-    uart_intr intr_state;
+    /* uart.rbr (0x0) */
+    const uart_rbr rbr;
 
-    /* uart.intr_enable (0x4) */
-    uart_intr intr_enable;
+    /* uart.ier (0x4) */
+    uart_ier ier;
 
-    /* uart.intr_test (0x8) */
-    uart_intr intr_test;
+    /* uart.iir (0x8) */
+    const uart_iir iir;
 
-    /* uart.alert_test (0xc) */
-    uart_alert_test alert_test;
+    /* uart.lcr (0xc) */
+    uart_lcr lcr;
 
-    /* uart.ctrl (0x10) */
-    uart_ctrl ctrl;
+    /* uart.mcr (0x10) */
+    uart_mcr mcr;
 
-    /* uart.status (0x14) */
-    const uart_status status;
+    /* uart.lsr (0x14) */
+    uart_lsr lsr;
 
-    /* uart.rdata (0x18) */
-    const uart_rdata rdata;
+    /* uart.msr (0x18) */
+    const uart_msr msr;
 
-    /* uart.wdata (0x1c) */
-    uart_wdata wdata;
-
-    /* uart.fifo_ctrl (0x20) */
-    uart_fifo_ctrl fifo_ctrl;
-
-    /* uart.fifo_status (0x24) */
-    const uart_fifo_status fifo_status;
-
-    /* uart.ovrd (0x28) */
-    uart_ovrd ovrd;
-
-    /* uart.val (0x2c) */
-    const uart_val val;
-
-    /* uart.timeout_ctrl (0x30) */
-    uart_timeout_ctrl timeout_ctrl;
+    /* uart.scr (0x1c) */
+    uart_scr scr;
 } *uart_t;
 
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, intr_state) == 0x0ul,
-               "incorrect register intr_state offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, intr_enable) == 0x4ul,
-               "incorrect register intr_enable offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, intr_test) == 0x8ul,
-               "incorrect register intr_test offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, alert_test) == 0xcul,
-               "incorrect register alert_test offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, ctrl) == 0x10ul,
-               "incorrect register ctrl offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, status) == 0x14ul,
-               "incorrect register status offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, rdata) == 0x18ul,
-               "incorrect register rdata offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, wdata) == 0x1cul,
-               "incorrect register wdata offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, fifo_ctrl) == 0x20ul,
-               "incorrect register fifo_ctrl offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, fifo_status) == 0x24ul,
-               "incorrect register fifo_status offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, ovrd) == 0x28ul,
-               "incorrect register ovrd offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, val) == 0x2cul,
-               "incorrect register val offset");
-_Static_assert(__builtin_offsetof(struct uart_memory_layout, timeout_ctrl) == 0x30ul,
-               "incorrect register timeout_ctrl offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, rbr) == 0x0ul,
+               "incorrect register rbr offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, ier) == 0x4ul,
+               "incorrect register ier offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, iir) == 0x8ul,
+               "incorrect register iir offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, lcr) == 0xcul,
+               "incorrect register lcr offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, mcr) == 0x10ul,
+               "incorrect register mcr offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, lsr) == 0x14ul,
+               "incorrect register lsr offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, msr) == 0x18ul,
+               "incorrect register msr offset");
+_Static_assert(__builtin_offsetof(struct uart_memory_layout, scr) == 0x1cul,
+               "incorrect register scr offset");
 
-_Static_assert(sizeof(uart_intr) == sizeof(uint32_t),
-               "register type uart_intr is not register sized");
-_Static_assert(sizeof(uart_alert_test) == sizeof(uint32_t),
-               "register type uart_alert_test is not register sized");
-_Static_assert(sizeof(uart_ctrl) == sizeof(uint32_t),
-               "register type uart_ctrl is not register sized");
-_Static_assert(sizeof(uart_status) == sizeof(uint32_t),
-               "register type uart_status is not register sized");
-_Static_assert(sizeof(uart_rdata) == sizeof(uint32_t),
-               "register type uart_rdata is not register sized");
-_Static_assert(sizeof(uart_wdata) == sizeof(uint32_t),
-               "register type uart_wdata is not register sized");
-_Static_assert(sizeof(uart_fifo_ctrl) == sizeof(uint32_t),
-               "register type uart_fifo_ctrl is not register sized");
-_Static_assert(sizeof(uart_fifo_status) == sizeof(uint32_t),
-               "register type uart_fifo_status is not register sized");
-_Static_assert(sizeof(uart_ovrd) == sizeof(uint32_t),
-               "register type uart_ovrd is not register sized");
-_Static_assert(sizeof(uart_val) == sizeof(uint32_t),
-               "register type uart_val is not register sized");
-_Static_assert(sizeof(uart_timeout_ctrl) == sizeof(uint32_t),
-               "register type uart_timeout_ctrl is not register sized");
+_Static_assert(sizeof(uart_rbr) == sizeof(uint32_t),
+               "register type uart_rbr is not register sized");
+_Static_assert(sizeof(uart_ier) == sizeof(uint32_t),
+               "register type uart_ier is not register sized");
+_Static_assert(sizeof(uart_iir) == sizeof(uint32_t),
+               "register type uart_iir is not register sized");
+_Static_assert(sizeof(uart_lcr) == sizeof(uint32_t),
+               "register type uart_lcr is not register sized");
+_Static_assert(sizeof(uart_mcr) == sizeof(uint32_t),
+               "register type uart_mcr is not register sized");
+_Static_assert(sizeof(uart_lsr) == sizeof(uint32_t),
+               "register type uart_lsr is not register sized");
+_Static_assert(sizeof(uart_msr) == sizeof(uint32_t),
+               "register type uart_msr is not register sized");
+_Static_assert(sizeof(uart_scr) == sizeof(uint32_t),
+               "register type uart_scr is not register sized");

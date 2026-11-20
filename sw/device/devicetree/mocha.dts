@@ -56,8 +56,11 @@
         };
 
         serial@41000000 {
-            compatible = "lowrisc,opentitan-uart-v2";
+            compatible = "ns8250", "ns16450", "ns16550", "ns16550a";
             reg = <0x0 0x41000000 0x0 0x30>;
+            clock-frequency = <50000000>;
+            interrupts = <8>;
+            interrupt-parent = <&plic>;
             interrupts-extended = <&plic 8>; // UART is PLIC interrupt source 8
         };
 

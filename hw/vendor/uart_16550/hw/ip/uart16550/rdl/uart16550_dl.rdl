@@ -1,0 +1,16 @@
+addrmap uart16550_dl {
+    addrmap {
+        reg {
+            field {
+                sw = rw;
+                hw = r;
+            } DLL[7:0] = 0x0;
+        } DLL @ 0x0;
+        reg {
+            field {
+                sw = rw;
+                hw = r;
+            } DLM[7:0] = 0x0;
+        } DLM @ 0x4;
+    } none @ 0x0;
+};

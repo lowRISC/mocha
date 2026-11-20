@@ -9,7 +9,7 @@ filesets:
   files_rtl:
     depend:
       - lowrisc:ip:i2c
-      - lowrisc:ip:uart
+      - lowrisc:ip:uart16550
       - lowrisc:ip:rv_timer
       - lowrisc:ip:spi_device
       - lowrisc:ip:spi_host
