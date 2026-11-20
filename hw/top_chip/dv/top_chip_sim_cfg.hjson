@@ -81,6 +81,20 @@
 
     }
     {
+      name: uart_tx_rx
+      uvm_test_seq: top_chip_dv_uart_tx_rx_vseq
+      sw_images: ["uart_tx_rx_test_vanilla:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/uart_tx_rx_test_vanilla.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
+      name: uart_tx_rx_cheri
+      uvm_test_seq: top_chip_dv_uart_tx_rx_vseq
+      sw_images: ["uart_tx_rx_test_cheri:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/uart_tx_rx_test_cheri.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
       name: rv_plic_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["plic_smoketest_vanilla:5" "bootrom:5"]
@@ -417,6 +431,8 @@
       tests: [
         "uart_smoke",
         "uart_smoke_cheri",
+        "uart_tx_rx",
+        "uart_tx_rx_cheri",
         "rv_plic_smoke",
         "rv_plic_smoke_cheri",
         "rv_timer_smoke",
@@ -462,7 +478,9 @@
       name: uart
       tests: [
         "uart_smoke",
-        "uart_smoke_cheri"
+        "uart_smoke_cheri",
+        "uart_tx_rx",
+        "uart_tx_rx_cheri"
       ]
     }
     {
