@@ -1,0 +1,825 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Tag controller block-level verification plan (vPlan).
+//
+// Written against the specification of the Capabilities Limited tag controller,
+// https://github.com/Capabilities-Limited/axi_cheri_tagcontroller at f408a7b96b (2026-11-06).
+// Mocha vendors the earlier 173646d in hw/vendor/tagctrl, which this plan does not describe. The
+// re-vendor is tracked in lowRISC/mocha#797.
+//
+// Scope: axi_tagctrl_top at block level, every feature of the specification, including those it
+// marks as not yet supported. Mocha integration is out of scope.
+//
+// Configuration: the baseline in the tagctrl Description, varied only where a metric says so.
+//
+// References are `<document>#<section>`, the section being the adoc id of the heading:
+//   tag_controller  docs/tag_controller.adoc at f408a7b96b
+//   perf_events     docs/perf_events.adoc at f408a7b96b
+//   stages          doc/proj/stages.md, whose milestone goals apply: V2 is 90% code and functional
+//                   coverage, V3 is 100%
+//
+// An open specification question ends its Description with a TODO and names the issue tracking it
+// in Issue. It has Priority 0 when other metrics depend on its answer.
+//
+// V1 metrics name their planned evidence as TODO_ items until the environment exists. V2 metrics
+// get their items after V1.
+{
+    tagctrl:
+    {
+        Reference:
+            '''
+            tag_controller#_high_level_overview
+            tag_controller#_theory_of_operation
+            tag_controller#_rtl_parameterization
+            '''
+        Description: Boundary between a tagged and an untagged AXI domain. Requests on the tagged subordinate are forwarded to the untagged manager without user fields, while the capability tags they carry are kept in a hierarchical tag table in the memory behind the untagged manager. A configuration subordinate sets the covered region and the tag table location and controls the state machine. Verified in a baseline configuration with the default widths and cache geometry of the specification, 64-bit data and addresses, a 1-bit user field, 16-byte tagged chunks, 128-bit capabilities and a grouping factor of 256, init_start, init_locked, allow_resume and allow_flush_when_locked clear, and perf_counters 0, so the controller is configured through the configuration subordinate. The region registers, and the init_* addresses where a metric sets init_start, give a 4 MiB covered region, larger than the reach of the leaf cache, with uncovered space below and above it and the tag table outside it, every boundary 8 KiB aligned. They are block-level addresses, not the Mocha memory map. Metrics that depend on another parameter value say so.
+        Node_Type: dut_name
+
+        ///////////////////////////////////////////////////////////////////////
+        // Interfaces                                                        //
+        ///////////////////////////////////////////////////////////////////////
+        interfaces:
+        {
+            Description: Protocol compliance and signal-level behaviour at the ports of axi_tagctrl_top. What the ports carry functionally lives under functional_features.
+            Node_Type: section_title
+
+            tag_sub:
+            {
+                Description: The tagged subordinate port, tagged_sub_{req_i, resp_o}.
+                Node_Type: section_title
+
+                tag_sub_handshake:
+                {
+                    Reference: tag_controller#_hardware_interface_definitions
+                    Description: The port completes every read and write, single beat and burst, whichever of AW and W arrives first and whatever the valid and ready timing on its five channels.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Comment: Driven with random valid and ready timing on all five channels.
+                }
+                tag_sub_protocol:
+                {
+                    Reference: tag_controller#_guarantees_and_assumptions
+                    Description: Every request gets exactly one response carrying its ID, every read returns the requested number of beats with RLAST on the last only, the B and R payloads hold steady while valid is high and ready is low, and the port never deadlocks while the other ports follow the AXI standard.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                tag_sub_request_stall:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_zeroing
+                        tag_controller#_behaviour
+                        tag_controller#_start_bit_0
+                        tag_controller#_stop_bit_16
+                        '''
+                    Description: AW and AR ready stay low throughout Zeroing and Flushing, and from a start or stop command until the outstanding requests are resolved, while W ready may stay high to drain the data beats of writes already accepted. Requests held off this way are served once the controller reaches Serving.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+            }
+            utag_mgr:
+            {
+                Description: The untagged manager port, untagged_mgr_{req_o, resp_i}.
+                Node_Type: section_title
+
+                utag_mgr_forwarding:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_hardware_interface_definitions
+                        tag_controller#_guarantees_and_assumptions
+                        '''
+                    Description: Each tagged subordinate request that is not to the tag table appears on the untagged manager without user fields but otherwise unchanged, and the data and response returned on the tagged subordinate match those of the forwarded request.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                utag_mgr_backpressure:
+                {
+                    Reference: tag_controller#_guarantees_and_assumptions
+                    Description: Backpressure on any channel of the untagged manager, including long stalls while forwarded and tag table requests are both in flight, delays but never loses or corrupts a request, and never deadlocks.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Comment: Driven with random valid and ready timing on the untagged manager.
+                }
+                utag_mgr_tag_traffic:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_hardware_interface_definitions
+                        tag_controller#_hierarchical_tag_table
+                        tag_controller#_unconfigured_bit_3
+                        '''
+                    Description: Every request the controller issues on its own lies within [tag_table_base, tag_table_top), and none is issued while the controller is Unconfigured.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+            }
+            cfg_sub:
+            {
+                Description: The configuration subordinate port, config_sub_{req_i, resp_o}.
+                Node_Type: section_title
+
+                cfg_protocol:
+                {
+                    Reference: tag_controller#_programmers_model_software_interface
+                    Description: The port completes every register read and write whatever the valid and ready timing on its five channels, each with exactly one OKAY response carrying its ID.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Comment: Driven with random valid and ready timing on all five channels.
+                }
+                cfg_tied_off:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_hardware_interface_definitions
+                        tag_controller#_static_parameterisation
+                        '''
+                    Description: With every valid on the configuration subordinate tied low and init_start and init_locked set, the controller zeroes, serves tagged traffic on the init_* region and never drives a configuration response.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+            }
+            clk_rst:
+            {
+                Description: Clock and reset.
+                Node_Type: section_title
+
+                reset_state:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_theory_of_operation
+                        tag_controller#_rtl_parameterization
+                        tag_controller#_status_0x0000
+                        '''
+                    Description: Out of reset in the baseline the controller is Unconfigured and unlocked, covered_base, covered_top and tag_table_base read their init_* values, tag_table_top reads the value derived from them, the error field reads 0 and every performance register reads 0.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 1
+                    Items:
+                    [
+                        testcase:TODO_reset_state
+                    ]
+                }
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // Functional features                                               //
+        ///////////////////////////////////////////////////////////////////////
+        functional_features:
+        {
+            Description: Behaviour observed from the three ports.
+            Node_Type: section_title
+
+            legal_behaviour:
+            {
+                Description: What the tag controller does for accesses and commands its specification allows.
+                Node_Type: section_title
+
+                fsm_transitions:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_theory_of_operation
+                        tag_controller#_behaviour
+                        '''
+                    Description: The controller only moves between states along the arcs of the state machine, Unconfigured to Zeroing on start, Zeroing to Serving, Unconfigured to Serving on resume, Serving to Flushing on stop and Flushing out again, plus the move to Unconfigured on a region register write or an error, and each arc is taken. TODO: the theory of operation and the state machine diagram take Flushing to Unconfigured, while the stop command description returns it to Serving.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                status_state_bits:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_status_0x0000
+                        tag_controller#_serving_bit_0
+                        tag_controller#_zeroing_bit_1
+                        tag_controller#_unconfigured_bit_3
+                        '''
+                    Description: Exactly one of status bits 0 to 3 is set at any time and it names the current state, and the reserved status bits read 0.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                unconfigured_passthrough:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_unconfigured
+                        tag_controller#_unconfigured_bit_3
+                        '''
+                    Description: While Unconfigured, every tagged subordinate access, the tag table range included, is forwarded to the untagged manager, write tags are ignored and every read returns 0 tags.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                zeroing_root_table:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_zeroing
+                        tag_controller#_zeroing_bit_1
+                        tag_controller#_hierarchical_tag_table
+                        tag_controller#_tag_lookup_engine_root_init_module
+                        '''
+                    Description: On entering Zeroing the controller writes zeros over the whole root table, and only within the tag table range, before entering Serving, so every tag reads 0 until written after a reset or a reconfiguration.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                serving_covered:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_serving
+                        tag_controller#_serving_bit_0
+                        '''
+                    Description: While Serving, an access entirely inside [covered_base, covered_top) is forwarded with its tags tracked, at both ends of the region.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                serving_uncovered:
+                {
+                    Reference: tag_controller#_serving
+                    Description: While Serving, an access entirely outside the covered region and the tag table is forwarded with write tags ignored and 0 read tags, just below covered_base, at covered_top and far from both.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                empty_covered_region:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_serving
+                        tag_controller#_tag_table_top_0x0028
+                        '''
+                    Description: With covered_top equal to covered_base, tag_table_top equals tag_table_base, every access outside the empty tag table is treated as uncovered, and the controller issues no tag table requests.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                flushing_commit:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_behaviour
+                        tag_controller#_status_0x0000
+                        tag_controller#_stop_bit_16
+                        '''
+                    Description: In Flushing the controller writes all of its cached tag table state out to the tag table, so that afterwards the tag table memory holds every tag written before the stop. TODO: the state the controller leaves Flushing for, see fsm_transitions.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                tag_roundtrip:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_high_level_overview
+                        tag_controller#_guarantees_and_assumptions
+                        '''
+                    Description: A capability written to the covered region with its tag set, as an aligned burst of whole chunks, reads back with the same data and a set tag, and one written with its tag clear reads back with the same data and no R beat carrying a set tag, for single and multiple chunk bursts.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 1
+                    Items:
+                    [
+                        testcase:TODO_tag_roundtrip
+                        functional:TODO_cg_tag_roundtrip
+                    ]
+                }
+                tag_read_beats:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_high_level_overview
+                        tag_controller#_guarantees_and_assumptions
+                        '''
+                    Description: Each R beat of a read of a tagged chunk, and each read narrower than a chunk, returns the tag the specification requires. TODO: the specification does not say on which R beats of a chunk the tag is returned, or what tag a read narrower than a chunk returns.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                data_integrity:
+                {
+                    Reference: tag_controller#_guarantees_and_assumptions
+                    Description: Data returned on the tagged subordinate matches the data fetched by the corresponding untagged manager request for every access not to the tag table, in every state and for every burst type, length, size and strobe pattern used.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                tag_atomic_with_data:
+                {
+                    Reference: tag_controller#_guarantees_and_assumptions
+                    Description: The tag is handled atomically with its data, so a read racing a write to the same chunk returns either the old data with the old tag or the new data with the new tag, never a mix.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                monotonicity:
+                {
+                    Reference: tag_controller#_guarantees_and_assumptions
+                    Description: A read that returns a set tag is from the covered region and returns exactly the capability last written to that address with its tag set since the last reconfiguration, with no overlapping write of any size in between. The guarantee assumes managers set wuser only on writes of whole capabilities, so a chunk whose tag was last set by a write to a strict subset of it is exempt until the next write to the whole chunk. With allow_resume set, a tag that was set in the tag table memory when the controller was resumed is also allowed.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Comment: Checked on every read of every test.
+                }
+                sub_chunk_write_updates_tag:
+                {
+                    Reference: tag_controller#_guarantees_and_assumptions
+                    Description: A write to any subset of a tagged chunk, a narrow write or a partial strobe, sets the chunk's tag to the write's wuser, both when wuser clears a set tag and when it sets a clear one. TODO: the specification does not say which tag a chunk receives when the beats writing it carry different wuser values.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                tag_isolation:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_hierarchical_tag_table
+                        tag_controller#_guarantees_and_assumptions
+                        '''
+                    Description: Writing the tag of one chunk leaves every other tag unchanged, for adjacent chunks, the chunks either side of a 4 KiB leaf line boundary, and the chunks either side of a root group boundary.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                tag_table_layout:
+                {
+                    Reference: tag_controller#_hierarchical_tag_table
+                    Description: The leaf tag of the capability at covered_base + a_cap is held at tag_table_base + a_cap / 128, the root table follows the leaf table from a 64-byte boundary with the root tag at root_table_base + a_cap / 128 / 256, and the reported tag is the AND of the two, observed through the untagged manager and the memory behind it. TODO: the specification gives root_table_base = tag_table_base + alignUp64B((covered_top - covered_base) / 256), which starts the root table inside the leaf table, whose size a_leaf makes (covered_top - covered_base) / 128; the 1/127 size bound and the 128-byte minimum of tag_table_top both fit / 128. The a_root formula also has unbalanced parentheses.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                tags_survive_eviction:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_tag_lookup_engine
+                        tag_controller#_rtl_parameterization
+                        '''
+                    Description: Tags written over a working set larger than the root and leaf caches, and with more lines in one set than the cache has ways, read back correctly after their lines have been evicted and refilled.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                reconfigure_clears_tags:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_zeroing
+                        tag_controller#_configuration_by_own_core
+                        '''
+                    Description: After a region register write and a start command, every tag in the new covered region reads 0, including those set before the reconfiguration.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                resume_preserves_tags:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_guarantees_and_assumptions
+                        tag_controller#_control_0x0008
+                        '''
+                    Description: With allow_resume set, a resume command takes the tag table as it stands in memory, so tags written before a stop, and tags preloaded into the tag table memory before the resume, read back set.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                register_map:
+                {
+                    Reference: tag_controller#_programmers_model_software_interface
+                    Description: status, control, covered_base, covered_top, tag_table_base and tag_table_top sit at 0x0000 to 0x0028 with the unlocked access type the specification gives each.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 1
+                    Items:
+                    [
+                        testcase:TODO_register_map
+                    ]
+                }
+                region_registers_readback:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_covered_base_0x0010
+                        tag_controller#_covered_top_0x0018
+                        tag_controller#_tag_table_base_0x0020
+                        '''
+                    Description: covered_base, covered_top and tag_table_base read back the last value written while unlocked, across the full 64-bit range.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 1
+                    Items:
+                    [
+                        testcase:TODO_region_registers_readback
+                    ]
+                }
+                region_write_unconfigures:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_covered_base_0x0010
+                        tag_controller#_covered_top_0x0018
+                        tag_controller#_tag_table_base_0x0020
+                        tag_controller#_unconfigured_bit_3
+                        '''
+                    Description: An unlocked write to covered_base, covered_top or tag_table_base puts the controller in Unconfigured from every state, and the new values take effect at the next start or resume. TODO: the specification does not say when Unconfigured takes effect for tagged requests already in flight when the write arrives.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                tag_table_top_calc:
+                {
+                    Reference: tag_controller#_tag_table_top_0x0028
+                    Description: tag_table_top follows covered_base, covered_top and tag_table_base as they are written, and tag_table_top - tag_table_base is at most the larger of (covered_top - covered_base) / 127 and 128 bytes, from the smallest to the largest covered range.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                control_start:
+                {
+                    Reference: tag_controller#_start_bit_0
+                    Description: A start command while unlocked and Unconfigured, with a valid pending configuration, resolves the outstanding requests, takes the configuration, clears Unconfigured and enters Zeroing.
+                    Node_Type: metric
+                    Milestone: V1
+                    Priority: 1
+                    Items:
+                    [
+                        testcase:TODO_control_start
+                    ]
+                }
+                control_resume:
+                {
+                    Reference: tag_controller#_control_0x0008
+                    Description: With allow_resume set, a resume command while unlocked takes the pending configuration, clears Unconfigured unless the configuration is in error, and enters Serving without zeroing. With allow_resume clear the command is ignored.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                control_stop:
+                {
+                    Reference: tag_controller#_stop_bit_16
+                    Description: A stop command while unlocked, or while locked with allow_flush_when_locked set, resolves the outstanding requests and enters Flushing. While locked with allow_flush_when_locked clear the command is ignored. TODO: the state the controller leaves Flushing for, see fsm_transitions.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                control_lock:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_lock_bit_24
+                        tag_controller#_locked_bit_4
+                        '''
+                    Description: A lock command sets status.Locked, which then stays set until reset whatever is written to control.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                locked_read_only:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_programmers_model_software_interface
+                        tag_controller#_lock_bit_24
+                        '''
+                    Description: While locked, writes to covered_base, covered_top and tag_table_base answer OKAY and change neither the register nor the state, while the performance registers stay writable.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                perf_register_map:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_programmers_model_software_interface
+                        tag_controller#_perf_inhibit_0x0ed0
+                        tag_controller#_perf_select_0x0ee0_0x0f00
+                        tag_controller#_perf_counters_0x0f00_0x1000
+                        '''
+                    Description: perf_inhibit, perf_select and perf_counters sit at their offsets with read/write access, unlocked and locked. TODO: the register table places perf_inhibit at 0x0eb0 and perf_select at 0x0ec0, its reserved range 0x0030 to 0x0ed0 overlaps both, and the register sections place them at 0x0ed0 and 0x0ee0.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                perf_inhibit:
+                {
+                    Reference: tag_controller#_perf_inhibit_0x0ed0
+                    Description: perf_inhibit holds one bit per enabled counter, least significant bit for the first, and a counter whose bit pauses it does not count while staying readable and writable. TODO: the specification says a counter is paused when its bit is zero, the opposite of what the register name suggests.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                perf_select:
+                {
+                    Reference: tag_controller#_perf_select_0x0ee0_0x0f00
+                    Description: perf_select holds one byte per enabled counter, the first byte for the counter at 0x0f00, and each byte selects the event its counter counts.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                perf_counter_events:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_perf_counters_0x0f00_0x1000
+                        perf_events#_general_events
+                        perf_events#_tag_lookup_engine_events
+                        perf_events#_cache_events
+                        perf_events#_config_events
+                        '''
+                    Description: Each counter counts each occurrence of its selected event while not paused, for every event listed, an unsupported event index never increments, and a written counter value is the base it counts on from. TODO: the configuration events name Preflushing and Prezeroing states that the state machine does not have.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Issue: TODO
+                }
+                perf_unimplemented_ro_zero:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_perf_inhibit_0x0ed0
+                        tag_controller#_perf_select_0x0ee0_0x0f00
+                        tag_controller#_perf_counters_0x0f00_0x1000
+                        tag_controller#_rtl_parameterization
+                        '''
+                    Description: perf_inhibit bits, perf_select bytes and perf_counters registers past the number of enabled counters read 0 and ignore writes, with perf_counters 0, a value in between and 32.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+            }
+            exception_handling:
+            {
+                Description: What the tag controller does for accesses and configurations its specification refuses or leaves open.
+                Node_Type: section_title
+
+                tag_table_access_error:
+                {
+                    Reference: tag_controller#_serving
+                    Description: While Serving, a tagged subordinate access with any byte inside the tag table answers an AXI error on every response beat, is never forwarded and changes no tag, including where the tag table overlaps the covered region. TODO: the specification does not say whether the error is SLVERR or DECERR.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                config_error_codes:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_status_0x0000
+                        tag_controller#_covered_base_0x0010
+                        tag_controller#_covered_top_0x0018
+                        tag_controller#_tag_table_base_0x0020
+                        tag_controller#_tag_table_top_0x0028
+                        '''
+                    Description: A configuration with covered_top below covered_base, tag_table_top below tag_table_base, or a misaligned covered_base, covered_top or tag_table_base reports error 1 to 5 respectively, returns the controller to Unconfigured and reads tag_table_top as 0. TODO: the covered region alignment is 8 KiB in the register descriptions and 4096 in covered_align; the specification does not say how the error field clears, which code is reported when several apply, or whether a covered region overlapping the tag table is an error.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 0
+                    Issue: TODO
+                }
+                tag_store_error:
+                {
+                    Reference: tag_controller#_status_0x0000
+                    Description: An error response on a tag table access, read or write, in Zeroing, Serving and Flushing, reports error 6 and returns the controller to Unconfigured. TODO: the specification does not say what response the tagged request behind the failed access receives, or what happens to the other tagged requests in flight.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Issue: TODO
+                }
+                control_not_one_hot:
+                {
+                    Reference: tag_controller#_control_0x0008
+                    Description: A control write with more than one command bit set, or none, is ignored.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                control_reserved_bits:
+                {
+                    Reference: tag_controller#_control_0x0008
+                    Description: A control write with one command bit and reserved bits set. TODO: the specification says writes to reserved bits are ignored and writes must be one-hot, without saying whether one-hot applies to the command bits, so the command is issued, or to the whole written value, so the write is ignored.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Issue: TODO
+                }
+                write_read_only:
+                {
+                    Reference: tag_controller#_programmers_model_software_interface
+                    Description: A write to status, tag_table_top or the reserved range answers OKAY and changes nothing.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                read_write_only:
+                {
+                    Reference: tag_controller#_programmers_model_software_interface
+                    Description: A read of control returns 0.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                reserved_range_reads_zero:
+                {
+                    Reference: tag_controller#_programmers_model_software_interface
+                    Description: Every read in the reserved range returns 0, unlocked and locked.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                commands_when_locked:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_start_bit_0
+                        tag_controller#_control_0x0008
+                        tag_controller#_stop_bit_16
+                        '''
+                    Description: While locked, start and resume are ignored in every state, and stop is ignored unless allow_flush_when_locked is set.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                }
+                commands_without_arc:
+                {
+                    Reference:
+                        '''
+                        tag_controller#_control_0x0008
+                        tag_controller#_theory_of_operation
+                        '''
+                    Description: While unlocked, start in Serving, Zeroing or Flushing, resume in Serving, Zeroing or Flushing, stop in Unconfigured, Zeroing or Flushing, and a second command while a start or stop is still resolving the outstanding requests. TODO: the command descriptions name no source state, while the state machine has arcs only for start and resume from Unconfigured and stop from Serving, so the specification does not say whether such a command is ignored, deferred or acted on.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Issue: TODO
+                }
+                cfg_partial_access:
+                {
+                    Reference: tag_controller#_programmers_model_software_interface
+                    Description: A configuration access narrower than 64 bits, with partial strobes, or as a burst. TODO: the specification does not say what such an access returns or writes.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Issue: TODO
+                }
+                unsupported_axi_features:
+                {
+                    Reference: tag_controller#_guarantees_and_assumptions
+                    Description: Atomic operations, exclusive accesses and WRAP bursts on the tagged subordinate. TODO: the specification does not say whether they are supported, or how they are answered and what they do to tags if not.
+                    Node_Type: metric
+                    Milestone: V2
+                    Priority: 1
+                    Issue: TODO
+                }
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // Structural features                                               //
+        ///////////////////////////////////////////////////////////////////////
+        structural_features:
+        {
+            Description: Behaviour measured inside axi_tagctrl_top.
+            Node_Type: section_title
+
+            code_coverage:
+            {
+                Reference: stages#hardware-ip-block-verification-stages
+                Description: Line, branch, condition, toggle and FSM coverage of axi_tagctrl_top and the modules it instantiates, the tag lookup engine included, to the goal stages.md sets for each milestone.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            max_outstanding:
+            {
+                Reference:
+                    '''
+                    tag_controller#_rtl_parameterization
+                    tag_controller#_tag_lookup_engine_table_lookup_read_module
+                    tag_controller#_tag_lookup_engine_table_lookup_write_module
+                    '''
+                Description: max_trans transactions are in flight at once, the read and write lookup scoreboards fill and backpressure, and every request still completes with the right data and tag.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            parameter_sets:
+            {
+                Reference: tag_controller#_rtl_parameterization
+                Description: Besides the baseline, each variant a metric depends on is built and run: init_start and init_locked set, init_start set with init_locked clear, allow_resume set, allow_flush_when_locked set, and perf_counters at a value in between and at 32. TODO: the specification does not say whether init_locked set with init_start clear, which leaves the controller Unconfigured until reset, is a legal combination.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+                Issue: TODO
+            }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        // Scenarios                                                         //
+        ///////////////////////////////////////////////////////////////////////
+        scenarios:
+        {
+            Description: End-to-end use cases.
+            Node_Type: section_title
+
+            static_parameterisation_boot:
+            {
+                Reference: tag_controller#_static_parameterisation
+                Description: With init_start and init_locked set, tagged traffic issued straight after reset is held off until zeroing completes and is then served with tags tracked, while status reports Zeroing and then Serving with Locked set.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            external_core_configuration:
+            {
+                Reference: tag_controller#_configuration_by_external_core
+                Description: From an Unconfigured reset, the configuration subordinate sets the regions, starts and locks the controller, and tagged traffic is then served in the configured region with no further reconfiguration possible.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            own_core_reconfiguration:
+            {
+                Reference: tag_controller#_configuration_by_own_core
+                Description: With init_start set and init_locked clear, tagged traffic runs on the init_* region, the region is then moved and the controller restarted, and traffic continues on the new region with every tag cleared.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            stop_resume_cycle:
+            {
+                Reference:
+                    '''
+                    tag_controller#_stop_bit_16
+                    tag_controller#_control_0x0008
+                    '''
+                Description: With allow_resume set, tagged traffic is stopped, the controller flushed and resumed, and traffic continues with every tag written before the stop intact.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            reconfigure_during_traffic:
+            {
+                Reference:
+                    '''
+                    tag_controller#_start_bit_0
+                    tag_controller#_stop_bit_16
+                    tag_controller#_covered_base_0x0010
+                    '''
+                Description: Region writes and start, stop and resume commands arrive while tagged reads and writes are in flight, every request completes, and no read returns a set tag the monotonicity guarantee does not allow.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            reset_during_traffic:
+            {
+                Reference: tag_controller#_hardware_interface_definitions
+                Description: A reset in the middle of tagged and configuration traffic returns the controller to its reset state, and traffic after it is served correctly.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+            }
+            mixed_region_traffic:
+            {
+                Reference:
+                    '''
+                    tag_controller#_serving
+                    tag_controller#_guarantees_and_assumptions
+                    '''
+                Description: Tagged and untagged reads and writes of any burst shape, spread over the covered region, the uncovered space and the tag table, are each handled as their region requires.
+                Node_Type: metric
+                Milestone: V2
+                Priority: 1
+                Comment: Driven as random traffic with random burst shapes.
+            }
+        }
+    }
+}
