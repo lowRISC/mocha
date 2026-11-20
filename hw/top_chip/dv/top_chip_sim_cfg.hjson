@@ -259,17 +259,17 @@
     }
     {
       name: rom_ctrl_smoke
-      uvm_test_seq: top_chip_dv_base_vseq
+      uvm_test_seq: top_chip_dv_uart_base_vseq
       sw_images: ["rom_ctrl_smoketest_vanilla:5" "bootrom:5"]
       run_opts: ["+ChipMemDRAM_image_file={run_dir}/rom_ctrl_smoketest_vanilla.vmem",
-                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rom_ctrl_smoke_cheri
-      uvm_test_seq: top_chip_dv_base_vseq
+      uvm_test_seq: top_chip_dv_uart_base_vseq
       sw_images: ["rom_ctrl_smoketest_cheri:5" "bootrom:5"]
       run_opts: ["+ChipMemDRAM_image_file={run_dir}/rom_ctrl_smoketest_cheri.vmem",
-                 "+ChipMemROM_image_file={proj_root}/sw/device/tests/rom_ctrl/mem_init_file.vmem"]
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
       name: rstmgr_smoke
