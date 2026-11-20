@@ -23,6 +23,7 @@ filesets:
       - lowrisc:mocha_ip:rstmgr
       - lowrisc:mocha_ip:rv_plic
       - lowrisc:mocha:axi_sram
+      - lowrisc:prim:assert
       - lowrisc:prim:onehot
       - lowrisc:tlul:adapter_host
       - lowrisc:tlul:adapter_reg

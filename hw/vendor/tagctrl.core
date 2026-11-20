@@ -10,25 +10,36 @@ filesets:
   files_rtl:
     depend:
       - cosmic::pulp_axi_llc
-      - cosmic::pulp_register_interface
+      - lowrisc:cosmic:hpdcache
+      - pulp-platform.org::axi
+      - lowrisc:prim:assert
       - lowrisc:prim:util
       - lowrisc:common_cells:all
     files:
+      # Includes.
+      - tagctrl/include/axi_tagctrl/typedef.svh: {is_include_file: true, include_path: tagctrl/include}
       # Packages.
       - tagctrl/src/axi_tagctrl_pkg.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_configs.sv
+      # Tag controller configuration.
+      - tagctrl/src/axi_tagctrl_config.sv
+      # Tag lookup engine.
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_root_init.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_wrapper.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_read_req_rsp_wrapper.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_write_req_rsp_wrapper.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_flushing.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_table_lookups.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_table_lookups_read.sv
+      - tagctrl/src/tag_lookup_engine/tag_lookup_engine_table_lookups_write.sv
       # Tag controller.
-      - tagctrl/src/eviction_refill/axi_llc_r_master.sv
-      - tagctrl/src/axi_llc_tag_store.sv
       - tagctrl/src/axi_tagc_read_unit.sv
       - tagctrl/src/axi_tagc_write_unit.sv
       - tagctrl/src/axi_tagctrl_ax.sv
-      - tagctrl/src/axi_tagctrl_config.sv
-      - tagctrl/src/axi_tagctrl_data_way.sv
       - tagctrl/src/axi_tagctrl_r.sv
-      - tagctrl/src/axi_tagctrl_reg_wrap.sv
-      - tagctrl/src/axi_tagctrl_top.sv
       - tagctrl/src/axi_tagctrl_w.sv
-      - tagctrl/src/axi_tagctrl_ways.sv
+      - tagctrl/src/axi_tagctrl_top.sv
     file_type: systemVerilogSource
 
 targets:

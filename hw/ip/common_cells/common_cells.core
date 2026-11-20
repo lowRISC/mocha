@@ -39,6 +39,7 @@ filesets:
       - rtl/stream_arbiter.sv
       - rtl/stream_arbiter_flushable.sv
       - rtl/stream_demux.sv
+      - rtl/stream_fifo.sv
       - rtl/stream_join_dynamic.sv
       - rtl/stream_join.sv
       - rtl/stream_fork_dynamic.sv
