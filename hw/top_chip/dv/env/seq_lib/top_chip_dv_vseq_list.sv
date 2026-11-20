@@ -4,6 +4,7 @@
 
 `include "top_chip_dv_base_vseq.sv"
 `include "top_chip_dv_uart_base_vseq.sv"
+`include "top_chip_dv_uart_tx_rx_vseq.sv"
 `include "top_chip_dv_gpio_smoke_vseq.sv"
 `include "top_chip_dv_i2c_tx_rx_vseq.sv"
 `include "top_chip_dv_i2c_host_tx_rx_vseq.sv"
