@@ -33,6 +33,7 @@ enum : uint64_t {
 };
 
 static const uintptr_t sram_base = 0x10000000ul;
+static const uint64_t sram_length = 0x00020000ul;
 static const uintptr_t dram_base = 0x80000000ul;
 
 /* In order of memory map */
