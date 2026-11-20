@@ -9,6 +9,6 @@
   upstream:
   {
     url: https://github.com/Capabilities-Limited/axi_cheri_tagcontroller.git
-    rev: 173646d5947d09bcb27f6ae3817ae7f6d3c1f6a9
+    rev: 30d9d6981c507ae8a3e422c2d6323db0ede549c2
   }
 }
