@@ -3,7 +3,7 @@
 The KMAC in Mocha is imported from OpenTitan.
 The documentation for the hardware IP block is located [in the vendored HW directory tree][block doc].
 Mocha instantiates it only to check the ROM contents at boot: masking is disabled and the register, key manager, EDN, life cycle and interrupt interfaces are unused; their inputs are tied off to their respective package default values and their outputs are left unconnected.
-[One patch][keymgr edn patch] declares the sideload key and EDN types in `kmac_pkg` to drop the `keymgr_pkg` and `edn_pkg` dependencies; the logic is unchanged.
+The [vendor patches][patch] declare the sideload key and EDN types in `kmac_pkg` to drop the `keymgr_pkg` and `edn_pkg` dependencies, fix the DV paths and environment for Xcelium and add the missing output known assertions; the logic is unchanged.
 
 The rest of this document contains the design checklist for the KMAC hardware IP block for the CHERI Mocha top.
 
@@ -39,7 +39,26 @@ This sign-off is based on commit [3824b31][d1-commit].
 
 ### V1
 
-*Not yet started - see [stages.md][verification stages].*
+All checklist items refer to the [V1 verification sign-off checklist][V1 checklist].
+This sign-off is based on commit [`4c320ef`][v1-commit].
+
+| Type          | Item                               | Status | Note/Collaterals |
+|---------------|------------------------------------|--------|------------------|
+| Documentation | DV_DOC_DRAFT_COMPLETED             | Done   | [KMAC DV document][] describes the goals, testbench architecture, stimulus, coverage, and checking strategy |
+| Documentation | TESTPLAN_COMPLETED                 | Done   | [KMAC testplan][] defines the V1 smoke test and post-V1 message length, burst write, test vector, sideload, application interface, entropy, error, life cycle escalation and stress testpoints |
+| Testbench     | TB_TOP_CREATED                     | Done   | [tb.sv][] instantiates the clock and reset, shadowed reset, EDN clock and reset, TileLink, EDN, application interface, key sideload, life cycle escalation, interrupt and alert interfaces along with the KMAC DUT |
+| Testbench     | PRELIMINARY_ASSERTION_CHECKS_ADDED | Done   | [kmac_bind.sv][] binds the TLUL protocol and CSR assertions; the KMAC RTL checks that outputs are known after reset |
+| Integration   | PRE_VERIFIED_SUB_MODULES_V1        | Waived | The SHA3 core is part of KMAC and is verified by this testbench. The remaining submodules are shared OpenTitan primitives and TileLink adapters (`prim_fifo_sync`, `prim_packer_fifo`, `prim_count`, `tlul_adapter_sram`, `tlul_adapter_reg`, etc.), unmodified in Mocha. They are covered through the IPs that instantiate them, so none carries an independent V1 sign-off |
+| Review        | DESIGN_SPEC_REVIEWED               | Done   | The specification was reviewed through the OpenTitan sign-off process, where the block reached V2S, and the [theory of operation][theory] was reviewed against the Mocha instantiation for this sign-off. It describes the Keccak round, padding, message FIFO and application interface correctly, but it is written for the OpenTitan configuration: Mocha builds KMAC unmasked and uses it only for the ROM check, so the TileLink, key manager, EDN and life cycle inputs are tied off, all three application interfaces take the ROM controller configuration with only the first connected, and the alert and interrupt outputs are left unconnected at the [instantiation][instantiation] |
+| Review        | TESTPLAN_REVIEWED                  | Done   | The [OpenTitan KMAC checklist][ot checklist] records the testplan review as complete upstream. The V1 testpoints of the [KMAC testplan][], `smoke` plus the imported CSR and memory testpoints, apply as written. The smoke test drives KMAC from software only; the application interface that Mocha uses is covered by the post-V1 `app` testpoint |
+| Review        | STD_TEST_CATEGORIES_PLANNED        | Done   | Error scenarios, throughput and stress tests are covered in the [KMAC testplan][]; security countermeasures are captured in the sec_cm testplan, but V2S is not used in Mocha; power and debug are N/A |
+| Simulation    | SIM_TB_ENV_CREATED                 | Done   | CIP-based UVM environment with TL, EDN, application interface and key sideload agents, a DPI reference model and scoreboard |
+| Tests         | SIM_SMOKE_TEST_PASSING             | Done   | All V1 testpoints (`kmac_smoke`, the five CSR tests, `kmac_mem_walk` and `kmac_mem_partial_access`): 40/40 passed, 5 seeds each, with Xcelium on November 18, 2026 at commit `4c320ef` |
+| Regression    | SIM_SMOKE_REGRESSION_SETUP         | Done   | `smoke` regression in `kmac_base_sim_cfg.hjson` selects `kmac_smoke`; the aggregate Mocha config imports the unmasked simulation config, matching the Mocha instantiation |
+| Regression    | SIM_NIGHTLY_REGRESSION_SETUP       | Done   | KMAC is included in `mocha_sim_cfgs.hjson`; results are published on the [COSMIC reports dashboard][] |
+| Coverage      | SIM_COVERAGE_MODEL_ADDED           | Done   | Functional coverage is in `kmac_env_cov.sv`, with block-level coverage in `kmac_cov_if.sv`, bound into the DUT by `kmac_cov_bind.sv` |
+| Tests         | FPV_MAIN_ASSERTIONS_PROVEN         | N/A    | This V1 sign-off uses simulation; TLUL and CSR assertions are enabled in the simulation testbench |
+| Regression    | FPV_REGRESSION_SETUP               | N/A    | No KMAC FPV regression is configured in Mocha |
 
 ### V2
 
@@ -61,4 +80,13 @@ This sign-off is based on commit [3824b31][d1-commit].
 [ot checklist]: ../../hw/vendor/lowrisc_ip/ip/kmac/doc/checklist.md
 [lint waivers]: ../../hw/top_chip/lint/top_chip_system.vlt
 [block waivers]: ../../hw/vendor/lowrisc_ip/ip/kmac/lint/kmac.vlt
-[keymgr edn patch]: ../../hw/vendor/patches/lowrisc_ip/kmac/0001-Remove-keymgr-edn-deps.patch
+[patch]: ../../hw/vendor/patches/lowrisc_ip/kmac
+[V1 checklist]: stages.md#v1-verification-sign-off-checklist
+[v1-commit]: https://github.com/lowRISC/mocha/commit/4c320ef82c8e3f46acc69f069dc7c22f9c34d301
+[theory]: ../../hw/vendor/lowrisc_ip/ip/kmac/doc/theory_of_operation.md
+[instantiation]: https://github.com/lowRISC/mocha/blob/4c320ef82c8e3f46acc69f069dc7c22f9c34d301/hw/top_chip/rtl/top_chip_system.sv#L1452-L1491
+[KMAC DV document]: ../../hw/vendor/lowrisc_ip/ip/kmac/dv/README.md
+[KMAC testplan]: ../../hw/vendor/lowrisc_ip/ip/kmac/data/kmac_testplan.hjson
+[tb.sv]: ../../hw/vendor/lowrisc_ip/ip/kmac/dv/tb.sv
+[kmac_bind.sv]: ../../hw/vendor/lowrisc_ip/ip/kmac/dv/sva/kmac_bind.sv
+[COSMIC reports dashboard]: https://dashboard.reports.lowrisc.org/cosmic/mocha/dashboard.html
