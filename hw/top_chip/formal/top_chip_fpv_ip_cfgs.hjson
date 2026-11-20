@@ -29,5 +29,15 @@
                exp_fail_hjson: "{proj_root}/hw/top_chip/ip_autogen/rv_plic/fpv/rv_plic_expected_failure.hjson"
                after_load: ["{proj_root}/hw/top_chip/ip_autogen/rv_plic/fpv/tb/coverage.tcl"]
              }
+             {
+               name: riscv_debug_module_fpv
+               dut: riscv_debug_module_tb
+               fusesoc_core: lowrisc:mocha:riscv_debug_module_fpv
+               import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/formal/tools/dvsim/common_fpv_cfg.hjson"]
+               rel_path: "hw/top_chip/formal/riscv_debug_module/{sub_flow}/{tool}"
+               // Only prove the debug-disable tie-off assertions.
+               task: "Disable_A"
+               cov: false
+             }
             ]
 }
