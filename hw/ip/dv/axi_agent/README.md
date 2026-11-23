@@ -61,6 +61,7 @@ On AXI4-Lite it sends full-width transfers with the register's strobes (B1.1).
 
 The manager drivers answer every item at once, unsent, while reset is asserted.
 A sequence that can run into a reset must wait for reset to end itself.
+An item that arrives once reset is released waits for a rising edge that samples ARESETn high before its VALID rises (A3.1.2).
 
 ## Analysis ports
 
