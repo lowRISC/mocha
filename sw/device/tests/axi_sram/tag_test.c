@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "hal/mocha.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -12,15 +13,9 @@ bool tag_test()
         res14, res15;
 
     __asm__ volatile(
-        "j test_start\n\t"
-
-        // Capability storage.
-        ".p2align 7\n\t"
-        "storage:\n\t"
-        ".zero 64\n\t" // Four capabilities of 16 bytes each.
-
-        // Get capability to storage in t0.
-        "test_start: lly t0, storage\n\t"
+        // Get capability to AXI SRAM in t0.
+        "auipc t0, 0\n\t"
+        "yaddrw t0, t0, %15\n\t"
 
         // Check that tags start out unset.
         "ly t1, 0(t0)\n\t"
@@ -85,7 +80,7 @@ bool tag_test()
         : "=r"(res1), "=r"(res2), "=r"(res3), "=r"(res4), "=r"(res5), "=r"(res6), "=r"(res7),
           "=r"(res8), "=r"(res9), "=r"(res10), "=r"(res11), "=r"(res12), "=r"(res13), "=r"(res14),
           "=r"(res15)
-        :
+        : "r"((uint64_t)sram_base) // NOLINT(cheri-PtrToIntCast): Need a uint to load into register
         : "t1", "t0", "memory");
     if (!(res1 == 0 && res2 == 0 && res3 == 0 && res4 != 0 && res5 != 0 && res6 != 0 && res7 != 0 &&
           res8 == 0 && res9 != 0 && res10 != 0 && res11 == 0 && res12 != 0 && res13 == 0 &&
@@ -94,8 +89,9 @@ bool tag_test()
     }
 
     __asm__ volatile(
-        // Get capability to storage in t0.
-        "lly t0, storage\n\t"
+        // Get capability to AXI SRAM in t0.
+        "auipc t0, 0\n\t"
+        "yaddrw t0, t0, %6\n\t"
 
         // Store valid capabilities.
         "sy t0, 0(t0)\n\t"
@@ -125,15 +121,16 @@ bool tag_test()
         "ly t1, 32(t0)\n\t"
         "ytagr %5, t1\n\t"
         : "=r"(res1), "=r"(res2), "=r"(res3), "=r"(res4), "=r"(res5), "=r"(res6)
-        :
+        : "r"((uint64_t)sram_base) // NOLINT(cheri-PtrToIntCast): Need a uint to load into register
         : "t1", "t0", "memory");
     if (!(res1 != 0 && res2 != 0 && res3 != 0 && res4 != 0 && res5 == 0 && res6 == 0)) {
         return false;
     }
 
     __asm__ volatile(
-        // Get capability to storage in t0.
-        "lly t0, storage\n\t"
+        // Get capability to AXI SRAM in t0.
+        "auipc t0, 0\n\t"
+        "yaddrw t0, t0, %6\n\t"
 
         // Store valid capabilities.
         "sy t0, 0(t0)\n\t"
@@ -163,7 +160,7 @@ bool tag_test()
         "ly t1, 32(t0)\n\t"
         "ytagr %5, t1\n\t"
         : "=r"(res1), "=r"(res2), "=r"(res3), "=r"(res4), "=r"(res5), "=r"(res6)
-        :
+        : "r"((uint64_t)sram_base) // NOLINT(cheri-PtrToIntCast): Need a uint to load into register
         : "t1", "t0", "memory");
     if (!(res1 != 0 && res2 != 0 && res3 != 0 && res4 == 0 && res5 != 0 && res6 == 0)) {
         return false;
