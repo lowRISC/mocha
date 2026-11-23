@@ -1,0 +1,40 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:tagctrl_env:0.1"
+description: "Tag controller UVM environment"
+
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:dv:ralgen
+      - lowrisc:dv:dv_utils
+      - lowrisc:dv:dv_base_reg
+      - lowrisc:dv:common_ifs
+      - lowrisc:mocha_dv:axi_agent:0.1
+    files:
+      - tagctrl_env_cfg.svh: {is_include_file: true}
+      - tagctrl_exp.svh: {is_include_file: true}
+      - tagctrl_predictor.svh: {is_include_file: true}
+      - tagctrl_scoreboard.svh: {is_include_file: true}
+      - tagctrl_virtual_sequencer.svh: {is_include_file: true}
+      - tagctrl_env.svh: {is_include_file: true}
+      - tagctrl_env_pkg.sv
+    file_type: systemVerilogSource
+
+generate:
+  ral:
+    generator: ralgen
+    parameters:
+      name: tagctrl
+      ip_hjson: ../../data/tagctrl.hjson
+    position: prepend
+
+targets:
+  default:
+    filesets:
+      - files_dv
+    generate:
+      - ral
