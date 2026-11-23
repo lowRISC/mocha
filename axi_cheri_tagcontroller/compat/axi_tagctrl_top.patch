@@ -1,0 +1,34 @@
+Rename the axi_cut and axi_isolate parameters for pulp axi 0.39.9
+
+Mocha vendors pulp axi 0.39.9, whose axi_cut and axi_isolate take axi_req_t and axi_resp_t, and
+whose axi_isolate needs the AXI widths. Apply in the axi_cheri_tagcontroller checkout with
+`git apply`.
+
+--- a/src/axi_tagctrl_top.sv
++++ b/src/axi_tagctrl_top.sv
+@@ -523,8 +523,8 @@
+       .b_chan_t  (slv_b_chan_t),
+       .ar_chan_t (slv_ar_chan_t),
+       .r_chan_t  (slv_r_chan_t),
+-      .req_t     (slv_req_t),
+-      .resp_t    (slv_resp_t)
++      .axi_req_t (slv_req_t),
++      .axi_resp_t(slv_resp_t)
+   ) i_axi_cut (
+       .clk_i,
+       .rst_ni,
+@@ -536,8 +536,12 @@
+ 
+   axi_isolate #(
+       .NumPending (max_trans),
+-      .req_t      (slv_req_t),
+-      .resp_t     (slv_resp_t)
++      .AxiAddrWidth(axi_addr_width),
++      .AxiDataWidth(axi_data_width),
++      .AxiIdWidth  (axi_id_width),
++      .AxiUserWidth(axi_user_width),
++      .axi_req_t   (slv_req_t),
++      .axi_resp_t  (slv_resp_t)
+   ) i_axi_isolate_flush (
+       .clk_i,
+       .rst_ni,
