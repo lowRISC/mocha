@@ -88,6 +88,7 @@ filesets:
       - axi_sub_write_response_driver.svh: {is_include_file: true}
       - axi_sub_read_request_driver.svh: {is_include_file: true}
       - axi_sub_read_data_driver.svh: {is_include_file: true}
+      - axi_sub_agent.svh: {is_include_file: true}
 
     file_type: systemVerilogSource
 

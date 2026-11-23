@@ -166,4 +166,5 @@ package axi_agent_pkg;
   `include "axi_sub_write_response_driver.svh"
   `include "axi_sub_read_request_driver.svh"
   `include "axi_sub_read_data_driver.svh"
+  `include "axi_sub_agent.svh"
 endpackage
