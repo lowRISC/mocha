@@ -1,0 +1,81 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: tagctrl
+
+  dut: axi_tagctrl_top
+
+  tb: tb
+
+  tool: xcelium
+
+  fusesoc_core: lowrisc:mocha_dv:tagctrl_sim:0.1
+
+  import_cfgs: [
+    "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"
+  ]
+
+  // Start with the DUT assertions off for time 0. The registers are 64 bits wide. The RTL core
+  // lives in the upstream checkout, outside hw/.
+  overrides: [
+    {
+      name: fusesoc_cores_root_dirs
+      value: ["--cores-root {proj_root}/hw", "--cores-root {proj_root}/axi_cheri_tagcontroller"]
+    }
+    {
+      name: run_script
+      value: "{proj_root}/hw/ip/tagctrl/dv/tagctrl_sim.tcl"
+    }
+    {
+      name: tl_dw
+      value: 64
+    }
+    {
+      name: tl_dbw
+      value: 8
+    }
+  ]
+
+  reseed: 1
+
+  // Each test names its sequence in its class
+  tests: [
+    {
+      name: tagctrl_reset_state
+      uvm_test: tagctrl_reset_state_test
+    }
+    {
+      name: tagctrl_register_map
+      uvm_test: tagctrl_register_map_test
+      reseed: 3
+    }
+    {
+      name: tagctrl_region_registers_readback
+      uvm_test: tagctrl_region_registers_readback_test
+      reseed: 3
+    }
+    {
+      name: tagctrl_control_start
+      uvm_test: tagctrl_control_start_test
+      reseed: 3
+    }
+    {
+      name: tagctrl_tag_roundtrip
+      uvm_test: tagctrl_tag_roundtrip_test
+      reseed: 5
+    }
+  ]
+
+  regressions: [
+    {
+      name: smoke
+      tests: ["tagctrl_reset_state", "tagctrl_tag_roundtrip"]
+    }
+    {
+      name: v1
+      tests: ["tagctrl_reset_state", "tagctrl_register_map", "tagctrl_region_registers_readback",
+              "tagctrl_control_start", "tagctrl_tag_roundtrip"]
+    }
+  ]
+}
