@@ -1,0 +1,47 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "axi_agent"
+  testpoints: [
+    {
+      name: smoke
+      desc: '''Random single transfers and bursts from the manager agent to the subordinate agent,
+            which answers from the defaults of its configuration: INCR, WRAP and FIXED bursts,
+            narrow and unaligned transfers, INCR bursts that end on a 4KB boundary, and INCR bursts
+            of more than 16 beats, with a write and a read of 256 (H.c A3.4.1). Before them, the
+            agent's transfer sequences, randomised with only the bus properties, send bursts whose
+            every byte must have an address that the bus carries and whose USER fits an ARUSER one
+            bit narrower than AWUSER, and a single write and a write burst are each started three
+            times and read back, the burst's last start with only its data cleared, so that each
+            start must send new data and report only its own request and responses. The
+            scoreboard compares what each transfer sequence got back with what the
+            manager's monitor saw and with what the subordinate's monitor saw, checks beat counts,
+            response codes and read data against a reference memory, and compares the subordinate's
+            memory with it at the end. Every W burst on every bus must belong to an AW request and
+            end with WLAST by the end of the test (H.c A3.3).'''
+      stage: V1
+      tests: ["axi_agent_smoke"]
+    }
+    {
+      name: widths
+      desc: '''The smoke traffic on other buses: 128 and 1024 bit data, 32 bit data with 2 bit IDs,
+            and a 12 bit address. On a narrow bus, only the ID, address and WSTRB bits that it has
+            connect the two agents. The other bits are undriven, and every check must ignore
+            them.'''
+      stage: V1
+      tests: ["axi_agent_wide_bus", "axi_agent_widest_bus", "axi_agent_narrow_id",
+              "axi_agent_narrow_addr", "axi_agent_narrow_pins"]
+    }
+    {
+      name: top_addr
+      desc: '''Bursts anywhere in a 64 bit address space from the agent's transfer sequences,
+            randomised with only the bus properties. Then WRAP bursts of several sizes and lengths
+            in the last bytes of the space, each beat read back on its own at the address that the
+            burst address equations give it (H.c A3.4.1), and a write to the last eight bytes cut
+            by a reset.'''
+      stage: V1
+      tests: ["axi_agent_top_addr"]
+    }
+  ]
+}

@@ -1,0 +1,86 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: axi_agent
+
+  // Self-test agents against each other and pulp_axi, with no DUT
+  dut: tb
+
+  tb: tb
+
+  // Simulator used to sign off this block
+  tool: xcelium
+
+  fusesoc_core: lowrisc:mocha_dv:axi_agent_sim:0.1
+
+  testplan: "{self_dir}/../data/axi_agent_testplan.hjson"
+
+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"]
+
+  // Check both protocol roles on every axi_if
+  sim_tops: ["axi_mgr_protocol_bind", "axi_sub_protocol_bind"]
+
+  // Default iterations, which individual tests may override
+  reseed: 3
+
+  uvm_test: axi_agent_base_test
+  uvm_test_seq: axi_agent_smoke_vseq
+
+  tests: [
+    {
+      name: axi_agent_smoke
+      uvm_test_seq: axi_agent_smoke_vseq
+    }
+    {
+      name: axi_agent_wide_bus
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=128"]
+    }
+    {
+      name: axi_agent_widest_bus
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=1024"]
+    }
+    {
+      name: axi_agent_narrow_id
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=32", "+axi_id_width=2"]
+    }
+    {
+      name: axi_agent_narrow_addr
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_addr_width=12"]
+    }
+    {
+      name: axi_agent_narrow_pins
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=32", "+axi_id_width=2", "+axi_addr_width=16",
+                 "+axi_undriven_footprint"]
+    }
+    {
+      name: axi_agent_top_addr
+      uvm_test_seq: axi_agent_top_addr_vseq
+      run_opts: ["+axi_addr_width=64"]
+    }
+  ]
+
+  regressions: [
+    {
+      name: smoke
+      tests: ["axi_agent_smoke"]
+    }
+    {
+      name: all
+      tests: [
+        "axi_agent_smoke",
+        "axi_agent_wide_bus",
+        "axi_agent_widest_bus",
+        "axi_agent_narrow_id",
+        "axi_agent_narrow_addr",
+        "axi_agent_narrow_pins",
+        "axi_agent_top_addr",
+      ]
+    }
+  ]
+}
