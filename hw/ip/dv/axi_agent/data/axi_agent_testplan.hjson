@@ -113,5 +113,51 @@
       stage: V1
       tests: ["axi_agent_rsp_order"]
     }
+    {
+      name: mapped_mem
+      desc: '''The subordinate backed by a memory model that overrides the byte access methods of
+            mem_model: mapped bytes read as the model's pattern until written, writes outside the
+            map are dropped and unmapped bytes read as the default byte.'''
+      stage: V1
+      tests: ["axi_agent_mapped_mem"]
+    }
+    {
+      name: lite
+      desc: '''AXI4-Lite at 64 and 32 bits, both agents in AXI4-Lite mode, with each strobe policy
+            of the subordinate (H.c B1.1). At 32 bits the subordinate sees X on every unstrobed
+            WDATA lane, which a manager may drive with any value (A3.4.4).'''
+      stage: V1
+      tests: ["axi_agent_lite", "axi_agent_lite_32"]
+    }
+    {
+      name: exclusive
+      desc: '''Exclusive reads and writes, with and without exclusive support in the subordinate,
+            including exclusive writes that fail because of an intervening write, also one made
+            while the exclusive read waits for its data, no exclusive read, an intervening
+            exclusive read of other bytes with the same ID, with or without
+            an error response, or an attribute other than AxREGION that differs from the read
+            (H.c A7.2), and an exclusive access to the last bytes of a 64 bit address space. The
+            subordinate agent orders a read at its AR handshake and a write at the later of its AW
+            and last W handshakes. H.c A6.1 allows the other order too. So after a write that was
+            in flight when the exclusive read was accepted, and whose data came after it, the next
+            two matching exclusive writes must both fail (A7.2.3).'''
+      stage: V1
+      tests: ["axi_agent_exclusive"]
+    }
+    {
+      name: reg_layer
+      desc: '''Register writes and checked reads through the register layer, with 32 bit registers
+            on 64 and 32 bit buses, AXI4 and AXI4-Lite, many accesses in flight at once and byte
+            fields written on their own. On AXI4-Lite every access carries one AxPROT value. A
+            two-byte access at an odd address must carry both bytes on their lanes (H.c A3.4.1,
+            A3.4.4). One test keeps the mirror with a uvm_reg_predictor fed by the manager's
+            monitor, which must ignore SLVERR responses and an exclusive write that fails (H.c
+            A7.2.3), and checks that the adapter reports only the bytes an unaligned transfer
+            carries. On AXI4, the manager has no ARUSER while AWUSER keeps its width, so register
+            reads must fit the AR channel's own USER width.'''
+      stage: V1
+      tests: ["axi_agent_reg_layer", "axi_agent_reg_layer_lite", "axi_agent_reg_layer_lite_32",
+              "axi_agent_reg_predictor"]
+    }
   ]
 }

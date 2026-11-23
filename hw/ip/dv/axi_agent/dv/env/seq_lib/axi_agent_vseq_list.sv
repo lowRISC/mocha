@@ -12,3 +12,7 @@
 `include "axi_agent_off_edge_vseq.sv"
 `include "axi_agent_preset_rsp_seq.sv"
 `include "axi_agent_rsp_order_vseq.sv"
+`include "axi_agent_mapped_mem_vseq.sv"
+`include "axi_agent_lite_vseq.sv"
+`include "axi_agent_exclusive_vseq.sv"
+`include "axi_agent_reg_layer_vseq.sv"
