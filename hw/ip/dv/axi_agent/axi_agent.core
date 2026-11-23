@@ -74,6 +74,9 @@ filesets:
       - seq_lib/axi_single_write_seq.svh: {is_include_file: true}
       - axi_mgr_agent.svh: {is_include_file: true}
 
+      - axi_sub_rsp_item.svh: {is_include_file: true}
+      - seq_lib/axi_sub_rsp_seq.svh: {is_include_file: true}
+
     file_type: systemVerilogSource
 
 targets:

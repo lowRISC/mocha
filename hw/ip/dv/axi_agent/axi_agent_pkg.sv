@@ -138,4 +138,9 @@ package axi_agent_pkg;
   `include "seq_lib/axi_single_read_seq.svh"
   `include "seq_lib/axi_single_write_seq.svh"
   `include "axi_mgr_agent.svh"
+
+  // The subordinate agent, its configuration, response policy and drivers
+  `include "axi_sub_rsp_item.svh"
+  typedef uvm_sequencer#(axi_sub_rsp_item) axi_sub_rsp_sequencer_t;
+  `include "seq_lib/axi_sub_rsp_seq.svh"
 endpackage
