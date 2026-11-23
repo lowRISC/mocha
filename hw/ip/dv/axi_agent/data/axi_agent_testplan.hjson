@@ -159,5 +159,34 @@
       tests: ["axi_agent_reg_layer", "axi_agent_reg_layer_lite", "axi_agent_reg_layer_lite_32",
               "axi_agent_reg_predictor"]
     }
+    {
+      name: pulp_interop
+      desc: '''The agents run against an independent AXI implementation, pulp_axi. Its random
+            manager runs against the subordinate agent, once with INCR bursts of up to 256 beats
+            only, so that pulp_axi's own axi_scoreboard checks the read data too. Its AXI4-Lite
+            driver runs against the subordinate agent, directly in AXI4-Lite mode and through
+            axi_lite_to_axi in AXI4 mode. The manager agent runs against axi_sim_mem,
+            axi_rand_slave, axi_lite_regs and, through axi_to_axi_lite, the subordinate agent in
+            AXI4-Lite mode. Through axi_to_axi_lite, the subordinate answers some transfers with
+            SLVERR, and each write burst must get the first error of its transfers (H.c B1.3.1).
+            Write bursts carry beats with no strobes, INCR and FIXED, whose transfers a bridge may
+            suppress (B1.1.3).'''
+      stage: V1
+      tests: ["axi_agent_pulp_mgr", "axi_agent_pulp_mgr_incr", "axi_agent_pulp_lite_mgr",
+              "axi_agent_sim_mem", "axi_agent_rand_slave", "axi_agent_lite_regs",
+              "axi_agent_lite_bridge", "axi_agent_lite_to_axi"]
+    }
+    {
+      name: xbar
+      desc: '''Two manager agents against three subordinate agents through pulp_axi's axi_xbar,
+            with the transaction limits, latency mode and pipeline of mocha's top-level crossbar,
+            64 bit addresses and data, and an address map of its own: routing to every subordinate,
+            IDs widened with the index of the manager port, transactions open at several
+            subordinates at once, and DECERR from the crossbar for an address that no subordinate
+            takes. At the end, each subordinate's memory holds only bytes whose address routes to
+            it.'''
+      stage: V1
+      tests: ["axi_agent_xbar"]
+    }
   ]
 }

@@ -42,6 +42,9 @@ filesets:
       - seq_lib/axi_agent_lite_vseq.sv: {is_include_file: true}
       - seq_lib/axi_agent_exclusive_vseq.sv: {is_include_file: true}
       - seq_lib/axi_agent_reg_layer_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_agent_pulp_vseqs.sv: {is_include_file: true}
+      - seq_lib/axi_agent_xbar_vseq.sv: {is_include_file: true}
+      - seq_lib/axi_agent_pulp_repro_vseqs.sv: {is_include_file: true}
     file_type: systemVerilogSource
 
 targets:

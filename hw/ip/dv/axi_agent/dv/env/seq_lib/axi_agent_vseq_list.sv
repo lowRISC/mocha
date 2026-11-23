@@ -16,3 +16,6 @@
 `include "axi_agent_lite_vseq.sv"
 `include "axi_agent_exclusive_vseq.sv"
 `include "axi_agent_reg_layer_vseq.sv"
+`include "axi_agent_pulp_vseqs.sv"
+`include "axi_agent_xbar_vseq.sv"
+`include "axi_agent_pulp_repro_vseqs.sv"

@@ -130,7 +130,127 @@
       uvm_test_seq: axi_agent_backpressure_vseq
       run_opts: ["+axi_drive_x_when_idle=1"]
     }
+    {
+      name: axi_agent_pulp_mgr
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr"]
+    }
+    {
+      name: axi_agent_pulp_mgr_incr
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=incr"]
+    }
+    {
+      name: axi_agent_pulp_lite_mgr
+      uvm_test_seq: axi_agent_pulp_lite_mgr_vseq
+      run_opts: ["+axi_link=pulp_lite_mgr"]
+    }
+    {
+      name: axi_agent_sim_mem
+      uvm_test_seq: axi_agent_sim_mem_vseq
+      run_opts: ["+axi_link=sim_mem"]
+    }
+    {
+      name: axi_agent_rand_slave
+      uvm_test_seq: axi_agent_rand_slave_vseq
+      run_opts: ["+axi_link=rand_slave"]
+    }
+    {
+      name: axi_agent_lite_regs
+      uvm_test_seq: axi_agent_lite_regs_vseq
+      run_opts: ["+axi_link=lite_regs"]
+    }
+    {
+      name: axi_agent_lite_bridge
+      uvm_test_seq: axi_agent_lite_bridge_vseq
+      run_opts: ["+axi_link=lite_bridge"]
+    }
+    {
+      name: axi_agent_lite_to_axi
+      uvm_test_seq: axi_agent_pulp_lite_mgr_vseq
+      run_opts: ["+axi_link=lite_to_axi"]
+    }
+    {
+      name: axi_agent_xbar
+      uvm_test_seq: axi_agent_xbar_vseq
+      run_opts: ["+axi_link=xbar"]
+    }
+    {
+      name: axi_agent_pulp_repro_ar_4kb
+      uvm_test_seq: axi_agent_pulp_repro_ar_4kb_vseq
+      run_opts: ["+axi_link=rand_slave", "+pulp_repro_ar_4kb", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_mgr_excl
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=excl", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_mgr_wrap
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=wrap", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_mgr_long_fixed
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=long_fixed", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_rand_slave
+      uvm_test_seq: axi_agent_pulp_repro_lite_rand_slave_vseq
+      run_opts: ["+axi_link=lite_rand_slave", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_rand_slave_reset
+      uvm_test_seq: axi_agent_pulp_repro_rand_slave_reset_vseq
+      run_opts: ["+axi_link=rand_slave", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_rand_slave_excl
+      uvm_test_seq: axi_agent_pulp_repro_rand_slave_excl_vseq
+      run_opts: ["+axi_link=rand_slave", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_rand
+      uvm_test_seq: axi_agent_pulp_repro_lite_rand_vseq
+      run_opts: ["+axi_link=pulp_lite_mgr", "+pulp_lite_rand", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_sim_mem_fixed
+      uvm_test_seq: axi_agent_pulp_repro_sim_mem_fixed_vseq
+      run_opts: ["+axi_link=sim_mem", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_rand_slave_held_b
+      uvm_test_seq: axi_agent_pulp_repro_rand_slave_held_b_vseq
+      run_opts: ["+axi_link=rand_slave", "+axi_link_serial_writes=0", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_bridge_wrap
+      uvm_test_seq: axi_agent_lite_bridge_vseq
+      run_opts: ["+axi_link=lite_bridge", "+axi_link_allows_wrap=1", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_bridge_decerr
+      uvm_test_seq: axi_agent_lite_bridge_vseq
+      run_opts: ["+axi_link=lite_bridge", "+axi_link_bridge_decerr=1", "+max_quit_count=100"]
+      reseed: 1
+    }
   ]
+
+  // pulp_axi's axi_scoreboard reports wrong read data with $warning, which no other pattern catches
+  run_fail_patterns: ["^.*Unexpected RData ID.*$"]
 
   regressions: [
     {
@@ -162,6 +282,15 @@
         "axi_agent_reg_layer_lite",
         "axi_agent_reg_layer_lite_32",
         "axi_agent_reg_predictor",
+        "axi_agent_pulp_mgr",
+        "axi_agent_pulp_mgr_incr",
+        "axi_agent_pulp_lite_mgr",
+        "axi_agent_sim_mem",
+        "axi_agent_rand_slave",
+        "axi_agent_lite_regs",
+        "axi_agent_lite_bridge",
+        "axi_agent_lite_to_axi",
+        "axi_agent_xbar",
       ]
     }
   ]
