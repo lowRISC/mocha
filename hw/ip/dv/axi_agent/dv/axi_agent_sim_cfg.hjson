@@ -63,6 +63,35 @@
       uvm_test_seq: axi_agent_top_addr_vseq
       run_opts: ["+axi_addr_width=64"]
     }
+    {
+      name: axi_agent_out_of_order
+      uvm_test_seq: axi_agent_out_of_order_vseq
+    }
+    {
+      name: axi_agent_backpressure
+      uvm_test_seq: axi_agent_backpressure_vseq
+    }
+    {
+      name: axi_agent_errors
+      uvm_test_seq: axi_agent_errors_vseq
+    }
+    {
+      name: axi_agent_reset
+      uvm_test_seq: axi_agent_reset_vseq
+    }
+    {
+      name: axi_agent_off_edge
+      uvm_test_seq: axi_agent_off_edge_vseq
+    }
+    {
+      name: axi_agent_rsp_order
+      uvm_test_seq: axi_agent_rsp_order_vseq
+    }
+    {
+      name: axi_agent_x_idle
+      uvm_test_seq: axi_agent_backpressure_vseq
+      run_opts: ["+axi_drive_x_when_idle=1"]
+    }
   ]
 
   regressions: [
@@ -80,6 +109,13 @@
         "axi_agent_narrow_addr",
         "axi_agent_narrow_pins",
         "axi_agent_top_addr",
+        "axi_agent_out_of_order",
+        "axi_agent_backpressure",
+        "axi_agent_errors",
+        "axi_agent_reset",
+        "axi_agent_off_edge",
+        "axi_agent_rsp_order",
+        "axi_agent_x_idle",
       ]
     }
   ]
