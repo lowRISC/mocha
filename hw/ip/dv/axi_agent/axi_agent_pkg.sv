@@ -5,6 +5,7 @@
 package axi_agent_pkg;
   import uvm_pkg::*;
   import axi_widths_pkg::*;
+  import mem_model_pkg::mem_model;
   `include "uvm_macros.svh"
   `include "dv_macros.svh"
 
@@ -84,6 +85,17 @@ package axi_agent_pkg;
 
   `include "axi_txn_response_item.svh"
 
+  // AXI4-Lite WSTRB policies: write strobed bytes, write all bytes, or return SLVERR unless all
+  // strobes are set (AMBA AXI H.c B1.1.3)
+  typedef enum {
+    AxiLiteStrbUse,
+    AxiLiteStrbIgnore,
+    AxiLiteStrbErrorPartial
+  } axi_lite_strb_policy_e;
+
+  // Subordinate memory uses the interfaces' maximum widths to support every bus configuration
+  typedef mem_model #(.AddrWidth(64), .DataWidth(1024)) axi_mem_model_t;
+
   `include "axi_mgr_write_request_driver.svh"
   `include "axi_mgr_write_data_driver.svh"
   `include "axi_mgr_write_response_driver.svh"
@@ -138,4 +150,21 @@ package axi_agent_pkg;
   `include "seq_lib/axi_single_read_seq.svh"
   `include "seq_lib/axi_single_write_seq.svh"
   `include "axi_mgr_agent.svh"
+
+  // The subordinate agent, its configuration, response policy and drivers
+  `include "axi_sub_ready_cfg.svh"
+  `include "axi_sub_agent_cfg.svh"
+  `include "axi_sub_rsp_item.svh"
+  typedef uvm_sequencer#(axi_sub_rsp_item) axi_sub_rsp_sequencer_t;
+  `include "seq_lib/axi_sub_rsp_seq.svh"
+  `include "axi_sub_txn.svh"
+  `include "axi_sub_state.svh"
+  `include "axi_sub_policy_driver.svh"
+  `include "axi_sub_driver_base.svh"
+  `include "axi_sub_write_request_driver.svh"
+  `include "axi_sub_write_data_driver.svh"
+  `include "axi_sub_write_response_driver.svh"
+  `include "axi_sub_read_request_driver.svh"
+  `include "axi_sub_read_data_driver.svh"
+  `include "axi_sub_agent.svh"
 endpackage

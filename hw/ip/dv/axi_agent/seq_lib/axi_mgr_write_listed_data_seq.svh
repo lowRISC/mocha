@@ -20,6 +20,9 @@ class axi_mgr_write_listed_data_seq extends axi_mgr_write_data_seq;
 
   extern function new(string name="");
 
+  // Send the list from its first item, so that the sequence can be started again
+  extern virtual task body();
+
   // Override axi_mgr_write_data_seq::populate_item to "produce" each beat by copying the next
   // caller-supplied item rather than randomising it.
   extern protected virtual function void populate_item(axi_write_data_item item, bit is_last);
@@ -32,6 +35,11 @@ function axi_mgr_write_listed_data_seq::new(string name="");
   super.new(name);
   m_idx = 0;
 endfunction
+
+task axi_mgr_write_listed_data_seq::body();
+  m_idx = 0;
+  super.body();
+endtask
 
 function void axi_mgr_write_listed_data_seq::populate_item(axi_write_data_item item, bit is_last);
   // This replaces the base class function. Items are copied from m_items. The base body()

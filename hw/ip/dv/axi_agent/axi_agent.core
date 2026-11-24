@@ -9,6 +9,7 @@ filesets:
     depend:
       - lowrisc:dv:dv_utils
       - lowrisc:dv:common_ifs
+      - lowrisc:dv:mem_model
     files:
       # Signal widths shared by the interfaces and the monitored items: must compile first.
       - axi_widths_pkg.sv
@@ -73,6 +74,21 @@ filesets:
       - seq_lib/axi_single_read_seq.svh: {is_include_file: true}
       - seq_lib/axi_single_write_seq.svh: {is_include_file: true}
       - axi_mgr_agent.svh: {is_include_file: true}
+
+      - axi_sub_ready_cfg.svh: {is_include_file: true}
+      - axi_sub_agent_cfg.svh: {is_include_file: true}
+      - axi_sub_rsp_item.svh: {is_include_file: true}
+      - seq_lib/axi_sub_rsp_seq.svh: {is_include_file: true}
+      - axi_sub_txn.svh: {is_include_file: true}
+      - axi_sub_state.svh: {is_include_file: true}
+      - axi_sub_policy_driver.svh: {is_include_file: true}
+      - axi_sub_driver_base.svh: {is_include_file: true}
+      - axi_sub_write_request_driver.svh: {is_include_file: true}
+      - axi_sub_write_data_driver.svh: {is_include_file: true}
+      - axi_sub_write_response_driver.svh: {is_include_file: true}
+      - axi_sub_read_request_driver.svh: {is_include_file: true}
+      - axi_sub_read_data_driver.svh: {is_include_file: true}
+      - axi_sub_agent.svh: {is_include_file: true}
 
     file_type: systemVerilogSource
 

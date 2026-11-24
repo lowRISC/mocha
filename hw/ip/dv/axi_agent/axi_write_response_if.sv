@@ -88,6 +88,12 @@ interface axi_write_response_if (input clk_i, input rst_ni);
     output buser  = buser_driven;
   endclocking
 
+  // A clocking block drive takes effect at the next clock edge. Clear BVALID as soon as reset
+  // asserts, so that a release at that edge cannot show the old value for a delta cycle.
+  always @(negedge rst_ni) begin
+    bvalid_driven = 1'b0;
+  end
+
   always_comb begin
     if (!rst_ni) begin
       bvalid_internal = '0;

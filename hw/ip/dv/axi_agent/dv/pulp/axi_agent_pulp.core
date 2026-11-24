@@ -1,0 +1,21 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_agent_pulp:0.1"
+description: "pulp_axi verification classes for the AXI agent self-test"
+
+filesets:
+  files_dv:
+    depend:
+      - pulp-platform.org::axi
+    files:
+      - rand_id_queue_pkg.sv
+      - ../../../../../vendor/pulp_axi/src/axi_test.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv

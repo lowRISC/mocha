@@ -11,12 +11,9 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
   local virtual axi_write_data_if m_vif;
   local virtual clk_rst_if m_clk_rst_vif;
 
-  // True if the interface is currently in reset. Maintained by monitor_reset().
-  //
-  // At the very start of the simulation, rst_ni might be 'x or 'z. This isn't considered a "proper"
-  // reset: in_reset can only be asserted by seeing rst_ni === 0 (and then cleared by seeing it
-  // become 1).
-  local bit m_in_reset;
+  // True once a clock edge has sampled rst_ni high since reset was released. VALID rises only after
+  // such an edge (H.c A3.1.2). Maintained by monitor_reset().
+  local bit m_release_sampled;
 
   // How to drive this channel's payload while it is idle. Set this with set_drive_x_when_idle
   // before run_phase; see axi_if::drive_x_when_idle for what the two settings mean.
@@ -43,8 +40,8 @@ class axi_mgr_write_data_driver extends uvm_driver#(axi_write_data_item, axi_sta
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
 
-  // Run forever, tracking rst_ni and maintaining an in_reset class variable. Calls clear_data when
-  // reset becomes asserted.
+  // Run forever, tracking rst_ni and maintaining the release_sampled class variable. Calls
+  // clear_data when reset becomes asserted.
   extern local task monitor_reset();
 
   // A task that is called at the start of a reset and also at the end of driving an item.
@@ -124,13 +121,28 @@ task axi_mgr_write_data_driver::get_and_drive();
 endtask
 
 task axi_mgr_write_data_driver::monitor_reset();
-  wait(!$isunknown(m_clk_rst_vif.rst_n));
-  m_in_reset = !m_clk_rst_vif.rst_n;
+  realtime release_time;
+
   forever begin
     wait (m_clk_rst_vif.rst_n);
-    m_in_reset = 0;
+
+    // An edge in the time step of the release may have sampled rst_ni low, so wait for a later one
+    release_time = $realtime;
+    fork : isolation_fork begin
+      fork
+        wait (!m_clk_rst_vif.rst_n);
+        begin
+          do begin
+            @(m_vif.mon_cb);
+          end while ($realtime == release_time);
+          m_release_sampled = 1'b1;
+        end
+      join_any
+      disable fork;
+    end join
+
     wait (!m_clk_rst_vif.rst_n);
-    m_in_reset = 1;
+    m_release_sampled = 1'b0;
     clear_data();
   end
 endtask
@@ -162,15 +174,18 @@ task axi_mgr_write_data_driver::clear_data();
 endtask
 
 task axi_mgr_write_data_driver::drive_req(output bit item_sent);
-  // If we are currently in reset, there is nothing to do. This check avoids a possible race if
-  // reset is asserted at the same time as the request appears: we don't want to set wvalid after
-  // monitor_reset has called clear_data.
-  if (m_in_reset) return;
+  // Return the item unsent while reset is asserted. This reads the pin, which monitor_reset() waits
+  // on too, so an item that arrives in the time step of the release, after the pin has risen, is
+  // kept whichever runs first.
+  if (m_clk_rst_vif.rst_n === 1'b0) return;
 
   fork : isolation_fork begin
     fork
-      wait(m_in_reset);
+      wait (m_clk_rst_vif.rst_n === 1'b0);
       begin
+        // An item that arrives as reset is released waits for an edge that samples it (H.c A3.1.2).
+        // The pin check keeps VALID low when reset asserts in the time step of that edge.
+        wait (m_release_sampled && m_clk_rst_vif.rst_n === 1'b1);
         set_data_from_req();
         m_vif.mgr_cb.wvalid <= 1;
 
@@ -190,6 +205,11 @@ task axi_mgr_write_data_driver::drive_req(output bit item_sent);
     join_any
     disable fork;
   end join
+
+  // A launch that reset cut short may have driven VALID after monitor_reset() cleared it
+  if (!item_sent) begin
+    clear_data();
+  end
 endtask
 
 task axi_mgr_write_data_driver::set_data_from_req();
