@@ -6,8 +6,9 @@
 // check VALID low during and immediately after reset, and the scoreboard rejects pre-reset
 // responses. Aborted writes leave bytes unknown until rewritten. Finally, reset under a write that
 // another write to the same bytes waits behind, then during the second start of a reused write
-// sequence, then during the second starts of reused B and R accept sequences. Last, start a write
-// and a read in the time step where reset is released.
+// sequence, then during the second starts of reused B and R accept sequences. Then start a write
+// and a read in the time step where reset is released. Last, reset for less than a clock period
+// under stalled AW, W and AR requests.
 
 class axi_agent_reset_vseq extends axi_agent_base_vseq;
   `uvm_object_utils(axi_agent_reset_vseq)
@@ -38,6 +39,11 @@ class axi_agent_reset_vseq extends axi_agent_base_vseq;
   // Start a write and a read in the time step where reset is released, which is a clock edge (H.c
   // A3.1.2). The drivers must hold VALID low until the next edge, and both must complete.
   extern protected task send_at_release();
+
+  // Stall AW, W and AR with VALID high, assert reset between edges and release it at the next edge.
+  // No VALID may rise before an edge has sampled the release (H.c A3.1.2), not even for a delta
+  // cycle when the release unmasks the interfaces.
+  extern protected task short_reset_under_stall();
 endclass : axi_agent_reset_vseq
 
 
@@ -82,6 +88,7 @@ task axi_agent_reset_vseq::body();
   reused_seq_cut_by_reset();
   reused_accepts_cut_by_reset();
   send_at_release();
+  short_reset_under_stall();
 endtask : body
 
 task axi_agent_reset_vseq::write_queued_across_reset();
@@ -291,3 +298,94 @@ task axi_agent_reset_vseq::send_at_release();
                          write_seq.has_full_transaction(), read_seq.has_full_transaction()))
   end
 endtask : send_at_release
+
+task axi_agent_reset_vseq::short_reset_under_stall();
+  axi_mgr_agent                 agent = p_sequencer.m_mgr_agent;
+  virtual axi_agent_probe_if    probe = cfg.m_probe_vif;
+  int unsigned                  bus_bytes = cfg.m_data_width / 8;
+  axi_agent_rand_req            wr_req = new_req();
+  axi_agent_rand_req            rd_req = new_req();
+  axi_mgr_txn_request_seq       aw_seq = axi_mgr_txn_request_seq::type_id::create("aw_seq");
+  axi_mgr_write_listed_data_seq w_seq = axi_mgr_write_listed_data_seq::type_id::create("w_seq");
+  axi_mgr_txn_request_seq       ar_seq = axi_mgr_txn_request_seq::type_id::create("ar_seq");
+  axi_write_data_item           beat = axi_write_data_item::type_id::create("beat");
+  bit [AxiMaxAddrWidth-1:0]     beat_addr;
+  int unsigned                  lower, upper;
+  bit                           early_rise;
+  bit                           mgr_records = cfg.m_mgr_records;
+
+  // Direct channel sequences have no axi_transfer_seq records for scoreboard comparison
+  cfg.m_mgr_records = 1'b0;
+
+  wr_req.m_len   = 0;
+  wr_req.m_burst = BurstIncr;
+  wr_req.m_lock  = 1'b0;
+  rd_req.m_len   = 0;
+  rd_req.m_burst = BurstIncr;
+  rd_req.m_lock  = 1'b0;
+  aw_seq.m_req   = wr_req;
+  ar_seq.m_req   = rd_req;
+  axi_beat_lanes(wr_req.m_addr, wr_req.m_size, wr_req.m_len, wr_req.m_burst, bus_bytes, 0,
+                 beat_addr, lower, upper);
+  beat.m_data = '0;
+  beat.m_strb = '0;
+  beat.m_user = '0;
+  for (int unsigned lane = lower; lane <= upper; lane++) begin
+    beat.m_data[8 * lane +: 8] = $urandom();
+    beat.m_strb[lane]          = 1'b1;
+  end
+  w_seq.m_items.push_back(beat);
+  `DV_CHECK_RANDOMIZE_FATAL(w_seq)
+
+  // Hold every READY low until reset, so that the three VALIDs stay high
+  foreach (cfg.m_sub_agent_cfgs[s]) begin
+    axi_sub_ready_cfg ready_cfgs[3] = '{cfg.m_sub_agent_cfgs[s].m_aw_ready,
+                                        cfg.m_sub_agent_cfgs[s].m_w_ready,
+                                        cfg.m_sub_agent_cfgs[s].m_ar_ready};
+
+    foreach (ready_cfgs[i]) begin
+      ready_cfgs[i].m_ready_before_valid_pct = 0;
+      ready_cfgs[i].m_min_valid_to_ready     = 1000;
+      ready_cfgs[i].m_max_valid_to_ready     = 1000;
+    end
+  end
+  wait_ready();
+  fork
+    aw_seq.start(agent.get_write_request_sequencer());
+    w_seq.start(agent.get_write_data_sequencer());
+    ar_seq.start(agent.get_read_request_sequencer());
+    begin
+      wait (probe.awvalid === 1'b1 && probe.wvalid === 1'b1 && probe.arvalid === 1'b1);
+      @(negedge cfg.clk_rst_vif.clk);
+      `uvm_info(get_full_name(), "Resetting the bus for half a clock period under stalled requests",
+                UVM_LOW)
+
+      // The three items are cut, so nothing may raise VALID until the next edge has come
+      fork
+        begin : watch_valid
+          @(posedge probe.awvalid or posedge probe.wvalid or posedge probe.arvalid);
+          early_rise = 1'b1;
+        end
+      join_none
+      cfg.clk_rst_vif.apply_reset(.reset_width_clks(1),
+                                  .rst_n_scheme(common_ifs_pkg::RstAssertSyncDeassertSync));
+      @(posedge cfg.clk_rst_vif.clk);
+      disable watch_valid;
+    end
+  join
+  if (early_rise) begin
+    `uvm_error(get_full_name(),
+               "VALID rose before an edge had sampled the release of a half-period reset.")
+  end
+  if (aw_seq.rsp.m_sending_complete || w_seq.rsp.m_sending_complete ||
+      ar_seq.rsp.m_sending_complete) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"The stalled AW, W and AR items cut by reset report m_sending_complete ",
+                          "%0b, %0b and %0b: expected 0, 0 and 0."},
+                         aw_seq.rsp.m_sending_complete, w_seq.rsp.m_sending_complete,
+                         ar_seq.rsp.m_sending_complete))
+  end
+  set_sub_ready(1'b1);
+  wait_ready();
+  cfg.m_mgr_records = mgr_records;
+endtask : short_reset_under_stall

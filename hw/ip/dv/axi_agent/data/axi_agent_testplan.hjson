@@ -84,14 +84,16 @@
       name: reset
       desc: '''Resets in the middle of traffic, at least one of which cuts an accepted write. Every
             transaction in flight is dropped, VALID is low at every edge in reset and at the first
-            edge after it (H.c A3.1.2), and nothing from before a reset is answered after it. Four
+            edge after it (H.c A3.1.2), and nothing from before a reset is answered after it. Five
             more resets follow. The first cuts a write that a second write to the same bytes waits
             behind, and the second write must be sent after reset release and complete. The next
             cuts the second start of a reused write sequence, which must then report no response and
             an incomplete transaction, and the third cuts the second starts of reused B and R accept
             sequences, which must report no response and take no handshake. A write and a read
             start in the time step where the fourth is released. Both must complete, with VALID low
-            at the first edge after the release.'''
+            at the first edge after the release. The fifth asserts between edges under stalled AW,
+            W and AR requests and is released at the next edge, and none of the three VALIDs may
+            rise before an edge has sampled the release, even for a delta cycle.'''
       stage: V1
       tests: ["axi_agent_reset"]
     }
