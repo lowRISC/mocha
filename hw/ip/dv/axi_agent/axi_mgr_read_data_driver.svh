@@ -11,13 +11,6 @@ class axi_mgr_read_data_driver extends uvm_driver#(axi_response_accept_item, uvm
   local virtual axi_read_data_if m_vif;
   local virtual clk_rst_if m_clk_rst_vif;
 
-  // True if the interface is currently in reset. Maintained by monitor_reset().
-  //
-  // At the very start of the simulation, rst_ni might be 'x or 'z. This isn't considered a "proper"
-  // reset: in_reset can only be asserted by seeing rst_ni === 0 (and then cleared by seeing it
-  // become 1).
-  local bit m_in_reset;
-
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
 
@@ -30,8 +23,7 @@ class axi_mgr_read_data_driver extends uvm_driver#(axi_response_accept_item, uvm
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
 
-  // Run forever, tracking rst_ni and maintaining an in_reset class variable. Clears rready in the
-  // clocking block when a reset is seen.
+  // Run forever, tracking rst_ni. Clears rready in the clocking block when a reset is seen.
   extern local task monitor_reset();
 
   // A task that drives the axi_response_accept_item in the req class variable
@@ -96,30 +88,28 @@ task axi_mgr_read_data_driver::get_and_drive();
 endtask
 
 task axi_mgr_read_data_driver::monitor_reset();
-  wait(!$isunknown(m_clk_rst_vif.rst_n));
-  m_in_reset = !m_clk_rst_vif.rst_n;
   forever begin
     wait (m_clk_rst_vif.rst_n);
-    m_in_reset = 0;
     wait (!m_clk_rst_vif.rst_n);
-    m_in_reset = 1;
     m_vif.mgr_cb.rready <= 1'b0;
   end
 endtask
 
 task axi_mgr_read_data_driver::drive_req();
+  bit accepted;
+
   // Set *some* response, which is the default axi_status_item (with m_sending_complete=0). This
   // will be overridden by an axi_read_data_item if we finish reading data.
   rsp = axi_status_item::type_id::create("rsp");
 
-  // If we are currently in reset, there is nothing to do. This check avoids a possible race if
-  // reset is asserted at the same time as the response appears: we don't want to set rready after
-  // monitor_reset has cleared it.
-  if (m_in_reset) return;
+  // Return the item unsent while reset is asserted. This reads the pin, which monitor_reset() waits
+  // on too, so an item that arrives in the time step of the release, after the pin has risen, is
+  // kept whichever runs first.
+  if (m_clk_rst_vif.rst_n === 1'b0) return;
 
   fork : isolation_fork begin
     fork
-      wait(m_in_reset);
+      wait (m_clk_rst_vif.rst_n === 1'b0);
       begin
         axi_read_data_item read_data_item;
         // Cycles elapsed since rvalid was first seen; zero means it has not been seen yet.
@@ -168,8 +158,14 @@ task axi_mgr_read_data_driver::drive_req();
         // Deassert rready. If the next accept follows immediately, its first iteration re-drives
         // rready before the next clock edge, so consecutive beats are still accepted seamlessly.
         m_vif.mgr_cb.rready <= 1'b0;
+        accepted = 1'b1;
       end
     join_any
     disable fork;
   end join
+
+  // An accept that reset cut short may have driven RREADY after monitor_reset() cleared it
+  if (!accepted) begin
+    m_vif.mgr_cb.rready <= 1'b0;
+  end
 endtask

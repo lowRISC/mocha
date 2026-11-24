@@ -204,7 +204,8 @@ endtask
 
 task axi_mgr_write_request_driver::drive_req(output bit item_sent);
   // Return the item unsent while reset is asserted. This reads the pin, which monitor_reset() waits
-  // on too, so an item that arrives in the time step of the release is kept whichever runs first.
+  // on too, so an item that arrives in the time step of the release, after the pin has risen, is
+  // kept whichever runs first.
   if (m_clk_rst_vif.rst_n === 1'b0) return;
 
   fork : isolation_fork begin

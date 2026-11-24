@@ -16,13 +16,6 @@ class axi_mgr_write_response_driver extends uvm_driver#(axi_response_accept_item
   local virtual axi_write_response_if m_vif;
   local virtual clk_rst_if m_clk_rst_vif;
 
-  // True if the interface is currently in reset. Maintained by monitor_reset().
-  //
-  // At the very start of the simulation, rst_ni might be 'x or 'z. This isn't considered a "proper"
-  // reset: in_reset can only be asserted by seeing rst_ni === 0 (and then cleared by seeing it
-  // become 1).
-  local bit m_in_reset;
-
   extern function new(string name, uvm_component parent);
   extern virtual task run_phase(uvm_phase phase);
 
@@ -35,8 +28,7 @@ class axi_mgr_write_response_driver extends uvm_driver#(axi_response_accept_item
   // Run forever, consuming and driving items from seq_item_port
   extern local task get_and_drive();
 
-  // Run forever, tracking rst_ni and maintaining an in_reset class variable. Clears bready in the
-  // clocking block when a reset is seen.
+  // Run forever, tracking rst_ni. Clears bready in the clocking block when a reset is seen.
   extern local task monitor_reset();
 
   // A task that drives the axi_response_accept_item in the req class variable
@@ -96,33 +88,31 @@ task axi_mgr_write_response_driver::get_and_drive();
 endtask
 
 task axi_mgr_write_response_driver::monitor_reset();
-  wait(!$isunknown(m_clk_rst_vif.rst_n));
-  m_in_reset = !m_clk_rst_vif.rst_n;
   forever begin
     wait (m_clk_rst_vif.rst_n);
-    m_in_reset = 0;
     wait (!m_clk_rst_vif.rst_n);
-    m_in_reset = 1;
     m_vif.mgr_cb.bready <= 1'b0;
   end
 endtask
 
 task axi_mgr_write_response_driver::drive_req();
+  bit accepted;
+
   // Create a default response, which is an axi_status_item with its default state
   // (m_sending_complete = 0). This will be overridden with an axi_write_response_item if a response
   // is read.
   rsp = axi_status_item::type_id::create("rsp");
 
-  // If we are currently in reset, there is nothing to do. This check avoids a possible race if
-  // reset is asserted at the same time as the response appears: we don't want to set bready after
-  // monitor_reset has cleared it.
-  if (m_in_reset) begin
+  // Return the item unsent while reset is asserted. This reads the pin, which monitor_reset() waits
+  // on too, so an item that arrives in the time step of the release, after the pin has risen, is
+  // kept whichever runs first.
+  if (m_clk_rst_vif.rst_n === 1'b0) begin
     return;
   end
 
   fork : isolation_fork begin
     fork
-      wait(m_in_reset);
+      wait (m_clk_rst_vif.rst_n === 1'b0);
       begin
         axi_write_response_item response;
         // Cycles elapsed since bvalid was first seen; zero means it has not been seen yet.
@@ -172,8 +162,14 @@ task axi_mgr_write_response_driver::drive_req();
         // bready before the next clock edge, so consecutive responses are still accepted
         // seamlessly.
         m_vif.mgr_cb.bready <= 1'b0;
+        accepted = 1'b1;
       end
     join_any
     disable fork;
   end join
+
+  // An accept that reset cut short may have driven BREADY after monitor_reset() cleared it
+  if (!accepted) begin
+    m_vif.mgr_cb.bready <= 1'b0;
+  end
 endtask
