@@ -64,6 +64,10 @@ The manager drivers answer every item at once, unsent, while reset is asserted.
 A sequence that can run into a reset must wait for reset to end itself.
 An item that arrives once reset is released waits for a rising edge that samples ARESETn high before its VALID rises (A3.1.2).
 
+A reset asserted in the time step of a rising edge is taken as asserted before that edge, by every agent.
+The drivers return the items in progress unsent, and the monitor and the subordinate drop what that edge sampled, as they drop every transaction in flight.
+The pins can still show VALID and READY high at that edge, but the reset drops that transfer at once, so only what the agents report depends on this choice.
+
 ## Subordinate
 
 The subordinate accepts requests on AW, W and AR, answers on B and R, and keeps its data in the `m_mem` of its `axi_sub_agent_cfg`.
@@ -208,7 +212,7 @@ Each feature, the tests that exercise it and the checks that cover it:
 | Memory models | `axi_agent_mapped_mem` | read data and memory compares |
 | AXI4-Lite | `axi_agent_lite`, `axi_agent_lite_32` | AXI4-Lite assertions, strobe policy prediction |
 | Exclusive accesses | `axi_agent_exclusive` | exclusive assertions, EXOKAY prediction in the scoreboard, including a write made while the exclusive read waits for its data, and two exclusive writes after a write whose data came after the read was accepted |
-| Reset | `axi_agent_reset`, `axi_agent_top_addr` | reset assertions, no response from before a reset, no response from a reused B or R accept sequence whose second start is cut by reset, a write waiting on the bytes of a write cut by reset sent after reset release and completed, a write and a read started as reset is released held to the next edge and completed, no transfer sent during reset, no AW, W or AR VALID rising before an edge has sampled the release of a half-period reset |
+| Reset | `axi_agent_reset`, `axi_agent_top_addr` | reset assertions, no response from before a reset, no response from a reused B or R accept sequence whose second start is cut by reset, a write waiting on the bytes of a write cut by reset sent after reset release and completed, a write and a read started as reset is released held to the next edge and completed, no transfer sent during reset, no AW, W or AR VALID rising before an edge has sampled the release of a half-period reset, an item at the edge where reset asserts reported unsent on each channel |
 | Register layer | `axi_agent_reg_layer`, `axi_agent_reg_layer_lite`, `axi_agent_reg_layer_lite_32`, `axi_agent_reg_predictor` | mirror checks, fixed AxPROT, failed exclusive writes kept out of the mirror, a two-byte access at an odd address, the adapter on unaligned transfers, register reads with no ARUSER while AWUSER keeps its width |
 | pulp_axi models and RTL | `axi_agent_pulp_mgr`, `axi_agent_pulp_mgr_incr`, `axi_agent_pulp_lite_mgr`, `axi_agent_sim_mem`, `axi_agent_rand_slave`, `axi_agent_lite_regs`, `axi_agent_lite_bridge`, `axi_agent_lite_to_axi`, `axi_agent_xbar` | the assertions and scoreboard checks above at both ends of the link, the bridge's combined responses, and pulp_axi's `axi_scoreboard` as described above. `dv/env/axi_agent_link_cfg.svh` lists what a link leaves out to avoid a known pulp_axi defect: unaligned FIXED bursts on `sim_mem`, WRAP bursts and overlapping writes on `rand_slave`, and WRAP bursts and DECERR on `lite_bridge` |
 

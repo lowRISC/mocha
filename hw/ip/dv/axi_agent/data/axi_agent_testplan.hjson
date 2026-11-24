@@ -93,7 +93,10 @@
             start in the time step where the fourth is released. Both must complete, with VALID low
             at the first edge after the release. The fifth asserts between edges under stalled AW,
             W and AR requests and is released at the next edge, and none of the three VALIDs may
-            rise before an edge has sampled the release, even for a delta cycle.'''
+            rise before an edge has sampled the release, even for a delta cycle. Five last resets
+            each assert in the time step of an edge where AW, W, AR, B or R VALID and READY are
+            high. The agents take such a reset as asserted before the edge, so the driver must
+            report its item unsent, and a write and a read afterwards must complete.'''
       stage: V1
       tests: ["axi_agent_reset"]
     }

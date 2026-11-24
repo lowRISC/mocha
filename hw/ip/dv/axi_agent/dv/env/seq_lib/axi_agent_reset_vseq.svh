@@ -7,8 +7,9 @@
 // responses. Aborted writes leave bytes unknown until rewritten. Finally, reset under a write that
 // another write to the same bytes waits behind, then during the second start of a reused write
 // sequence, then during the second starts of reused B and R accept sequences. Then start a write
-// and a read in the time step where reset is released. Last, reset for less than a clock period
-// under stalled AW, W and AR requests.
+// and a read in the time step where reset is released, and reset for less than a clock period
+// under stalled AW, W and AR requests. Last, assert reset in the time step of an edge that samples
+// a handshake, once for each channel.
 
 class axi_agent_reset_vseq extends axi_agent_base_vseq;
   `uvm_object_utils(axi_agent_reset_vseq)
@@ -44,6 +45,14 @@ class axi_agent_reset_vseq extends axi_agent_base_vseq;
   // No VALID may rise before an edge has sampled the release (H.c A3.1.2), not even for a delta
   // cycle when the release unmasks the interfaces.
   extern protected task short_reset_under_stall();
+
+  // Assert reset in the time step of an edge where AW, W, AR, B and then R VALID and READY are
+  // high, one channel per reset. The agents take the reset as asserted before that edge, so each
+  // driver must report its item unsent. A write and a read afterwards must complete.
+  extern protected task handshakes_at_reset_edge();
+
+  // Wait for VALID on a channel, then assert reset in the time step of the next edge
+  extern protected task reset_at_handshake(string chan);
 endclass : axi_agent_reset_vseq
 
 
@@ -89,6 +98,7 @@ task axi_agent_reset_vseq::body();
   reused_accepts_cut_by_reset();
   send_at_release();
   short_reset_under_stall();
+  handshakes_at_reset_edge();
 endtask : body
 
 task axi_agent_reset_vseq::write_queued_across_reset();
@@ -389,3 +399,172 @@ task axi_agent_reset_vseq::short_reset_under_stall();
   wait_ready();
   cfg.m_mgr_records = mgr_records;
 endtask : short_reset_under_stall
+
+task axi_agent_reset_vseq::handshakes_at_reset_edge();
+  axi_mgr_agent                 agent = p_sequencer.m_mgr_agent;
+  virtual axi_agent_probe_if    probe = cfg.m_probe_vif;
+  int unsigned                  bus_bytes = cfg.m_data_width / 8;
+  axi_agent_rand_req            wr_req = new_req();
+  axi_agent_rand_req            rd_req = new_req();
+  axi_agent_rand_req            after_req = new_req();
+  axi_mgr_txn_request_seq       aw_seq = axi_mgr_txn_request_seq::type_id::create("aw_seq");
+  axi_mgr_write_listed_data_seq w_seq = axi_mgr_write_listed_data_seq::type_id::create("w_seq");
+  axi_mgr_txn_request_seq       ar_seq = axi_mgr_txn_request_seq::type_id::create("ar_seq");
+  axi_mgr_write_response_seq    b_seq = axi_mgr_write_response_seq::type_id::create("b_seq");
+  axi_mgr_read_data_seq         r_seq = axi_mgr_read_data_seq::type_id::create("r_seq");
+  axi_write_data_item           beat = axi_write_data_item::type_id::create("beat");
+  axi_transfer_seq              write_seq, read_seq;
+  bit [AxiMaxAddrWidth-1:0]     beat_addr;
+  int unsigned                  lower, upper;
+  int unsigned                  prev_handshakes;
+  bit                           mgr_records = cfg.m_mgr_records;
+
+  // Direct channel sequences have no axi_transfer_seq records for scoreboard comparison
+  cfg.m_mgr_records = 1'b0;
+  set_sub_ready(1'b0);
+
+  wr_req.m_len   = 0;
+  wr_req.m_burst = BurstIncr;
+  wr_req.m_lock  = 1'b0;
+  rd_req.m_len   = 0;
+  rd_req.m_burst = BurstIncr;
+  rd_req.m_lock  = 1'b0;
+  aw_seq.m_req   = wr_req;
+  ar_seq.m_req   = rd_req;
+  axi_beat_lanes(wr_req.m_addr, wr_req.m_size, wr_req.m_len, wr_req.m_burst, bus_bytes, 0,
+                 beat_addr, lower, upper);
+  beat.m_data = '0;
+  beat.m_strb = '0;
+  beat.m_user = '0;
+  for (int unsigned lane = lower; lane <= upper; lane++) begin
+    beat.m_data[8 * lane +: 8] = $urandom();
+    beat.m_strb[lane]          = 1'b1;
+  end
+  w_seq.m_items.push_back(beat);
+  `DV_CHECK_RANDOMIZE_FATAL(w_seq)
+  b_seq.m_use_fixed_ready_without_valid_pct = 1'b1;
+  b_seq.m_fixed_ready_without_valid_pct     = 100;
+  r_seq.m_use_fixed_ready_without_valid_pct = 1'b1;
+  r_seq.m_fixed_ready_without_valid_pct     = 100;
+
+  // The probe reads the pins, so it counts each handshake and shows that the reset hit its edge
+  wait_ready();
+  prev_handshakes = probe.m_aw_handshakes;
+  fork
+    aw_seq.start(agent.get_write_request_sequencer());
+    reset_at_handshake("aw");
+  join
+  if (aw_seq.rsp.m_sending_complete || probe.m_aw_handshakes != prev_handshakes + 1) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"The AW request at the edge where reset asserted showed %0d handshakes ",
+                          "and reports m_sending_complete %0b: expected 1 and 0."},
+                         probe.m_aw_handshakes - prev_handshakes, aw_seq.rsp.m_sending_complete))
+  end
+
+  wait_ready();
+  prev_handshakes = probe.m_w_handshakes;
+  fork
+    w_seq.start(agent.get_write_data_sequencer());
+    reset_at_handshake("w");
+  join
+  if (w_seq.rsp.m_sending_complete || probe.m_w_handshakes != prev_handshakes + 1) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"The W beat at the edge where reset asserted showed %0d handshakes ",
+                          "and reports m_sending_complete %0b: expected 1 and 0."},
+                         probe.m_w_handshakes - prev_handshakes, w_seq.rsp.m_sending_complete))
+  end
+
+  wait_ready();
+  prev_handshakes = probe.m_ar_handshakes;
+  fork
+    ar_seq.start(agent.get_read_request_sequencer());
+    reset_at_handshake("ar");
+  join
+  if (ar_seq.rsp.m_sending_complete || probe.m_ar_handshakes != prev_handshakes + 1) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"The AR request at the edge where reset asserted showed %0d handshakes ",
+                          "and reports m_sending_complete %0b: expected 1 and 0."},
+                         probe.m_ar_handshakes - prev_handshakes, ar_seq.rsp.m_sending_complete))
+  end
+
+  // A whole write, then a B accept whose response comes at the edge where reset asserts
+  wait_ready();
+  fork
+    aw_seq.start(agent.get_write_request_sequencer());
+    w_seq.start(agent.get_write_data_sequencer());
+  join
+  prev_handshakes = probe.m_b_handshakes;
+  fork
+    b_seq.start(agent.get_write_response_sequencer());
+    reset_at_handshake("b");
+  join
+  if (b_seq.rsp != null || probe.m_b_handshakes != prev_handshakes + 1) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"The B accept at the edge where reset asserted showed %0d handshakes ",
+                          "and returned %0s response: expected 1 and none."},
+                         probe.m_b_handshakes - prev_handshakes, b_seq.rsp == null ? "no" : "a"))
+  end
+
+  // A read request, then an R accept whose beat comes at the edge where reset asserts
+  wait_ready();
+  ar_seq.start(agent.get_read_request_sequencer());
+  prev_handshakes = probe.m_r_handshakes;
+  fork
+    r_seq.start(agent.get_read_data_sequencer());
+    reset_at_handshake("r");
+  join
+  if (r_seq.rsp != null || probe.m_r_handshakes != prev_handshakes + 1) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"The R accept at the edge where reset asserted showed %0d handshakes ",
+                          "and returned %0s beat: expected 1 and none."},
+                         probe.m_r_handshakes - prev_handshakes, r_seq.rsp == null ? "no" : "a"))
+  end
+
+  // Nothing from those edges may remain: a write and a read of its bytes must complete and check
+  cfg.m_mgr_records = mgr_records;
+  set_sub_ready(1'b1);
+  wait_ready();
+  reserve(after_req);
+  send(after_req, 1'b1, write_seq);
+  send(after_req, 1'b0, read_seq);
+  unreserve(after_req);
+  if (!write_seq.has_full_transaction() || !read_seq.has_full_transaction()) begin
+    `uvm_error(get_full_name(),
+               $sformatf({"The write and the read after the resets at handshake edges report ",
+                          "has_full_transaction() %0b and %0b: expected 1 and 1."},
+                         write_seq.has_full_transaction(), read_seq.has_full_transaction()))
+  end
+endtask : handshakes_at_reset_edge
+
+task axi_agent_reset_vseq::reset_at_handshake(string chan);
+  virtual axi_agent_probe_if probe = cfg.m_probe_vif;
+
+  case (chan)
+    "aw": begin
+      wait (probe.awvalid === 1'b1);
+    end
+    "w": begin
+      wait (probe.wvalid === 1'b1);
+    end
+    "ar": begin
+      wait (probe.arvalid === 1'b1);
+    end
+    "b": begin
+      wait (probe.bvalid === 1'b1);
+    end
+    "r": begin
+      wait (probe.rvalid === 1'b1);
+    end
+    default: begin
+      `uvm_fatal(get_full_name(), $sformatf("There is no channel called %0s.", chan))
+    end
+  endcase
+
+  // READY is high, so the next edge samples a handshake. A synchronous assertion puts reset in the
+  // time step of that edge.
+  @(posedge cfg.clk_rst_vif.clk);
+  `uvm_info(get_full_name(),
+            $sformatf("Resetting the bus at the edge of a %0s handshake", chan), UVM_LOW)
+  cfg.clk_rst_vif.apply_reset(.reset_width_clks(10),
+                              .rst_n_scheme(common_ifs_pkg::RstAssertSyncDeassertSync));
+endtask : reset_at_handshake
