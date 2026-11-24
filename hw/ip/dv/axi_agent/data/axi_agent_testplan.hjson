@@ -14,12 +14,13 @@
             every byte must have an address that the bus carries and whose USER fits an ARUSER one
             bit narrower than AWUSER, and a single write and a write burst are each started three
             times and read back, the burst's last start with only its data cleared, so that each
-            start must send new data and report only its own request and responses. The
-            scoreboard compares what each transfer sequence got back with what the
-            manager's monitor saw and with what the subordinate's monitor saw, checks beat counts,
-            response codes and read data against a reference memory, and compares the subordinate's
-            memory with it at the end. Every W burst on every bus must belong to an AW request and
-            end with WLAST by the end of the test (H.c A3.3).'''
+            start must send new data and report only its own request and responses. A listed W
+            data sequence started twice must write its second data. The scoreboard compares what
+            each transfer sequence got back with what the manager's monitor saw and with what the
+            subordinate's monitor saw, checks beat counts, response codes and read data against a
+            reference memory, and compares the subordinate's memory with it at the end. Every W
+            burst on every bus must belong to an AW request and end with WLAST by the end of the
+            test (H.c A3.3).'''
       stage: V1
       tests: ["axi_agent_smoke"]
     }

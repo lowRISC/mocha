@@ -5,7 +5,7 @@
 // Test configuration-only responses with INCR, WRAP and FIXED bursts, narrow and unaligned
 // transfers, INCR bursts ending at 4KB boundaries, and 17- and 256-beat INCR bursts. First
 // randomize transfer sequences using only bus properties, then restart selected sequences three
-// times.
+// times, and a listed W data sequence twice.
 
 class axi_agent_smoke_vseq extends axi_agent_base_vseq;
   `uvm_object_utils(axi_agent_smoke_vseq)
@@ -24,6 +24,10 @@ class axi_agent_smoke_vseq extends axi_agent_base_vseq;
   // single-write data after the first start and clear only burst data on the third. Require fresh
   // data and results belonging only to each start.
   extern protected task reused_seqs();
+
+  // Send a single-beat write twice through direct AW, W and B sequences, with new data in the same
+  // listed W data sequence for the second start. The subordinate memory must hold that data.
+  extern protected task reused_listed_data();
 
   // Check zero-based start completed with one request and all responses, each OKAY
   extern protected function void check_reused(axi_transfer_seq seq, int unsigned start);
@@ -207,6 +211,63 @@ function void axi_agent_smoke_vseq::check_read_back(axi_transfer_seq          rd
   end
 endfunction : check_read_back
 
+task axi_agent_smoke_vseq::reused_listed_data();
+  axi_mgr_agent                 agent = p_sequencer.m_mgr_agent;
+  axi_mem_model_t               mem = cfg.m_sub_agent_cfgs[0].m_mem;
+  int unsigned                  bus_bytes = cfg.m_data_width / 8;
+  axi_agent_rand_req            req = new_req();
+  axi_mgr_txn_request_seq       aw_seq = axi_mgr_txn_request_seq::type_id::create("aw_seq");
+  axi_mgr_write_listed_data_seq w_seq = axi_mgr_write_listed_data_seq::type_id::create("w_seq");
+  axi_mgr_write_response_seq    b_seq = axi_mgr_write_response_seq::type_id::create("b_seq");
+  axi_write_data_item           beat = axi_write_data_item::type_id::create("beat");
+  bit [AxiMaxAddrWidth-1:0]     beat_addr;
+  int unsigned                  lower, upper;
+  bit                           mgr_records = cfg.m_mgr_records;
+
+  // Direct channel sequences have no axi_transfer_seq records for scoreboard comparison
+  cfg.m_mgr_records = 1'b0;
+
+  req.m_len    = 0;
+  req.m_burst  = BurstIncr;
+  req.m_lock   = 1'b0;
+  aw_seq.m_req = req;
+  axi_beat_lanes(req.m_addr, req.m_size, req.m_len, req.m_burst, bus_bytes, 0, beat_addr, lower,
+                 upper);
+  beat.m_data = '0;
+  beat.m_strb = '0;
+  beat.m_user = '0;
+  for (int unsigned lane = lower; lane <= upper; lane++) begin
+    beat.m_strb[lane] = 1'b1;
+  end
+  w_seq.m_items.push_back(beat);
+
+  for (int unsigned start = 0; start < 2; start++) begin
+    // The second start sends the complement, so that it changes every byte
+    for (int unsigned lane = lower; lane <= upper; lane++) begin
+      beat.m_data[8 * lane +: 8] = (start == 0) ? 8'($urandom()) : ~beat.m_data[8 * lane +: 8];
+    end
+    `DV_CHECK_RANDOMIZE_FATAL(w_seq)
+    wait_ready();
+    fork
+      aw_seq.start(agent.get_write_request_sequencer());
+      w_seq.start(agent.get_write_data_sequencer());
+      b_seq.start(agent.get_write_response_sequencer());
+    join
+    for (int unsigned lane = lower; lane <= upper; lane++) begin
+      bit [AxiMaxAddrWidth-1:0] byte_addr = beat_addr - (beat_addr % bus_bytes) + lane;
+
+      if (mem.read_byte(byte_addr) !== beat.m_data[8 * lane +: 8]) begin
+        `uvm_error(get_full_name(),
+                   $sformatf({"Start %0d of the listed W data sequence left 0x%0h at 0x%0h, but ",
+                              "its beat carries 0x%0h."},
+                             start, mem.read_byte(byte_addr), byte_addr,
+                             beat.m_data[8 * lane +: 8]))
+      end
+    end
+  end
+  cfg.m_mgr_records = mgr_records;
+endtask : reused_listed_data
+
 task axi_agent_smoke_vseq::body();
   need("fixed_bursts", 5);
   need("incr_bursts", 20);
@@ -226,5 +287,6 @@ task axi_agent_smoke_vseq::body();
   send_bus_seqs(30);
   reused_seqs();
   long_bursts();
+  reused_listed_data();
   super.body();
 endtask : body
