@@ -59,6 +59,12 @@
                  "+axi_undriven_footprint"]
     }
     {
+      name: axi_agent_narrow_pins_ones
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=32", "+axi_id_width=2", "+axi_addr_width=16",
+                 "+axi_undriven_footprint", "+axi_footprint_ones"]
+    }
+    {
       name: axi_agent_top_addr
       uvm_test_seq: axi_agent_top_addr_vseq
       run_opts: ["+axi_addr_width=64"]
@@ -266,6 +272,7 @@
         "axi_agent_narrow_id",
         "axi_agent_narrow_addr",
         "axi_agent_narrow_pins",
+        "axi_agent_narrow_pins_ones",
         "axi_agent_top_addr",
         "axi_agent_out_of_order",
         "axi_agent_backpressure",

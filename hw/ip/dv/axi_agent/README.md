@@ -8,7 +8,7 @@ The AXI agents drive and monitor either side of an AXI4 or AXI4-Lite bus, follow
 `axi_if` bundles the five channel interfaces (`aw_if`, `w_if`, `b_if`, `ar_if`, `r_if`) and the shared clock and reset.
 The channel interfaces use a max-footprint approach: signals are declared at their widest.
 The bus properties are set at run time through `set_*` calls: `set_addr_width`, `set_data_width`, `set_id_width`, `set_user_width`, `set_lite` and `set_drive_x_when_idle`.
-The monitor and the protocol assertions look only at the configured bits of each signal and the drivers read undriven bits as 0, so the bits above the configured widths may be left undriven.
+The monitor, the protocol assertions and the drivers look only at the configured bits of each ID, address, WSTRB and USER signal, so the bits above the configured widths may be left undriven or take any value.
 BRESP and RRESP are two bits wide (A3.4.5).
 `set_if_mode` picks `Manager` when `axi_mgr_agent` drives the bus, `Subordinate` when `axi_sub_agent` drives it and `Monitor` when nothing drives it.
 An agent drives the bus only when the interface is in its mode, and observes it otherwise.
@@ -197,8 +197,8 @@ Each feature, the tests that exercise it and the checks that cover it:
 
 | Feature | Tests | Checks |
 | --- | --- | --- |
-| Bursts, sizes, strobes and widths | `axi_agent_smoke`, `axi_agent_wide_bus`, `axi_agent_widest_bus`, `axi_agent_narrow_id`, `axi_agent_narrow_addr`, `axi_agent_narrow_pins`, `axi_agent_top_addr` | request legality, strobe and last-beat assertions, beat counts against AxLEN, scoreboard data and memory compares |
-| Undriven bits above the configured ID, address and WSTRB widths | `axi_agent_narrow_pins` | the monitors' X checks, the knownness and stability assertions, scoreboard compares |
+| Bursts, sizes, strobes and widths | `axi_agent_smoke`, `axi_agent_wide_bus`, `axi_agent_widest_bus`, `axi_agent_narrow_id`, `axi_agent_narrow_addr`, `axi_agent_narrow_pins`, `axi_agent_narrow_pins_ones`, `axi_agent_top_addr` | request legality, strobe and last-beat assertions, beat counts against AxLEN, scoreboard data and memory compares |
+| Undriven or high bits above the configured ID, address, WSTRB and USER widths | `axi_agent_narrow_pins`, `axi_agent_narrow_pins_ones` | the monitors' X checks, the knownness and stability assertions, scoreboard compares, ID ordering in both agents |
 | INCR bursts of more than 16 beats, up to 256 | the bus width tests above but `axi_agent_top_addr`, `axi_agent_pulp_mgr_incr` | beat counts against AxLEN, minimum counts of bursts longer than 16 beats and of 256 beats |
 | Transfer sequences randomised with only `set_bus_properties()` | the bus width tests above | the request drivers' width checks with ARUSER one bit narrower than AWUSER, and an address past the top of the bus rejected by the constraints |
 | Transfer sequences started again | the bus width tests above but `axi_agent_top_addr`, `axi_agent_reset` | new data read back after each start, one request and its own responses per start, one data, strobe and WUSER entry per beat after a start with only `m_beat_wdata` cleared, `has_full_transaction()` after a start cut by reset, the second data of a listed W data sequence started twice in memory |

@@ -95,6 +95,7 @@ module tb;
     .rlast     (r_if.rlast        ),
     .id_w_width(aw_if.id_w_width  ),
     .id_r_width(ar_if.id_r_width  ),
+    .addr_width(aw_if.addr_width  ),
     .data_width(w_if.data_width   ),
     .is_lite   (is_lite           )
   );
@@ -136,21 +137,26 @@ module tb;
   axi_if u_agent_mgr_if (.clk_i(agent_clk), .rst_ni(agent_rst_n));
   axi_if u_agent_sub_if (.clk_i(agent_clk), .rst_ni(agent_rst_n));
 
-  // With +axi_undriven_footprint, connect only the ID, address and WSTRB bits that the configured
-  // bus has. The other bits of each maximum-width signal are undriven at the far end.
-  int unsigned conn_id_bits   = AxiMaxIdWidth;
-  int unsigned conn_addr_bits = AxiMaxAddrWidth;
-  int unsigned conn_strb_bits = AxiMaxStrbWidth;
+  // With +axi_undriven_footprint, connect only the ID, address, WSTRB and USER bits that the
+  // configured bus has. The other bits of each maximum-width signal are undriven at the far end, or
+  // driven high with +axi_footprint_ones.
+  int unsigned conn_id_bits    = AxiMaxIdWidth;
+  int unsigned conn_addr_bits  = AxiMaxAddrWidth;
+  int unsigned conn_strb_bits  = AxiMaxStrbWidth;
+  int unsigned conn_user_bits  = AxiMaxDataWidth;
+  int unsigned conn_ruser_bits = AxiMaxDataWidth;
+  logic        conn_fill       = 1'bz;
 
   // With +axi_x_unstrobed_wdata, the subordinate agent sees X on every WDATA lane whose strobe is
   // low, which a manager may drive with any value (H.c A3.4.4)
   bit x_unstrobed_wdata;
 
-  // Return the low bits of a signal width bits wide, and Z above them
+  // Return the low bits of a signal width bits wide, and fill above them
   function automatic logic [AxiMaxDataWidth-1:0] low_bits_only(logic [AxiMaxDataWidth-1:0] value,
                                                               int unsigned             bits,
-                                                              int unsigned             width);
-    logic [AxiMaxDataWidth-1:0] result = {AxiMaxDataWidth{1'bz}};
+                                                              int unsigned             width,
+                                                              logic                    fill);
+    logic [AxiMaxDataWidth-1:0] result = {AxiMaxDataWidth{fill}};
 
     for (int unsigned i = 0; i < bits && i < width; i++) begin
       result[i] = value[i];
@@ -173,9 +179,9 @@ module tb;
 
   assign u_agent_sub_if.aw_if.awvalid  = u_agent_mgr_if.aw_if.awvalid;
   assign u_agent_sub_if.aw_if.awid     = low_bits_only(u_agent_mgr_if.aw_if.awid, conn_id_bits,
-                                                       AxiMaxIdWidth);
+                                                       AxiMaxIdWidth, conn_fill);
   assign u_agent_sub_if.aw_if.awaddr   = low_bits_only(u_agent_mgr_if.aw_if.awaddr, conn_addr_bits,
-                                                       AxiMaxAddrWidth);
+                                                       AxiMaxAddrWidth, conn_fill);
   assign u_agent_sub_if.aw_if.awregion = u_agent_mgr_if.aw_if.awregion;
   assign u_agent_sub_if.aw_if.awlen    = u_agent_mgr_if.aw_if.awlen;
   assign u_agent_sub_if.aw_if.awsize   = u_agent_mgr_if.aw_if.awsize;
@@ -184,7 +190,8 @@ module tb;
   assign u_agent_sub_if.aw_if.awcache  = u_agent_mgr_if.aw_if.awcache;
   assign u_agent_sub_if.aw_if.awprot   = u_agent_mgr_if.aw_if.awprot;
   assign u_agent_sub_if.aw_if.awqos    = u_agent_mgr_if.aw_if.awqos;
-  assign u_agent_sub_if.aw_if.awuser   = u_agent_mgr_if.aw_if.awuser;
+  assign u_agent_sub_if.aw_if.awuser   = low_bits_only(u_agent_mgr_if.aw_if.awuser, conn_user_bits,
+                                                       AxiMaxReqUserWidth, conn_fill);
   assign u_agent_mgr_if.aw_if.awready  = u_agent_sub_if.aw_if.awready;
 
   assign u_agent_sub_if.w_if.wvalid    = u_agent_mgr_if.w_if.wvalid;
@@ -193,23 +200,25 @@ module tb;
                                                      u_agent_mgr_if.w_if.wstrb) :
                                          u_agent_mgr_if.w_if.wdata;
   assign u_agent_sub_if.w_if.wstrb     = low_bits_only(u_agent_mgr_if.w_if.wstrb, conn_strb_bits,
-                                                       AxiMaxStrbWidth);
+                                                       AxiMaxStrbWidth, conn_fill);
   assign u_agent_sub_if.w_if.wlast     = u_agent_mgr_if.w_if.wlast;
-  assign u_agent_sub_if.w_if.wuser     = u_agent_mgr_if.w_if.wuser;
+  assign u_agent_sub_if.w_if.wuser     = low_bits_only(u_agent_mgr_if.w_if.wuser, conn_user_bits,
+                                                       AxiMaxDataUserWidth, conn_fill);
   assign u_agent_mgr_if.w_if.wready    = u_agent_sub_if.w_if.wready;
 
   assign u_agent_mgr_if.b_if.bvalid    = u_agent_sub_if.b_if.bvalid;
   assign u_agent_mgr_if.b_if.bid       = low_bits_only(u_agent_sub_if.b_if.bid, conn_id_bits,
-                                                       AxiMaxIdWidth);
+                                                       AxiMaxIdWidth, conn_fill);
   assign u_agent_mgr_if.b_if.bresp     = u_agent_sub_if.b_if.bresp;
-  assign u_agent_mgr_if.b_if.buser     = u_agent_sub_if.b_if.buser;
+  assign u_agent_mgr_if.b_if.buser     = low_bits_only(u_agent_sub_if.b_if.buser, conn_user_bits,
+                                                       AxiMaxRespUserWidth, conn_fill);
   assign u_agent_sub_if.b_if.bready    = u_agent_mgr_if.b_if.bready;
 
   assign u_agent_sub_if.ar_if.arvalid  = u_agent_mgr_if.ar_if.arvalid;
   assign u_agent_sub_if.ar_if.arid     = low_bits_only(u_agent_mgr_if.ar_if.arid, conn_id_bits,
-                                                       AxiMaxIdWidth);
+                                                       AxiMaxIdWidth, conn_fill);
   assign u_agent_sub_if.ar_if.araddr   = low_bits_only(u_agent_mgr_if.ar_if.araddr, conn_addr_bits,
-                                                       AxiMaxAddrWidth);
+                                                       AxiMaxAddrWidth, conn_fill);
   assign u_agent_sub_if.ar_if.arregion = u_agent_mgr_if.ar_if.arregion;
   assign u_agent_sub_if.ar_if.arlen    = u_agent_mgr_if.ar_if.arlen;
   assign u_agent_sub_if.ar_if.arsize   = u_agent_mgr_if.ar_if.arsize;
@@ -218,16 +227,18 @@ module tb;
   assign u_agent_sub_if.ar_if.arcache  = u_agent_mgr_if.ar_if.arcache;
   assign u_agent_sub_if.ar_if.arprot   = u_agent_mgr_if.ar_if.arprot;
   assign u_agent_sub_if.ar_if.arqos    = u_agent_mgr_if.ar_if.arqos;
-  assign u_agent_sub_if.ar_if.aruser   = u_agent_mgr_if.ar_if.aruser;
+  assign u_agent_sub_if.ar_if.aruser   = low_bits_only(u_agent_mgr_if.ar_if.aruser, conn_user_bits,
+                                                       AxiMaxReqUserWidth, conn_fill);
   assign u_agent_mgr_if.ar_if.arready  = u_agent_sub_if.ar_if.arready;
 
   assign u_agent_mgr_if.r_if.rvalid    = u_agent_sub_if.r_if.rvalid;
   assign u_agent_mgr_if.r_if.rid       = low_bits_only(u_agent_sub_if.r_if.rid, conn_id_bits,
-                                                       AxiMaxIdWidth);
+                                                       AxiMaxIdWidth, conn_fill);
   assign u_agent_mgr_if.r_if.rdata     = u_agent_sub_if.r_if.rdata;
   assign u_agent_mgr_if.r_if.rresp     = u_agent_sub_if.r_if.rresp;
   assign u_agent_mgr_if.r_if.rlast     = u_agent_sub_if.r_if.rlast;
-  assign u_agent_mgr_if.r_if.ruser     = u_agent_sub_if.r_if.ruser;
+  assign u_agent_mgr_if.r_if.ruser     = low_bits_only(u_agent_sub_if.r_if.ruser, conn_ruser_bits,
+                                                       AxiMaxRUserWidth, conn_fill);
   assign u_agent_sub_if.r_if.rready    = u_agent_mgr_if.r_if.rready;
 
   // pulp_mgr: pulp_axi random manager to subordinate agent
@@ -881,9 +892,14 @@ module tb;
     u_agent_sub_if.set_data_width(data_width);
     u_agent_sub_if.set_lite(is_lite);
     if ($test$plusargs("axi_undriven_footprint")) begin
-      conn_id_bits   = is_lite ? 0 : id_width;
-      conn_addr_bits = addr_width;
-      conn_strb_bits = data_width / 8;
+      conn_id_bits    = is_lite ? 0 : id_width;
+      conn_addr_bits  = addr_width;
+      conn_strb_bits  = data_width / 8;
+      conn_user_bits  = user_width;
+      conn_ruser_bits = 2 * user_width;
+      if ($test$plusargs("axi_footprint_ones")) begin
+        conn_fill = 1'b1;
+      end
     end
     x_unstrobed_wdata = $test$plusargs("axi_x_unstrobed_wdata");
 

@@ -27,12 +27,12 @@
     {
       name: widths
       desc: '''The smoke traffic on other buses: 128 and 1024 bit data, 32 bit data with 2 bit IDs,
-            and a 12 bit address. On a narrow bus, only the ID, address and WSTRB bits that it has
-            connect the two agents. The other bits are undriven, and every check must ignore
-            them.'''
+            and a 12 bit address. On a narrow bus, only the ID, address, WSTRB and USER bits that
+            it has connect the two agents. The other bits are undriven, or driven high, and every
+            check and every agent must ignore them.'''
       stage: V1
       tests: ["axi_agent_wide_bus", "axi_agent_widest_bus", "axi_agent_narrow_id",
-              "axi_agent_narrow_addr", "axi_agent_narrow_pins"]
+              "axi_agent_narrow_addr", "axi_agent_narrow_pins", "axi_agent_narrow_pins_ones"]
     }
     {
       name: top_addr

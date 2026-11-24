@@ -1180,13 +1180,12 @@ function void axi_agent_scoreboard::compare_link(axi_mon_item mgr_item, int unsi
     if (!$cast(sw, sub_item)) begin
       `uvm_fatal(get_full_name(), "A write was paired with a read across the link.")
     end
+    // The monitors mask USER to its configured width, so it is compared whole
     if (sw.m_awaddr !== mw.m_awaddr || sw.m_awlen !== mw.m_awlen ||
         sw.m_awsize !== mw.m_awsize || sw.m_awburst !== mw.m_awburst ||
         sw.m_awlock !== mw.m_awlock || sw.m_awcache !== mw.m_awcache ||
         sw.m_awprot !== mw.m_awprot || sw.m_awqos !== mw.m_awqos ||
-        sw.m_awregion !== mw.m_awregion ||
-        (sw.m_awuser & low_bits(cfg.m_awuser_width)) !==
-        (mw.m_awuser & low_bits(cfg.m_awuser_width))) begin
+        sw.m_awregion !== mw.m_awregion || sw.m_awuser !== mw.m_awuser) begin
       `uvm_error(get_full_name(), $sformatf("The subordinate end saw %0s for %0s.",
                                             sw.convert2string(), what))
     end
@@ -1197,8 +1196,7 @@ function void axi_agent_scoreboard::compare_link(axi_mon_item mgr_item, int unsi
       foreach (mw.m_wdata[n]) begin
         bit differs = ((sw.m_wstrb[n] & low_bits(bus_bytes)) !==
                        (mw.m_wstrb[n] & low_bits(bus_bytes))) ||
-                      ((sw.m_wuser[n] & low_bits(cfg.m_wuser_width)) !==
-                       (mw.m_wuser[n] & low_bits(cfg.m_wuser_width)));
+                      (sw.m_wuser[n] !== mw.m_wuser[n]);
 
         for (int unsigned lane = 0; lane < bus_bytes; lane++) begin
           if (mw.m_wstrb[n][lane] === 1'b1) begin
@@ -1211,9 +1209,7 @@ function void axi_agent_scoreboard::compare_link(axi_mon_item mgr_item, int unsi
         end
       end
     end
-    if (mw.m_bresp !== sw.m_bresp ||
-        (mw.m_buser & low_bits(cfg.m_buser_width)) !==
-        (sw.m_buser & low_bits(cfg.m_buser_width))) begin
+    if (mw.m_bresp !== sw.m_bresp || mw.m_buser !== sw.m_buser) begin
       `uvm_error(get_full_name(),
                  $sformatf("%0s got BRESP %0d BUSER 0x%0h, but the subordinate answered %0d 0x%0h.",
                            what, mw.m_bresp, mw.m_buser, sw.m_bresp, sw.m_buser))
@@ -1227,9 +1223,7 @@ function void axi_agent_scoreboard::compare_link(axi_mon_item mgr_item, int unsi
         sr.m_arsize !== mr.m_arsize || sr.m_arburst !== mr.m_arburst ||
         sr.m_arlock !== mr.m_arlock || sr.m_arcache !== mr.m_arcache ||
         sr.m_arprot !== mr.m_arprot || sr.m_arqos !== mr.m_arqos ||
-        sr.m_arregion !== mr.m_arregion ||
-        (sr.m_aruser & low_bits(cfg.m_aruser_width)) !==
-        (mr.m_aruser & low_bits(cfg.m_aruser_width))) begin
+        sr.m_arregion !== mr.m_arregion || sr.m_aruser !== mr.m_aruser) begin
       `uvm_error(get_full_name(), $sformatf("The subordinate end saw %0s for %0s.",
                                             sr.convert2string(), what))
     end
@@ -1241,8 +1235,7 @@ function void axi_agent_scoreboard::compare_link(axi_mon_item mgr_item, int unsi
         addr_t       beat_addr;
         int unsigned lower, upper;
         bit          differs = (mr.m_rresp[n] !== sr.m_rresp[n]) ||
-                               ((mr.m_ruser[n] & low_bits(cfg.m_ruser_width)) !==
-                                (sr.m_ruser[n] & low_bits(cfg.m_ruser_width)));
+                               (mr.m_ruser[n] !== sr.m_ruser[n]);
 
         beat_lanes(mr.m_araddr, mr.m_arsize, mr.m_arlen, mr.m_arburst, bus_bytes, n, beat_addr,
                    lower, upper);
@@ -1458,7 +1451,6 @@ endfunction : compare_mgr_driver_txns
 
 function void axi_agent_scoreboard::compare_txn(axi_agent_mgr_txn txn, axi_mon_item item);
   int unsigned                  bus_bytes = cfg.m_data_width / 8;
-  bit [AxiMaxRUserWidth-1:0]    ruser_mask = low_bits(cfg.m_ruser_width);
   axi_txn_request_item          req = txn.m_req;
   string                        what = txn.convert2string();
   axi_mon_write_item            witem;
@@ -1512,9 +1504,7 @@ function void axi_agent_scoreboard::compare_txn(axi_agent_mgr_txn txn, axi_mon_i
       end
     end
     if (txn.m_rsps.size() != 1 || witem.m_bresp !== txn.m_rsps[0].m_resp ||
-        witem.m_bid !== txn.m_rsps[0].m_id ||
-        (witem.m_buser & low_bits(cfg.m_buser_width)) !==
-        (txn.m_rsps[0].m_user & low_bits(cfg.m_buser_width))) begin
+        witem.m_bid !== txn.m_rsps[0].m_id || witem.m_buser !== txn.m_rsps[0].m_user) begin
       `uvm_error(get_full_name(),
                  $sformatf("The manager got a different B response for %0s than the bus, %0s.",
                            what, witem.convert2string()))
@@ -1549,7 +1539,7 @@ function void axi_agent_scoreboard::compare_txn(axi_agent_mgr_txn txn, axi_mon_i
                  upper);
       if (ritem.m_rresp[n] !== rsp.m_resp || rsp.m_id !== req.m_id ||
           rsp.m_last !== (n == num_beats - 1) ||
-          (ritem.m_ruser[n] & ruser_mask) !== (rsp.m_user & ruser_mask)) begin
+          ritem.m_ruser[n] !== rsp.m_user) begin
         `uvm_error(get_full_name(),
                    $sformatf({"R beat %0d of %0s: the manager got ID 0x%0h RRESP %0d RLAST %0b ",
                               "RUSER 0x%0h, but the bus carried RRESP %0d RUSER 0x%0h."},

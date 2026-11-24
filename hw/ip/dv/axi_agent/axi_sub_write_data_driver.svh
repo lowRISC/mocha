@@ -47,7 +47,7 @@ task axi_sub_write_data_driver::drive_channel();
       logic [AxiMaxStrbWidth-1:0] strb_mask = (AxiMaxStrbWidth'(1) << (m_vif.data_width / 8)) - 1;
 
       m_state.add_write_beat(m_vif.mon_cb.wdata, m_vif.mon_cb.wstrb & strb_mask,
-                             m_vif.mon_cb.wuser);
+                             m_vif.mon_cb.wuser & m_vif.wuser_mask);
     end
 
     waiting = (m_vif.mon_cb.wvalid === 1'b1 && m_vif.mon_cb.wready !== 1'b1);

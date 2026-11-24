@@ -151,9 +151,9 @@ task axi_mgr_write_response_driver::drive_req();
 
         // The response has just transferred: sample it.
         response = axi_write_response_item::type_id::create("response");
-        response.m_id   = m_vif.mon_cb.bid;
+        response.m_id   = m_vif.mon_cb.bid & m_vif.bid_mask;
         response.m_resp = axi_write_response_item::bresp_e'(m_vif.mon_cb.bresp);
-        response.m_user = m_vif.mon_cb.buser;
+        response.m_user = m_vif.mon_cb.buser & m_vif.buser_mask;
 
         // Set rsp, which will pass the response back to the sequencer.
         rsp = response;

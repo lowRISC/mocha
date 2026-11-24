@@ -147,11 +147,11 @@ task axi_mgr_read_data_driver::drive_req();
 
         // The beat transferred on the edge that just happened: sample the value.
         read_data_item = axi_read_data_item::type_id::create("read_data_item");
-        read_data_item.m_id   = m_vif.mon_cb.rid;
+        read_data_item.m_id   = m_vif.mon_cb.rid & m_vif.rid_mask;
         read_data_item.m_data = m_vif.mon_cb.rdata;
         read_data_item.m_resp = axi_read_data_item::rresp_e'(m_vif.mon_cb.rresp);
         read_data_item.m_last = m_vif.mon_cb.rlast;
-        read_data_item.m_user = m_vif.mon_cb.ruser;
+        read_data_item.m_user = m_vif.mon_cb.ruser & m_vif.ruser_mask;
 
         rsp = read_data_item;
 

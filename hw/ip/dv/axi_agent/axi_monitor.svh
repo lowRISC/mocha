@@ -167,7 +167,7 @@ task axi_monitor::collect_aw_channel();
     tr.m_awprot   = m_aw_vif.mon_cb.awprot;
     tr.m_awqos    = m_aw_vif.mon_cb.awqos;
     tr.m_awregion = m_aw_vif.mon_cb.awregion;
-    tr.m_awuser   = m_aw_vif.mon_cb.awuser;
+    tr.m_awuser   = m_aw_vif.mon_cb.awuser & in_use(m_aw_vif.user_req_width);
 
     if ($isunknown({tr.m_awid, tr.m_awaddr, tr.m_awlen, tr.m_awsize, tr.m_awburst})) begin
       `uvm_error("MON_X",
@@ -203,7 +203,7 @@ task axi_monitor::collect_w_channel();
     wstrb = m_w_vif.mon_cb.wstrb & in_use(m_w_vif.data_width / 8);
     w_burst.m_wdata.push_back(m_w_vif.mon_cb.wdata);
     w_burst.m_wstrb.push_back(wstrb);
-    w_burst.m_wuser.push_back(m_w_vif.mon_cb.wuser);
+    w_burst.m_wuser.push_back(m_w_vif.mon_cb.wuser & in_use(m_w_vif.user_data_width));
 
     if ($isunknown({wstrb, m_w_vif.mon_cb.wlast}) ||
         $isunknown(m_w_vif.mon_cb.wdata & w_data_mask(wstrb))) begin
@@ -249,7 +249,7 @@ task axi_monitor::collect_b_channel();
       tr = write_q_by_id[id].pop_front();
       tr.m_bid      = id;
       tr.m_bresp    = resp;
-      tr.m_buser    = m_b_vif.mon_cb.buser;
+      tr.m_buser    = m_b_vif.mon_cb.buser & in_use(m_b_vif.user_resp_width);
       `uvm_info(get_full_name(), $sformatf("FULL write complete: ID=%0h", id), UVM_HIGH)
       done = tr.item_clone();
       m_response_port.write(done);
@@ -281,7 +281,7 @@ task axi_monitor::collect_ar_channel();
     tr.m_arprot   = m_ar_vif.mon_cb.arprot;
     tr.m_arqos    = m_ar_vif.mon_cb.arqos;
     tr.m_arregion = m_ar_vif.mon_cb.arregion;
-    tr.m_aruser   = m_ar_vif.mon_cb.aruser;
+    tr.m_aruser   = m_ar_vif.mon_cb.aruser & in_use(m_ar_vif.user_req_width);
 
     if ($isunknown({tr.m_arid, tr.m_araddr, tr.m_arlen, tr.m_arsize, tr.m_arburst})) begin
       `uvm_error("MON_X",
@@ -320,7 +320,8 @@ task axi_monitor::collect_r_channel();
       tr.m_rid = id;
       tr.m_rdata.push_back(m_r_vif.mon_cb.rdata);
       tr.m_rresp.push_back(resp);
-      tr.m_ruser.push_back(m_r_vif.mon_cb.ruser);
+      tr.m_ruser.push_back(m_r_vif.mon_cb.ruser &
+                           in_use(m_r_vif.user_data_width + m_r_vif.user_resp_width));
       m_response_port.write(tr.item_clone());
 
       if (m_r_vif.mon_cb.rlast) begin

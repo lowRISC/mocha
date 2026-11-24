@@ -45,6 +45,7 @@ interface axi_agent_probe_if
 
   input int unsigned                id_w_width,
   input int unsigned                id_r_width,
+  input int unsigned                addr_width,
   input int unsigned                data_width,
   input bit                         is_lite
 );
@@ -292,12 +293,14 @@ interface axi_agent_probe_if
         m_r_id_q   = r_id;
       end
       if (aw_hs) begin
-        count_request(awaddr, awlen, awsize, awburst, awlock);
+        count_request(awaddr & ((AxiMaxAddrWidth'(1) << addr_width) - 1), awlen, awsize, awburst,
+                      awlock);
         m_same_id_requests += id_is_open(m_writes_open, aw_id);
         m_writes_open[m_next_write_seq++] = aw_id;
       end
       if (ar_hs) begin
-        count_request(araddr, arlen, arsize, arburst, arlock);
+        count_request(araddr & ((AxiMaxAddrWidth'(1) << addr_width) - 1), arlen, arsize, arburst,
+                      arlock);
         m_same_id_requests += id_is_open(m_reads_open, ar_id);
         m_reads_open[m_next_read_seq++] = ar_id;
       end
