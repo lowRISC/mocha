@@ -66,17 +66,17 @@ package axi_agent_env_pkg;
   typedef class axi_agent_env_cfg;
   typedef dv_base_env_cov #(.CFG_T(axi_agent_env_cfg)) axi_agent_env_cov;
 
-  `include "axi_agent_mapped_mem.sv"
-  `include "axi_agent_link_cfg.sv"
-  `include "axi_agent_env_cfg.sv"
-  `include "axi_agent_mgr_txn.sv"
-  `include "axi_agent_bridge_burst.sv"
-  `include "axi_agent_rand_req.sv"
-  `include "axi_agent_reg_block.sv"
-  `include "axi_agent_reg_ok_filter.sv"
-  `include "axi_agent_virtual_sequencer.sv"
-  `include "axi_agent_scoreboard.sv"
-  `include "axi_agent_env.sv"
-  `include "axi_agent_vseq_list.sv"
+  `include "axi_agent_mapped_mem.svh"
+  `include "axi_agent_link_cfg.svh"
+  `include "axi_agent_env_cfg.svh"
+  `include "axi_agent_mgr_txn.svh"
+  `include "axi_agent_bridge_burst.svh"
+  `include "axi_agent_rand_req.svh"
+  `include "axi_agent_reg_block.svh"
+  `include "axi_agent_reg_ok_filter.svh"
+  `include "axi_agent_virtual_sequencer.svh"
+  `include "axi_agent_scoreboard.svh"
+  `include "axi_agent_env.svh"
+  `include "axi_agent_vseq_list.svh"
 
 endpackage : axi_agent_env_pkg

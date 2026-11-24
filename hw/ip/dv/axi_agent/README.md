@@ -124,7 +124,7 @@ Its `bus2reg()` method converts register layer items and completed transactions 
 For a monitored transaction it reports only the bytes that the first beat carries, from its address to the end of its AxSIZE container (A3.4.1).
 It reports a burst or an error response with status `UVM_NOT_OK`.
 `uvm_reg_predictor` updates the mirror whatever the status says, so a testbench where error responses happen needs a filter between the monitor and the predictor that passes only `UVM_IS_OK` transactions.
-`dv/env/axi_agent_reg_ok_filter.sv` is such a filter.
+`dv/env/axi_agent_reg_ok_filter.svh` is such a filter.
 
 An exclusive write answered OKAY by a subordinate that supports exclusive accesses has failed and left memory unchanged (A7.2.3, A7.2.5).
 Call `set_exclusive_support(1)` on the adapter that feeds the predictor when the subordinate supports them, and the adapter reports such a write as `UVM_NOT_OK`.
@@ -210,7 +210,7 @@ Each feature, the tests that exercise it and the checks that cover it:
 | Exclusive accesses | `axi_agent_exclusive` | exclusive assertions, EXOKAY prediction in the scoreboard, including a write made while the exclusive read waits for its data, and two exclusive writes after a write whose data came after the read was accepted |
 | Reset | `axi_agent_reset`, `axi_agent_top_addr` | reset assertions, no response from before a reset, no response from a reused B or R accept sequence whose second start is cut by reset, a write waiting on the bytes of a write cut by reset sent after reset release and completed, a write and a read started as reset is released held to the next edge and completed, no transfer sent during reset |
 | Register layer | `axi_agent_reg_layer`, `axi_agent_reg_layer_lite`, `axi_agent_reg_layer_lite_32`, `axi_agent_reg_predictor` | mirror checks, fixed AxPROT, failed exclusive writes kept out of the mirror, a two-byte access at an odd address, the adapter on unaligned transfers, register reads with no ARUSER while AWUSER keeps its width |
-| pulp_axi models and RTL | `axi_agent_pulp_mgr`, `axi_agent_pulp_mgr_incr`, `axi_agent_pulp_lite_mgr`, `axi_agent_sim_mem`, `axi_agent_rand_slave`, `axi_agent_lite_regs`, `axi_agent_lite_bridge`, `axi_agent_lite_to_axi`, `axi_agent_xbar` | the assertions and scoreboard checks above at both ends of the link, the bridge's combined responses, and pulp_axi's `axi_scoreboard` as described above. `dv/env/axi_agent_link_cfg.sv` lists what a link leaves out to avoid a known pulp_axi defect: unaligned FIXED bursts on `sim_mem`, WRAP bursts and overlapping writes on `rand_slave`, and WRAP bursts and DECERR on `lite_bridge` |
+| pulp_axi models and RTL | `axi_agent_pulp_mgr`, `axi_agent_pulp_mgr_incr`, `axi_agent_pulp_lite_mgr`, `axi_agent_sim_mem`, `axi_agent_rand_slave`, `axi_agent_lite_regs`, `axi_agent_lite_bridge`, `axi_agent_lite_to_axi`, `axi_agent_xbar` | the assertions and scoreboard checks above at both ends of the link, the bridge's combined responses, and pulp_axi's `axi_scoreboard` as described above. `dv/env/axi_agent_link_cfg.svh` lists what a link leaves out to avoid a known pulp_axi defect: unaligned FIXED bursts on `sim_mem`, WRAP bursts and overlapping writes on `rand_slave`, and WRAP bursts and DECERR on `lite_bridge` |
 
 The `axi_agent_pulp_repro_*` tests reproduce places where a pulp_axi model departs from H.c.
 They fail while the model has its defect, so they are not in the `all` regression.

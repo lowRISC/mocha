@@ -12,7 +12,7 @@ filesets:
       - lowrisc:mocha_dv:axi_agent_env:0.1
     files:
       - axi_agent_test_pkg.sv
-      - axi_agent_base_test.sv: {is_include_file: true}
+      - axi_agent_base_test.svh: {is_include_file: true}
     file_type: systemVerilogSource
 
 targets:

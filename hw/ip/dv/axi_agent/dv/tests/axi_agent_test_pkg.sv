@@ -12,6 +12,6 @@ package axi_agent_test_pkg;
   `include "uvm_macros.svh"
   `include "dv_macros.svh"
 
-  `include "axi_agent_base_test.sv"
+  `include "axi_agent_base_test.svh"
 
 endpackage : axi_agent_test_pkg
