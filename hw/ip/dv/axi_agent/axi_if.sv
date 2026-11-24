@@ -24,6 +24,16 @@ interface axi_if (input wire clk_i, input wire rst_ni);
   // sampling outside a handshake. Set with set_drive_x_when_idle().
   bit drive_x_when_idle = 1'b1;
 
+  // Settings of the protocol assertions bound into this interface by sva/: mgr_* for the checks on
+  // manager outputs, sub_* for those on subordinate outputs. Set with the functions below.
+  bit          mgr_disable_sva            = 1'b0;
+  bit          sub_disable_sva            = 1'b0;
+  int unsigned mgr_max_ready_wait         = 0;
+  int unsigned sub_max_ready_wait         = 0;
+  int unsigned mgr_max_output_delay_ps    = 0;
+  int unsigned sub_max_output_delay_ps    = 0;
+  int unsigned max_reset_release_delay_ps = 0;
+
   // Clock and reset are driven externally
   clk_rst_if u_clk_rst_if (.clk(clk_i), .rst_n(rst_ni));
 
@@ -80,4 +90,39 @@ interface axi_if (input wire clk_i, input wire rst_ni);
   function automatic void set_drive_x_when_idle(bit drive_x);
     drive_x_when_idle = drive_x;
   endfunction: set_drive_x_when_idle
+
+  // Turn off the checks on manager or subordinate outputs, for a negative test
+  function automatic void set_mgr_disable_sva(bit disable_sva);
+    mgr_disable_sva = disable_sva;
+  endfunction: set_mgr_disable_sva
+
+  function automatic void set_sub_disable_sva(bit disable_sva);
+    sub_disable_sva = disable_sva;
+  endfunction: set_sub_disable_sva
+
+  // Most cycles a VALID may wait for the manager's BREADY or RREADY, or for the subordinate's
+  // AWREADY, WREADY or ARREADY. AXI sets no bound, so 0, the default, leaves it unbounded.
+  function automatic void set_mgr_max_ready_wait(int unsigned cycles);
+    mgr_max_ready_wait = cycles;
+  endfunction: set_mgr_max_ready_wait
+
+  function automatic void set_sub_max_ready_wait(int unsigned cycles);
+    sub_max_ready_wait = cycles;
+  endfunction: set_sub_max_ready_wait
+
+  // Latest time after a rising edge at which manager or subordinate outputs may change, for a
+  // model that drives them after the edge. The default, 0, allows a change only in the time step
+  // of the edge (A3.1.1).
+  function automatic void set_mgr_max_output_delay_ps(int unsigned delay_ps);
+    mgr_max_output_delay_ps = delay_ps;
+  endfunction: set_mgr_max_output_delay_ps
+
+  function automatic void set_sub_max_output_delay_ps(int unsigned delay_ps);
+    sub_max_output_delay_ps = delay_ps;
+  endfunction: set_sub_max_output_delay_ps
+
+  // The same bound for ARESETn rising (A3.1.2)
+  function automatic void set_max_reset_release_delay_ps(int unsigned delay_ps);
+    max_reset_release_delay_ps = delay_ps;
+  endfunction: set_max_reset_release_delay_ps
 endinterface: axi_if

@@ -2142,10 +2142,10 @@ package axi_test;
                   $warning("Unexpected RData ID: %0h \n \
                             Addr:     %h \n \
                             Byte Idx: %h \n \
-                            Exp Data: %h \n \
+                            Exp Data: %s \n \
                             Act Data: %h \n \
                             BeatData: %h",
-                  r_beat.r_id, beat_address+j, idx_data, exp_data, act_data, r_beat.r_data);
+                  r_beat.r_id, beat_address+j, idx_data, $sformatf("%p", exp_data), act_data, r_beat.r_data);
                 end
               end
             end

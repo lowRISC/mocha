@@ -1,0 +1,22 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+name: "lowrisc:mocha_dv:axi_agent_sva:0.1"
+description: "AXI protocol assertion interfaces, manager and subordinate side"
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:prim:assert
+      - lowrisc:mocha_dv:axi_agent:0.1
+    files:
+      - axi_mgr_protocol_sva_if.sv
+      - axi_mgr_protocol_bind.sv
+      - axi_sub_protocol_sva_if.sv
+      - axi_sub_protocol_bind.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv

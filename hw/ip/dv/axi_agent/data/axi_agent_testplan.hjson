@@ -1,0 +1,192 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "axi_agent"
+  testpoints: [
+    {
+      name: smoke
+      desc: '''Random single transfers and bursts from the manager agent to the subordinate agent,
+            which answers from the defaults of its configuration: INCR, WRAP and FIXED bursts,
+            narrow and unaligned transfers, INCR bursts that end on a 4KB boundary, and INCR bursts
+            of more than 16 beats, with a write and a read of 256 (H.c A3.4.1). Before them, the
+            agent's transfer sequences, randomised with only the bus properties, send bursts whose
+            every byte must have an address that the bus carries and whose USER fits an ARUSER one
+            bit narrower than AWUSER, and a single write and a write burst are each started three
+            times and read back, the burst's last start with only its data cleared, so that each
+            start must send new data and report only its own request and responses. The
+            scoreboard compares what each transfer sequence got back with what the
+            manager's monitor saw and with what the subordinate's monitor saw, checks beat counts,
+            response codes and read data against a reference memory, and compares the subordinate's
+            memory with it at the end. Every W burst on every bus must belong to an AW request and
+            end with WLAST by the end of the test (H.c A3.3).'''
+      stage: V1
+      tests: ["axi_agent_smoke"]
+    }
+    {
+      name: widths
+      desc: '''The smoke traffic on other buses: 128 and 1024 bit data, 32 bit data with 2 bit IDs,
+            and a 12 bit address. On a narrow bus, only the ID, address and WSTRB bits that it has
+            connect the two agents. The other bits are undriven, and every check must ignore
+            them.'''
+      stage: V1
+      tests: ["axi_agent_wide_bus", "axi_agent_widest_bus", "axi_agent_narrow_id",
+              "axi_agent_narrow_addr", "axi_agent_narrow_pins"]
+    }
+    {
+      name: top_addr
+      desc: '''Bursts anywhere in a 64 bit address space from the agent's transfer sequences,
+            randomised with only the bus properties. Then WRAP bursts of several sizes and lengths
+            in the last bytes of the space, each beat read back on its own at the address that the
+            burst address equations give it (H.c A3.4.1), and a write to the last eight bytes cut
+            by a reset.'''
+      stage: V1
+      tests: ["axi_agent_top_addr"]
+    }
+    {
+      name: out_of_order
+      desc: '''Many transactions in flight, with the subordinate answering writes and reads out of
+            order across IDs and interleaving read data across IDs, while keeping the order within
+            each ID (AMBA AXI H.c A5.1). The test needs reordered writes and reads, interleaved
+            read beats and requests that reuse an ID in flight.'''
+      stage: V1
+      tests: ["axi_agent_out_of_order"]
+    }
+    {
+      name: backpressure
+      desc: '''Random READY on every channel at both ends, with READY before VALID, READY held low
+            after VALID and back-to-back transfers, and random response latency. The test needs
+            each of these on all five channels. Then fixed READY delays stall every transfer the
+            same number of edges with the READY-wait bound of the assertions set to it, and the
+            longest stall on each channel must reach the bound. Last, with one write and one read
+            in flight at most, every AW and AR must wait its full READY delay after VALID, also
+            when VALID came before the previous transaction completed.'''
+      stage: V1
+      tests: ["axi_agent_backpressure"]
+    }
+    {
+      name: idle_x
+      desc: '''Both agents drive X on every payload whose VALID is low, so a receiver that samples
+            outside a handshake picks up X.'''
+      stage: V1
+      tests: ["axi_agent_x_idle"]
+    }
+    {
+      name: errors
+      desc: '''SLVERR and DECERR, from an address region and from the subordinate's response
+            sequence, each predicted by the scoreboard from the policy that the subordinate gave
+            the transaction. A write answered with an error leaves memory unchanged.'''
+      stage: V1
+      tests: ["axi_agent_errors"]
+    }
+    {
+      name: reset
+      desc: '''Resets in the middle of traffic, at least one of which cuts an accepted write. Every
+            transaction in flight is dropped, VALID is low at every edge in reset and at the first
+            edge after it (H.c A3.1.2), and nothing from before a reset is answered after it. Four
+            more resets follow. The first cuts a write that a second write to the same bytes waits
+            behind, and the second write must be sent after reset release and complete. The next
+            cuts the second start of a reused write sequence, which must then report no response and
+            an incomplete transaction, and the third cuts the second starts of reused B and R accept
+            sequences, which must report no response and take no handshake. A write and a read
+            start in the time step where the fourth is released. Both must complete, with VALID low
+            at the first edge after the release.'''
+      stage: V1
+      tests: ["axi_agent_reset"]
+    }
+    {
+      name: off_edge
+      desc: '''Requests that reach the manager drivers between clock edges while READY is already
+            high, and B and R accepts that start between edges while VALID is already high. Each
+            transfer still takes exactly one handshake (H.c A3.2.1).'''
+      stage: V1
+      tests: ["axi_agent_off_edge"]
+    }
+    {
+      name: rsp_order
+      desc: '''Response policy items go to transactions in the order the subordinate accepts them:
+            a read first, a write first, and a write and a read accepted at one edge, where the
+            write takes the first item. Transactions after the items run out get the defaults. Then
+            single writes, W beat first or AW first, and reads with latencies of 0, 1, 2 and 5
+            check that a response with latency L is first valid L + 1 edges after the edge that made
+            its transaction answerable.'''
+      stage: V1
+      tests: ["axi_agent_rsp_order"]
+    }
+    {
+      name: mapped_mem
+      desc: '''The subordinate backed by a memory model that overrides the byte access methods of
+            mem_model: mapped bytes read as the model's pattern until written, writes outside the
+            map are dropped and unmapped bytes read as the default byte.'''
+      stage: V1
+      tests: ["axi_agent_mapped_mem"]
+    }
+    {
+      name: lite
+      desc: '''AXI4-Lite at 64 and 32 bits, both agents in AXI4-Lite mode, with each strobe policy
+            of the subordinate (H.c B1.1). At 32 bits the subordinate sees X on every unstrobed
+            WDATA lane, which a manager may drive with any value (A3.4.4).'''
+      stage: V1
+      tests: ["axi_agent_lite", "axi_agent_lite_32"]
+    }
+    {
+      name: exclusive
+      desc: '''Exclusive reads and writes, with and without exclusive support in the subordinate,
+            including exclusive writes that fail because of an intervening write, also one made
+            while the exclusive read waits for its data, no exclusive read, an intervening
+            exclusive read of other bytes with the same ID, with or without
+            an error response, or an attribute other than AxREGION that differs from the read
+            (H.c A7.2), and an exclusive access to the last bytes of a 64 bit address space. The
+            subordinate agent orders a read at its AR handshake and a write at the later of its AW
+            and last W handshakes. H.c A6.1 allows the other order too. So after a write that was
+            in flight when the exclusive read was accepted, and whose data came after it, the next
+            two matching exclusive writes must both fail (A7.2.3).'''
+      stage: V1
+      tests: ["axi_agent_exclusive"]
+    }
+    {
+      name: reg_layer
+      desc: '''Register writes and checked reads through the register layer, with 32 bit registers
+            on 64 and 32 bit buses, AXI4 and AXI4-Lite, many accesses in flight at once and byte
+            fields written on their own. On AXI4-Lite every access carries one AxPROT value. A
+            two-byte access at an odd address must carry both bytes on their lanes (H.c A3.4.1,
+            A3.4.4). One test keeps the mirror with a uvm_reg_predictor fed by the manager's
+            monitor, which must ignore SLVERR responses and an exclusive write that fails (H.c
+            A7.2.3), and checks that the adapter reports only the bytes an unaligned transfer
+            carries. On AXI4, the manager has no ARUSER while AWUSER keeps its width, so register
+            reads must fit the AR channel's own USER width.'''
+      stage: V1
+      tests: ["axi_agent_reg_layer", "axi_agent_reg_layer_lite", "axi_agent_reg_layer_lite_32",
+              "axi_agent_reg_predictor"]
+    }
+    {
+      name: pulp_interop
+      desc: '''The agents run against an independent AXI implementation, pulp_axi. Its random
+            manager runs against the subordinate agent, once with INCR bursts of up to 256 beats
+            only, so that pulp_axi's own axi_scoreboard checks the read data too. Its AXI4-Lite
+            driver runs against the subordinate agent, directly in AXI4-Lite mode and through
+            axi_lite_to_axi in AXI4 mode. The manager agent runs against axi_sim_mem,
+            axi_rand_slave, axi_lite_regs and, through axi_to_axi_lite, the subordinate agent in
+            AXI4-Lite mode. Through axi_to_axi_lite, the subordinate answers some transfers with
+            SLVERR, and each write burst must get the first error of its transfers (H.c B1.3.1).
+            Write bursts carry beats with no strobes, INCR and FIXED, whose transfers a bridge may
+            suppress (B1.1.3).'''
+      stage: V1
+      tests: ["axi_agent_pulp_mgr", "axi_agent_pulp_mgr_incr", "axi_agent_pulp_lite_mgr",
+              "axi_agent_sim_mem", "axi_agent_rand_slave", "axi_agent_lite_regs",
+              "axi_agent_lite_bridge", "axi_agent_lite_to_axi"]
+    }
+    {
+      name: xbar
+      desc: '''Two manager agents against three subordinate agents through pulp_axi's axi_xbar,
+            with the transaction limits, latency mode and pipeline of mocha's top-level crossbar,
+            64 bit addresses and data, and an address map of its own: routing to every subordinate,
+            IDs widened with the index of the manager port, transactions open at several
+            subordinates at once, and DECERR from the crossbar for an address that no subordinate
+            takes. At the end, each subordinate's memory holds only bytes whose address routes to
+            it.'''
+      stage: V1
+      tests: ["axi_agent_xbar"]
+    }
+  ]
+}
