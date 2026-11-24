@@ -1,0 +1,304 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: axi_agent
+
+  // Self-test agents against each other and pulp_axi, with no DUT
+  dut: tb
+
+  tb: tb
+
+  // Simulator used to sign off this block
+  tool: xcelium
+
+  fusesoc_core: lowrisc:mocha_dv:axi_agent_sim:0.1
+
+  testplan: "{self_dir}/../data/axi_agent_testplan.hjson"
+
+  import_cfgs: ["{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"]
+
+  // Check both protocol roles on every axi_if
+  sim_tops: ["axi_mgr_protocol_bind", "axi_sub_protocol_bind"]
+
+  // Default iterations, which individual tests may override
+  reseed: 3
+
+  uvm_test: axi_agent_base_test
+  uvm_test_seq: axi_agent_smoke_vseq
+
+  tests: [
+    {
+      name: axi_agent_smoke
+      uvm_test_seq: axi_agent_smoke_vseq
+    }
+    {
+      name: axi_agent_wide_bus
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=128"]
+    }
+    {
+      name: axi_agent_widest_bus
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=1024"]
+    }
+    {
+      name: axi_agent_narrow_id
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=32", "+axi_id_width=2"]
+    }
+    {
+      name: axi_agent_narrow_addr
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_addr_width=12"]
+    }
+    {
+      name: axi_agent_narrow_pins
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=32", "+axi_id_width=2", "+axi_addr_width=16",
+                 "+axi_undriven_footprint"]
+    }
+    {
+      name: axi_agent_narrow_pins_ones
+      uvm_test_seq: axi_agent_smoke_vseq
+      run_opts: ["+axi_data_width=32", "+axi_id_width=2", "+axi_addr_width=16",
+                 "+axi_undriven_footprint", "+axi_footprint_ones"]
+    }
+    {
+      name: axi_agent_top_addr
+      uvm_test_seq: axi_agent_top_addr_vseq
+      run_opts: ["+axi_addr_width=64"]
+    }
+    {
+      name: axi_agent_out_of_order
+      uvm_test_seq: axi_agent_out_of_order_vseq
+    }
+    {
+      name: axi_agent_backpressure
+      uvm_test_seq: axi_agent_backpressure_vseq
+    }
+    {
+      name: axi_agent_errors
+      uvm_test_seq: axi_agent_errors_vseq
+    }
+    {
+      name: axi_agent_reset
+      uvm_test_seq: axi_agent_reset_vseq
+    }
+    {
+      name: axi_agent_off_edge
+      uvm_test_seq: axi_agent_off_edge_vseq
+    }
+    {
+      name: axi_agent_rsp_order
+      uvm_test_seq: axi_agent_rsp_order_vseq
+    }
+    {
+      name: axi_agent_mapped_mem
+      uvm_test_seq: axi_agent_mapped_mem_vseq
+    }
+    {
+      name: axi_agent_lite
+      uvm_test_seq: axi_agent_lite_vseq
+      run_opts: ["+axi_lite=1"]
+    }
+    {
+      name: axi_agent_lite_32
+      uvm_test_seq: axi_agent_lite_vseq
+      run_opts: ["+axi_lite=1", "+axi_data_width=32", "+axi_x_unstrobed_wdata"]
+    }
+    {
+      name: axi_agent_exclusive
+      uvm_test_seq: axi_agent_exclusive_vseq
+      run_opts: ["+axi_addr_width=64"]
+    }
+    {
+      name: axi_agent_reg_layer
+      uvm_test_seq: axi_agent_reg_layer_vseq
+    }
+    {
+      name: axi_agent_reg_layer_lite
+      uvm_test_seq: axi_agent_reg_layer_vseq
+      run_opts: ["+axi_lite=1"]
+    }
+    {
+      name: axi_agent_reg_layer_lite_32
+      uvm_test_seq: axi_agent_reg_layer_vseq
+      run_opts: ["+axi_lite=1", "+axi_data_width=32"]
+    }
+    {
+      name: axi_agent_reg_predictor
+      uvm_test_seq: axi_agent_reg_layer_vseq
+      run_opts: ["+axi_reg_predictor=1"]
+    }
+    {
+      name: axi_agent_x_idle
+      uvm_test_seq: axi_agent_backpressure_vseq
+      run_opts: ["+axi_drive_x_when_idle=1"]
+    }
+    {
+      name: axi_agent_pulp_mgr
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr"]
+    }
+    {
+      name: axi_agent_pulp_mgr_incr
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=incr"]
+    }
+    {
+      name: axi_agent_pulp_lite_mgr
+      uvm_test_seq: axi_agent_pulp_lite_mgr_vseq
+      run_opts: ["+axi_link=pulp_lite_mgr"]
+    }
+    {
+      name: axi_agent_sim_mem
+      uvm_test_seq: axi_agent_sim_mem_vseq
+      run_opts: ["+axi_link=sim_mem"]
+    }
+    {
+      name: axi_agent_rand_slave
+      uvm_test_seq: axi_agent_rand_slave_vseq
+      run_opts: ["+axi_link=rand_slave"]
+    }
+    {
+      name: axi_agent_lite_regs
+      uvm_test_seq: axi_agent_lite_regs_vseq
+      run_opts: ["+axi_link=lite_regs"]
+    }
+    {
+      name: axi_agent_lite_bridge
+      uvm_test_seq: axi_agent_lite_bridge_vseq
+      run_opts: ["+axi_link=lite_bridge"]
+    }
+    {
+      name: axi_agent_lite_to_axi
+      uvm_test_seq: axi_agent_pulp_lite_mgr_vseq
+      run_opts: ["+axi_link=lite_to_axi"]
+    }
+    {
+      name: axi_agent_xbar
+      uvm_test_seq: axi_agent_xbar_vseq
+      run_opts: ["+axi_link=xbar"]
+    }
+    {
+      name: axi_agent_pulp_repro_ar_4kb
+      uvm_test_seq: axi_agent_pulp_repro_ar_4kb_vseq
+      run_opts: ["+axi_link=rand_slave", "+pulp_repro_ar_4kb", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_mgr_excl
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=excl", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_mgr_wrap
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=wrap", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_mgr_long_fixed
+      uvm_test_seq: axi_agent_pulp_mgr_vseq
+      run_opts: ["+axi_link=pulp_mgr", "+pulp_mgr_kind=long_fixed", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_rand_slave
+      uvm_test_seq: axi_agent_pulp_repro_lite_rand_slave_vseq
+      run_opts: ["+axi_link=lite_rand_slave", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_rand_slave_reset
+      uvm_test_seq: axi_agent_pulp_repro_rand_slave_reset_vseq
+      run_opts: ["+axi_link=rand_slave", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_rand_slave_excl
+      uvm_test_seq: axi_agent_pulp_repro_rand_slave_excl_vseq
+      run_opts: ["+axi_link=rand_slave", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_rand
+      uvm_test_seq: axi_agent_pulp_repro_lite_rand_vseq
+      run_opts: ["+axi_link=pulp_lite_mgr", "+pulp_lite_rand", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_sim_mem_fixed
+      uvm_test_seq: axi_agent_pulp_repro_sim_mem_fixed_vseq
+      run_opts: ["+axi_link=sim_mem", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_rand_slave_held_b
+      uvm_test_seq: axi_agent_pulp_repro_rand_slave_held_b_vseq
+      run_opts: ["+axi_link=rand_slave", "+axi_link_serial_writes=0", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_bridge_wrap
+      uvm_test_seq: axi_agent_lite_bridge_vseq
+      run_opts: ["+axi_link=lite_bridge", "+axi_link_allows_wrap=1", "+max_quit_count=100"]
+      reseed: 1
+    }
+    {
+      name: axi_agent_pulp_repro_lite_bridge_decerr
+      uvm_test_seq: axi_agent_lite_bridge_vseq
+      run_opts: ["+axi_link=lite_bridge", "+axi_link_bridge_decerr=1", "+max_quit_count=100"]
+      reseed: 1
+    }
+  ]
+
+  // pulp_axi's axi_scoreboard reports wrong read data with $warning, which no other pattern catches
+  run_fail_patterns: ["^.*Unexpected RData ID.*$"]
+
+  regressions: [
+    {
+      name: smoke
+      tests: ["axi_agent_smoke"]
+    }
+    {
+      name: all
+      tests: [
+        "axi_agent_smoke",
+        "axi_agent_wide_bus",
+        "axi_agent_widest_bus",
+        "axi_agent_narrow_id",
+        "axi_agent_narrow_addr",
+        "axi_agent_narrow_pins",
+        "axi_agent_narrow_pins_ones",
+        "axi_agent_top_addr",
+        "axi_agent_out_of_order",
+        "axi_agent_backpressure",
+        "axi_agent_errors",
+        "axi_agent_reset",
+        "axi_agent_off_edge",
+        "axi_agent_rsp_order",
+        "axi_agent_x_idle",
+        "axi_agent_mapped_mem",
+        "axi_agent_lite",
+        "axi_agent_lite_32",
+        "axi_agent_exclusive",
+        "axi_agent_reg_layer",
+        "axi_agent_reg_layer_lite",
+        "axi_agent_reg_layer_lite_32",
+        "axi_agent_reg_predictor",
+        "axi_agent_pulp_mgr",
+        "axi_agent_pulp_mgr_incr",
+        "axi_agent_pulp_lite_mgr",
+        "axi_agent_sim_mem",
+        "axi_agent_rand_slave",
+        "axi_agent_lite_regs",
+        "axi_agent_lite_bridge",
+        "axi_agent_lite_to_axi",
+        "axi_agent_xbar",
+      ]
+    }
+  ]
+}

@@ -91,6 +91,12 @@ interface axi_write_data_if (input clk_i, input rst_ni);
     input  wuser;
   endclocking
 
+  // A clocking block drive takes effect at the next clock edge. Clear WVALID as soon as reset
+  // asserts, so that a release at that edge cannot show the old value for a delta cycle.
+  always @(negedge rst_ni) begin
+    wvalid_driven = 1'b0;
+  end
+
   always_comb begin
     if (!rst_ni) begin
       wvalid_internal = '0;

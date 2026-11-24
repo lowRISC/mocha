@@ -138,6 +138,12 @@ interface axi_read_request_if (input clk_i, input rst_ni);
     input  aruser;
   endclocking
 
+  // A clocking block drive takes effect at the next clock edge. Clear ARVALID as soon as reset
+  // asserts, so that a release at that edge cannot show the old value for a delta cycle.
+  always @(negedge rst_ni) begin
+    arvalid_driven = 1'b0;
+  end
+
   always_comb begin
     if (!rst_ni) begin
       arvalid_internal  = '0;
