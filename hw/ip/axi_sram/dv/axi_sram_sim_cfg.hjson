@@ -1,0 +1,46 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: axi_sram
+  dut:  axi_sram
+  tb:   tb
+  tool: xcelium
+  fusesoc_core: lowrisc:mocha_dv:axi_sram_sim:0
+
+  testplan: "{proj_root}/hw/ip/axi_sram/data/axi_sram_testplan.hjson"
+
+  import_cfgs: [
+    "{proj_root}/hw/vendor/lowrisc_ip/dv/tools/dvsim/common_sim_cfg.hjson"
+  ]
+
+  reseed: 1
+  uvm_test: axi_sram_base_test
+
+  tests: [
+    {
+      name: "axi_sram_write_read",
+      uvm_test_seq: "axi_sram_write_read_vseq"
+    }
+    {
+      name: "axi_sram_rst_sanity",
+      uvm_test_seq: "axi_sram_rst_sanity_vseq"
+    }
+    {
+      name: "axi_sram_tag_write",
+      uvm_test_seq: "axi_sram_tag_write_vseq"
+    }
+    {
+      name: "axi_sram_cap_ruser",
+      uvm_test_seq: "axi_sram_cap_ruser_vseq"
+    }
+  ]
+
+  regressions: [
+    {
+      name: smoke
+      tests: ["axi_sram_rst_sanity", "axi_sram_write_read", "axi_sram_tag_write", "axi_sram_cap_ruser"]
+    }
+    { name: "block" }
+  ]
+}

@@ -1,0 +1,21 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:axi_sram_test"
+description: "axi_sram block-level UVM tests"
+
+filesets:
+  files_test:
+    depend:
+      - lowrisc:mocha_dv:axi_sram_seq
+    files:
+      - axi_sram_test_pkg.sv
+      - axi_sram_base_test.svh: {is_include_file: true}
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_test
