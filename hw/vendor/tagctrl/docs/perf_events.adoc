@@ -1,0 +1,133 @@
+= Performance events
+
+The following lists currently supported performance events usable in the `perf_events` registers.
+Unsupported indices never increment.
+
+[NOTE]
+====
+This is a work-in-progress.
+Events may be removed in future versions.
+====
+
+Events are allocated based on the following regions:
+
+[cols="~m,~"]
+|===
+| Range | Type
+
+| 0x000-0x010 | General
+
+| 0x010-0x030 | Tag lookup engine
+
+| 0x040-0x050 | Root cache
+
+| 0x050-0x060 | Leaf cache
+
+| 0x0f0-0x100 | Config
+|===
+
+
+== General events
+
+[cols="~m,~m,~"]
+|===
+| Index | Name | Description
+
+| 0x00  | Zero                 | Never increment
+
+| 0x01  | One                  | Always increment (one per cycle)
+|===
+
+== Tag lookup engine events
+
+[cols="~m,~m,~"]
+|===
+| Index | Name | Description
+
+| 0x10  | TagReadReqStart      | New tag read request
+
+| 0x11  | TagWriteReqStart     | New tag write request
+
+| 0x12  | TagAnyReqStart       | New tag read/write request
+
+| 0x13  | TagReadBlocked       | Cycles waiting to retire tag read
+
+| 0x14  | TagWriteBlocked      | Cycles waiting to retire tag write
+
+| 0x15  | TagAnyBlocked        | Cycles waiting to retire tag read/write
+
+| 0x16  | TagReadRootBlocked   | Cycles waiting to retire tag read with root response not received
+
+| 0x17  | TagReadLeafBlocked   | Cycles waiting to retire tag read with leaf response not received
+
+| 0x18  | TagWriteRootBlocked  | Cycles waiting to retire tag write with root response not received
+
+| 0x19  | TagWriteLeafBlocked  | Cycles waiting to retire tag write with leaf response not received
+
+| 0x1a  | TagAnyRootBlocked    | Cycles waiting to retire tag read/write with root response not received
+
+| 0x1b  | TagAnyLeafBlocked    | Cycles waiting to retire tag read/write with leaf response not received
+
+| 0x1c  | TagReadZero          | Tag read response all zeros
+
+| 0x1d  | TagWriteZero         | Tag write request all zeros
+
+| 0x1e  | TagAnyZero           | Tag read/write all zeros
+
+| 0x1f  | TagReadRootZero      | Root was zero on tag read
+
+| 0x20  | TagWriteRootZero     | Root was zero on tag write
+
+| 0x21  | TagAnyRootZero       | Root was zero on tag read/write
+|===
+
+== Cache events
+
+These are the events exposed by the HPDCache.
+See the HPDCache docs for more information on their interpretation.
+
+[cols="~m,~m,~m"]
+|===
+| Root Index | Leaf Index | Name
+
+| 0x40       | 0x50       | {Root,Leaf}CacheWriteMiss
+
+| 0x41       | 0x51       | {Root,Leaf}CacheReadMiss
+
+| 0x42       | 0x52       | {Root,Leaf}CacheUncachedReq
+
+| 0x43       | 0x53       | {Root,Leaf}CacheCMOReq
+
+| 0x44       | 0x54       | {Root,Leaf}CacheWriteReq
+
+| 0x45       | 0x55       | {Root,Leaf}CacheReadReq
+
+| 0x46       | 0x56       | {Root,Leaf}CachePrefetchReq
+
+| 0x47       | 0x57       | {Root,Leaf}CacheReqOnHold
+
+| 0x48       | 0x58       | {Root,Leaf}CacheRTabRollback
+
+| 0x49       | 0x59       | {Root,Leaf}CacheStallRefill
+
+| 0x4a       | 0x5a       | {Root,Leaf}CacheStall
+|===
+
+== Config events
+
+[cols="~m,~m,~"]
+|===
+| Index | Name | Description
+
+| 0xf0  | StateUnconfigured | Cycle spent in Unconfigured state
+
+| 0xf1  | StatePreflushing  | Cycle spent in Preflushing state
+
+| 0xf2  | StateFlushing     | Cycle spent in Flushing state
+
+| 0xf3  | StatePrezeroing   | Cycle spent in Prezeroing state
+
+| 0xf4  | StateZeroing      | Cycle spent in Zeroing state
+
+| 0xf5  | StateServing      | Cycle spent in Serving state
+|===

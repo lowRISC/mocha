@@ -9,21 +9,29 @@
 module axi_tagctrl_ax #(
     /// Tag Controller configuration struct. Passed down from `axi_tagctrl_top.sv`.
     parameter axi_tagctrl_pkg::tagctrl_cfg_t Cfg = axi_tagctrl_pkg::tagctrl_cfg_t'{default: '0},
-    /// The type of channel, how the write bit in the descriptor should be set.
-    /// `0`: AR channel is connected, descriptors do read accesses.
-    /// `1`: AW channel is connected, descriptors do write accesses.
-    parameter bit Write = 1'b0,
+    /// tag bits per flit exchanged with tag lookup engine.
+    parameter int unsigned TagFlitBits = 4,
     /// AXI Tag Controller descriptor type definition,
-    parameter type tagctrl_desc_t = logic,
-    /// AXI Tag Cache descriptor type definition,
-    parameter type tagc_desc_t = logic,
+    parameter type desc_t = logic,
     /// AXI master port Ax channel type definition.
-    parameter type ax_chan_t = logic
+    parameter type ax_chan_t = logic,
+    /// Type to hold AXI addresses
+    parameter type axi_addr_t = logic [63:0]
 ) (
     /// Clock, positive edge triggered.
     input logic clk_i,
     /// Asynchronous reset, active low.
     input logic rst_ni,
+    /// Tag bypassing mode
+    input logic ignore_tags_i,
+    /// Start of region covered by tags
+    input axi_addr_t covered_base_addr_i,
+    /// End of region covered by tags
+    input axi_addr_t covered_top_addr_i,
+    /// Start of region storing tags
+    input axi_addr_t tag_store_base_addr_i,
+    /// End of region storing tags
+    input axi_addr_t tag_store_top_addr_i,
     /// AXI AX slave channel payload.
     input ax_chan_t ax_chan_slv_i,
     /// AXI AX slave channel is valid.
@@ -31,7 +39,7 @@ module axi_tagctrl_ax #(
     /// AXI AX slave channel is ready.
     output logic ax_chan_ready_o,
     /// Output Tag cache descriptor payload.
-    output tagc_desc_t tagc_desc_o,
+    output desc_t tagc_desc_o,
     /// Output Tag cache descripor is valid.
     output logic tagc_valid_o,
     /// Tag cache is ready to receive a descriptor.
@@ -43,7 +51,7 @@ module axi_tagctrl_ax #(
     /// AXI AX memory master channel is ready.
     input logic ax_mem_chan_ready_i,
     /// Output descriptor payload to `axi_tagctrl_x.sv`
-    output tagctrl_desc_t tagctrl_desc_o,
+    output desc_t tagctrl_desc_o,
     /// Output descriptor is valid
     output logic tagctrl_valid_o,
     /// Next unit is ready to receive a descriptor.
@@ -53,31 +61,32 @@ module axi_tagctrl_ax #(
   // local typedefs
   // master port ID is one bit wider than the slave port one, see `axi_mux`
   typedef logic [Cfg.AxiIdWidth:0] id_mst_t;
-  typedef logic [Cfg.AxiAddrWidth-1:0] addr_t;
 
   // Register to hold the descriptor for tag controller pipeline
-  tagctrl_desc_t tagctrl_desc_d, tagctrl_desc_q;
+  desc_t tagctrl_desc_d, tagctrl_desc_q;
   logic tagctrl_desc_valid_d, tagctrl_desc_valid_q;
   logic load_tagctrl_desc, load_tagctrl_desc_valid;
 
   // Register to hold the descriptor for the tag cache
-  tagc_desc_t tagc_desc_d, tagc_desc_q;
+  desc_t tagc_desc_d, tagc_desc_q;
   logic tagc_desc_valid_d, tagc_desc_valid_q;
   logic load_tagc_desc, load_tagc_desc_valid;
 
   // Register to hold incoming AXI transaction
   ax_chan_t slv_chan_d, slv_chan_q;
+  logic slv_illegal_d, slv_illegal_q;
   logic slv_chan_valid_d, slv_chan_valid_q;
   logic load_slv_chan, load_slv_chan_valid;
 
   // Auxiliary signals
-  // Used to compute the end addr (addr begin + len)
-  addr_t addr_end;
   // Tag address offset to fetch
-  addr_t tag_addr, tag_hi_addr, tag_off;
-  // Used to compute the number of beats needed for the Tage Cache request
-  axi_pkg::len_t tagc_desc_len;
-  logic [$clog2(Cfg.tagc_cfg.BlockSize / 8)-1:0] tagc_blk_ind_begin, tagc_blk_ind_end;
+  axi_addr_t tag_addr;
+  // last address of the access
+  axi_addr_t addr_last;
+  // Whether the request attempts to directly access tags
+  logic illegal_req;
+  // Whether request is in the covered region
+  logic tagged_req;
 
   // output assignments
   assign tagctrl_desc_o = tagctrl_desc_q;
@@ -85,37 +94,36 @@ module axi_tagctrl_ax #(
   assign tagc_desc_o = tagc_desc_q;
   assign tagc_valid_o = tagc_desc_valid_q;
   assign ax_mem_chan_mst_o = slv_chan_q;
-  assign ax_mem_chan_valid_o = slv_chan_valid_q;
+  assign ax_mem_chan_valid_o = slv_chan_valid_q && !slv_illegal_q;
   assign ax_chan_ready_o = ~slv_chan_valid_q && ~tagc_desc_valid_q && ~tagctrl_desc_valid_q;
-  assign addr_end = ax_chan_slv_i.addr + (ax_chan_slv_i.len << $clog2(Cfg.tagc_cfg.BlockSize / 8));
-  assign tagc_blk_ind_begin = ax_chan_slv_i.addr[($clog2(
-      Cfg.tagc_cfg.BlockSize*(Cfg.CapSize/8)
-  ))+:$clog2(
-      Cfg.tagc_cfg.BlockSize/8
-  )];
-  assign tagc_blk_ind_end = addr_end[($clog2(
-      Cfg.tagc_cfg.BlockSize*(Cfg.CapSize/8)
-  ))+:$clog2(
-      Cfg.tagc_cfg.BlockSize/8
-  )];
-  assign tagc_desc_len = $unsigned(tagc_blk_ind_end - tagc_blk_ind_begin);
-  assign tag_off = $unsigned(
-      ax_chan_slv_i.addr - Cfg.DRAMMemBase
-  ) >> $clog2(
-      Cfg.tagc_cfg.BlockSize * (Cfg.CapSize / 8)
-  );
-  assign tag_addr = Cfg.TagCacheMemBase + (tag_off << $clog2(Cfg.tagc_cfg.BlockSize / 8));
+  assign tag_addr = $unsigned(ax_chan_slv_i.addr - covered_base_addr_i) >> $clog2(Cfg.CapSize / 8);
+  assign tagged_req = !ignore_tags_i
+                      && ax_chan_slv_i.addr >= covered_base_addr_i
+                      && ax_chan_slv_i.addr  <  covered_top_addr_i;
+  assign addr_last = ax_chan_slv_i.addr + (axi_addr_t'(1 + ax_chan_slv_i.len) << ax_chan_slv_i.size) - 1;
+  localparam int unsigned FlitSpanBytes = TagFlitBits * (Cfg.CapSize / 8);
+  localparam int unsigned lo = $clog2(FlitSpanBytes);
+  logic crosses_flit;
+  assign crosses_flit = ax_chan_slv_i.addr[$bits(axi_addr_t)-1:lo] != addr_last[$bits(axi_addr_t)-1:lo];
+  assign illegal_req = !ignore_tags_i
+                      && ((ax_chan_slv_i.addr < tag_store_top_addr_i
+                           && addr_last >= tag_store_base_addr_i)
+                          || (tagged_req && crosses_flit));
+  // Note: testing the start address of the access (as opposed to the end)
+  // against covered_top_addr_i is sufficient as AXI accesses are at most 4K
+  // and covered_top_addr_i is at worst 8K aligned (or a config error is raised)
 
   always_comb begin : ax_mem_chan_ctrl
     // default assignments
     slv_chan_d = slv_chan_q;
+    slv_illegal_d = slv_illegal_q;
     load_slv_chan = 1'b0;
     slv_chan_valid_d = slv_chan_valid_q;
     load_slv_chan_valid = 1'b0;
 
     if (slv_chan_valid_q) begin
       // send new request transaction
-      if (ax_mem_chan_ready_i) begin
+      if (ax_mem_chan_ready_i || slv_illegal_q) begin
         slv_chan_valid_d = 1'b0;
         load_slv_chan_valid = 1'b1;
       end
@@ -124,6 +132,7 @@ module axi_tagctrl_ax #(
       if (ax_chan_valid_i && ax_chan_ready_o) begin
         slv_chan_d = ax_chan_slv_i;
         slv_chan_d.id = id_mst_t'(axi_tagctrl_pkg::AxReqId);
+        slv_illegal_d = illegal_req;
         load_slv_chan = 1'b1;
         slv_chan_valid_d = 1'b1;
         load_slv_chan_valid = 1'b1;
@@ -147,7 +156,7 @@ module axi_tagctrl_ax #(
     end else begin
       // handshake complete read the ax channel data if valid
       if (ax_chan_valid_i && ax_chan_ready_o) begin
-        tagc_desc_d = tagc_desc_t'{
+        tagc_desc_d = desc_t'{
             // assign the id value so that transactions are always order
             a_x_id:
             id_mst_t
@@ -155,19 +164,15 @@ module axi_tagctrl_ax #(
             axi_tagctrl_pkg::AxReqId
             ),
             a_x_addr: tag_addr,
-            a_x_len: tagc_desc_len,
-            a_x_size: ax_chan_slv_i.size,
-            a_x_burst: ax_chan_slv_i.burst,
-            a_x_lock: ax_chan_slv_i.lock,
-            a_x_prot: ax_chan_slv_i.prot,
-            a_x_cache: ax_chan_slv_i.cache,
-            x_resp: axi_pkg::RESP_OKAY,
+            a_x_len: 0,
+            a_x_size: 0, // Supports 8 tag bits or less
+            a_x_burst: axi_pkg::BURST_INCR,
+            x_resp: illegal_req ? axi_pkg::RESP_DECERR : axi_pkg::RESP_OKAY,
             x_last: 1'b1,
-            rw: Write,
             default: '0
         };
         load_tagc_desc = 1'b1;
-        tagc_desc_valid_d = 1'b1;
+        tagc_desc_valid_d = tagged_req && !illegal_req;
         load_tagc_desc_valid = 1'b1;
       end
     end
@@ -189,14 +194,17 @@ module axi_tagctrl_ax #(
     end else begin
       // handshake complete read the ax channel data if valid
       if (ax_chan_valid_i && ax_chan_ready_o) begin
-        tagctrl_desc_d = tagctrl_desc_t'{
+        tagctrl_desc_d = desc_t'{
             // save original slave id to respond correctly
             a_x_id:
             ax_chan_slv_i.id,
             a_x_addr: ax_chan_slv_i.addr,
             a_x_len: ax_chan_slv_i.len,
             a_x_size: ax_chan_slv_i.size,
-            a_x_tag_len: tagc_desc_len,
+            x_last: 1'b1,
+            x_resp: illegal_req ? axi_pkg::RESP_DECERR : axi_pkg::RESP_OKAY,
+            illegal_req: illegal_req,
+            tagged_req: tagged_req && !illegal_req,
             default: '0
         };
         load_tagctrl_desc = 1'b1;
@@ -208,10 +216,11 @@ module axi_tagctrl_ax #(
 
   // Registers
   `FFLARN(slv_chan_q, slv_chan_d, load_slv_chan, ax_chan_t'{default: '0}, clk_i, rst_ni)
+  `FFLARN(slv_illegal_q, slv_illegal_d, load_slv_chan, 1'b0, clk_i, rst_ni)
   `FFLARN(slv_chan_valid_q, slv_chan_valid_d, load_slv_chan_valid, 1'b0, clk_i, rst_ni)
-  `FFLARN(tagc_desc_q, tagc_desc_d, load_tagc_desc, tagc_desc_t'{default: '0}, clk_i, rst_ni)
+  `FFLARN(tagc_desc_q, tagc_desc_d, load_tagc_desc, desc_t'{default: '0}, clk_i, rst_ni)
   `FFLARN(tagc_desc_valid_q, tagc_desc_valid_d, load_tagc_desc_valid, 1'b0, clk_i, rst_ni)
-  `FFLARN(tagctrl_desc_q, tagctrl_desc_d, load_tagctrl_desc, tagctrl_desc_t'{default: '0}, clk_i,
+  `FFLARN(tagctrl_desc_q, tagctrl_desc_d, load_tagctrl_desc, desc_t'{default: '0}, clk_i,
           rst_ni)
   `FFLARN(tagctrl_desc_valid_q, tagctrl_desc_valid_d, load_tagctrl_desc_valid, 1'b0, clk_i, rst_ni)
 

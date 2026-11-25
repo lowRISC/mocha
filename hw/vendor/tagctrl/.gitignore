@@ -2,3 +2,4 @@
 /test/verilator/*
 /test/logs/*
 .bender/*
+Bender.local
