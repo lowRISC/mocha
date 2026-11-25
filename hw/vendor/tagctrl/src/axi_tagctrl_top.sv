@@ -85,6 +85,7 @@ module axi_tagctrl_top #(
 );
   `include "axi/typedef.svh"
   `include "axi_tagctrl/typedef.svh"
+  `include "prim_assert.sv"
 
   typedef logic [axi_id_width-1:0] axi_slv_id_t;
   typedef logic [axi_id_width:0] axi_mst_id_t;
@@ -341,22 +342,24 @@ module axi_tagctrl_top #(
   );
 
   // FIFO between AR master and R master, allows DEPTH+2 (= max_trans) inflight transactions
-  stream_fifo #(
-      .FALL_THROUGH(1'b1),
-      .DEPTH       (Cfg.TagAXFifoDepth),
-      .T           (desc_t)
+  prim_fifo_sync #(
+      .Width            ($bits(desc_t)),
+      .Pass             (1'b1),
+      .Depth            (Cfg.TagAXFifoDepth),
+      .OutputZeroIfEmpty(1'b0)
   ) i_stream_fifo_r (
       .clk_i,
       .rst_ni,
-      .flush_i   (1'b0),
-      .testmode_i(test_i),
-      .usage_o   (  /*not used*/),
-      .data_i    (tagctrl_ar_desc),
-      .valid_i   (tagctrl_ar_valid),
-      .ready_o   (tagctrl_ar_ready),
-      .data_o    (tagctrl_r_desc),
-      .valid_o   (tagctrl_r_valid),
-      .ready_i   (tagctrl_r_ready)
+      .clr_i   (1'b0),
+      .wdata_i (tagctrl_ar_desc),
+      .wvalid_i(tagctrl_ar_valid),
+      .wready_o(tagctrl_ar_ready),
+      .rdata_o (tagctrl_r_desc),
+      .rvalid_o(tagctrl_r_valid),
+      .rready_i(tagctrl_r_ready),
+      .full_o  (  /* not used */),
+      .depth_o (  /* not used */),
+      .err_o   (  /* not used */)
   );
 
   axi_tagctrl_r #(
@@ -414,41 +417,45 @@ module axi_tagctrl_top #(
   );
 
   // FIFO between AW master and W master, allows DEPTH+2 (= max_trans) inflight transactions
-  stream_fifo #(
-      .FALL_THROUGH(1'b1),
-      .DEPTH       (Cfg.TagAXFifoDepth),
-      .T           (desc_t)
+  prim_fifo_sync #(
+      .Width            ($bits(desc_t)),
+      .Pass             (1'b1),
+      .Depth            (Cfg.TagAXFifoDepth),
+      .OutputZeroIfEmpty(1'b0)
   ) i_stream_fifo_w (
       .clk_i,
       .rst_ni,
-      .flush_i   (1'b0),
-      .testmode_i(test_i),
-      .usage_o   (  /*not used*/),
-      .data_i    (tagctrl_aw_desc),
-      .valid_i   (tagctrl_aw_valid),
-      .ready_o   (tagctrl_aw_ready),
-      .data_o    (tagctrl_w_desc),
-      .valid_o   (tagctrl_w_valid),
-      .ready_i   (tagctrl_w_ready)
+      .clr_i   (1'b0),
+      .wdata_i (tagctrl_aw_desc),
+      .wvalid_i(tagctrl_aw_valid),
+      .wready_o(tagctrl_aw_ready),
+      .rdata_o (tagctrl_w_desc),
+      .rvalid_o(tagctrl_w_valid),
+      .rready_i(tagctrl_w_ready),
+      .full_o  (  /* not used */),
+      .depth_o (  /* not used */),
+      .err_o   (  /* not used */)
   );
 
   // FIFO between tag B slave and tagctrl B master
-  stream_fifo #(
-      .FALL_THROUGH(1'b1),
-      .DEPTH       (Cfg.TagBFifoDepth),
-      .T           (slv_b_chan_t)
+  prim_fifo_sync #(
+      .Width            ($bits(slv_b_chan_t)),
+      .Pass             (1'b1),
+      .Depth            (Cfg.TagBFifoDepth),
+      .OutputZeroIfEmpty(1'b0)
   ) i_stream_fifo_tagc_b (
       .clk_i,
       .rst_ni,
-      .flush_i   (1'b0),
-      .testmode_i(test_i),
-      .usage_o   (  /*not used*/),
-      .data_i    (tagc_b_chan),
-      .valid_i   (tagc_b_chan_valid),
-      .ready_o   (tagc_b_chan_ready), // This one is possibly ignored, which is why we have this buffer.
-      .data_o    (tagc_b_chan_buff),
-      .valid_o   (tagc_b_chan_buff_valid),
-      .ready_i   (tagc_b_chan_buff_ready)
+      .clr_i   (1'b0),
+      .wdata_i (tagc_b_chan),
+      .wvalid_i(tagc_b_chan_valid),
+      .wready_o(tagc_b_chan_ready), // This one is possibly ignored, which is why we have this buffer.
+      .rdata_o (tagc_b_chan_buff),
+      .rvalid_o(tagc_b_chan_buff_valid),
+      .rready_i(tagc_b_chan_buff_ready),
+      .full_o  (  /* not used */),
+      .depth_o (  /* not used */),
+      .err_o   (  /* not used */)
   );
 
   axi_tagctrl_w #(
@@ -530,8 +537,8 @@ module axi_tagctrl_top #(
       .b_chan_t  (slv_b_chan_t),
       .ar_chan_t (slv_ar_chan_t),
       .r_chan_t  (slv_r_chan_t),
-      .req_t     (slv_req_t),
-      .resp_t    (slv_resp_t)
+      .axi_req_t (slv_req_t),
+      .axi_resp_t(slv_resp_t)
   ) i_axi_cut (
       .clk_i,
       .rst_ni,
@@ -542,9 +549,13 @@ module axi_tagctrl_top #(
   );
 
   axi_isolate #(
-      .NumPending (max_trans),
-      .req_t      (slv_req_t),
-      .resp_t     (slv_resp_t)
+      .NumPending   (max_trans),
+      .AxiAddrWidth (axi_addr_width),
+      .AxiDataWidth (axi_data_width),
+      .AxiIdWidth   (axi_id_width),
+      .AxiUserWidth (axi_user_width),
+      .axi_req_t    (slv_req_t),
+      .axi_resp_t   (slv_resp_t)
   ) i_axi_isolate_flush (
       .clk_i,
       .rst_ni,
@@ -650,5 +661,31 @@ module axi_tagctrl_top #(
     else $fatal(1, $sformatf("llc> AXI Slave port, slv_r_chan_t and untagged_mgr_resp_i.r not equal"));
   end
   // pragma translate_on
+
+  // Assert known for module outputs.
+  `ASSERT_KNOWN(TaggedSubRespArReadyKnownO_A, tagged_sub_resp_o.ar_ready)
+  `ASSERT_KNOWN(TaggedSubRespAwReadyKnownO_A, tagged_sub_resp_o.aw_ready)
+  `ASSERT_KNOWN(TaggedSubRespWReadyKnownO_A,  tagged_sub_resp_o.w_ready)
+  `ASSERT_KNOWN(TaggedSubRespBValidKnownO_A,  tagged_sub_resp_o.b_valid)
+  `ASSERT_KNOWN(TaggedSubRespRValidKnownO_A,  tagged_sub_resp_o.r_valid)
+  `ASSERT_KNOWN_IF(TaggedSubRespBKnownO_A, tagged_sub_resp_o.b, tagged_sub_resp_o.b_valid)
+  `ASSERT_KNOWN_IF(TaggedSubRespRKnownO_A, tagged_sub_resp_o.r, tagged_sub_resp_o.r_valid)
+
+  `ASSERT_KNOWN(ConfigSubRespArReadyKnownO_A, config_sub_resp_o.ar_ready)
+  `ASSERT_KNOWN(ConfigSubRespAwReadyKnownO_A, config_sub_resp_o.aw_ready)
+  `ASSERT_KNOWN(ConfigSubRespWReadyKnownO_A,  config_sub_resp_o.w_ready)
+  `ASSERT_KNOWN(ConfigSubRespBValidKnownO_A,  config_sub_resp_o.b_valid)
+  `ASSERT_KNOWN(ConfigSubRespRValidKnownO_A,  config_sub_resp_o.r_valid)
+  `ASSERT_KNOWN_IF(ConfigSubRespBKnownO_A, config_sub_resp_o.b, config_sub_resp_o.b_valid)
+  `ASSERT_KNOWN_IF(ConfigSubRespRKnownO_A, config_sub_resp_o.r, config_sub_resp_o.r_valid)
+
+  `ASSERT_KNOWN(UntaggedMgrReqArValidKnownO_A, untagged_mgr_req_o.ar_valid)
+  `ASSERT_KNOWN(UntaggedMgrReqAwValidKnownO_A, untagged_mgr_req_o.aw_valid)
+  `ASSERT_KNOWN(UntaggedMgrReqWValidKnownO_A,  untagged_mgr_req_o.w_valid)
+  `ASSERT_KNOWN(UntaggedMgrReqBReadyKnownO_A,  untagged_mgr_req_o.b_ready)
+  `ASSERT_KNOWN(UntaggedMgrReqRReadyKnownO_A,  untagged_mgr_req_o.r_ready)
+  `ASSERT_KNOWN_IF(UntaggedMgrReqArKnownO_A, untagged_mgr_req_o.ar, untagged_mgr_req_o.ar_valid)
+  `ASSERT_KNOWN_IF(UntaggedMgrReqAwKnownO_A, untagged_mgr_req_o.aw, untagged_mgr_req_o.aw_valid)
+  `ASSERT_KNOWN_IF(UntaggedMgrReqWKnownO_A,  untagged_mgr_req_o.w,  untagged_mgr_req_o.w_valid)
 
 endmodule

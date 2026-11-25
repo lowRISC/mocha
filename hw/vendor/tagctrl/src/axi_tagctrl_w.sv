@@ -343,22 +343,24 @@ module axi_tagctrl_w #(
   );
 
   // FIFO holds memory B responses until the B stage merges them
-  stream_fifo #(
-      .FALL_THROUGH(1'b1),
-      .DEPTH       (Cfg.TagBFifoDepth),  // one entry per in-flight write
-      .T           (b_chan_t)
+  prim_fifo_sync #(
+      .Width            ($bits(b_chan_t)),
+      .Pass             (1'b1),
+      .Depth            (Cfg.TagBFifoDepth),  // one entry per in-flight write
+      .OutputZeroIfEmpty(1'b0)
   ) i_mem_b_fifo (
       .clk_i,
       .rst_ni,
-      .flush_i   (1'b0),
-      .testmode_i(test_i),
-      .usage_o   (  /* not used */),
-      .data_i    (b_chan_mst_i),
-      .valid_i   (b_chan_mst_valid_i),
-      .ready_o   (b_chan_mst_ready_o),
-      .data_o    (mem_b_data),
-      .valid_o   (mem_b_valid),
-      .ready_i   (mem_b_ready)
+      .clr_i   (1'b0),
+      .wdata_i (b_chan_mst_i),
+      .wvalid_i(b_chan_mst_valid_i),
+      .wready_o(b_chan_mst_ready_o),
+      .rdata_o (mem_b_data),
+      .rvalid_o(mem_b_valid),
+      .rready_i(mem_b_ready),
+      .full_o  (  /* not used */),
+      .depth_o (  /* not used */),
+      .err_o   (  /* not used */)
   );
 
   // Registers Flip Flops

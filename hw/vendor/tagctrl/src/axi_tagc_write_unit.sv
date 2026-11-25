@@ -88,22 +88,24 @@ module axi_tagc_write_unit #(
   // W channel pipeline FIFO
   // This FIFO buffers W beats as long as the corresponding AW
   // vector goes through the pipeline for lookup etc.
-  stream_fifo #(
-      .FALL_THROUGH(1'b0),
-      .DEPTH       (axi_llc_pkg::WChanBufferDepth),
-      .T           (w_chan_t)
+  prim_fifo_sync #(
+      .Width            ($bits(w_chan_t)),
+      .Pass             (1'b0),
+      .Depth            (axi_llc_pkg::WChanBufferDepth),
+      .OutputZeroIfEmpty(1'b0)
   ) i_w_stream_fifo (
       .clk_i,
       .rst_ni,
-      .flush_i   (1'b0),
-      .testmode_i(test_i),
-      .usage_o   (  /*not used*/),
-      .data_i    (w_chan_slv_i),
-      .valid_i   (w_chan_valid_i),
-      .ready_o   (w_chan_ready_o),
-      .data_o    (w_chan),
-      .valid_o   (w_valid),
-      .ready_i   (w_ready)
+      .clr_i   (1'b0),
+      .wdata_i (w_chan_slv_i),
+      .wvalid_i(w_chan_valid_i),
+      .wready_o(w_chan_ready_o),
+      .rdata_o (w_chan),
+      .rvalid_o(w_valid),
+      .rready_i(w_ready),
+      .full_o  (  /* not used */),
+      .depth_o (  /* not used */),
+      .err_o   (  /* not used */)
   );
 
   // way_inp assignments
