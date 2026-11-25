@@ -1,0 +1,370 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// AXI SRAM block-level testplan.
+//
+// The block is axi_sram, specified by the SRAM specification in doc/ref/arch.md: 128 KiB of
+// 64-bit words behind an AXI4 device port, with one CHERI tag bit per 128-bit region carried on
+// WUSER and RUSER.
+//
+// The vPlan (axi_sram_vplan.hjson) holds the features to verify and the assertions, coverage and
+// integration-level tests that prove them. This file holds the block-level testpoints, meaning the
+// tests in axi_sram_sim_cfg.hjson that produce that evidence. Expected results come from the
+// specification only.
+//
+// Naming
+// ------
+// Every testpoint and test is `axi_sram_<what>`. A testpoint lists its tests once they exist in
+// axi_sram_sim_cfg.hjson; until then `tests` is empty and dvsim reports the testpoint as not run.
+//
+// Descriptions
+// ------------
+// Descriptions stay on the surface: a title, how the testpoint is driven, and what decides the
+// verdict. Procedure and rationale belong in the header of the sequence that implements it. Unless
+// a description says otherwise, the verdict comes from the scoreboard, which checks the response,
+// data and RUSER tag of every read against a reference model of the data and tag memories.
+{
+  name: "axi_sram"
+
+  testpoints: [
+    ///////////////////////////////////////////////////////////////////////////
+    // V1                                                                    //
+    ///////////////////////////////////////////////////////////////////////////
+    {
+      name: axi_sram_rst_sanity
+      desc: '''The SRAM leaves reset cleanly and serves its first access.
+
+            Reset, then write a word and read it back.
+            '''
+      stage: V1
+      tests: ["axi_sram_rst_sanity"]
+    }
+    {
+      name: axi_sram_write_read
+      desc: '''A single 8-byte word round-trips.
+
+            One single-beat write, then a read of the same word.
+            '''
+      stage: V1
+      tests: ["axi_sram_write_read"]
+    }
+    {
+      name: axi_sram_tag_write
+      desc: '''A capability write stores its tag.
+
+            A 2-beat, 16-byte aligned capability write with WUSER set on both beats, then a
+            capability read of the same slot returns the data and the tag.
+            '''
+      stage: V1
+      tests: ["axi_sram_tag_write"]
+    }
+    {
+      name: axi_sram_cap_ruser
+      desc: '''A capability read returns its tag on both beats.
+
+            Read a tagged and an untagged slot as capabilities. RUSER is set on both beats of the
+            first and clear on both beats of the second.
+            '''
+      stage: V1
+      tests: ["axi_sram_cap_ruser"]
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // V2                                                                    //
+    ///////////////////////////////////////////////////////////////////////////
+    {
+      name: axi_sram_rst_mid_burst
+      desc: '''Reset in the middle of a write burst.
+
+            Assert reset while a long write burst is on the bus. The SRAM comes back usable: a word
+            and a capability written afterwards round-trip with their tag.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_init_value_undefined
+      desc: '''Nothing is assumed about memory that was never written.
+
+            Read a word before writing it, then write and read it again. Only the second read is
+            checked.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_address_boundaries
+      desc: '''The first word, the last word and the last capability slot.
+
+            Write and read back address 0x0, the last 8-byte word and the last 16-byte slot, the
+            last one as a tagged capability.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_data_all_bits
+      desc: '''Every data bit can be set and cleared on its own.
+
+            Walk a one and then a zero through all 64 bits of a word, reading back after each
+            write.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_aligned_only
+      desc: '''Back-to-back aligned 8-byte accesses over a range of words.
+
+            Write and read back each aligned word of a small region in turn.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_burst_last
+      desc: '''RLAST on a multi-beat read.
+
+            Write a 4-beat burst and read it back as one burst. RLAST is set on the last beat only.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_resp_id_match
+      desc: '''Responses carry the ID of their request.
+
+            Writes and reads on a range of IDs. Each B and R response is routed back to its request
+            by ID, so a response on the wrong ID never completes its access.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_atomic_excluded
+      desc: '''Atomic accesses are answered with an error.
+
+            Drive each AWATOP class at an in-range address. Each is answered with SLVERR, returns
+            SLVERR on every R beat where it carries read data, and changes neither the data nor the
+            tag. A plain access afterwards still succeeds.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_backpressure
+      desc: '''The manager throttles B and R.
+
+            Writes and reads, including a capability, with READY held off for a random number of
+            cycles after VALID. Data and tags survive.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_concurrent_data_tag
+      desc: '''A plain word and a capability side by side.
+
+            Write a word and a capability to neighbouring addresses, then read both at once on
+            different IDs.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_multiple_outstanding_transactions
+      desc: '''Many reads issued together.
+
+            Write several words and two capabilities, then issue all the reads at once, each on its
+            own ID. Every read completes with its own data and tag.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_waw_same_address
+      desc: '''The last write to an address wins.
+
+            Three writes to one word, then a capability overwritten by a plain write and rewritten
+            as a capability. Each read returns the last data and tag written.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_raw_war_same_region
+      desc: '''A read and a write to the same region at once.
+
+            Race a write against a read of the same word in both orders, and a capability write
+            against a capability read of its slot. A read afterwards returns the final value.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_burst_write_tags
+      desc: '''A burst that writes several whole slots tags each of them.
+
+            A 4-beat burst with WUSER set on every beat over two 16-byte aligned slots, then a
+            capability read of each slot.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_no_tag_single_beat
+      desc: '''WUSER on a single-beat write sets no tag.
+
+            A single 8-byte write with WUSER set, then a capability read of its slot.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_no_tag_misaligned
+      desc: '''A capability-shaped write that is not 16-byte aligned sets no tag.
+
+            A 2-beat write with WUSER set starting half way into a slot. The data is written and
+            the slot's tag stays clear.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_no_tag_two_bursts
+      desc: '''Two single-beat writes covering a slot set no tag.
+
+            Write both halves of a slot as separate single-beat bursts with WUSER set, then read
+            the slot as a capability.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_wuser_partial_strobe
+      desc: '''WUSER with a partial strobe sets no tag.
+
+            Capability-shaped writes with WUSER set on both beats and a partial strobe on one of
+            them, then a capability read of each slot.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_wuser_mismatch
+      desc: '''Beats that disagree on WUSER set no tag.
+
+            Capability writes with WUSER (1, 0) and (0, 1), then a capability read of each slot.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_tag_cleared_by_write
+      desc: '''A plain write to either word of a tagged slot clears its tag.
+
+            Tag a slot, plain-write its lower word and read the tag, then tag it again and do the
+            same with its upper word. The other word's data is untouched each time.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_partial_strobe_clears_tag
+      desc: '''A partial-strobe write to a tagged slot clears its tag.
+
+            Tag a slot, then write part of a word in it, once with WUSER clear and once with WUSER
+            set. A capability read of the slot returns the tag clear.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_subword_read_clears_tag
+      desc: '''A read narrower than 8 bytes returns no tag.
+
+            Read a tagged slot with 4-byte beats in bursts of one, two and four beats. RUSER is
+            clear on every beat, and a capability read afterwards still returns the tag.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_burst_read_mixed_tags
+      desc: '''A read spanning a tagged and an untagged slot.
+
+            A 4-beat read over a tagged and an untagged slot returns each beat's own tag.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_misaligned_read_clears_tag
+      desc: '''A capability-shaped read that is not 16-byte aligned returns no tag.
+
+            A 2-beat 8-byte read starting half way into a tagged slot. RUSER is clear on both
+            beats, and an aligned capability read afterwards still returns the tag.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_tag_isolation
+      desc: '''Clearing one slot's tag leaves its neighbour's.
+
+            Tag two adjacent slots, clear the first with a plain write, then read both.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_tag_aliasing
+      desc: '''Slots far apart own separate tag bits.
+
+            For pairs of slots a fixed stride apart across the SRAM, tag one and write plain data
+            to the other, in both orders. Neither write changes the other slot's tag.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_execute_from_sram
+      desc: '''Instruction fetches return the stored words.
+
+            Write words, then read them with ARPROT[2] set, singly and as one burst.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_random_data
+      desc: '''Random words across the whole SRAM.
+
+            Write random data to random aligned words, then read every word written.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_random_capabilities
+      desc: '''Random capabilities across the whole SRAM.
+
+            Write tagged capabilities with random data to random slots, then read every slot
+            written.
+            '''
+      stage: V2
+      tests: []
+    }
+    {
+      name: axi_sram_random_traffic
+      desc: '''Random reads and writes over a few slots.
+
+            Every burst length, size, strobe and WUSER pattern on random IDs, confined to a few
+            slots so that capability writes, plain writes and reads keep landing on each other.
+            '''
+      stage: V2
+      tests: []
+    }
+  ]
+}
