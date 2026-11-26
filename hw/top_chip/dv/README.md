@@ -85,7 +85,7 @@ dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke -t xcelium
 
 ### 2. Sequence Selection
 
-The `dvsim` command generates a runtime argument `+UVM_TEST_SEQ=top_chip_dv_uart_base_vseq`.
+The `dvsim` command generates a runtime argument `+UVM_TEST_SEQ=top_chip_dv_base_vseq`.
 The UVM execution flow is as follows:
 
 1. The standard `run_test()` is called in `tb.sv`.
@@ -186,3 +186,9 @@ dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke --run-opts "+max_quit_
 # Set simulation timeout to 10,000 ns
 dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i uart_smoke --run-opts "+test_timeout_ns=10000"
 ```
+
+`+do_uart_tx_log=1` logs each line SW prints on the console UART under the `UART_TRACE` ID, from the point SW reports that it is in the test.
+The UART and ROM controller smoke tests set it in their `run_opts`, because their SW reports a mismatch with `uprintf`.
+Pass it with `--run-opts` to read what another SW test prints.
+It takes effect in any vseq whose `body()` calls `super.body()`.
+The simulation stops when SW reports a failure, so the last characters SW queued in the UART may not appear.
