@@ -16,6 +16,7 @@ filesets:
       - lowrisc:dv:common_ifs
       - lowrisc:mocha_dv:gpio_env
       - lowrisc:dv:i2c_env
+      - lowrisc:mocha_dv:top_chip_ral
     files:
       - top_chip_dv_env_pkg.sv
       - mem_clear_util.sv: {is_include_file: true}

@@ -14,6 +14,7 @@ package top_chip_dv_env_pkg;
   import i2c_reg_pkg::FifoDepth;
   import i2c_pkg::*;
   import axi_agent_pkg::*;
+  import top_chip_ral_pkg::*;
 
   // Macro includes
   `include "uvm_macros.svh"

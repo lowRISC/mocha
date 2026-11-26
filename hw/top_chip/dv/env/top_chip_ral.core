@@ -1,0 +1,109 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:top_chip_ral:0.1"
+description: "Mocha chip register model"
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:dv:ralgen
+      - lowrisc:dv:dv_base_reg
+      - lowrisc:ip:xbar_peri
+      # These block environments already generate gpio_ral_pkg and i2c_ral_pkg, and the chip
+      # environment depends on both, so generating the two packages here as well would define them
+      # twice.
+      - lowrisc:mocha_dv:gpio_env
+      - lowrisc:dv:i2c_env
+    files:
+      - top_chip_ral_pkg.sv
+      - top_chip_reg_block.svh: {is_include_file: true}
+    file_type: systemVerilogSource
+
+generate:
+  ral_clkmgr:
+    generator: ralgen
+    parameters:
+      name: clkmgr
+      ip_hjson: ../../ip_autogen/clkmgr/data/clkmgr.hjson
+    position: prepend
+
+  ral_entropy_src:
+    generator: ralgen
+    parameters:
+      name: entropy_src
+      ip_hjson: ../../../vendor/lowrisc_ip/ip/entropy_src/data/entropy_src.hjson
+    position: prepend
+
+  ral_pwrmgr:
+    generator: ralgen
+    parameters:
+      name: pwrmgr
+      ip_hjson: ../../ip_autogen/pwrmgr/data/pwrmgr.hjson
+    position: prepend
+
+  ral_rom_ctrl:
+    generator: ralgen
+    parameters:
+      name: rom_ctrl
+      ip_hjson: ../../../vendor/lowrisc_ip/ip/rom_ctrl/data/rom_ctrl.hjson
+    position: prepend
+
+  ral_rstmgr:
+    generator: ralgen
+    parameters:
+      name: rstmgr
+      ip_hjson: ../../ip_autogen/rstmgr/data/rstmgr.hjson
+    position: prepend
+
+  ral_rv_plic:
+    generator: ralgen
+    parameters:
+      name: rv_plic
+      ip_hjson: ../../ip_autogen/rv_plic/data/rv_plic.hjson
+    position: prepend
+
+  ral_rv_timer:
+    generator: ralgen
+    parameters:
+      name: rv_timer
+      ip_hjson: ../../../vendor/lowrisc_ip/ip/rv_timer/data/rv_timer.hjson
+    position: prepend
+
+  ral_spi_device:
+    generator: ralgen
+    parameters:
+      name: spi_device
+      ip_hjson: ../../../vendor/lowrisc_ip/ip/spi_device/data/spi_device.hjson
+    position: prepend
+
+  ral_spi_host:
+    generator: ralgen
+    parameters:
+      name: spi_host
+      ip_hjson: ../../../vendor/lowrisc_ip/ip/spi_host/data/spi_host.hjson
+    position: prepend
+
+  ral_uart:
+    generator: ralgen
+    parameters:
+      name: uart
+      ip_hjson: ../../../vendor/lowrisc_ip/ip/uart/data/uart.hjson
+    position: prepend
+
+targets:
+  default:
+    filesets:
+      - files_dv
+    generate:
+      - ral_clkmgr
+      - ral_entropy_src
+      - ral_pwrmgr
+      - ral_rom_ctrl
+      - ral_rstmgr
+      - ral_rv_plic
+      - ral_rv_timer
+      - ral_spi_device
+      - ral_spi_host
+      - ral_uart

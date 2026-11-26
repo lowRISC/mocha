@@ -99,6 +99,9 @@ task top_chip_dv_base_vseq::apply_reset(string kind = "HARD");
         wait fork;
       end : isolation_fork
     join
+    // The reset has put the registers back to their reset values, so do the same to the register
+    // model's mirror. UVM only loads reset values into the mirror through reset().
+    cfg.ral.reset(kind);
   end
 endtask : apply_reset
 

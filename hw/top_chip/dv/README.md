@@ -67,6 +67,13 @@ Vseqs drive it through `p_sequencer.cva6_axi_sqr` and clear `do_wait_for_sw_test
 dvsim hw/top_chip/dv/top_chip_sim_cfg.hjson -i axi_driver_smoke -t xcelium
 ```
 
+### Chip register model
+
+`cfg.ral` is a register model of the chip as CVA6 addresses it, with one register block per `xbar_peri` device at the base address that `tl_peri_pkg` gives the device.
+Mocha's top has no topgen description to generate it from, so [`top_chip_reg_block`](./env/top_chip_reg_block.svh) builds it the way topgen builds an OpenTitan chip model, from the register packages that ralgen generates for each device.
+In this build mode the environment sends the model's frontdoor accesses through the agent's register layer, so `csr_rd`, `csr_wr` and the other `csr_utils_pkg` tasks reach the devices along the path a CVA6 load or store takes.
+Each block's backdoor is rooted at the device's instance in `top_chip_system`, so a test can read which instance a frontdoor access reached.
+
 ## Simulation Flow
 
 The simulation is orchestrated by `dvsim`, which manages the build and run flow.

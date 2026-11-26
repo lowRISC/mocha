@@ -22,6 +22,16 @@ class top_chip_dv_env_cfg extends uvm_object;
   rand spi_agent_cfg     m_spi_host_agent_cfg;
   rand spi_agent_cfg     m_spi_device_agent_cfg;
 
+  // Register model of the chip
+  //
+  // A frontdoor access through the model needs the testbench to drive the bus that CVA6 normally
+  // drives. Tests that do this select the axi_driver_to_cva6_bridge build mode in
+  // top_chip_sim_cfg.hjson, which defines SWAP_CVA6_WITH_AXI_DRIVER so that tb/tb_cfg.sv replaces
+  // CVA6 with axi_driver_to_cva6_bridge, an AXI manager agent on the same ports. The environment
+  // then connects the model to that agent. In the default build CVA6 runs software and only
+  // backdoor accesses through the model work.
+  top_chip_reg_block ral;
+
   `uvm_object_utils_begin(top_chip_dv_env_cfg)
   `uvm_object_utils_end
 
@@ -64,6 +74,11 @@ function void top_chip_dv_env_cfg::initialize();
   m_spi_device_agent_cfg         = spi_agent_cfg::type_id::create("m_spi_device_agent_cfg");
   m_spi_device_agent_cfg.if_mode = dv_utils_pkg::Device;
   m_spi_device_agent_cfg.en_cov  = 0;
+
+  // The model holds absolute chip addresses, so it is built at base address 0
+  ral = top_chip_reg_block::type_id::create("ral");
+  ral.build(.base_addr(0), .csr_excl(null));
+  ral.lock_model();
 endfunction : initialize
 
 function void top_chip_dv_env_cfg::get_mem_image_files_from_plusargs();

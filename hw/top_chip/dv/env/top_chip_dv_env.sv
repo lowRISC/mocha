@@ -34,6 +34,9 @@ class top_chip_dv_env extends uvm_env;
   extern function new(string name = "", uvm_component parent = null);
   extern function void build_phase(uvm_phase phase);
   extern function void connect_phase(uvm_phase phase);
+  // Run the CVA6 AXI agent's register layer for the whole test when the bridge replaces CVA6, so
+  // that frontdoor accesses through cfg.ral reach the chip
+  extern task run_phase(uvm_phase phase);
 
   // Class specific methods
   extern task load_memories();
@@ -144,7 +147,11 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   top_vsqr.i2c_sqr        = m_i2c_agent.sequencer;
   top_vsqr.spi_host_sqr   = m_spi_host_agent.sequencer;
   top_vsqr.spi_device_sqr = m_spi_device_agent.sequencer;
-  if (m_cva6_axi_agent != null) top_vsqr.cva6_axi_sqr = m_cva6_axi_agent.get_sequencer();
+  if (m_cva6_axi_agent != null) begin
+    top_vsqr.cva6_axi_sqr = m_cva6_axi_agent.get_sequencer();
+    cfg.ral.default_map.set_sequencer(m_cva6_axi_agent.get_register_layering_sequencer(),
+                                      m_cva6_axi_agent.get_reg_adapter());
+  end
 
   // Connect monitor output to matching FIFO in the virtual sequencer.
   // Allows virtual sequences to check TX items.
@@ -167,6 +174,17 @@ function void top_chip_dv_env::connect_phase(uvm_phase phase);
   // Flush the scoreboard on AXI fabric reset (all taps share it, so one reset monitor suffices).
   m_mgr_axi[top_pkg::CVA6].get_reset_monitor().m_analysis_port.connect(m_axi_scb.reset_imp);
 endfunction : connect_phase
+
+task top_chip_dv_env::run_phase(uvm_phase phase);
+  super.run_phase(phase);
+  if (m_cva6_axi_agent != null) begin
+    // The layer never returns, so it runs in its own thread to let run_phase return. It waits for
+    // register accesses without holding an objection, so it cannot keep the run phase open.
+    fork
+      m_cva6_axi_agent.run_layered_register_vseq();
+    join_none
+  end
+endtask : run_phase
 
 task top_chip_dv_env::load_memories();
   foreach (cfg.mem_image_files[m]) begin
