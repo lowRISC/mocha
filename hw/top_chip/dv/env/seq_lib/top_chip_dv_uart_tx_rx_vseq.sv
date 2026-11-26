@@ -7,7 +7,7 @@
 // SW sends a byte sequence out of uart_tx_o with both internal loopbacks off. The UART agent echoes
 // each of those bytes back onto uart_rx_i, closing the loopback outside the chip, and SW passes if
 // it reads back what it sent.
-class top_chip_dv_uart_tx_rx_vseq extends top_chip_dv_uart_base_vseq;
+class top_chip_dv_uart_tx_rx_vseq extends top_chip_dv_base_vseq;
   `uvm_object_utils(top_chip_dv_uart_tx_rx_vseq)
 
   // Size of the tx_rx_data array in SW. sw_symbol_backdoor_overwrite() checks the two agree.
@@ -45,6 +45,8 @@ constraint top_chip_dv_uart_tx_rx_vseq::byte_count_c {
 
 function top_chip_dv_uart_tx_rx_vseq::new(string name = "");
   super.new(name);
+  // The echo in body() reads uart_tx_data_q
+  do_uart_tx_log = 1'b1;
 endfunction : new
 
 task top_chip_dv_uart_tx_rx_vseq::body();
@@ -53,9 +55,9 @@ task top_chip_dv_uart_tx_rx_vseq::body();
   `uvm_info(`gfn,
             $sformatf("Echoing %0d bytes from uart_tx_o onto uart_rx_i", byte_count[0]),
             UVM_LOW)
-  // Fork the echo so that body() returns at once, as the base does for get_uart_tx_items(). The
-  // base post_body() logs uart_tx_line_buf without clearing it, so if body() blocked until the
-  // last echo, the bytes SW sent would be logged twice.
+  // Fork the echo so that body() returns at once, as the base does for get_uart_tx_items(). When
+  // +max_quit_count lets a SW failure run on, post_start() then ends the test as SW reports, where
+  // a blocking echo would wait for the DV_WAIT below to time out on a byte SW never sent.
   //
   // uart_tx_data_q holds every byte the monitor has seen on uart_tx_o since SW started the test,
   // and SW prints nothing before its byte sequence.

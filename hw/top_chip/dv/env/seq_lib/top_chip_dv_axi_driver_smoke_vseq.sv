@@ -36,6 +36,8 @@ endclass : top_chip_dv_axi_driver_smoke_vseq
 function top_chip_dv_axi_driver_smoke_vseq::new(string name = "");
   super.new(name);
   do_wait_for_sw_test_done = 1'b0;
+  // No SW runs to enter the test
+  do_uart_tx_log = 1'b0;
 endfunction : new
 
 task top_chip_dv_axi_driver_smoke_vseq::body();

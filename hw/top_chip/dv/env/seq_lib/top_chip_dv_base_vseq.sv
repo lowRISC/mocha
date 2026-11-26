@@ -17,8 +17,28 @@ class top_chip_dv_base_vseq extends uvm_sequence;
   // Knob to enable post_start routines
   bit do_wait_for_sw_test_done = 1'b1;
 
+  // Knob to sample uart_tx_o once SW is in the test, keeping every byte in uart_tx_data_q and
+  // logging every line under the UART_TRACE ID. It takes effect in a body() that calls
+  // super.body().
+  //
+  // new() reads +do_uart_tx_log into it, so a derived vseq that needs a given value sets it in its
+  // own new().
+  bit do_uart_tx_log = 1'b0;
+
+  // Baud rate SW programs into the console UART, BAUD_RATE in sw/device/lib/hal/uart.h
+  protected baud_rate_e uart_baud_rate = BaudRate1Mbps;
+
+  // Bytes the DUT has sent on uart_tx_o since SW entered the test, kept when do_uart_tx_log is set
+  protected byte uart_tx_data_q[$];
+
+  // Line SW is printing on uart_tx_o, logged when its newline arrives
+  local string uart_tx_line_buf = "";
+
   // Standard SV/UVM methods
   extern function new(string name = "");
+  // Wait for SW to enter the test and start sampling uart_tx_o, if do_uart_tx_log is set
+  //
+  // A derived body() that calls this first therefore starts once SW is in the test.
   extern task body();
   extern task pre_start();
   extern task post_start();
@@ -28,6 +48,24 @@ class top_chip_dv_base_vseq extends uvm_sequence;
   extern virtual task dut_init(string reset_kind = "HARD");
   extern task apply_reset(string kind = "HARD");
   extern task wait_for_sw_test_done();
+  // Set the baud rate, parity and monitors of the UART agent
+  //
+  // Called by body() when do_uart_tx_log is set.
+  //
+  //    enable:            1 applies the arguments below, 0 turns both monitors off
+  //    enable_tx_monitor: Sample data on the TX port
+  //    enable_rx_monitor: Sample data on the RX port
+  //    en_parity:         Enable parity when driving RX traffic
+  //    odd_parity:        Compute odd parity when driving RX traffic
+  //    baud_rate:         The baud rate
+  extern protected function void configure_uart_agent(bit enable,
+                                                      bit enable_tx_monitor = 1'b1,
+                                                      bit enable_rx_monitor = 1'b0,
+                                                      bit en_parity = 1'b0,
+                                                      bit odd_parity = 1'b0,
+                                                      baud_rate_e baud_rate = uart_baud_rate);
+  // Collect the bytes the DUT sends on uart_tx_o into uart_tx_data_q and log each complete line
+  extern local task get_uart_tx_items();
   // Backdoor-read or override a const symbol in SW to modify the behavior of the test.
   // In the extended test vseq, add this function call to the start of body().
   extern function void sw_symbol_backdoor_access(input string symbol,
@@ -60,10 +98,17 @@ endclass : top_chip_dv_base_vseq
 
 function top_chip_dv_base_vseq::new(string name = "");
   super.new(name);
+  void'($value$plusargs("do_uart_tx_log=%0b", do_uart_tx_log));
 endfunction : new
 
 task top_chip_dv_base_vseq::body();
-  // Empty body for base virtual sequence, required to avoid UVM warning
+  if (do_uart_tx_log) begin
+    `DV_WAIT(cfg.sw_test_status_vif.sw_test_status == SwTestStatusInTest);
+    configure_uart_agent(.enable(1), .enable_rx_monitor(1));
+    fork
+      get_uart_tx_items();
+    join_none
+  end
 endtask : body
 
 task top_chip_dv_base_vseq::pre_start();
@@ -117,6 +162,46 @@ task top_chip_dv_base_vseq::wait_for_sw_test_done();
     end : isolation_thread
   join
 endtask : wait_for_sw_test_done
+
+function void top_chip_dv_base_vseq::configure_uart_agent(bit enable,
+                                                         bit enable_tx_monitor = 1'b1,
+                                                         bit enable_rx_monitor = 1'b0,
+                                                         bit en_parity = 1'b0,
+                                                         bit odd_parity = 1'b0,
+                                                         baud_rate_e baud_rate = uart_baud_rate);
+  if (enable) begin
+    `uvm_info(`gfn, "Configuring the UART agent", UVM_LOW)
+    p_sequencer.cfg.m_uart_agent_cfg.set_parity(en_parity, odd_parity);
+    p_sequencer.cfg.m_uart_agent_cfg.set_baud_rate(baud_rate);
+    p_sequencer.cfg.m_uart_agent_cfg.en_tx_monitor = enable_tx_monitor;
+    p_sequencer.cfg.m_uart_agent_cfg.en_rx_monitor = enable_rx_monitor;
+  end else begin
+    `uvm_info(`gfn, "Turning the UART agent monitors off", UVM_LOW)
+    p_sequencer.cfg.m_uart_agent_cfg.en_tx_monitor = 0;
+    p_sequencer.cfg.m_uart_agent_cfg.en_rx_monitor = 0;
+  end
+endfunction : configure_uart_agent
+
+task top_chip_dv_base_vseq::get_uart_tx_items();
+  uart_item item;
+
+  forever begin
+    p_sequencer.uart_tx_fifo.get(item);
+    if (item.data == "\n") begin
+      `uvm_info("UART_TRACE",
+                $sformatf("Received UART data over TX: %0s", uart_tx_line_buf),
+                UVM_LOW)
+      uart_tx_line_buf = "";
+    end else if (item.data == 8'h0d) begin
+      // Discard carriage returns from \r\n line endings
+    end else if (item.data inside {[8'h20:8'h7e]}) begin
+      uart_tx_line_buf = {uart_tx_line_buf, string'(item.data)};
+    end else begin
+      uart_tx_line_buf = {uart_tx_line_buf, $sformatf("\\x%02h", item.data)};
+    end
+    uart_tx_data_q.push_back(item.data);
+  end
+endtask : get_uart_tx_items
 
 function void top_chip_dv_base_vseq::sw_symbol_backdoor_access(
   input string symbol,
