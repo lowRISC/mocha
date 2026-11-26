@@ -1,0 +1,91 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// Register description of the tag controller, written from docs/tag_controller.adoc of the
+// upstream repository for the baseline configuration of the vPlan (64-bit registers, no
+// performance counters).
+//
+// It is used to generate the DV register model only. The RTL register logic is hand-written in
+// axi_tagctrl_config.sv and is not generated from this file.
+//
+// The performance registers are left out: the register table and the register sections place
+// perf_inhibit and perf_select at different offsets (see the vPlan), and with no counters every
+// one of them reads zero.
+{
+  name:               "tagctrl",
+  human_name:         "Tag controller",
+  one_line_desc:      "Tags memory behind an AXI port with a hierarchical tag table",
+  // TODO: placeholder, reggen requires an id but no top in Mocha reads it
+  cip_id:             "98",
+  version:            "0.1.0",
+  clocking: [{clock: "clk_i", reset: "rst_ni"}],
+  // The configuration subordinate is AXI. reggen only knows TL-UL, which only shapes the RTL it
+  // would generate, and none is generated from this file.
+  bus_interfaces: [
+    { protocol: "tlul", direction: "device" }
+  ],
+  regwidth: "64",
+  registers: [
+    { name: "STATUS",
+      desc: "State of the tag controller, whether it is locked, and the last error.",
+      swaccess: "ro",
+      hwaccess: "hwo",
+      hwext: "true",
+      fields: [
+        { bits: "0", name: "serving", resval: "0", desc: "In the Serving state." }
+        { bits: "1", name: "zeroing", resval: "0", desc: "In the Zeroing state." }
+        { bits: "2", name: "flushing", resval: "0", desc: "In the Flushing state." }
+        { bits: "3", name: "unconfigured", resval: "1", desc: "In the Unconfigured state." }
+        { bits: "4", name: "locked", resval: "0", desc: "The configuration is locked." }
+        { bits: "23:16", name: "error", resval: "0", desc: "The last fatal error, 0 for none." }
+      ]
+    }
+    { name: "CONTROL",
+      desc: "Commands. A write must be one-hot to take effect; reads return 0.",
+      swaccess: "wo",
+      hwaccess: "hro",
+      hwext: "true",
+      hwqe: "true",
+      fields: [
+        { bits: "0", name: "start", desc: "Zero the root table and start serving." }
+        { bits: "8", name: "resume", desc: "Start serving without zeroing." }
+        { bits: "16", name: "stop", desc: "Flush the tag cache to the tag table." }
+        { bits: "24", name: "lock", desc: "Lock the configuration until reset." }
+      ]
+    }
+    { name: "COVERED_BASE",
+      desc: "Lowest address whose tags are managed; a write unconfigures.",
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits: "63:0", name: "addr", resval: "0", desc: "8 KiB aligned base address." }
+      ]
+    }
+    { name: "COVERED_TOP",
+      desc: "Highest address (exclusive) whose tags are managed; a write unconfigures.",
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits: "63:0", name: "addr", resval: "0", desc: "8 KiB aligned top address." }
+      ]
+    }
+    { name: "TAG_TABLE_BASE",
+      desc: "Lowest address of the tag table; a write unconfigures.",
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits: "63:0", name: "addr", resval: "0", desc: "64 B aligned base address." }
+      ]
+    }
+    { name: "TAG_TABLE_TOP",
+      desc: "End of the tag table, computed from the region registers; 0 on an error.",
+      swaccess: "ro",
+      hwaccess: "hwo",
+      hwext: "true",
+      fields: [
+        { bits: "63:0", name: "addr", resval: "0", desc: "End address of the tag table." }
+      ]
+    }
+  ]
+}

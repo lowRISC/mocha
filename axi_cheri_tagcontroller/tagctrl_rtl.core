@@ -1,0 +1,44 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+# The tag controller the DV environment of hw/ip/tagctrl/dv is written against: this upstream
+# checkout with compat/axi_tagctrl_top.patch applied.
+# Replaced by cosmic::tagctrl once it is re-vendored (lowRISC/mocha#797).
+#
+# axi_tagc_read_unit and axi_tagc_write_unit are left out: nothing instantiates them and they need
+# the axi_llc package. compat/stream_fifo.sv stands in for the common_cells module of that name.
+name: "lowrisc:mocha_dv:tagctrl_rtl"
+description: "Upstream tag controller RTL for block-level DV"
+
+filesets:
+  files_rtl:
+    depend:
+      - pulp-platform.org::axi
+      - lowrisc:common_cells:all
+      - lowrisc:cosmic:hpdcache
+    files:
+      - compat/stream_fifo.sv
+      - src/axi_tagctrl_pkg.sv
+      - src/tag_lookup_engine/tag_lookup_engine_hpdcache_configs.sv
+      - src/axi_tagctrl_config.sv
+      - src/tag_lookup_engine/tag_lookup_engine.sv
+      - src/tag_lookup_engine/tag_lookup_engine_root_init.sv
+      - src/tag_lookup_engine/tag_lookup_engine_hpdcache_wrapper.sv
+      - src/tag_lookup_engine/tag_lookup_engine_hpdcache_read_req_rsp_wrapper.sv
+      - src/tag_lookup_engine/tag_lookup_engine_hpdcache_write_req_rsp_wrapper.sv
+      - src/tag_lookup_engine/tag_lookup_engine_flushing.sv
+      - src/tag_lookup_engine/tag_lookup_engine_table_lookups.sv
+      - src/tag_lookup_engine/tag_lookup_engine_table_lookups_read.sv
+      - src/tag_lookup_engine/tag_lookup_engine_table_lookups_write.sv
+      - src/axi_tagctrl_ax.sv
+      - src/axi_tagctrl_r.sv
+      - src/axi_tagctrl_w.sv
+      - src/axi_tagctrl_top.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_rtl

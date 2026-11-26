@@ -1,0 +1,30 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:tagctrl_seq:0.1"
+description: "Tag controller UVM sequences"
+
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:mocha_dv:tagctrl_env:0.1
+    files:
+      - tagctrl_seq_cfg.svh: {is_include_file: true}
+      - tagctrl_op.svh: {is_include_file: true}
+      - tagctrl_base_seq.svh: {is_include_file: true}
+      - tagctrl_access_seq.svh: {is_include_file: true}
+      - tagctrl_reset_seq.svh: {is_include_file: true}
+      - tagctrl_cfg_program_seq.svh: {is_include_file: true}
+      - tagctrl_cfg_command_seq.svh: {is_include_file: true}
+      - tagctrl_cfg_await_seq.svh: {is_include_file: true}
+      - tagctrl_cfg_walk_seq.svh: {is_include_file: true}
+      - tagctrl_main_vseq.svh: {is_include_file: true}
+      - tagctrl_seq_pkg.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv

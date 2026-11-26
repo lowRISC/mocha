@@ -1,0 +1,26 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:tagctrl_test:0.1"
+description: "Tag controller UVM tests"
+
+filesets:
+  files_dv:
+    depend:
+      - lowrisc:mocha_dv:tagctrl_seq:0.1
+    files:
+      - tagctrl_base_test.svh: {is_include_file: true}
+      - tagctrl_reset_state_test.svh: {is_include_file: true}
+      - tagctrl_register_map_test.svh: {is_include_file: true}
+      - tagctrl_region_registers_readback_test.svh: {is_include_file: true}
+      - tagctrl_control_start_test.svh: {is_include_file: true}
+      - tagctrl_tag_roundtrip_test.svh: {is_include_file: true}
+      - tagctrl_test_pkg.sv
+    file_type: systemVerilogSource
+
+targets:
+  default:
+    filesets:
+      - files_dv

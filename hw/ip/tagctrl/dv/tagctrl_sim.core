@@ -1,0 +1,31 @@
+CAPI=2:
+# Copyright lowRISC and contributors (COSMIC project).
+# Licensed under the Apache License, Version 2.0, see LICENSE for details.
+# SPDX-License-Identifier: Apache-2.0
+
+name: "lowrisc:mocha_dv:tagctrl_sim:0.1"
+description: "Tag controller block-level DV sim target"
+
+filesets:
+  files_rtl:
+    depend:
+      - lowrisc:mocha_dv:tagctrl_rtl
+
+  files_dv:
+    depend:
+      - lowrisc:mocha_dv:tagctrl_test:0.1
+      - lowrisc:mocha_dv:axi_vip
+      - lowrisc:dv:common_ifs
+      - pulp-platform.org::axi
+    files:
+      - tb/tb.sv
+    file_type: systemVerilogSource
+
+targets:
+  sim:
+    toplevel: tb
+    filesets:
+      - files_rtl
+      - files_dv
+    # DVSim needs the VCS file list even when running Xcelium
+    default_tool: vcs
