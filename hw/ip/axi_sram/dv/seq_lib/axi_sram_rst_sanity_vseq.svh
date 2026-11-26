@@ -1,0 +1,24 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+// rst_sanity: checks that the DUT leaves reset cleanly and accepts its first transaction.
+class axi_sram_rst_sanity_vseq extends axi_sram_base_vseq;
+  `uvm_object_utils(axi_sram_rst_sanity_vseq)
+
+  // Standard SV/UVM methods
+  extern function new(string name = "");
+  extern task body();
+endclass : axi_sram_rst_sanity_vseq
+
+
+function axi_sram_rst_sanity_vseq::new(string name = "");
+  super.new(name);
+endfunction : new
+
+task axi_sram_rst_sanity_vseq::body();
+  await_reset();
+  // The very first transaction after reset must complete and round-trip.
+  write_word(32'd1, 64'h0, 64'hA5A5_5A5A_C3C3_3C3C);
+  read_word(32'd1, 64'h0);
+endtask : body
