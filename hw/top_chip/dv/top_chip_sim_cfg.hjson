@@ -422,6 +422,13 @@
       sw_images: ["bootrom:5"]
       run_opts: ["+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
+    {
+      name: tl_xbar_smoke
+      build_mode: axi_driver_to_cva6_bridge
+      uvm_test_seq: top_chip_dv_tl_xbar_smoke_vseq
+      sw_images: ["bootrom:5"]
+      run_opts: ["+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -472,6 +479,7 @@
         "kmac_rom_app_test",
         "kmac_rom_app_test_cheri",
         "axi_driver_smoke",
+        "tl_xbar_smoke",
       ]
     }
     {
