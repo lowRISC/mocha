@@ -356,12 +356,32 @@ module rstmgr
   assign shadow_fsm_errs[1] = '0;
 
   // Generating resets for main
-  // Power Domains: ['Main']
+  // Power Domains: ['Main', 'Aon']
   // Shadowed: False
-  assign resets_o.rst_main_n[DomainAonSel] = '0;
-  assign cnsty_chk_errs[2][DomainAonSel] = '0;
-  assign fsm_errs[2][DomainAonSel] = '0;
-  assign rst_en_o.main[DomainAonSel] = MuBi4True;
+  rstmgr_leaf_rst #(
+    .SecCheck(SecCheck),
+    .SecMaxSyncDelay(SecMaxSyncDelay),
+    .SwRstReq(1'b0)
+  ) u_daon_main (
+    .clk_i,
+    .rst_ni,
+    .leaf_clk_i(clk_main_i),
+    .parent_rst_ni(rst_lc_src_n[DomainAonSel]),
+    .sw_rst_req_ni(1'b1),
+    .scan_rst_ni,
+    .scanmode_i,
+    .rst_en_o(rst_en_o.main[DomainAonSel]),
+    .leaf_rst_o(resets_o.rst_main_n[DomainAonSel]),
+    .err_o(cnsty_chk_errs[2][DomainAonSel]),
+    .fsm_err_o(fsm_errs[2][DomainAonSel])
+  );
+
+  if (SecCheck) begin : gen_daon_main_assert
+  `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(
+    DAonMainFsmCheck_A,
+    u_daon_main.gen_rst_chk.u_rst_chk.u_state_regs,
+    alert_tx_o[0])
+  end
   rstmgr_leaf_rst #(
     .SecCheck(SecCheck),
     .SecMaxSyncDelay(SecMaxSyncDelay),
@@ -424,12 +444,32 @@ module rstmgr
   assign shadow_fsm_errs[3] = '0;
 
   // Generating resets for io
-  // Power Domains: ['Main']
+  // Power Domains: ['Main', 'Aon']
   // Shadowed: False
-  assign resets_o.rst_io_n[DomainAonSel] = '0;
-  assign cnsty_chk_errs[4][DomainAonSel] = '0;
-  assign fsm_errs[4][DomainAonSel] = '0;
-  assign rst_en_o.io[DomainAonSel] = MuBi4True;
+  rstmgr_leaf_rst #(
+    .SecCheck(SecCheck),
+    .SecMaxSyncDelay(SecMaxSyncDelay),
+    .SwRstReq(1'b0)
+  ) u_daon_io (
+    .clk_i,
+    .rst_ni,
+    .leaf_clk_i(clk_io_i),
+    .parent_rst_ni(rst_lc_src_n[DomainAonSel]),
+    .sw_rst_req_ni(1'b1),
+    .scan_rst_ni,
+    .scanmode_i,
+    .rst_en_o(rst_en_o.io[DomainAonSel]),
+    .leaf_rst_o(resets_o.rst_io_n[DomainAonSel]),
+    .err_o(cnsty_chk_errs[4][DomainAonSel]),
+    .fsm_err_o(fsm_errs[4][DomainAonSel])
+  );
+
+  if (SecCheck) begin : gen_daon_io_assert
+  `ASSERT_PRIM_FSM_ERROR_TRIGGER_ALERT(
+    DAonIoFsmCheck_A,
+    u_daon_io.gen_rst_chk.u_rst_chk.u_state_regs,
+    alert_tx_o[0])
+  end
   rstmgr_leaf_rst #(
     .SecCheck(SecCheck),
     .SecMaxSyncDelay(SecMaxSyncDelay),
