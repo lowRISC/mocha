@@ -57,6 +57,15 @@ rom_t mocha_system_rom(void)
 #endif /* defined(__CHERI_PURE_CAPABILITY__) */
 }
 
+void *mocha_system_sram(void)
+{
+#if defined(__CHERI_PURE_CAPABILITY__)
+    return create_mmio_capability(sram_base, 0x20000u);
+#else /* !defined(__CHERI_PURE_CAPABILITY__) */
+    return (void *)sram_base;
+#endif /* defined(__CHERI_PURE_CAPABILITY__) */
+}
+
 mailbox_t mocha_system_mailbox(void)
 {
 #if defined(__CHERI_PURE_CAPABILITY__)

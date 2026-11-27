@@ -32,10 +32,12 @@ enum : uint64_t {
     cycles_per_us = (system_clock_frequency / 1000000u),
 };
 
+static const uintptr_t sram_base = 0x10000000ul;
 static const uintptr_t dram_base = 0x80000000ul;
 
 /* In order of memory map */
 rom_t mocha_system_rom(void);
+void *mocha_system_sram(void);
 mailbox_t mocha_system_mailbox(void);
 ethernet_t mocha_system_ethernet(void);
 gpio_t mocha_system_gpio(void);
