@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0, see LICENSE for details.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "hal/mocha.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -16,21 +17,12 @@ static bool rapid_write_test()
     uint64_t d7 = 0xE18D4B4FBDA05B40UL, res7;
     uint64_t d8 = 0x0E918F4F7B4F4F31UL, res8;
 
-    __asm__ volatile(
-        "j test_start\n\t"
-
-        // Storage area.
-        ".p2align 6\n\t"
-        "storage:\n\t"
-        ".zero 64\n\t" // 64 bytes.
-
-        "test_start:\n\t");
-
     // Using inline assembly to keep writes and reads back-to-back
 #if defined(__CHERI_PURE_CAPABILITY__)
     __asm__ volatile(
-        // Get capability to storage in t0.
-        "lly t0, storage\n\t"
+        // Get capability to AXI SRAM in t0.
+        "auipc t0, 0\n\t"
+        "yaddrw t0, t0, %16\n\t"
 
         // Writes
         "sd %8, 0(t0)\n\t"
@@ -53,12 +45,13 @@ static bool rapid_write_test()
         "ld %7, 56(t0)\n\t"
         : "=r"(res1), "=r"(res2), "=r"(res3), "=r"(res4), "=r"(res5), "=r"(res6), "=r"(res7),
           "=r"(res8)
-        : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8)
+        : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8),
+          "r"((uint64_t)sram_base) // NOLINT(cheri-PtrToIntCast): Need a uint to load into register
         : "t0", "memory");
 #else /* !defined(__CHERI_PURE_CAPABILITY__) */
     __asm__ volatile(
-        // Get pointer to storage t0.
-        "lla t0, storage\n\t"
+        // Get pointer to AXI SRAM in t0.
+        "mv t0, %16\n\t"
 
         // Writes
         "sd %8, 0(t0)\n\t"
@@ -81,7 +74,8 @@ static bool rapid_write_test()
         "ld %7, 56(t0)\n\t"
         : "=r"(res1), "=r"(res2), "=r"(res3), "=r"(res4), "=r"(res5), "=r"(res6), "=r"(res7),
           "=r"(res8)
-        : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8)
+        : "r"(d1), "r"(d2), "r"(d3), "r"(d4), "r"(d5), "r"(d6), "r"(d7), "r"(d8),
+          "r"((uint64_t)sram_base) // NOLINT(cheri-PtrToIntCast): Need a uint to load into register
         : "t0", "memory");
 #endif /* defined(__CHERI_PURE_CAPABILITY__) */
 

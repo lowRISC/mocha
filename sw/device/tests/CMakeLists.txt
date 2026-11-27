@@ -9,6 +9,7 @@ mocha_add_test(NAME test_framework_exception_test SOURCES test_framework/excepti
 mocha_add_test(NAME dv_log_smoketest SOURCES test_framework/dv_log_smoketest.c LIBRARIES ${LIBS} SKIP_VERILATOR SKIP_FPGA)
 mocha_add_test(NAME axi_sram_smoketest SOURCES axi_sram/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME axi_sram_tag_test SOURCES axi_sram/tag_test.c LIBRARIES ${LIBS})
+mocha_add_test(NAME axi_sram_tag_reset_test SOURCES axi_sram/tag_reset_test.c LIBRARIES ${LIBS})
 mocha_add_test(NAME entropy_src_smoketest SOURCES entropy_src/smoketest.c LIBRARIES ${LIBS})
 # Cannot run this on verilator as the ethernet MAC is not in the verilator top
 mocha_add_test(NAME ethernet_smoketest SOURCES ethernet/smoketest.c LIBRARIES ${LIBS} SKIP_VERILATOR)

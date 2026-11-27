@@ -255,7 +255,6 @@ module tb;
     initial begin
       chip_mem_e     mem;
       mem_bkdr_util  m_mem_bkdr_util[chip_mem_e];
-      mem_clear_util tag_mem_clear;
 
       m_mem_bkdr_util[ChipMemSRAM] = new(
         .name                 ("mem_bkdr_util[ChipMemSRAM]"       ),
@@ -297,17 +296,6 @@ module tb;
       );
 
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemDRAM], `DRAM_MEM_HIER)
-
-      // TODO MVy, see if required
-      // Zero-initialise the SRAM Capability tags, otherwise TL-UL FIFO assertions will fire;
-      // mem_bkdr_util does not handle the geometry of this memory.
-      tag_mem_clear = new(
-        .name   ("tag_mem_clear"              ),
-        .path   (`DV_STRINGIFY(`TAG_MEM_HIER) ),
-        .depth  ($size(`TAG_MEM_HIER)         ),
-        .n_bits ($bits(`TAG_MEM_HIER)         )
-      );
-      tag_mem_clear.clear_mem();
 
       mem = mem.first();
       do begin

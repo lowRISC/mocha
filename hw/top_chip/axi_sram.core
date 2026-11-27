@@ -12,6 +12,8 @@ filesets:
       - lowrisc:mocha_constants:top_pkg
       - pulp-platform.org::axi
       - lowrisc:prim:assert:0.1
+      - lowrisc:prim:sparse_fsm
+      - lowrisc:prim:count
       - lowrisc:prim:ram_1p
     files:
       - rtl/axi_sram.sv
