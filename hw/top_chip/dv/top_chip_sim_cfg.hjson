@@ -388,6 +388,20 @@
                  "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
     {
+      name: axi_sram_tag_reset_test
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_tag_reset_test_vanilla:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/axi_sram_tag_reset_test_vanilla.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
+      name: axi_sram_tag_reset_test_cheri
+      uvm_test_seq: top_chip_dv_base_vseq
+      sw_images: ["axi_sram_tag_reset_test_cheri:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/axi_sram_tag_reset_test_cheri.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
       name: entropy_src_smoke
       uvm_test_seq: top_chip_dv_base_vseq
       sw_images: ["entropy_src_smoketest_vanilla:5" "bootrom:5"]
@@ -584,7 +598,9 @@
         "axi_sram_smoke",
         "axi_sram_smoke_cheri",
         "axi_sram_tag_test",
-        "axi_sram_tag_test_cheri"
+        "axi_sram_tag_test_cheri",
+        "axi_sram_tag_reset_test",
+        "axi_sram_tag_reset_test_cheri"
       ]
     }
     {
