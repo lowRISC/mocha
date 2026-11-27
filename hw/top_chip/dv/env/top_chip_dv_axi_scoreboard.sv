@@ -15,6 +15,9 @@ class top_chip_dv_axi_scoreboard extends uvm_scoreboard;
   // nothing will ever arrive to match a manager access. It is excluded from routing comparison.
   string           sw_dv_window_id = "sim_sw_dv_window";
 
+  // Set by the environment. check_phase reads exp_axi_traffic from it.
+  top_chip_dv_env_cfg cfg;
+
   `uvm_analysis_imp_decl(_mgr0_cva6)
   `uvm_analysis_imp_decl(_mgr1_dm_host)
   `uvm_analysis_imp_decl(_sub0_romctrlmem)
@@ -448,7 +451,13 @@ endfunction : reset
 function void top_chip_dv_axi_scoreboard::check_phase(uvm_phase phase);
   super.check_phase(phase);
 
-  if (matched_count == 0) begin
+  if (!cfg.exp_axi_traffic) begin
+    if (matched_count > 0) begin
+      `uvm_error("SCB_UNEXPECTED_TRAFFIC",
+                 $sformatf({"AXI scoreboard compared %0d transactions in a test in which every ",
+                            "manager access should stall"}, matched_count))
+    end
+  end else if (matched_count == 0) begin
     `uvm_error("SCB_NO_COMPARISONS",
                {"AXI scoreboard compared zero transactions: nothing reached it from the taps, ",
                 "so the checks below have not run on anything"})

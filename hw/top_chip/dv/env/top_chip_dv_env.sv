@@ -93,6 +93,11 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
     `uvm_fatal(`gfn, "Cannot get sys_clk_vif")
   end
 
+  if (!uvm_config_db#(virtual rom_check_if)::get(this, "", "rom_check_vif",
+                                                 cfg.rom_check_vif)) begin
+    `uvm_fatal(`gfn, "failed to get rom_check_vif from uvm_config_db")
+  end
+
   // Instantiate I2C agent
   m_i2c_agent = i2c_agent::type_id::create("m_i2c_agent", this);
   uvm_config_db#(i2c_agent_cfg)::set(this, "m_i2c_agent", "cfg", cfg.m_i2c_agent_cfg);
@@ -130,7 +135,8 @@ function void top_chip_dv_env::build_phase(uvm_phase phase);
     m_cva6_axi_agent.set_vif(cva6_axi_vif);
   end
 
-  m_axi_scb = top_chip_dv_axi_scoreboard::type_id::create("m_axi_scb", this);
+  m_axi_scb     = top_chip_dv_axi_scoreboard::type_id::create("m_axi_scb", this);
+  m_axi_scb.cfg = cfg;
 
   uvm_config_db#(top_chip_dv_env_cfg)::set(this, "", "cfg", cfg);
 

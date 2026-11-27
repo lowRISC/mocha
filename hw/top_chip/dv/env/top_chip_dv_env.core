@@ -17,7 +17,11 @@ filesets:
       - lowrisc:mocha_dv:gpio_env
       - lowrisc:dv:i2c_env
       - lowrisc:mocha_dv:top_chip_ral
+      - lowrisc:dv:rom_ctrl_bkdr_util
+      - lowrisc:ip:rom_ctrl_pkg:0.1
+      - lowrisc:ip:lc_ctrl_pkg:0.1
     files:
+      - rom_check_if.sv
       - top_chip_dv_env_pkg.sv
       - mem_clear_util.sv: {is_include_file: true}
       - top_chip_dv_env_cfg.sv: {is_include_file: true}
@@ -38,6 +42,7 @@ filesets:
       - seq_lib/top_chip_dv_spi_host_smoke_vseq.sv: {is_include_file: true}
       - seq_lib/top_chip_dv_axi_driver_smoke_vseq.sv: {is_include_file: true}
       - seq_lib/top_chip_dv_tl_xbar_smoke_vseq.svh: {is_include_file: true}
+      - seq_lib/top_chip_dv_rom_ctrl_integrity_check_vseq.svh: {is_include_file: true}
     file_type: systemVerilogSource
 
 targets:

@@ -16,6 +16,16 @@ class top_chip_dv_env_cfg extends uvm_object;
   virtual sw_logger_if      sw_logger_vif;
   virtual sw_test_status_if sw_test_status_vif;
 
+  // Result of the boot-time ROM check and pwrmgr's fetch enable
+  virtual rom_check_if rom_check_vif;
+
+  // Whether the AXI scoreboard should compare any transaction during the test
+  //
+  // When set, the scoreboard reports a run that ends without comparing any, since that means its
+  // monitors saw nothing. A test in which every manager access should stall clears it, and the
+  // scoreboard then reports any transaction it compared instead.
+  bit exp_axi_traffic = 1'b1;
+
   // External interface agent configs
   rand uart_agent_cfg    m_uart_agent_cfg;
   rand i2c_agent_cfg     m_i2c_agent_cfg;

@@ -8,6 +8,7 @@ package top_chip_dv_env_pkg;
   import csr_utils_pkg::*;
   import dv_base_reg_pkg::*;
   import mem_bkdr_util_pkg::*;
+  import rom_ctrl_bkdr_util_pkg::rom_ctrl_bkdr_util;
   import sw_test_status_pkg::*;
   import uart_agent_pkg::*;
   import spi_agent_pkg::*;
