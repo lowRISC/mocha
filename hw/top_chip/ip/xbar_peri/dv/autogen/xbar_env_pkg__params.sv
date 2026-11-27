@@ -41,7 +41,7 @@ tl_device_t xbar_devices[$] = '{
         '{32'h45000000, 32'h4500ffff}
     }},
     '{"plic", '{
-        '{32'h48000000, 32'h4bffffff}
+        '{32'h48000000, 32'h4fffffff}
 }}};
 
   // List of Xbar hosts

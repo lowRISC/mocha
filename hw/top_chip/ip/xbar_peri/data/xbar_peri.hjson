@@ -164,7 +164,7 @@
         base_addrs: {
           hart: "0x48000000",
         },
-        size_byte: "0x04000000",
+        size_byte: "0x08000000",
       }],
     },
   ],

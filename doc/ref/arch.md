@@ -75,7 +75,7 @@ This is the current memory map for Mocha, where the base and top addresses are i
 | 0x20000000   | 0x2000ffff  | 64.0 kiB   | DEBUG_MODULE  |<!-- sgfpp0_x -->
 | 0x20010000   | 0x2001ffff  | 64.0 kiB   | MAILBOX       |<!-- z1bwrt_x -->
 | 0x20020000   | 0x2002ffff  | 64.0 kiB   | DV_SW_IFC     |<!-- u122px_x -->
-| 0x30000000   | 0x3000603f  | 24.1 kiB   | ETHERNET      |<!-- 2z3zns_x -->
+| 0x30000000   | 0x3000ffff  | 64.0 kiB   | ETHERNET      |<!-- 2z3zns_x -->
 | 0x40000000   | 0x4000ffff  | 64.0 kiB   | GPIO          |<!-- l5wm3d_x -->
 | 0x40020000   | 0x4002ffff  | 64.0 kiB   | CLKMGR        |<!-- zuyj1v_x -->
 | 0x40030000   | 0x4003ffff  | 64.0 kiB   | RSTMGR        |<!-- n2dywn_x -->
@@ -87,7 +87,7 @@ This is the current memory map for Mocha, where the base and top addresses are i
 | 0x43000000   | 0x4300ffff  | 64.0 kiB   | SPI_DEVICE    |<!-- vniczf_x -->
 | 0x44000000   | 0x4400ffff  | 64.0 kiB   | TIMER         |<!-- gjk3vu_x -->
 | 0x45000000   | 0x4500ffff  | 64.0 kiB   | SPI_HOST      |<!-- jkyz51_x -->
-| 0x48000000   | 0x4c004003  | 64.0 MiB   | PLIC          |<!-- pfftm1_x -->
+| 0x48000000   | 0x4fffffff  | 128.0 MiB  | PLIC          |<!-- pfftm1_x -->
 | 0x80000000   | 0xbf7fffff  | 1016.0 MiB | DRAM          |<!-- 04smz7_x -->
 <!-- END generated memory map -->
 
