@@ -47,11 +47,11 @@ class top_chip_dv_tl_xbar_smoke_vseq extends top_chip_dv_base_vseq;
   //
   // The register is intr_enable wherever a device has interrupts, being plain RW with a zero reset.
   // Elsewhere it is a plain RW register that csr_excl rules out neither for writes nor for the
-  // reset value check, and that the hardware leaves alone while the test runs. clkmgr's is
-  // JITTER_ENABLE, whose write exclusion guards against random values. The test only writes the
-  // MuBi True and False encodings, so the exclusion is waived in excl_waivers. rom_ctrl has no
-  // such register, so its DIGEST_0 is read instead, which is non-zero once the boot-time check has
-  // finished.
+  // checks of its reset value and of the value written, and that the hardware leaves alone while
+  // the test runs. clkmgr's is JITTER_ENABLE, whose write exclusion guards against random values.
+  // The test only writes the MuBi True and False encodings, so the exclusion is waived in
+  // excl_waivers. rom_ctrl has no such register, so its DIGEST_0 is read instead, which is non-zero
+  // once the boot-time check has finished.
   //
   // prio and digest are register arrays, so their handles are indexed even though the registers
   // are named PRIO_0 and DIGEST_0.
@@ -76,7 +76,8 @@ class top_chip_dv_tl_xbar_smoke_vseq extends top_chip_dv_base_vseq;
   //    csr: The register of blk that targets names
   extern local task check_block(uvm_reg_block blk, uvm_reg csr);
 
-  // Return whether csr_excl rules out writing csr or checking its reset value
+  // Return whether csr_excl rules out writing csr, checking its reset value or checking it after a
+  // write
   //
   // A field-level exclusion counts too: csr_excl_item::is_excl() on a register does not look at
   // its fields.
@@ -290,8 +291,10 @@ function bit top_chip_dv_tl_xbar_smoke_vseq::is_excluded(uvm_reg csr);
   end
   return excl.is_excl(csr, CsrExclWrite, CsrRwTest) ||
          excl.is_excl(csr, CsrExclInitCheck, CsrHwResetTest) ||
+         excl.is_excl(csr, CsrExclWriteCheck, CsrRwTest) ||
          get_mask_excl_fields(csr, CsrExclWrite, CsrRwTest, excl) != '1 ||
-         get_mask_excl_fields(csr, CsrExclInitCheck, CsrHwResetTest, excl) != '1;
+         get_mask_excl_fields(csr, CsrExclInitCheck, CsrHwResetTest, excl) != '1 ||
+         get_mask_excl_fields(csr, CsrExclWriteCheck, CsrRwTest, excl) != '1;
 endfunction : is_excluded
 
 task top_chip_dv_tl_xbar_smoke_vseq::read_and_compare(uvm_reg     csr,
