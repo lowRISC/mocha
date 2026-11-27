@@ -8,6 +8,7 @@ module tb;
   import dv_utils_pkg::*;
   import top_pkg::*;
   import mem_bkdr_util_pkg::mem_bkdr_util;
+  import rom_ctrl_bkdr_util_pkg::rom_ctrl_bkdr_util;
   import top_chip_dv_env_pkg::*;
   import top_chip_dv_test_pkg::*;
   import gpio_env_pkg::NUM_GPIOS;
@@ -74,6 +75,8 @@ module tb;
                       .sio  (spi_device_sio));
   spi_if spi_device_if (.rst_n(dut.rstmgr_resets.rst_spi_host_n[rstmgr_pkg::DomainMainSel]),
                         .sio  (spi_host_sio));
+  rom_check_if u_rom_check_if (.pwrmgr_data_i(`SYSTEM_HIER.rom_ctrl_pwrmgr_data),
+                               .fetch_en_i   (`SYSTEM_HIER.pwrmgr_fetch_en));
 
   // Passive AXI monitors on each AXI itf of the crossbar
   wire axi_mon_rst_n = dut.rstmgr_resets.rst_main_n[rstmgr_pkg::DomainMainSel];
@@ -253,9 +256,10 @@ module tb;
   // ------ Memory backdoor accesses ------
   if (prim_pkg::PrimTechName == "Generic") begin : gen_mem_bkdr_utils
     initial begin
-      chip_mem_e     mem;
-      mem_bkdr_util  m_mem_bkdr_util[chip_mem_e];
-      mem_clear_util tag_mem_clear;
+      chip_mem_e         mem;
+      mem_bkdr_util      m_mem_bkdr_util[chip_mem_e];
+      rom_ctrl_bkdr_util rom_bkdr_util;
+      mem_clear_util     tag_mem_clear;
 
       m_mem_bkdr_util[ChipMemSRAM] = new(
         .name                 ("mem_bkdr_util[ChipMemSRAM]"       ),
@@ -270,14 +274,20 @@ module tb;
       m_mem_bkdr_util[ChipMemSRAM].clear_mem();
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemSRAM], `SRAM_MEM_HIER)
 
-      m_mem_bkdr_util[ChipMemROM] = new(
+      // rom_ctrl_bkdr_util can also access a word by its logical address, through the address and
+      // data scrambling that rom_ctrl applies with this key and nonce. It is built in its own
+      // variable because constructing straight into m_mem_bkdr_util would build the base class.
+      rom_bkdr_util = new(
         .name                 ("mem_bkdr_util[ChipMemROM]"        ),
         .path                 (`DV_STRINGIFY(`ROM_MEM_HIER)       ),
         .depth                ($size(`ROM_MEM_HIER)               ),
         .n_bits               ($bits(`ROM_MEM_HIER)               ),
         .err_detection_scheme (mem_bkdr_util_pkg::ErrDetectionNone),
+        .key                  (top_pkg::RndCnstRomCtrlScrKey      ),
+        .nonce                (top_pkg::RndCnstRomCtrlScrNonce    ),
         .system_base_addr     (top_pkg::RomCtrlMemBase            )
       );
+      m_mem_bkdr_util[ChipMemROM] = rom_bkdr_util;
 
       `MEM_BKDR_UTIL_FILE_OP(m_mem_bkdr_util[ChipMemROM], `ROM_MEM_HIER)
 
@@ -373,6 +383,8 @@ module tb;
         null, "*.env", "sw_test_status_vif", `SIM_SRAM_IF.u_sw_test_status_if);
     uvm_config_db#(virtual sw_logger_if)::set(
         null, "*.env", "sw_logger_vif", `SIM_SRAM_IF.u_sw_logger_if);
+
+    uvm_config_db#(virtual rom_check_if)::set(null, "*.env", "rom_check_vif", u_rom_check_if);
 
     // Run UVM test
     run_test();

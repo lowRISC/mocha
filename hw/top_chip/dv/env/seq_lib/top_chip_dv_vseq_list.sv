@@ -14,3 +14,4 @@
 `include "top_chip_dv_spi_host_smoke_vseq.sv"
 `include "top_chip_dv_axi_driver_smoke_vseq.sv"
 `include "top_chip_dv_tl_xbar_smoke_vseq.svh"
+`include "top_chip_dv_rom_ctrl_integrity_check_vseq.svh"
