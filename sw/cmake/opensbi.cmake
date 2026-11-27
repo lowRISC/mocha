@@ -7,7 +7,7 @@ function(mocha_opensbi OPENSBI_NAME)
   # OpenSBI repository and tag to use.
   set(OPENSBI_REPOSITORY https://github.com/lowRISC/opensbi)
   #TODO tag mocha-rc1 instead of using a development branch.
-  set(OPENSBI_TAG mocha-devel-0.9.10)
+  set(OPENSBI_TAG mocha-devel-uart16550)
 
   # build command - run make with build options.
   set(BUILD_COMMAND

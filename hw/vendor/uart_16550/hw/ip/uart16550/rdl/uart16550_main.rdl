@@ -1,0 +1,220 @@
+addrmap uart16550_main {
+    addrmap {
+        reg {
+            hwre = true;
+            field {
+                sw = r;
+                hw = rw;
+            } RBR[7:0] = 0x0;
+        } external RBR @ 0x0;
+        reg {
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Enable received data available interrupt.";
+            } ERBFI[0:0] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Enable transmitter holding register empty interrupt.";
+            } ETBEI[1:1] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Enable receiver line status interrupt.";
+            } ELSI[2:2] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Enable MODEM status interrupt.";
+            } EDSSI[3:3] = 0x0;
+        } IER @ 0x4;
+        reg {
+            field {
+                sw = r;
+                hw = rw;
+                desc = "Interrupt pending, active low.";
+            } INTR_PENDING[0:0] = 0x1;
+            field {
+                sw = r;
+                hw = rw;
+                desc = "Interrupt ID for the highest priority pending interrupt.
+                Encoding:
+                0b011: Receiver line status interrupt
+                0b010: Received data available interrupt
+                0b110: Character timeout indication
+                0b001: Transmitter holding register empty
+                0b000: MODEM status interrupt or no pending interrupt";
+            } INTR_ID[3:1] = 0x0;
+            field {
+                sw = r;
+                hw = rw;
+                desc = "FIFO enable, replicated across the width of this field.";
+            } FIFO_EN[7:6] = 0x0;
+        } IIR @ 0x8;
+        reg {
+            field {
+                sw = r;
+                hw = r;
+                desc = "Word length select, tied to 0x3 to indicate 8-bit word length.";
+            } WLS[1:0] = 0x3;
+            field {
+                sw = r;
+                hw = r;
+                desc = "Number of stop bits, tied to 0 to indicate 1 stop bit.";
+            } STB[2:2] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Parity enable.";
+            } PEN[3:3] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Even parity select.";
+            } EPS[4:4] = 0x1;
+            field {
+                sw = r;
+                hw = r;
+                desc = "Stick parity, tied to 0 to indicate that it is always disabled.";
+            } STICK_PARITY[5:5] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Break control bit.
+                When set to 1, the UART serial output is forced to spacing (logic 0) state.
+                This has no effect on the transmitter logic.";
+            } BREAK_CTRL[6:6] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Divisor latch access bit.
+                This bit must be set high to access the DLL and DLM registers.
+                This bit must be set low to access the RBR, THR and IER registers.";
+            } DLAB[7:7] = 0x0;
+        } LCR @ 0xC;
+        reg {
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Data terminal ready. This field has no effect on external pins.";
+            } DTR[0:0] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "Request to send. This field has no effect on external pins.";
+            } RTS[1:1] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "User-designated output. This field has no effect on external pins.";
+            } OUT[3:2] = 0x0;
+            field {
+                sw = rw;
+                hw = r;
+                desc = "System loopback enable.
+                When set to 1:
+                1. The serial output is set to the marking (logic 1) state.
+                2. The serial input is disconnected.
+                3. The transmitter shift register output is looped back to the
+                   receiver shift register input.
+                4. The MODEM control outouts (DTR, RTS, OUT1, OUT2) are internally
+                   connected to the MODEM control inputs.";
+            } LOOP[4:4] = 0x0;
+        } MCR @ 0x10;
+        reg {
+            field {
+                sw = r;
+                hw = rw;
+                desc = "Data ready.";
+            } DR[0:0] = 0x0;
+            field {
+                sw = rw;
+                onread = rclr;
+                hw = rw;
+                desc = "Overrun error. Indicated on reception.";
+            } OE[1:1] = 0x0;
+            field {
+                sw = rw;
+                onread = rclr;
+                hw = rw;
+                desc = "Parity error. Indicated on reception.";
+            } PE[2:2] = 0x0;
+            field {
+                sw = rw;
+                onread = rclr;
+                hw = rw;
+                desc = "Framing error. Indicated on reception.";
+            } FE[3:3] = 0x0;
+            field {
+                sw = rw;
+                onread = rclr;
+                hw = rw;
+                desc = "Break interrupt. Indicated on reception.";
+            } BI[4:4] = 0x0;
+            field {
+                sw = r;
+                hw = rw;
+                desc = "Transmitter holding register empty.";
+            } THRE[5:5] = 0x1;
+            field {
+                sw = r;
+                hw = rw;
+                desc = "Transmitter empty.";
+            } TEMT[6:6] = 0x1;
+            field {
+                sw = r;
+                hw = rw;
+                desc = "Error in receiver FIFO. Equivalent to the or reduction of PE, FE and BI.";
+            } RCVR_FIFO_ERROR[7:7] = 0x0;
+        } LSR @ 0x14;
+        reg {
+            field {
+                sw = r;
+                hw = w;
+                desc = "Delta clear to send. Tied to 0.";
+            } DCTS[0:0] = 0x0;
+            field {
+                sw = r;
+                hw = w;
+                desc = "Delta data set ready. Tied to 0.";
+            } DDSR[1:1] = 0x0;
+            field {
+                sw = r;
+                hw = w;
+                desc = "Trailing edge ring indicator. Tied to 0.";
+            } TERI[2:2] = 0x0;
+            field {
+                sw = r;
+                hw = w;
+                desc = "Delta data carrier detect. Tied to 0.";
+            } DDCD[3:3] = 0x0;
+            field {
+                sw = r;
+                hw = w;
+                desc = "Clear to send. Tied to 0 when loopback is disabled.";
+            } CTS[4:4] = 0x0;
+            field {
+                sw = r;
+                hw = w;
+                desc = "Data set ready. Tied to 0 when loopback is disabled.";
+            } DSR[5:5] = 0x0;
+            field {
+                sw = r;
+                hw = w;
+                desc = "Ring indicator. Tied to 0 when loopback is disabled.";
+            } RI[6:6] = 0x0;
+            field {
+                sw = r;
+                hw = w;
+                desc = "Data carrier detect. Tied to 0 when loopback is disabled.";
+            } DCD[7:7] = 0x0;
+        } MSR @ 0x18;
+        reg {
+            field {
+                sw = rw;
+                hw = na;
+            } SCR[7:0] = 0x0;
+        } SCR @ 0x1C;
+    } none @ 0x0;
+};

@@ -1,0 +1,85 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "uart16550_wo"
+  human_name: "UART 16550 write-only address map"
+  // TODO: placeholder, reggen requires an id but no top in Mocha reads it
+  cip_id:             "99"
+  design_spec:        "../doc"
+  version:            "0.0.1"
+  life_stage:         "L1"
+  design_stage:       "D0"
+  verification_stage: "V0"
+
+  clocking: [
+    { clock: "clk_i", reset: "rst_ni", primary: true }
+  ]
+
+  bus_interfaces: [
+    { protocol: "tlul", direction: "device", racl_support: false }
+  ]
+
+  regwidth: "32",
+  registers: [
+    { name:     "THR",
+      desc:     "Transmitter holding register.",
+      swaccess: "wo",
+      hwaccess: "hro",
+      hwext:    "true",
+      hwqe:     "true",
+      fields: [
+        { bits: "7:0" }
+      ]
+      tags: [// Do not write to THR, this affects the values in IIR and LSR.
+             "excl:CsrNonInitTests:CsrExclWrite"]
+    }
+    { skipto: "0x8" }
+    { name:     "FCR",
+      desc:     "FIFO control register.",
+      swaccess: "wo",
+      hwaccess: "hrw",
+      hwqe:     "true",
+      fields: [
+        { bits:   "0",
+          name:   "FIFO_EN",
+          desc:   "FIFO enable.",
+          resval: "0",
+          tags:   [// Do not write to FIFO_EN, this affects the value of IIR[7:6]
+                   // which aliases this bit.
+                   "excl:CsrNonInitTests:CsrExclWrite"]
+        }
+        { bits:   "1",
+          name:   "RCVR_FIFO_RESET",
+          desc:   '''Receiver FIFO reset.
+                  Writing 1 to this field resets the receiver FIFO, the write is self-clearing.
+                  ''',
+          resval: "0"
+        }
+        { bits:   "2",
+          name:   "XMIT_FIFO_RESET",
+          desc:   '''Transmitter FIFO reset.
+                  Writing 1 to this field resets the transmitter FIFO, the write is self-clearing.
+                  ''',
+          resval: "0"
+        }
+        { bits:   "3",
+          name:   "DMA_MODE_SEL",
+          desc:   "DMA mode select. This field has no effect.",
+          resval: "0"
+        }
+        { bits:   "7:6",
+          name:   "RCVR_TRIGGER",
+          desc:   '''Trigger level for the RCVR FIFO interrupt.
+                  Encoding:
+                  0b00: 1 byte
+                  0b01: 4 bytes
+                  0b10: 8 bytes
+                  0b11: 16 bytes
+                  ''',
+          resval: "0x0"
+        }
+      ]
+    }
+  ]
+}

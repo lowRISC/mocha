@@ -20,8 +20,8 @@ volatile const uint8_t tx_rx_data[TX_RX_MAX_BYTES] = {
 
 bool test_main(uart_t console)
 {
-    // Turn both internal loopbacks off so the bytes can only come back through the chip pins
-    uart_loopback_set(console, false, false);
+    // Turn system loopback off so the bytes can only come back through the chip pins
+    uart_loopback_set(console, false);
 
     // The console UART is the one on the chip pins, so nothing else may be printed until every
     // echoed byte has been read back

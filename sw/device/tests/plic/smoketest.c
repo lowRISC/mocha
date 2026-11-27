@@ -6,7 +6,7 @@
 #include "hal/mocha.h"
 #include "hal/mocha_irq.h"
 #include "hal/plic.h"
-#include "hal/uart.h"
+#include "hal/spi_device.h"
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -46,24 +46,25 @@ bool reg_test(plic_t plic)
     return true;
 }
 
-bool uart_machine_irq_test(plic_t plic, uart_t uart)
+bool spi_device_machine_irq_test(plic_t plic, spi_device_t spi_device)
 {
     uint32_t intr_id;
 
     plic_init(plic);
-    plic_interrupt_priority_write(plic, mocha_system_irq_uart, 3);
+    plic_interrupt_priority_write(plic, mocha_system_irq_spi_device, 3);
     plic_machine_priority_threshold_write(plic, 0);
 
-    uart_interrupt_enable_write(uart, uart_intr_rx_frame_err);
+    spi_device_interrupt_disable_all(spi_device);
+    spi_device_interrupt_enable(spi_device, SPI_DEVICE_INTR_TPM_RDFIFO_DROP);
 
-    plic_machine_interrupt_enable_set(plic, mocha_system_irq_uart);
+    plic_machine_interrupt_enable_set(plic, mocha_system_irq_spi_device);
 
     // Check that mip MEIP is clear
     if (hart_interrupt_any_pending(interrupt_machine_external)) {
         return false;
     }
 
-    uart_interrupt_force(uart, uart_intr_rx_frame_err);
+    spi_device_interrupt_trigger(spi_device, SPI_DEVICE_INTR_TPM_RDFIFO_DROP);
 
     // Check that mip MEIP is set following the triggered interrupt
     for (size_t i = 0; i < mip_read_retry_count; i++) {
@@ -77,7 +78,7 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     }
 
     intr_id = plic_machine_interrupt_claim(plic);
-    uart_interrupt_clear(uart, uart_intr_rx_frame_err);
+    spi_device_interrupt_clear(spi_device, SPI_DEVICE_INTR_TPM_RDFIFO_DROP);
     plic_machine_interrupt_complete(plic, intr_id);
 
     // Check that mip MEIP is clear
@@ -88,24 +89,25 @@ bool uart_machine_irq_test(plic_t plic, uart_t uart)
     return true;
 }
 
-bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
+bool spi_device_supervisor_irq_test(plic_t plic, spi_device_t spi_device)
 {
     uint32_t intr_id;
 
     plic_init(plic);
-    plic_interrupt_priority_write(plic, mocha_system_irq_uart, 3);
+    plic_interrupt_priority_write(plic, mocha_system_irq_spi_device, 3);
     plic_supervisor_priority_threshold_write(plic, 0);
 
-    uart_interrupt_enable_write(uart, uart_intr_rx_timeout);
+    spi_device_interrupt_disable_all(spi_device);
+    spi_device_interrupt_enable(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
 
-    plic_supervisor_interrupt_enable_set(plic, mocha_system_irq_uart);
+    plic_supervisor_interrupt_enable_set(plic, mocha_system_irq_spi_device);
 
     // Check that mip SEIP is clear
     if (hart_interrupt_any_pending(interrupt_supervisor_external)) {
         return false;
     }
 
-    uart_interrupt_force(uart, uart_intr_rx_timeout);
+    spi_device_interrupt_trigger(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
 
     // Check for mip SEIP is set following the triggered interrupt
     for (size_t i = 0; i < mip_read_retry_count; i++) {
@@ -119,7 +121,7 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     }
 
     intr_id = plic_supervisor_interrupt_claim(plic);
-    uart_interrupt_clear(uart, uart_intr_rx_timeout);
+    spi_device_interrupt_clear(spi_device, SPI_DEVICE_INTR_UPLOAD_PAYLOAD_OVERFLOW);
     plic_supervisor_interrupt_complete(plic, intr_id);
 
     // Check that mip SEIP is clear
@@ -130,10 +132,11 @@ bool uart_supervisor_irq_test(plic_t plic, uart_t uart)
     return true;
 }
 
-bool test_main(uart_t console)
+bool test_main()
 {
     plic_t plic = mocha_system_plic();
+    spi_device_t spi_device = mocha_system_spi_device();
 
-    return reg_test(plic) && uart_machine_irq_test(plic, console) &&
-           uart_supervisor_irq_test(plic, console);
+    return reg_test(plic) && spi_device_machine_irq_test(plic, spi_device) &&
+           spi_device_supervisor_irq_test(plic, spi_device);
 }

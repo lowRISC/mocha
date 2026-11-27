@@ -1,0 +1,50 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+{
+  name: "uart16550_dl"
+  human_name: "UART 16550 divisor latch address map"
+  // TODO: placeholder, reggen requires an id but no top in Mocha reads it
+  cip_id:             "99"
+  design_spec:        "../doc"
+  version:            "0.0.1"
+  life_stage:         "L1"
+  design_stage:       "D0"
+  verification_stage: "V0"
+
+  clocking: [
+    { clock: "clk_i", reset: "rst_ni", primary: true }
+  ]
+
+  bus_interfaces: [
+    { protocol: "tlul", direction: "device", racl_support: false }
+  ]
+
+  regwidth: "32",
+  registers: [
+    { name:     "DLL",
+      desc:     '''Divisor latch register (least significant byte).
+                One write to the divisor latch is needed to enable Tx and Rx.
+                ''',
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits:   "7:0",
+          resval: "0x00"
+        }
+      ]
+    }
+    { name:     "DLM",
+      desc:     '''Divisor latch register (most significant byte).
+                One write to the divisor latch is needed to enable Tx and Rx.
+                ''',
+      swaccess: "rw",
+      hwaccess: "hro",
+      fields: [
+        { bits:   "7:0",
+          resval: "0x00"
+        }
+      ]
+    }
+  ]
+}

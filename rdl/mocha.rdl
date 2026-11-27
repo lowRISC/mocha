@@ -14,7 +14,7 @@
 `include "ip/rv_timer.rdl"
 `include "ip/spi_device.rdl"
 `include "ip/spi_host.rdl"
-`include "ip/uart.rdl"
+`include "../hw/vendor/uart_16550/hw/ip/uart16550/rdl/uart16550_main.rdl"
 `include "ip/udp.rdl"
 
 addrmap reserved { external mem {mementries = 0x10000; memwidth=8;}dummy_space;};
@@ -48,7 +48,7 @@ addrmap top_mocha {
 
   entropy_src ENTROPY_SRC[1] @ 0x4006_0000 += 0x10000;
 
-  uart UART[1] @ 0x4100_0000 += 0x10000;
+  uart16550_main UART[1] @ 0x4100_0000 += 0x10000;
 
   i2c I2C[1] @ 0x4200_0000 += 0x10000;
 

@@ -143,14 +143,17 @@ COMMANDS: list[list[str]] = [
     # vendored hardware dependencies
     ["util/vendor.py", "hw/vendor/axi_riscv_atomics.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/cva6_cheri.vendor.hjson"],
+    ["util/vendor.py", "hw/vendor/cvfpu.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/hpdcache.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/ethernet.vendor.hjson"],
+    ["util/vendor.py", "hw/vendor/fpu_div_sqrt_mvp.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_axi.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_axi_llc.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_register_interface.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/pulp_riscv_dbg.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/sonata_system.vendor.hjson"],
     ["util/vendor.py", "hw/vendor/tagctrl.vendor.hjson"],
+    ["util/vendor.py", "hw/vendor/uart_16550.vendor.hjson"],
 ]
 
 
