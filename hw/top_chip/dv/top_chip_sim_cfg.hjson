@@ -429,6 +429,20 @@
       sw_images: ["bootrom:5"]
       run_opts: ["+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
     }
+    {
+      name: axi_xbar_smoke
+      uvm_test_seq: top_chip_dv_uart_base_vseq
+      sw_images: ["axi_xbar_smoketest_vanilla:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/axi_xbar_smoketest_vanilla.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
+    {
+      name: axi_xbar_smoke_cheri
+      uvm_test_seq: top_chip_dv_uart_base_vseq
+      sw_images: ["axi_xbar_smoketest_cheri:5" "bootrom:5"]
+      run_opts: ["+ChipMemDRAM_image_file={run_dir}/axi_xbar_smoketest_cheri.vmem",
+                 "+ChipMemROM_image_file={run_dir}/bootrom_scrambled.vmem"]
+    }
   ]
 
   // List of regressions.
@@ -480,6 +494,8 @@
         "kmac_rom_app_test_cheri",
         "axi_driver_smoke",
         "tl_xbar_smoke",
+        "axi_xbar_smoke",
+        "axi_xbar_smoke_cheri",
       ]
     }
     {

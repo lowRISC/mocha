@@ -54,6 +54,14 @@ mocha_add_test(NAME rom_ctrl_smoketest
 add_dependencies(rom_ctrl_smoketest_vanilla rom_ctrl_bootrom_ref)
 add_dependencies(rom_ctrl_smoketest_cheri rom_ctrl_bootrom_ref)
 
+# Reads the ROM against the same reference image
+mocha_add_test(NAME axi_xbar_smoketest
+    SOURCES axi_xbar/smoketest.c rom_ctrl/bootrom_image.S
+    LIBRARIES ${LIBS}
+)
+add_dependencies(axi_xbar_smoketest_vanilla rom_ctrl_bootrom_ref)
+add_dependencies(axi_xbar_smoketest_cheri rom_ctrl_bootrom_ref)
+
 mocha_add_test(NAME rstmgr_smoketest SOURCES rstmgr/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME spi_device_smoketest SOURCES spi_device/smoketest.c LIBRARIES ${LIBS})
 mocha_add_test(NAME spi_host_sdcard_tests SOURCES spi_host/sdcard_tests.c LIBRARIES ${LIBS})
