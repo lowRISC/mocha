@@ -39,6 +39,9 @@
     "{proj_root}/hw/vendor/lowrisc_ip/ip/rom_ctrl/dv/rom_ctrl_32kB_sim_cfg.hjson",
     "{proj_root}/hw/top_chip/tmp_sim_cfg/rv_dm_use_jtag_interface_sim_cfg.hjson",
 
+    // DV libraries
+    "{proj_root}/hw/ip/dv/axi_agent/dv/axi_agent_sim_cfg.hjson",
+
     // Top-level IPs.
     // Top level.
     "{proj_root}/hw/top_chip/dv/top_chip_sim_cfg.hjson"
