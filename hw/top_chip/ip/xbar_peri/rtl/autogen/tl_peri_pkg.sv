@@ -30,7 +30,7 @@ package tl_peri_pkg;
   localparam logic [31:0] ADDR_MASK_SPI_DEVICE    = 32'h 0000ffff;
   localparam logic [31:0] ADDR_MASK_TIMER         = 32'h 0000ffff;
   localparam logic [31:0] ADDR_MASK_SPI_HOST      = 32'h 0000ffff;
-  localparam logic [31:0] ADDR_MASK_PLIC          = 32'h 03ffffff;
+  localparam logic [31:0] ADDR_MASK_PLIC          = 32'h 07ffffff;
 
   localparam int N_HOST   = 1;
   localparam int N_DEVICE = 12;

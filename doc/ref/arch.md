@@ -87,7 +87,7 @@ This is the current memory map for Mocha, where the base and top addresses are i
 | 0x43000000   | 0x4300ffff  | 64.0 kiB   | SPI_DEVICE    |<!-- vniczf_x -->
 | 0x44000000   | 0x4400ffff  | 64.0 kiB   | TIMER         |<!-- gjk3vu_x -->
 | 0x45000000   | 0x4500ffff  | 64.0 kiB   | SPI_HOST      |<!-- jkyz51_x -->
-| 0x48000000   | 0x4c004003  | 64.0 MiB   | PLIC          |<!-- pfftm1_x -->
+| 0x48000000   | 0x4fffffff  | 128.0 MiB  | PLIC          |<!-- pfftm1_x -->
 | 0x80000000   | 0xbf7fffff  | 1016.0 MiB | DRAM          |<!-- 04smz7_x -->
 <!-- END generated memory map -->
 
