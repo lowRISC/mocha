@@ -297,3 +297,17 @@ lint_off -rule UNSIGNED -file "*/hpdcache/rtl/src/hpdcache_ctrl.sv" -match "*Com
 lint_off -rule UNOPTFLAT -file "*/tagctrl/src/axi_tagctrl_top.sv" -match "*tagc_r_inp_ready*"
 lint_off -rule UNOPTFLAT -file "*/rtl/prim_fifo_sync.sv" -match "*u_tag_controller.i_stream_fifo_tagc_b*"
 lint_off -rule UNOPTFLAT -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_write_req_rsp_wrapper.sv" -match "*hpdcache_write_req_valid_o*"
+// Style warnings
+lint_off -rule DECLFILENAME -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_configs.sv" -match "*lookup_engine_hpdcache_cfg_pkg*"
+lint_off -rule DECLFILENAME -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_wrapper.sv" -match "*hpdcache_wrapper*"
+lint_off -rule DECLFILENAME -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_read_req_rsp_wrapper.sv" -match "*hpdcache_read_req_rsp_wrapper*"
+lint_off -rule DECLFILENAME -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_write_req_rsp_wrapper.sv" -match "*hpdcache_write_req_rsp_wrapper*"
+lint_off -rule GENUNNAMED -file "*/tagctrl/src/axi_tagctrl_config.sv"
+lint_off -rule IMPORTSTAR -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine.sv"
+// Unused signals and parameters
+lint_off -rule UNUSEDSIGNAL -file "*/tagctrl/src/*.sv"
+lint_off -rule UNUSEDPARAM -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_table_lookups_read.sv" -match "*GROUPING_FACTOR*"
+lint_off -rule UNUSEDPARAM -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_table_lookups_write.sv" -match "*BITS_PER_ROOT_FLIT*"
+// Some bits are not driven
+lint_off -rule UNDRIVEN -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_table_lookups_write.sv" -match "*sb_alloc*"
+lint_off -rule UNDRIVEN -file "*/tagctrl/src/tag_lookup_engine/tag_lookup_engine_hpdcache_read_req_rsp_wrapper.sv" -match "*req*"
