@@ -345,7 +345,9 @@ module top_chip_system #(
   // Unused KMAC signals
   logic unused_kmac_output;
   assign unused_kmac_output = (|kmac_app_rsp[1]) | (|kmac_app_rsp[2]);
-
+  // Parameter used for assertion outside Verilator
+  logic unused_param;
+  assign unused_param = (|TagTableLength);
   // Assigning default KMAC values
   assign kmac_app_req[1] = kmac_pkg::APP_REQ_DEFAULT;
   assign kmac_app_req[2] = kmac_pkg::APP_REQ_DEFAULT;
