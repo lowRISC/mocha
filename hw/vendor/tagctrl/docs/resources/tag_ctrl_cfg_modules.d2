@@ -1,0 +1,70 @@
+vars: {
+  d2-config: {
+    theme-id: 0
+    dark-theme-id: 200
+    pad: 0
+    center: true
+    # sketch: true
+    layout-engine: tala
+  }
+}
+
+style.fill: transparent
+
+axi_tagctrl_top: {
+  axi_tagctrl_config: {
+    label: |md
+      **axi_tagctrl_config**
+    |
+    shape: rectangle
+  }
+  axi_tag_ctrl_ar: {
+    label: |md
+      **axi_tag_ctrl_ar**\
+      (`axi_tagctrl_ax`)
+    |
+    shape: rectangle
+  }
+  axi_tag_ctrl_aw: {
+    label: |md
+      **axi_tag_ctrl_aw**\
+      (`axi_tagctrl_ax`)
+    |
+    shape: rectangle
+  }
+  axi_tag_ctrl_w: {
+    label: |md
+      **axi_tag_ctrl_w**\
+      (`axi_tagctrl_w`)
+    |
+    shape: rectangle
+  }
+  axi_tag_ctrl_r: {
+    label: |md
+      **axi_tag_ctrl_r**\
+      (`axi_tagctrl_r`)
+    |
+    shape: rectangle
+  }
+  tag_lookup_engine: {
+    leaf_tag_cache: {
+      label: |md
+        **leaf_tag_cache**\
+        (HPDCache)
+      |
+      shape: rectangle
+    }
+    root_tag_cache: {
+      label: |md
+        **leaf_tag_cache**\
+        (HPDCache)
+      |
+      shape: rectangle
+    }
+    table_lookups: {
+      root_init
+      lookups_read
+      lookups_write
+    }
+  }
+}

@@ -19,6 +19,46 @@ module tag_ctrl_testharness #(
 ) (
     input  logic                                 clk_i,         /// Clock
     input  logic                                 rst_ni,        /// Asynchronous reset active low
+    // cfg port
+    input  logic            [  AXI_ID_WIDTH-1:0] cfg_aw_id,
+    input  logic            [AXI_ADDR_WIDTH-1:0] cfg_aw_addr,
+    input  axi_pkg::len_t                        cfg_aw_len,
+    input  axi_pkg::size_t                       cfg_aw_size,
+    input  axi_pkg::burst_t                      cfg_aw_burst,
+    input  logic            [AXI_USER_WIDTH-1:0] cfg_aw_user,
+    input  logic                                 cfg_aw_valid,
+    output logic                                 cfg_aw_ready,
+
+    input  logic [AXI_DATA_WIDTH-1:0] cfg_w_data,
+    input  logic [AXI_STRB_WIDTH-1:0] cfg_w_strb,
+    input  logic                      cfg_w_last,
+    input  logic [AXI_USER_WIDTH-1:0] cfg_w_user,
+    input  logic                      cfg_w_valid,
+    output logic                      cfg_w_ready,
+
+    output logic           [  AXI_ID_WIDTH-1:0] cfg_b_id,
+    output axi_pkg::resp_t                      cfg_b_resp,
+    output logic           [AXI_USER_WIDTH-1:0] cfg_b_user,
+    output logic                                cfg_b_valid,
+    input  logic                                cfg_b_ready,
+
+    input  logic            [  AXI_ID_WIDTH-1:0] cfg_ar_id,
+    input  logic            [AXI_ADDR_WIDTH-1:0] cfg_ar_addr,
+    input  axi_pkg::len_t                        cfg_ar_len,
+    input  axi_pkg::size_t                       cfg_ar_size,
+    input  axi_pkg::burst_t                      cfg_ar_burst,
+    input  logic            [AXI_USER_WIDTH-1:0] cfg_ar_user,
+    input  logic                                 cfg_ar_valid,
+    output logic                                 cfg_ar_ready,
+
+    output logic           [  AXI_ID_WIDTH-1:0] cfg_r_id,
+    output logic           [AXI_DATA_WIDTH-1:0] cfg_r_data,
+    output axi_pkg::resp_t                      cfg_r_resp,
+    output logic                                cfg_r_last,
+    output logic           [AXI_USER_WIDTH-1:0] cfg_r_user,
+    output logic                                cfg_r_valid,
+    input  logic                                cfg_r_ready,
+    // cpu port
     input  logic            [  AXI_ID_WIDTH-1:0] cpu_aw_id,
     input  logic            [AXI_ADDR_WIDTH-1:0] cpu_aw_addr,
     input  axi_pkg::len_t                        cpu_aw_len,
@@ -62,16 +102,12 @@ module tag_ctrl_testharness #(
   localparam int unsigned CapSize = 128;
   localparam int unsigned NUM_WORDS = 2 ** 25;  // memory size
   localparam int unsigned DRAMMemBase = {64'h80000000};
-  localparam int unsigned DRAMMemLength = {64'h40000000};
-  localparam int unsigned TagCacheMemBase = {64'hA0000000};
-  localparam int unsigned TagCacheMemLength = {64'h00010000};
+  localparam int unsigned DRAMMemLength = {64'h00800000};
+  localparam int unsigned TagCacheMemBase = {64'h90000000};
   localparam int unsigned AxiIdWidth = 64'd6;
   localparam int unsigned AxiAddrWidth = 64'd64;
   localparam int unsigned AxiDataWidth = 64'd64;
   localparam int unsigned AxiUserWidth = 64'd1;
-  localparam int unsigned SetAssociativity = 32'd8;
-  localparam int unsigned NumLines = 32'd128;
-  localparam int unsigned NumBlocks = 32'd4;
   /*verilator public_off*/
   /////////////////////////////
   // Axi channel definitions //
@@ -102,19 +138,11 @@ module tag_ctrl_testharness #(
 
   `REG_BUS_TYPEDEF_ALL(conf, logic [31:0], logic [31:0], logic [3:0])
 
-  // rule definitions
-  typedef struct packed {
-    int unsigned idx;
-    axi_addr_t   start_addr;
-    axi_addr_t   end_addr;
-  } rule_full_t;
-
-  localparam axi_addr_t CachedRegionStart = axi_addr_t'(TagCacheMemBase);
-  localparam axi_addr_t CachedRegionLength = axi_addr_t'(2 * TagCacheMemLength);
-
   // AXI channels
   axi_slv_req_t  axi_cpu_req;
   axi_slv_resp_t axi_cpu_res;
+  axi_slv_req_t  axi_cfg_req;
+  axi_slv_resp_t axi_cfg_res;
   axi_mst_req_t  axi_mem_req;
   axi_mst_resp_t axi_mem_res;
 
@@ -124,6 +152,13 @@ module tag_ctrl_testharness #(
       .AXI_ID_WIDTH  (AxiIdWidth),
       .AXI_USER_WIDTH(AxiUserWidth)
   ) axi_cpu ();
+
+  AXI_BUS #(
+      .AXI_ADDR_WIDTH(AxiAddrWidth),
+      .AXI_DATA_WIDTH(AxiDataWidth),
+      .AXI_ID_WIDTH  (AxiIdWidth),
+      .AXI_USER_WIDTH(AxiUserWidth)
+  ) axi_cfg ();
 
   AXI_BUS #(
       .AXI_ADDR_WIDTH(AxiAddrWidth),
@@ -184,6 +219,58 @@ module tag_ctrl_testharness #(
 
   assign axi_cpu.r_ready = cpu_r_ready;
 
+  `AXI_ASSIGN_TO_REQ(axi_cfg_req, axi_cfg)
+  `AXI_ASSIGN_FROM_RESP(axi_cfg, axi_cfg_res)
+
+  assign axi_cfg.aw_id = cfg_aw_id;
+  assign axi_cfg.aw_addr = cfg_aw_addr;
+  assign axi_cfg.aw_len = cfg_aw_len;
+  assign axi_cfg.aw_size = cfg_aw_size;
+  assign axi_cfg.aw_burst = cfg_aw_burst;
+  assign axi_cfg.aw_user = cfg_aw_user;
+  assign axi_cfg.aw_valid = cfg_aw_valid;
+
+  assign cfg_aw_ready = axi_cfg.aw_ready;
+
+  assign axi_cfg.w_data = cfg_w_data;
+  assign axi_cfg.w_strb = cfg_w_strb;
+  assign axi_cfg.w_last = cfg_w_last;
+  assign axi_cfg.w_user = cfg_w_user;
+  assign axi_cfg.w_valid = cfg_w_valid;
+
+  assign cfg_w_ready = axi_cfg.w_ready;
+
+  assign cfg_b_id = axi_cfg.b_id;
+  assign cfg_b_resp = axi_cfg.b_resp;
+  assign cfg_b_user = axi_cfg.b_user;
+  assign cfg_b_valid = axi_cfg.b_valid;
+
+  assign axi_cfg.b_ready = cfg_b_ready;
+
+  assign axi_cfg.ar_id = cfg_ar_id;
+  assign axi_cfg.ar_addr = cfg_ar_addr;
+  assign axi_cfg.ar_len = cfg_ar_len;
+  assign axi_cfg.ar_size = cfg_ar_size;
+  assign axi_cfg.ar_burst = cfg_ar_burst;
+  assign axi_cfg.ar_lock = '0;
+  assign axi_cfg.ar_cache = '0;
+  assign axi_cfg.ar_prot = '0;
+  assign axi_cfg.ar_qos = '0;
+  assign axi_cfg.ar_region = '0;
+  assign axi_cfg.ar_user = cfg_ar_user;
+  assign axi_cfg.ar_valid = cfg_ar_valid;
+
+  assign cfg_ar_ready = axi_cfg.ar_ready;
+
+  assign cfg_r_id = axi_cfg.r_id;
+  assign cfg_r_data = axi_cfg.r_data;
+  assign cfg_r_resp = axi_cfg.r_resp;
+  assign cfg_r_last = axi_cfg.r_last;
+  assign cfg_r_user = axi_cfg.r_user;
+  assign cfg_r_valid = axi_cfg.r_valid;
+
+  assign axi_cfg.r_ready = cfg_r_ready;
+
   `AXI_ASSIGN_FROM_REQ(axi_dram, axi_mem_req)
   `AXI_ASSIGN_TO_RESP(axi_mem_res, axi_dram)
 
@@ -200,37 +287,34 @@ module tag_ctrl_testharness #(
   ////////////////////////////
   // AXI Tag Controller DUT //
   ////////////////////////////
-  axi_tagctrl_reg_wrap #(
-      .DRAMMemBase     (DRAMMemBase),
-      .CapSize         (CapSize),
-      .TagCacheMemBase (TagCacheMemBase),
-      .SetAssociativity(SetAssociativity),
-      .NumLines        (NumLines),
-      .NumBlocks       (NumBlocks),
-      .AxiIdWidth      (AxiIdWidth),
-      .AxiAddrWidth    (AxiAddrWidth),
-      .AxiDataWidth    (AxiDataWidth),
-      .AxiUserWidth    (AxiUserWidth),
-      .slv_req_t       (axi_slv_req_t),
-      .slv_resp_t      (axi_slv_resp_t),
-      .mst_req_t       (axi_mst_req_t),
-      .mst_resp_t      (axi_mst_resp_t),
-      .reg_req_t       (conf_req_t),
-      .reg_resp_t      (conf_rsp_t),
-      .rule_full_t     (rule_full_t),
-      .PrintSramCfg    (1'b0)
-  ) i_axi_tagctrl_reg_wrap_raw (
+  axi_tagctrl_top #(
+      .init_covered_base       (DRAMMemBase),
+      .init_covered_top        (DRAMMemBase + DRAMMemLength),
+      .init_tag_table_base     (TagCacheMemBase),
+      .init_start              (1'b1),
+      .init_locked             (1'b0),
+      .allow_resume            (1'b0),
+      .allow_flush_when_locked (1'b0),
+      .cap_size                (CapSize),
+      //.max_trans(10),
+      .axi_id_width            (AxiIdWidth),
+      .axi_addr_width          (AxiAddrWidth),
+      .axi_data_width          (AxiDataWidth),
+      .axi_user_width          (AxiUserWidth),
+      .slv_req_t               (axi_slv_req_t),
+      .slv_resp_t              (axi_slv_resp_t),
+      .mst_req_t               (axi_mst_req_t),
+      .mst_resp_t              (axi_mst_resp_t)
+  ) i_axi_tagctrl_top (
       .clk_i,
       .rst_ni,
-      .test_i             (1'b0),
-      .slv_req_i          (axi_cpu_req),
-      .slv_resp_o         (axi_cpu_res),
-      .mst_req_o          (axi_mem_req),
-      .mst_resp_i         (axi_mem_res),
-      .conf_req_i         (  /* not used */),
-      .conf_resp_o        (  /* not used */),
-      .cached_start_addr_i(CachedRegionStart),
-      .cached_end_addr_i  (CachedRegionLength)
+      .test_i              (1'b0),
+      .config_sub_req_i    (axi_cfg_req),
+      .config_sub_resp_o   (axi_cfg_res),
+      .tagged_sub_req_i    (axi_cpu_req),
+      .tagged_sub_resp_o   (axi_cpu_res),
+      .untagged_mgr_req_o  (axi_mem_req),
+      .untagged_mgr_resp_i (axi_mem_res)
   );
 
   /*   AXI_BUS #(
@@ -281,7 +365,7 @@ module tag_ctrl_testharness #(
       .USER_WIDTH(AxiUserWidth),
       .USER_EN   (1'b0),
 `ifdef VERILATOR
-      .SIM_INIT  ("none"),
+      .SIM_INIT  ("ones"),
 `else
       .SIM_INIT  ("zeros"),
 `endif

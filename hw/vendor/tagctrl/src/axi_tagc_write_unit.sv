@@ -89,23 +89,23 @@ module axi_tagc_write_unit #(
   // This FIFO buffers W beats as long as the corresponding AW
   // vector goes through the pipeline for lookup etc.
   prim_fifo_sync #(
-    .Pass  ( 1'b0                          ),
-    .Width ( $bits(w_chan_t)               ),
-    .Depth ( axi_llc_pkg::WChanBufferDepth )
+      .Width            ($bits(w_chan_t)),
+      .Pass             (1'b0),
+      .Depth            (axi_llc_pkg::WChanBufferDepth),
+      .OutputZeroIfEmpty(1'b0)
   ) i_w_stream_fifo (
-    .clk_i,
-    .rst_ni,
-
-    .clr_i    ( 1'b0           ),
-    .wdata_i  ( w_chan_slv_i   ),
-    .wvalid_i ( w_chan_valid_i ),
-    .wready_o ( w_chan_ready_o ),
-    .rdata_o  ( w_chan         ),
-    .rvalid_o ( w_valid        ),
-    .rready_i ( w_ready        ),
-    .depth_o  ( ),
-    .full_o   ( ),
-    .err_o    ( )
+      .clk_i,
+      .rst_ni,
+      .clr_i   (1'b0),
+      .wdata_i (w_chan_slv_i),
+      .wvalid_i(w_chan_valid_i),
+      .wready_o(w_chan_ready_o),
+      .rdata_o (w_chan),
+      .rvalid_o(w_valid),
+      .rready_i(w_ready),
+      .full_o  (  /* not used */),
+      .depth_o (  /* not used */),
+      .err_o   (  /* not used */)
   );
 
   // way_inp assignments

@@ -1,604 +1,456 @@
-// Copyright 2023 Bruno Sá and ZeroDay Labs.
-// Solderpad Hardware License, Version 0.51, see LICENSE for details.
-// SPDX-License-Identifier: SHL-0.51
-//
-// Author: Bruno Sá <bruno.vilaca.sa@gmail.com> 
-// Date: 28.11.2023
+`include "common_cells/registers.svh"
 
-
-/// # Configuration of the `axi_tagcontrl`
-
-/// # Configuration of `axi_llc`
-///
-/// Consumes the configuration registers of the `axi_llc`.
-///
-/// ## Register Map
-///
-/// Detailed descriptions of the individual registers can be found below.
-///
-/// | Name        | read/write | Description                                      |
-/// |:-----------:|:----------:|:------------------------------------------------:|
-/// | `CfgSpm`    | read-write | [SPM Configuration](###CfgSpm)                   |
-/// | `CfgFlush`  | read-write | [Flush Configuration](###CfgFlush)               |
-/// | `CommitCfg` | read-write | [Configuration Commit](###CommitCfg)             |
-/// | `Flushed`   | read-only  | [Flushed Flag](###Flushed)                       |
-/// | `BistOut`   | read-only  | [Tag Storage BIST Result](###BistOut)            |
-/// | `SetAsso`   | read-only  | [Instantiated Set-Associativity](###SetAsso)     |
-/// | `NumLines`  | read-only  | [Instantiated Number of Cache-Lines](###NumLines)|
-/// | `NumBlocks` | read-only  | [Instantiated Number of Blocks](###NumBlocks)    |
-/// | `Version`   | read-only  | [AXI LLC Version](###Version)                    |
-///
-/// ### CfgSpm
-///
-/// The scratch-pad-memory configuration register.
-/// This register is read and writable from software.
-///
-/// Register Bit Map:
-/// | Bits                    | Reset Value | Function                |
-/// |:-----------------------:|:-----------:|:-----------------------:|
-/// | `[0]`                   | `1'b0`      | SPM Configuration Set-0 |
-/// | ...                     | ...         | ...                     |
-/// | `[SetAssociativity-1]`  | `1'b0`      | SPM Configuration Set-X |
-///
-///
-/// ### CfgFlush
-///
-/// Flush configuration register.
-/// This register is read and writable from software.
-///
-/// This register enables flushing of individual cache sets.
-///
-/// Register Bit Map:
-/// | Bits                    | Reset Value | Function            |
-/// |:-----------------------:|:-----------:|:-------------------:|
-/// | `[0]`                   | `1'b0`      | Flush Trigger Set-0 |
-/// | ...                     | ...         | ...                 |
-/// | `[SetAssociativity-1]`  | `1'b0`      | Flush Trigger Set-X |
-/// | `[63:SetAssociativity]` | `'0`        | Reserved            |
-///
-///
-/// ### CommitCfg
-///
-/// Commit configuration registers
-/// This register is read and writable from software.
-///
-/// This register notifies the hardware that the configuration registers
-/// now hold their intended value. This register must be written once after
-/// writing to CfgFlush or CfgSpm.
-///
-/// Register Bit Map:
-/// | Bits                    | Reset Value | Function             |
-/// |:-----------------------:|:-----------:|:--------------------:|
-/// | `[0]`                   | `1'b0`      | Commit configuration |
-///
-///
-/// ### Flushed
-///
-/// Flushed status of the individual cache sets.
-/// This register is read only for software.
-///
-/// These bits are set, if the corresponding set is in a flushed state.
-/// Sets configured as SPM will have the corresponding bits set.
-///
-/// Register Bit Map:
-/// | Bits                    | Reset Value | Function               |
-/// |:-----------------------:|:-----------:|:----------------------:|
-/// | `[0]`                   | `1'b0`      | Flushed Status Set-0   |
-/// | ...                     | ...         | ...                    |
-/// | `[SetAssociativity-1]`  | `1'b0`      | Flushed Status Set-X   |
-///
-///
-/// ### BistOut
-///
-/// Build-in self-test result of the tag-storage macros.
-/// This register is read only for software.
-///
-/// When bits are set in this register the corresponding BIST failed
-/// and the associated memory seems faulty. 
-///
-/// Register Bit Map:
-/// | Bits                    | Reset Value | Function         |
-/// |:-----------------------:|:-----------:|:----------------:|
-/// | `[0]`                   | `1'b0`      | BIST Error Set-0 |
-/// | ...                     | ...         | ...              |
-/// | `[SetAssociativity-1]`  | `1'b0`      | BIST Error Set-X |
-///
-///
-/// ### BistStatus
-///
-/// Status of the BIST
-///
-/// Register Bit Map:
-/// | Bits                    | Reset Value | Function         |
-/// |:-----------------------:|:-----------:|:----------------:|
-/// | `[0]`                   | `1'b0`      | BIST Done Flag   |
-///
-///
-/// ### SetAsso
-///
-/// Register showing the instantiated cache set-associativity.
-/// This register is read only for software.
-///
-/// Equal to the parameter of `axi_llc_top` `SetAssociativity`.
-///
-/// Register Bit Map:
-/// | Bits     | Reset Value        | Function          |
-/// |:--------:|:------------------:|:-----------------:|
-/// | `[63:0]` | `SetAssociativity` | Set-Associativity |
-///
-///
-/// ### NumLines
-///
-/// Register showing the instantiated number of cache lines per set.
-/// This register is read only for software.
-///
-/// Equal to the parameter of `axi_llc_top` `NumLines`.
-///
-/// Register Bit Map:
-/// | Bits     | Reset Value | Function        |
-/// |:--------:|:-----------:|:---------------:|
-/// | `[63:0]` | `NumLines`  | Number of Lines |
-///
-///
-/// ### `NumBlocks`
-///
-/// Register showing the instantiated number of blocks per cache-line.
-/// This register is read only for software.
-///
-/// Equal to the parameter of `axi_llc_top` `NumBlocks`.
-///
-/// Register Bit Map:
-/// | Bits     | Reset Value | Function         |
-/// |:--------:|:-----------:|:----------------:|
-/// | `[63:0]` | `NumBlocks` | Number of Blocks |
-///
-///
-/// ### `Version`
-///
-/// Register showing the instantiated version of the module `axi_llc`.
-/// This register is read only for software.
-///
-/// This value is defined by `axi_llc_pkg::AxiLlcVersion`.
-///
-/// Register Bit Map:
-/// | Bits     | Reset Value                   | Function                    |
-/// |:--------:|:-----------------------------:|:---------------------------:|
-/// | `[63:0]` | `axi_llc_pkg::AxiLlcVersion`  | Shows the `axi_llc_version` |
-///
 module axi_tagctrl_config #(
-    /// Static AXI LLC configuration.
-    parameter axi_llc_pkg::llc_cfg_t Cfg = axi_llc_pkg::llc_cfg_t'{default: '0},
-    /// Give the exact AXI parameters in struct form. This is passed down from
-    /// [`axi_llc_top`](module.axi_llc_top).
-    ///
-    /// Required struct definition in: `axi_llc_pkg`.
-    parameter axi_llc_pkg::llc_axi_cfg_t AxiCfg = axi_llc_pkg::llc_axi_cfg_t'{default: '0},
-    /// Register Width
-    parameter int unsigned RegWidth = 64,
-    /// Register type for HW -> Register direction
-    parameter type conf_regs_d_t = logic,
-    /// Register type for Register -> HW direction
-    parameter type conf_regs_q_t = logic,
-    /// Descriptor type. This is requires as this module emits the flush descriptors.
-    /// Struct definition is in [`axi_llc_top`](module.axi_llc_top).
-    parameter type desc_t = logic,
-    /// Address rule struct for `common_cells/addr_decode`. Is used for bypass `axi_demux`
-    /// steering.
-    parameter type rule_full_t = logic,
-    /// Type for indicating the set associativity, same as way_ind_t in `axi_llc_top`.
-    parameter type set_asso_t = logic,
-    /// Address type for the memory regions defined for caching and SPM. The same width as
-    /// the address field of the AXI4+ATOP slave and master port.
-    parameter type addr_full_t = logic,
-    /// Whether to print config of LLC
-    parameter bit PrintLlcCfg = 0
+  parameter int unsigned GROUPING_FACTOR = 512,
+  parameter int unsigned TAGGED_CHUNK_SIZE = 16,
+  parameter int unsigned COVERED_ALIGN = 8192,
+  parameter int unsigned TAG_STORE_ALIGN = 64,
+  parameter type slv_req_t = logic,
+  parameter type slv_resp_t = logic,
+  parameter type ar_chan_t = logic,
+  parameter type r_chan_t = logic,
+  parameter type aw_chan_t = logic,
+  parameter type w_chan_t = logic,
+  parameter type b_chan_t = logic,
+  parameter type axi_addr_t = logic [63:0],
+  parameter axi_addr_t init_covered_base = 64'd0,
+  parameter axi_addr_t init_covered_top = 64'd0,
+  parameter axi_addr_t init_tag_table_base = 64'd0,
+  parameter logic init_start = 1'b0,
+  parameter logic init_locked = 1'b1,
+  parameter logic allow_resume = 1'b0,
+  parameter logic allow_flush_when_locked = 1'b0,
+  parameter int unsigned perf_counters = 1'b0
 ) (
-    /// Rising-edge clock
-    input logic clk_i,
-    /// Asynchronous reset, active low
-    input logic rst_ni,
-    /// Configuration registers Reg -> HW
-    input conf_regs_q_t conf_regs_i,
-    /// Configuration registers HW -> Reg
-    output conf_regs_d_t conf_regs_o,
-    /// SPM lock.
-    ///
-    /// The cache only stores new tags in ways which are not SPM locked.
-    output set_asso_t spm_lock_o,
-    /// Flushed way flag.
-    ///
-    /// This signal defines all ways which are flushed and have no valid tags in them.
-    /// Tags are not looked up in the ways which are flushed.
-    output set_asso_t flushed_o,
-    /// Flush descriptor output.
-    ///
-    /// Payload data for flush descriptors. These descriptors are generated either by configuring
-    /// cache ways to SPM or when an explicit flush was triggered.
-    output desc_t desc_o,
-    /// Flush descriptor handshake, valid
-    output logic desc_valid_o,
-    /// Flush descriptor handshake, ready
-    input logic desc_ready_i,
-    /// Isolate the AXI slave port.
-    ///
-    /// Flush control sets this signal to prevent active cache accesses during flushing.
-    /// This is to preserve data integrity when a cache flush is underway.
-    output logic tagctrl_isolate_o,
-    /// The AXI salve port is isolated.
-    ///
-    /// This signals the flush FSM that it can safely perform the flush.
-    input logic tagctrl_isolated_i,
-    /// The AW descriptor generation unit is busy.
-    ///
-    /// This signal is needed for the flush control so that no active functional descriptors
-    /// interfere with the flush operation.
-    input logic aw_unit_busy_i,
-    /// The AR descriptor generation unit is busy.
-    ///
-    /// This signal is needed for the flush control so that no active functional descriptors
-    /// interfere with the flush operation.
-    input logic ar_unit_busy_i,
-    /// A flush descriptor is finished flushing its cache line.
-    ///
-    /// This is for controlling the counters which keep track of how many flush descriptors are
-    /// underway.
-    input logic flush_desc_recv_i,
-    /// Result data of the BIST from the tag storage macros.
-    input set_asso_t bist_res_i,
-    /// Result data of the BIST from the tag storage macros is valid.
-    input logic bist_valid_i,
-    /// Address rule for the AXI memory region which maps onto the cache.
-    ///
-    /// This rule is used to set the AXI LLC bypass.
-    /// If all cache ways are flushed, accesses onto this address region take the bypass directly
-    /// to main memory.
-    input rule_full_t axi_cached_rule_i,
-    /// Address rule for the AXI memory region which maps to the scratch pad memory region.
-    ///
-    /// Accesses are only successful, if the corresponding way is mapped as SPM
-    input rule_full_t axi_spm_rule_i
+  input logic clk_i,
+  input logic rst_ni,
+
+  input slv_req_t slv_req_i,
+  output slv_resp_t slv_resp_o,
+
+  // signaling
+  output logic isolate_o,
+  input logic isolated_i,
+  output logic ignore_tags_o,
+  output logic perform_zeroing_o,
+  input logic done_zeroing_i,
+  output logic perform_flushing_o,
+  input logic done_flushing_i,
+
+  // reporting
+  output axi_addr_t covered_base_addr_o,
+  output axi_addr_t covered_top_addr_o,
+  output axi_addr_t tag_store_base_addr_o,
+  output axi_addr_t tag_store_top_addr_o,
+  output axi_addr_t root_table_base_addr_o,
+  output axi_addr_t root_table_top_addr_o,
+  output axi_addr_t leaf_table_base_addr_o,
+  output axi_addr_t leaf_table_top_addr_o,
+  output logic [7:0] error_o,
+
+  // perf events
+  output axi_tagctrl_pkg::tagctrl_cfg_events_t events_o,
+  input axi_tagctrl_pkg::tagctrl_events_t events_i
 );
-  // register macros from `common_cells`
-  `include "common_cells/registers.svh"
 
-  // Type for the Set Associativity puls padding
-  localparam int unsigned SetAssoPadWidth = RegWidth - Cfg.SetAssociativity;
+  // helper address functions //
+  //////////////////////////////
 
-  localparam int unsigned FlushIdxWidth = prim_util_pkg::vbits(Cfg.SetAssociativity);
-  typedef logic [FlushIdxWidth-1:0] flush_idx_t;
+  function automatic axi_addr_t ceil_div(axi_addr_t value, int unsigned divisor);
+    return (value + (divisor - 1)) / divisor;
+  endfunction
 
-  // Counter signals for flush control
-  logic clear_cnt;
-  logic en_send_cnt, en_recv_cnt;
-  logic load_cnt;
-  logic [Cfg.IndexLength-1:0] flush_addr, to_recieve;
-  // Trailing zero counter signals, for flush descriptor generation.
-  flush_idx_t       to_flush_nub;
-  logic             lzc_empty;
-  set_asso_t        flush_way_ind;
+  function automatic axi_addr_t align_up(axi_addr_t value, int unsigned align);
+    return (value + (align - 1)) & ~(align - 1);
+  endfunction
 
-  ////////////////////////
-  // AXI Bypass control //
-  ////////////////////////
-  // local address maps for bypass 1:Bypass 0:LLC
-  rule_full_t [1:0] axi_addr_map;
-  always_comb begin : proc_axi_rule
-    axi_addr_map[0] = axi_spm_rule_i;
-    axi_addr_map[1] = axi_cached_rule_i;
-    // Define that accesses to the SPM region always go into the `axi_llc`.
-    axi_addr_map[0].idx    = 32'd0;
-    // define that all burst go to the bypass, if flushed is completely set
-    axi_addr_map[1].idx    = 32'd0;
-    axi_addr_map[1].idx[0] = &conf_regs_i.flushed;
-  end
-
-  //////////////////////////////////////////////////////////////////
-  // Configuration registers: Flush Control, Performance Counters //
-  //////////////////////////////////////////////////////////////////
-  // States for the control FSM
-  typedef enum logic [3:0] {
-    FsmIdle,
-    FsmWaitAx,
-    FsmWaitSplitter,
-    FsmInitFlush,
-    FsmSendFlush,
-    FsmWaitFlush,
-    FsmEndFlush,
-    FsmPreInit
-  } flush_fsm_e;
-  flush_fsm_e flush_state_d, flush_state_q;
-  logic switch_state;
-  set_asso_t to_flush_d, to_flush_q;
-  logic load_to_flush;
-
-  `FFLARN(flush_state_q, flush_state_d, switch_state, FsmPreInit, clk_i, rst_ni)
-  `FFLARN(to_flush_q, to_flush_d, load_to_flush, '0, clk_i, rst_ni)
-
-  // Load enable signals, so that the FF is only active when needed.
-  assign switch_state                 = (flush_state_d != flush_state_q);
-  assign load_to_flush                = (to_flush_d != to_flush_q);
-
-  // Constant hardware registers
-  assign conf_regs_o.bist_out         = bist_res_i;
-  assign conf_regs_o.set_asso         = Cfg.SetAssociativity;
-  assign conf_regs_o.num_lines        = Cfg.NumLines;
-  assign conf_regs_o.num_blocks       = Cfg.NumBlocks;
-  assign conf_regs_o.version          = axi_llc_pkg::AxiLlcVersion;
-  assign conf_regs_o.bist_status_done = bist_valid_i;
-
-  // Constant register write enables
-  assign conf_regs_o.bist_out_en      = 1'b1;
-  assign conf_regs_o.set_asso_en      = 1'b1;
-  assign conf_regs_o.num_lines_en     = 1'b1;
-  assign conf_regs_o.num_blocks_en    = 1'b1;
-  assign conf_regs_o.version_en       = 1'b1;
-  assign conf_regs_o.bist_status_en   = 1'b1;
-
-  always_comb begin : proc_axi_llc_cfg
-    // Default assignments
-    // Registers
-    conf_regs_o.cfg_spm       = conf_regs_i.cfg_spm;
-    conf_regs_o.cfg_flush     = conf_regs_i.cfg_flush;
-    conf_regs_o.commit_cfg    = conf_regs_i.commit_cfg;
-    conf_regs_o.flushed       = conf_regs_i.flushed;
-
-    // Register enables
-    conf_regs_o.cfg_spm_en    = 1'b1;  // default one
-    conf_regs_o.cfg_flush_en  = 1'b1;  // default one
-    conf_regs_o.commit_cfg_en = 1'b0;  // default disabled
-    conf_regs_o.flushed_en    = 1'b0;  // default disabled
-
-    // Flush state machine
-    flush_state_d             = flush_state_q;
-    // Slave port is isolated during flush.
-    tagctrl_isolate_o             = 1'b1;
-    // To flush register, holds the ways which have to be flushed.
-    to_flush_d                = to_flush_q;
-    // Emit flush descriptors.
-    desc_valid_o              = 1'b0;
-    // Default signal definitions for the descriptor send and receive counter control.
-    clear_cnt                 = 1'b0;
-    en_send_cnt               = 1'b0;
-    en_recv_cnt               = 1'b0;
-    load_cnt                  = 1'b0;
-
-    // FSM for controlling the AW AR input to the cache and flush control
-    unique case (flush_state_q)
-      FsmIdle: begin
-        // this state is normal operation, allow Cfg editing of the fields `CfgSpm` and `CfgFlush`
-        // and do not isolate main AXI
-        conf_regs_o.cfg_spm_en   = 1'b0;
-        conf_regs_o.cfg_flush_en = 1'b0;
-        tagctrl_isolate_o            = 1'b0;
-        // Change state, if there is a flush request, i.e. CommitCfg was set
-        if (conf_regs_i.commit_cfg) begin
-          conf_regs_o.commit_cfg    = 1'b0;  // Clear the commit configuration flag
-          conf_regs_o.commit_cfg_en = 1'b1;
-          flush_state_d             = FsmWaitAx;
+  // FSM //
+  /////////
+  typedef enum logic [2:0] { UNCONFIGURED,
+                             PRE_ZEROING,
+                             ZEROING,
+                             SERVING,
+                             PRE_FLUSHING,
+                             FLUSHING
+                           } fsm_state_t;
+  fsm_state_t fsm_state_q, fsm_state_d;
+  `FFL(fsm_state_q, fsm_state_d, 1'b1, init_start ? PRE_ZEROING : UNCONFIGURED, clk_i, rst_ni)
+  logic cmd_start, cmd_resume, cmd_stop;
+  always_comb begin : config_fsm
+    fsm_state_d = fsm_state_q;
+    isolate_o = 1'b0;
+    ignore_tags_o = 1'b0;
+    perform_zeroing_o = 1'b0;
+    perform_flushing_o = 1'b0;
+    case (fsm_state_q)
+      UNCONFIGURED: begin
+        ignore_tags_o = 1'b1;
+        if (cmd_start) fsm_state_d = PRE_ZEROING;
+        else if (cmd_resume) fsm_state_d = SERVING;
+      end
+      PRE_ZEROING: begin
+        ignore_tags_o = 1'b1;
+        isolate_o = 1'b1;
+        if (isolated_i) begin
+          perform_zeroing_o = 1'b1;
+          fsm_state_d = ZEROING;
         end
       end
-      FsmWaitAx: begin
-        // wait until main AXI is free
-        if (tagctrl_isolated_i) begin
-          flush_state_d = FsmWaitSplitter;
+      ZEROING: begin
+        isolate_o = 1'b1; // hold isolation until zeroing finishes
+        if (done_zeroing_i) fsm_state_d = SERVING;
+      end
+      SERVING: begin
+        if (cmd_stop) fsm_state_d = PRE_FLUSHING;
+      end
+      PRE_FLUSHING: begin
+        isolate_o = 1'b1;
+        if (isolated_i) begin
+          perform_flushing_o = 1'b1;
+          fsm_state_d = FLUSHING;
         end
       end
-      FsmWaitSplitter: begin
-        // wait till none of the splitter units still have vectors in them
-        if (!aw_unit_busy_i && !ar_unit_busy_i) begin
-          flush_state_d = FsmInitFlush;
-        end
+      FLUSHING: begin
+        isolate_o = 1'b1; // hold isolation until flushing finishes
+        if (done_flushing_i) fsm_state_d = UNCONFIGURED;
       end
-      FsmInitFlush: begin
-        // this state determines which cache way should be flushed
-        // it also sets up the counters for state-keeping how far
-        // the flush operation has progressed
-        // define if the user requested a flush
-        if (|conf_regs_i.cfg_flush) begin
-          to_flush_d = conf_regs_i.cfg_flush & ~conf_regs_i.flushed;
-        end else begin
-          to_flush_d             = conf_regs_i.cfg_spm & ~conf_regs_i.flushed;
-          conf_regs_o.flushed    = conf_regs_i.cfg_spm & conf_regs_i.flushed;
-          conf_regs_o.flushed_en = 1'b1;
-        end
-        // now determine if we have something to do at all
-        if (to_flush_d == '0) begin
-          // nothing to flush, go to idle
-          flush_state_d = FsmIdle;
-
-          conf_regs_o.cfg_flush = set_asso_t'(1'b0);
-        end else begin
-          flush_state_d = FsmSendFlush;
-          load_cnt      = 1'b1;
-        end
-      end
-      FsmSendFlush: begin
-        // this state sends all required flush descriptors to the specified way
-        desc_valid_o = 1'b1;
-        // transaction
-        if (desc_ready_i) begin
-          // last flush descriptor for this way?
-          if (flush_addr == {Cfg.IndexLength{1'b1}}) begin
-            flush_state_d = FsmWaitFlush;
-          end else begin
-            en_send_cnt = 1'b1;
-          end
-        end
-        // further enable the receive counter if the input signal is high
-        if (flush_desc_recv_i) begin
-          en_recv_cnt = 1'b1;
-        end
-      end
-      FsmWaitFlush: begin
-        // this state waits till all flush operations have exited the cache, then `FsmEndFlush`
-        if (flush_desc_recv_i) begin
-          if (to_recieve == {Cfg.IndexLength{1'b0}}) begin
-            flush_state_d = FsmEndFlush;
-          end else begin
-            en_recv_cnt = 1'b1;
-          end
-        end
-      end
-      FsmEndFlush: begin
-        // this state decides, if we have other ways to flush, or if we can go back to idle
-        clear_cnt = 1'b1;
-        if (to_flush_q == flush_way_ind) begin
-          flush_state_d          = FsmIdle;
-          // reset the flushed register to SPM as new requests can enter the cache
-          conf_regs_o.flushed    = conf_regs_i.cfg_spm;
-          conf_regs_o.flushed_en = 1'b1;
-          to_flush_d             = set_asso_t'(1'b0);
-          // Clear the `CfgFlush` register, load enable is default '1
-          conf_regs_o.cfg_flush  = set_asso_t'(1'b0);
-        end else begin
-          // there are still ways to flush
-          flush_state_d          = FsmInitFlush;
-          conf_regs_o.flushed    = conf_regs_i.flushed | flush_way_ind;
-          conf_regs_o.flushed_en = 1'b1;
-        end
-      end
-      FsmPreInit: begin
-        // The state machine starts in this state. It remains in this state until the
-        // BIST of the tag storage macros is finished.
-        // When the result of the BIST comes in, it is also written to the SPM configuration.
-        // However does not trigger a flush. This is to have per default tag-macros with errors
-        // to be mapped as SPM, so that they are not used. However they can be enabled using
-        // the normal SPM configuration.
-        if (bist_valid_i) begin
-          flush_state_d          = FsmIdle;
-          conf_regs_o.cfg_spm    = bist_res_i;
-          // No load specified for CfgSpm, as per default the reg is loaded anyway.
-          conf_regs_o.flushed    = bist_res_i;
-          conf_regs_o.flushed_en = 1'b1;
-        end
-      end
-      default:  /*do nothing*/;
     endcase
   end
 
-  ////////////////////////
-  // Output assignments //
-  ////////////////////////
-  // Flush descriptor output is static, except for the fields defined here.
-  localparam int unsigned FlushAddrShift = Cfg.BlockOffsetLength + Cfg.ByteOffsetLength;
+  // module registers //
+  //////////////////////
+  // status
+  typedef struct packed {
+    logic [39:0] res_63_24;
+    logic [7:0] error;
+    logic [10:0] res_15_5;
+    logic locked;
+    logic unconfigured;
+    logic flushing;
+    logic zeroing;
+    logic serving;
+  } status_t;
+  status_t status_w;
+  logic locked_q, locked_d;
+  `FFL(locked_q, locked_d, locked_d, init_locked, clk_i, rst_ni)
+  // address registers
+  axi_addr_t covered_base_q, covered_base_d;
+  axi_addr_t covered_top_q, covered_top_d;
+  axi_addr_t table_base_q, table_base_d;
+  `FFL(covered_base_q, covered_base_d, 1'b1, init_covered_base, clk_i, rst_ni)
+  `FFL(covered_top_q, covered_top_d, 1'b1, init_covered_top, clk_i, rst_ni)
+  `FFL(table_base_q, table_base_d, 1'b1, init_tag_table_base, clk_i, rst_ni)
 
-  always_comb begin
-    desc_o           = '0;
-    desc_o.a_x_addr  = addr_full_t'(flush_addr) << FlushAddrShift;
-    desc_o.a_x_len   = axi_pkg::len_t'(Cfg.NumBlocks - 32'd1);
-    desc_o.a_x_size  = axi_pkg::size_t'($clog2(Cfg.BlockSize / 32'd8));
-    desc_o.a_x_burst = axi_pkg::BURST_INCR;
-    desc_o.x_resp    = axi_pkg::RESP_OKAY;
-    desc_o.way_ind   = flush_way_ind;
-    desc_o.flush     = 1'b1;
-  end
+  // performance counters //
+  //////////////////////////
 
-  // Configuration registers which are used in other modules.
-  assign spm_lock_o = conf_regs_i.cfg_spm;
-  assign flushed_o  = conf_regs_i.flushed;
-
-  // This trailing zero counter determines which way should be flushed next.
-  lzc #(
-      .WIDTH(Cfg.SetAssociativity),
-      .MODE (1'b0)
-  ) i_lzc_flush (
-      .in_i   (to_flush_q),
-      .cnt_o  (to_flush_nub),
-      .empty_o(lzc_empty)
-  );
-  // Decode flush way indicator from binary to one-hot signal.
-  assign flush_way_ind = (lzc_empty) ? set_asso_t'(1'b0) : set_asso_t'(64'd1) << to_flush_nub;
-
-  ///////////////////////////////
-  // Counter for flush control //
-  ///////////////////////////////
-  // This counts how many flush descriptors have been sent.
-  counter #(
-      .WIDTH(Cfg.IndexLength)
-  ) i_flush_send_counter (
-      .clk_i     (clk_i),
-      .rst_ni    (rst_ni),
-      .clear_i   (clear_cnt),
-      .en_i      (en_send_cnt),
-      .load_i    (load_cnt),
-      .down_i    (1'b0),
-      .d_i       ({Cfg.IndexLength{1'b0}}),
-      .q_o       (flush_addr),
-      .overflow_o(  /*not used*/)
-  );
-
-  // This counts how many flush descriptors are not done flushing.
-  counter #(
-      .WIDTH(Cfg.IndexLength)
-  ) i_flush_recv_counter (
-      .clk_i     (clk_i),
-      .rst_ni    (rst_ni),
-      .clear_i   (clear_cnt),
-      .en_i      (en_recv_cnt),
-      .load_i    (load_cnt),
-      .down_i    (1'b1),
-      .d_i       ({Cfg.IndexLength{1'b1}}),
-      .q_o       (to_recieve),
-      .overflow_o(  /*not used*/)
-  );
-
-  // pragma translate_off
-`ifndef VERILATOR
-  initial begin : proc_check_params
-    set_asso :
-    assert (Cfg.SetAssociativity <= RegWidth)
-    else
-      $fatal(
-          1,
-          $sformatf(
-              "LlcCfg: The maximum set associativity (%0d) has to be smaller than \
-                             or equal to the the configuration register width in bits: %0d (dec).\n \
-                             Reason: Set associativity has to fit inside one register.",
-              Cfg.SetAssociativity,
-              RegWidth
-          )
-      );
-  end
-
-  if (PrintLlcCfg) begin : gen_llc_hello
-    initial begin : proc_llc_hello
-      @(posedge rst_ni);
-      $display("###############################################################################");
-      $display("###############################################################################");
-      $display("AXI LLC module instantiated:");
-      $display("%m");
-      $display("###############################################################################");
-      $display("Cache Size parameters:");
-      $display("Max Cache/SPM size:                (decimal): %d KiB", Cfg.SPMLength / 1024);
-      $display("SetAssociativity (Number of Ways)  (decimal): %d", Cfg.SetAssociativity);
-      $display("Number of Cache Lines per Set      (decimal): %d", Cfg.NumLines);
-      $display("Number of Blocks per Cache Line    (decimal): %d", Cfg.NumBlocks);
-      $display("Block Size in Bits                 (decimal): %d", Cfg.BlockSize);
-      $display("Tag Length of AXI Address          (decimal): %d", Cfg.TagLength);
-      $display("Index Length of AXI Address        (decimal): %d", Cfg.IndexLength);
-      $display("Block Offset Length of AXI Address (decimal): %d", Cfg.BlockOffsetLength);
-      $display("Byte Offset Length of AXI Address  (decimal): %d", Cfg.ByteOffsetLength);
-      $display("###############################################################################");
-      $display("AXI4 Port parameters:");
-      $display("Slave port (CPU):");
-      $display("ID   width (decimal): %d", AxiCfg.SlvPortIdWidth);
-      $display("ADDR width (decimal): %d", AxiCfg.AddrWidthFull);
-      $display("DATA width (decimal): %d", AxiCfg.DataWidthFull);
-      $display("STRB width (decimal): %d", AxiCfg.DataWidthFull / 8);
-      $display("Master port (memory):");
-      $display("ID   width (decimal): %d", AxiCfg.SlvPortIdWidth + 1);
-      $display("ADDR width (decimal): %d", AxiCfg.AddrWidthFull);
-      $display("DATA width (decimal): %d", AxiCfg.DataWidthFull);
-      $display("STRB width (decimal): %d", AxiCfg.DataWidthFull / 8);
-      $display("Address mapping information:");
-      $display("Cached region Start address (hex): %h", axi_cached_rule_i.start_addr);
-      $display("Cached region End   address (hex): %h", axi_cached_rule_i.end_addr);
-      $display("SPM    region Start address (hex): %h", axi_spm_rule_i.start_addr);
-      $display("SPM    region End   address (hex): %h", axi_spm_rule_i.end_addr);
-      $display("###############################################################################");
-      $display("###############################################################################");
+  localparam int unsigned PERF_COUNTERS_MAX = 32;
+  logic [PERF_COUNTERS_MAX-1:0][63:0] perf_counters_q, perf_counters_d;
+  logic [PERF_COUNTERS_MAX-1:0][7:0] perf_select_q, perf_select_d;
+  logic [PERF_COUNTERS_MAX-1:0] perf_inhibit_q, perf_inhibit_d;
+  for (genvar i = 0; i < PERF_COUNTERS_MAX; i = i + 1) begin
+    if (i < perf_counters) begin
+      `FFL(perf_counters_q[i], perf_counters_d[i], 1'b1, 64'b0, clk_i, rst_ni)
+      `FFL(perf_select_q[i], perf_select_d[i], 1'b1, 8'b0, clk_i, rst_ni)
+      `FFL(perf_inhibit_q[i], perf_inhibit_d[i], 1'b1, 1'b0, clk_i, rst_ni)
+    end else begin
+      assign perf_counters_q[i] = '0;
+      assign perf_select_q[i] = '0;
+      assign perf_inhibit_q[i] = '0;
     end
   end
-`endif
+
+  // latch incoming events to cut paths
+  axi_tagctrl_pkg::tagctrl_events_t events_q;
+  `FFL(events_q, events_i, 1'b1, '0, clk_i, rst_ni);
+
+  // produce output signals //
+  ////////////////////////////
+
+  axi_addr_t covered_size_bytes;
+  assign covered_size_bytes = covered_top_q - covered_base_q;
+  axi_addr_t leaf_table_bits;
+  assign leaf_table_bits = ceil_div(covered_size_bytes, TAGGED_CHUNK_SIZE);
+  axi_addr_t leaf_table_bytes;
+  assign leaf_table_bytes = ceil_div(leaf_table_bits, 8);
+  axi_addr_t root_table_bits;
+  assign root_table_bits = ceil_div(leaf_table_bits, GROUPING_FACTOR);
+  axi_addr_t root_table_bytes;
+  assign root_table_bytes = ceil_div(root_table_bits, 8);
+
+  assign covered_base_addr_o = covered_base_q;
+  assign covered_top_addr_o = covered_top_q;
+
+  assign leaf_table_base_addr_o = table_base_q;
+  assign leaf_table_top_addr_o = leaf_table_base_addr_o + leaf_table_bytes;
+
+  assign root_table_base_addr_o = align_up(leaf_table_top_addr_o, TAG_STORE_ALIGN);
+  assign root_table_top_addr_o = root_table_base_addr_o + root_table_bytes;
+
+  assign tag_store_base_addr_o = leaf_table_base_addr_o;
+  assign tag_store_top_addr_o = align_up(root_table_top_addr_o, TAG_STORE_ALIGN);
+
+  assign error_o =
+    (covered_top_q < covered_base_q)          ? 8'd1 :
+    (tag_store_top_addr_o < table_base_q)     ? 8'd2 :
+    (|(covered_base_q & (COVERED_ALIGN - 1))) ? 8'd3 :
+    (|(covered_top_q & (COVERED_ALIGN - 1)))  ? 8'd4 :
+    (|(table_base_q & (TAG_STORE_ALIGN - 1))) ? 8'd5 :
+                                                8'd0;
+
+  // input address processing //
+  //////////////////////////////
+
+  // Take the bottom 12 bits of the address
+  // Then mask off the bottom 3 (used to pick a byte within an 8-byte flit)
+  function automatic logic[11:0] mask_addr (axi_addr_t addr);
+    return {addr[11:3], 3'b000};
+  endfunction
+
+  // config address map //
+  ////////////////////////
+
+  typedef enum logic [11:0] { ADDR_STATUS = 12'h000,
+                              ADDR_CONTROL = 12'h008,
+                              ADDR_COVERED_BASE = 12'h010,
+                              ADDR_COVERED_TOP = 12'h018,
+                              ADDR_TABLE_BASE = 12'h020,
+                              ADDR_TABLE_TOP = 12'h028,
+                              ADDR_PERF_INHIBIT = 12'heb0,
+                              ADDR_PERF_SELECT = 12'hec0,
+                              ADDR_PERF_COUNTER = 12'hf00
+                            } config_map_start_t;
+
+  // event monitoring //
+  //////////////////////
+  if (perf_counters > 0) begin
+    assign events_o.state_unconfigured = fsm_state_q == UNCONFIGURED;
+    assign events_o.state_preflushing = fsm_state_q == PRE_FLUSHING;
+    assign events_o.state_flushing = fsm_state_q == FLUSHING;
+    assign events_o.state_prezeroing = fsm_state_q == PRE_ZEROING;
+    assign events_o.state_zeroing = fsm_state_q == ZEROING;
+    assign events_o.state_serving = fsm_state_q == SERVING;
+  end else begin
+    assign events_o = '0;
+  end
+
+  // handle reads //
+  //////////////////
+  // we latch requests to break the comb path
+  // (read reqs are smaller than read resps)
+  ar_chan_t read_req_q, read_req_d;
+  logic read_req_valid_q, read_req_valid_d;
+  `FFL(read_req_q, read_req_d, 1'b1, slv_req_t'{default: '0}, clk_i, rst_ni)
+  `FFL(read_req_valid_q, read_req_valid_d, 1'b1, 1'b0, clk_i, rst_ni)
+  always_comb begin : config_read
+    automatic logic [11:0] addr_masked;
+    addr_masked = mask_addr(read_req_q.addr);
+    // accept incoming request
+    read_req_valid_d = read_req_valid_q;
+    read_req_d = read_req_q;
+    slv_resp_o.ar_ready = 1'b0;
+    if (slv_req_i.ar_valid && !read_req_valid_q) begin
+      read_req_valid_d = 1'b1;
+      read_req_d = slv_req_i.ar;
+      slv_resp_o.ar_ready = 1'b1;
+    end
+    // handle previously accepted request
+    slv_resp_o.r_valid = 1'b0;
+    slv_resp_o.r.data = '0;
+    slv_resp_o.r.id = read_req_q.id;
+    slv_resp_o.r.resp = axi_pkg::RESP_OKAY;
+    slv_resp_o.r.last = 1'b1;
+    slv_resp_o.r.user = '0;
+    if (read_req_valid_q) begin
+      case (addr_masked)
+        ADDR_STATUS: begin
+          automatic status_t status = status_t'{default: '0};
+          status.error = error_o;
+          status.locked = locked_q;
+          status.unconfigured = (fsm_state_q == UNCONFIGURED);
+          status.flushing = (fsm_state_q inside {PRE_FLUSHING, FLUSHING});
+          status.zeroing = (fsm_state_q inside {PRE_ZEROING, ZEROING});
+          status.serving = (fsm_state_q == SERVING);
+          slv_resp_o.r.data = status;
+        end
+        ADDR_COVERED_BASE: slv_resp_o.r.data = covered_base_q;
+        ADDR_COVERED_TOP: slv_resp_o.r.data = covered_top_q;
+        ADDR_TABLE_BASE: slv_resp_o.r.data = table_base_q;
+        ADDR_TABLE_TOP: slv_resp_o.r.data = tag_store_top_addr_o;
+      endcase
+      if (perf_counters > 0) begin
+        // Read of counter state from config interface
+        // It doesn't matter if this is above the max counter value because
+        // the wire is just not connected to any register in that case.
+
+        // Reads of inhibit register
+        if (addr_masked == ADDR_PERF_INHIBIT) begin
+          slv_resp_o.r.data = perf_inhibit_q;
+        end
+        // Reads of select registers
+        if (addr_masked >= ADDR_PERF_SELECT && addr_masked <= ADDR_PERF_SELECT + (PERF_COUNTERS_MAX - 1)) begin
+          // We need to read 8 select registers. Select which "chunk" of 8 based on address bits
+          automatic logic[1:0] perf_counter_chunk = addr_masked[4:3];
+          for (int unsigned chunk = 0; chunk < 1 << $bits(perf_counter_chunk); chunk = chunk + 1) begin
+            if (chunk == perf_counter_chunk) begin
+              for (int unsigned b = 0; b < 8; b = b + 1) begin
+                slv_resp_o.r.data[b*8+:8] = perf_select_q[chunk * 8 + b];
+              end
+            end
+          end
+        end
+        // Data reads of the counters
+        if (addr_masked >= ADDR_PERF_COUNTER && addr_masked <= ADDR_PERF_COUNTER + ((PERF_COUNTERS_MAX - 1) * 8)) begin
+          automatic logic[4:0] perf_counter_idx = addr_masked[7:3];
+          slv_resp_o.r.data = perf_counters_q[perf_counter_idx];
+        end
+      end
+      // send response
+      slv_resp_o.r_valid = 1'b1;
+      // if the response is accepted, reset read interface state
+      if (slv_req_i.r_ready) begin
+        read_req_valid_d = 1'b0;
+      end
+    end
+  end
+
+  // handle writes //
+  ///////////////////
+  // we latch responses to break the comb path
+  // (write resps are smaller than write reqs)
+  b_chan_t write_resp_q, write_resp_d;
+  logic write_resp_valid_q, write_resp_valid_d;
+  `FFL(write_resp_q, write_resp_d, 1'b1, slv_req_t'{default: '0}, clk_i, rst_ni)
+  `FFL(write_resp_valid_q, write_resp_valid_d, 1'b1, 1'b0, clk_i, rst_ni)
+  always_comb begin : config_write
+    automatic logic do_start, do_resume, do_stop, do_lock, do_config, accept, write_valid;
+    // categorise write
+    automatic logic [$bits(slv_req_i.w.data)-1:0] bit_strb;
+    automatic logic [$bits(slv_req_i.w.data)-1:0] wdata_masked;
+    automatic logic [11:0] addr_masked;
+    bit_strb = '0;
+    for (int unsigned i = 0; i < $bits(slv_req_i.w.strb); i++)
+      bit_strb[i*8+:8] = slv_req_i.w.strb[i] ? '1 : '0;
+    wdata_masked = slv_req_i.w.data & bit_strb;
+    addr_masked = mask_addr(slv_req_i.aw.addr);
+
+    do_start  = (addr_masked == ADDR_CONTROL) && |(wdata_masked & 'h00000001);
+    do_resume = (addr_masked == ADDR_CONTROL) && |(wdata_masked & 'h00000100);
+    do_stop   = (addr_masked == ADDR_CONTROL) && |(wdata_masked & 'h00010000);
+    do_lock   = (addr_masked == ADDR_CONTROL) && |(wdata_masked & 'h01000000);
+    do_config = addr_masked inside {ADDR_COVERED_BASE, ADDR_COVERED_TOP, ADDR_TABLE_BASE};
+    // establish if write is ignored or accepted
+    accept = (do_start && (fsm_state_q == UNCONFIGURED)) ||
+             (do_resume && (fsm_state_q == UNCONFIGURED)) ||
+             (do_stop && (fsm_state_q == SERVING)) ||
+             (do_config && (fsm_state_q == UNCONFIGURED)) ||
+             do_lock;
+    write_valid = slv_req_i.aw_valid && slv_req_i.w_valid; // && slv_req_i.w.last // TODO assert last?
+    // no register update by default
+    covered_base_d = covered_base_q;
+    covered_top_d = covered_top_q;
+    table_base_d = table_base_q;
+    locked_d = locked_q;
+    cmd_start = 1'b0;
+    cmd_resume = 1'b0;
+    cmd_stop = 1'b0;
+    write_resp_valid_d = write_resp_valid_q;
+    write_resp_d = write_resp_q;
+    slv_resp_o.aw_ready = 1'b0;
+    slv_resp_o.w_ready = 1'b0;
+    // Performance counters default
+    perf_counters_d = perf_counters_q;
+    perf_select_d = perf_select_q;
+    perf_inhibit_d = perf_inhibit_q;
+    // Performance counters update
+    for (int i = 0; i < perf_counters; i = i+1) begin
+      if (!perf_inhibit_q[i]) begin
+        perf_counters_d[i] = perf_counters_q[i] + axi_tagctrl_pkg::get_perf_event(events_q, perf_select_q[i]);
+      end
+    end
+    // when write request (AW & W) present and no write is pending
+    if (write_valid && !write_resp_valid_q) begin
+      // consume write
+      slv_resp_o.aw_ready = 1'b1;
+      slv_resp_o.w_ready = 1'b1;
+      // prepare response
+      write_resp_valid_d = 1'b1;
+      write_resp_d.id = slv_req_i.aw.id;
+      write_resp_d.resp = axi_pkg::RESP_OKAY;
+      write_resp_d.user = '0;
+      // when write is not ignored, perform desired effect
+      if (locked_q && allow_flush_when_locked && do_stop && accept) begin
+        cmd_stop = 1'b1;
+      end else if (!locked_q && accept) begin
+        case (addr_masked)
+          ADDR_CONTROL: begin
+            if (do_start) cmd_start = 1'b1;
+            else if (do_resume && allow_resume) cmd_resume = 1'b1;
+            else if (do_stop) cmd_stop = 1'b1;
+            if (do_lock) locked_d = 1'b1;
+          end
+          ADDR_COVERED_BASE: begin
+            covered_base_d = wdata_masked | (covered_base_q & ~bit_strb);
+          end
+          ADDR_COVERED_TOP: begin
+            covered_top_d = wdata_masked | (covered_top_q & ~bit_strb);
+          end
+          ADDR_TABLE_BASE: begin
+            table_base_d = wdata_masked | (covered_base_q & ~bit_strb);
+          end
+        endcase
+      end
+    end
+    if (perf_counters > 0) begin
+      // Write to counter state from config interface
+      // It doesn't matter if this is above the max counter value because
+      // the wire is just not connected to any register in that case.
+
+      // Writes to inhibit register
+      if (addr_masked == ADDR_PERF_INHIBIT) begin
+        perf_inhibit_d = wdata_masked | (perf_inhibit_q & ~bit_strb);
+      end
+      // Writes to select registers
+      if (addr_masked >= ADDR_PERF_SELECT && addr_masked <= ADDR_PERF_SELECT + (PERF_COUNTERS_MAX - 1)) begin
+        // We need to set up to 8 select registers. Select which "chunk" of 8 based on address bits
+        automatic logic[1:0] perf_counter_chunk = addr_masked[4:3];
+        for (int unsigned chunk = 0; chunk < 1 << $bits(perf_counter_chunk); chunk = chunk + 1) begin
+          if (chunk == perf_counter_chunk) begin
+            for (int unsigned b = 0; b < 8; b = b + 1) begin
+              if (slv_req_i.w.strb[b]) begin
+                perf_select_d[chunk * 8 + b] = wdata_masked[b*8+:8];
+              end
+            end
+          end
+        end
+      end
+      // Data writes to the counters
+      if (addr_masked >= ADDR_PERF_COUNTER && addr_masked <= ADDR_PERF_COUNTER + ((PERF_COUNTERS_MAX - 1) * 8)) begin
+        automatic logic[4:0] perf_counter_idx = slv_req_i.aw.addr[7:3];
+        perf_counters_d[perf_counter_idx] = wdata_masked | (perf_counters_q[perf_counter_idx] & ~bit_strb);
+      end
+    end
+
+    slv_resp_o.b_valid = 1'b0;
+    slv_resp_o.b = write_resp_q;
+    // send response
+    if (write_resp_valid_q) begin
+      // default b response
+      slv_resp_o.b_valid = 1'b1;
+      // if the response is accepted, reset write interface state
+      if (slv_req_i.b_ready) begin
+        write_resp_valid_d = 1'b0;
+      end
+    end
+
+  end
+
+  // pragma translate_off
+  initial begin : proc_assert_axi_params
+    assert_config_axi_data_width :
+    assert ($bits(slv_req_i.w.data) == 64)
+    else $fatal(1, "AXI config only supports 64-bit data width");
+  end
   // pragma translate_on
+
 endmodule
